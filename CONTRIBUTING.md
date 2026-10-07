@@ -1,8 +1,16 @@
 # Cómo contribuir
 
+## Ramas
+
+| Rama | Para qué |
+|---|---|
+| `main` | Producción y deploy. Solo recibe merges desde `develop` cuando una versión está probada. |
+| `develop` | Desarrollo diario. Acá se integra todo lo nuevo. |
+| `feat/…`, `fix/…`, `docs/…` | Trabajo puntual, sale de `develop` y vuelve a `develop` por PR. |
+
 ## Flujo
 
-1. Rama desde `main`: `feat/<algo>`, `fix/<algo>`, `docs/<algo>`.
+1. Rama desde `develop`: `feat/<algo>`, `fix/<algo>`, `docs/<algo>`.
 2. Commits con **conventional commits** (commitlint lo valida en `commit-msg`):
    ```
    feat(catalog): lista de espera por talle
@@ -12,7 +20,7 @@
    Scopes válidos en [`commitlint.config.mjs`](commitlint.config.mjs) (módulos de la API, `web`, `db`, `contracts`, `tokens`…).
 3. Antes de abrir el PR: `pnpm lint && pnpm typecheck && pnpm test` (y `pnpm test:e2e` si tocaste flujos de la tienda).
    El hook `pre-commit` corre Biome sobre lo que está en stage.
-4. PR a `main` con qué cambia, cómo probarlo y capturas si hay cambios visuales. CI tiene que estar en verde.
+4. PR a `develop` con qué cambia, cómo probarlo y capturas si hay cambios visuales. CI tiene que estar en verde.
 5. Si terminaste algo de los mockups, marcalo en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Dónde va cada cosa

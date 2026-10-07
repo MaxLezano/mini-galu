@@ -73,4 +73,7 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 ## Git
 
 Conventional commits (commitlint lo valida): `feat(catalog): …`, `fix(web): …`, `docs: …`. Scopes en
-`commitlint.config.mjs`. Ramas `feat/…`, `fix/…`; PR a `main` con CI en verde.
+`commitlint.config.mjs`. Remoto: https://github.com/MaxLezano/mini-galu
+
+- `develop`: desarrollo diario; todo lo nuevo entra acá (ramas `feat/…`, `fix/…` con PR y CI en verde).
+- `main`: producción y deploy; solo recibe merges de `develop` ya probados. No se commitea directo en `main`.
