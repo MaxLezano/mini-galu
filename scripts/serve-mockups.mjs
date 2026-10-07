@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const MOCKUPS = join(root, "design/mockups");
 const IMAGES = join(root, "local-assets/mockups/img");
-const PORT = Number(process.env.PORT ?? 5500);
+const PORT = 5500;
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
