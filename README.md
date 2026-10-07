@@ -45,7 +45,7 @@ pnpm db:reset               # migraciones + seed (11 productos, colecciones y el
 pnpm dev                    # web http://localhost:3000 · api http://localhost:4000
 ```
 
-Panel del taller: http://localhost:3000/taller — en local entra con `gaby@minigalu.com.ar` / `taller-mini-galu`
+Panel del taller: http://localhost:3000/taller — en local entra con `gaby@minigalu.com.ar` / `Taller.MiniGalu1`
 (o lo que pongas en `ADMIN_EMAIL` / `ADMIN_PASSWORD` del `.env` antes de `pnpm db:seed`).
 
 Mockups: `pnpm mockups` → http://localhost:5500

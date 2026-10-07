@@ -110,6 +110,11 @@ Regla: nada de los mockups se descarta en silencio. Si algo cambia, se anota ac�
 - ⏳ Conversaciones, "enseñale" (`AssistantFact`), ajustes
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)
+- ✅ Modelo de datos: `user` (nombre y apellido separados, email verificado, foto, rol, teléfono E.164 + país,
+  documento, newsletter, aceptación de términos), `addresses` (varias por clienta, una predeterminada, observaciones
+  para la entrega) y `children` ("Mis nenas": nombre, cumple, talle, altura)
+- ✅ Regla de contraseña (8+, mayúscula, minúscula, número y especial) en contracts, en la API (alta, cambio y
+  recuperación) y en el seed
 - ⏳ Better Auth (email + Google), "Mis nenas", pedidos, favoritos sincronizados, lista de cumple compartible
 - ⏳ Gift cards con diseño elegible y vista previa, consulta de saldo
 - ⏳ Clientes en el panel: nenas, cumples próximos, ficha con pedidos

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { PasswordSchema } from "@mini-galu/contracts";
 import { hashPassword } from "better-auth/crypto";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../client";
@@ -8,21 +9,25 @@ import * as s from "../schema";
 export function adminCredentials() {
   const prod = process.env.NODE_ENV === "production";
   const email = process.env.ADMIN_EMAIL || (prod ? "" : "gaby@minigalu.com.ar");
-  const password = process.env.ADMIN_PASSWORD || (prod ? "" : "taller-mini-galu");
+  const password = process.env.ADMIN_PASSWORD || (prod ? "" : "Taller.MiniGalu1");
   if (!email || !password) throw new Error("Faltan ADMIN_EMAIL y ADMIN_PASSWORD");
-  if (password.length < 8) throw new Error("ADMIN_PASSWORD necesita al menos 8 caracteres");
-  return { name: process.env.ADMIN_NAME || "Gaby", email: email.toLowerCase(), password };
+  const check = PasswordSchema.safeParse(password);
+  if (!check.success) throw new Error(`ADMIN_PASSWORD: ${check.error.issues[0]?.message}`);
+  const [firstName = "Gaby", ...rest] = (process.env.ADMIN_NAME || "Gaby").trim().split(/\s+/);
+  return { firstName, lastName: rest.join(" "), email: email.toLowerCase(), password };
 }
 
 /** Crea (o actualiza) la cuenta admin con email y contraseña, en el formato de Better Auth. Idempotente. */
 export async function upsertAdmin(db: Db) {
-  const { name, email, password } = adminCredentials();
+  const { firstName, lastName, email, password } = adminCredentials();
+  const name = [firstName, lastName].filter(Boolean).join(" ");
   const hash = await hashPassword(password);
   const [existing] = await db.select({ id: s.user.id }).from(s.user).where(eq(s.user.email, email));
   const userId = existing?.id ?? randomUUID();
 
-  if (existing) await db.update(s.user).set({ name, role: "admin" }).where(eq(s.user.id, userId));
-  else await db.insert(s.user).values({ id: userId, name, email, emailVerified: true, role: "admin" });
+  const profile = { name, firstName, lastName, role: "admin" as const };
+  if (existing) await db.update(s.user).set(profile).where(eq(s.user.id, userId));
+  else await db.insert(s.user).values({ id: userId, email, emailVerified: true, ...profile });
 
   const credential = and(eq(s.account.userId, userId), eq(s.account.providerId, "credential"));
   const [acc] = await db.select({ id: s.account.id }).from(s.account).where(credential);

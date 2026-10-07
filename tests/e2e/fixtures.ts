@@ -19,5 +19,5 @@ export { expect };
 
 export const ADMIN = {
   email: process.env.ADMIN_EMAIL || "gaby@minigalu.com.ar",
-  password: process.env.ADMIN_PASSWORD || "taller-mini-galu",
+  password: process.env.ADMIN_PASSWORD || "Taller.MiniGalu1",
 };
