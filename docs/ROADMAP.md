@@ -15,7 +15,9 @@ Regla: nada de los mockups se descarta en silencio. Si algo cambia, se anota ac�
 - ✅ Biome, Husky + commitlint (conventional commits), CI (lint, tipos, unit, e2e)
 - ✅ Playwright: e2e en celular y escritorio + script de capturas en 375 / 820 / 1440 / 2560
 
-## Fase 2 · Catálogo (en curso)
+## Fase 2 · Catálogo ✅
+
+Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase correspondiente.
 
 ### Layout de la tienda (`app.js`)
 - ✅ Cinta de anuncios (editable desde `content_blocks.home.announcements`)
@@ -81,8 +83,14 @@ Regla: nada de los mockups se descarta en silencio. Si algo cambia, se anota ac�
   (el envío del aviso es la fase 6)
 - 🟡 Fotos: se guardan como se suben → recorte 3:4 y AVIF/WebP en varios tamaños (sharp) en la fase 9
 - ⏳ Resumen del día y notificaciones (campana) → fase 4
-- ⏳ `admin-lanzamientos`: crear/editar/programar, portada, prendas, cuenta regresiva en la home, aviso a anotados, texto para redes
-- ⏳ `admin-tienda` (portada editable con vista previa) — el modelo `content_blocks` ya está
+- ✅ `admin-lanzamientos`: crear/editar/programar/borrar borradores, "usar de base", portada (elegir o subir), prendas,
+  cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las
+  prendas a la hora indicada (scheduler cada 60 s)
+- ⏳ Lanzamientos: envío del aviso a anotados 1 h antes → fase 6; "visitas al adelanto" → fase 9 (Umami);
+  "favoritos" → fase 8; "vendidas el primer día" → fase 4
+- ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
+  próximo lanzamiento
+- ⏳ `admin-tienda`: Mercado Pago y cupones → fase 3; envíos, horarios de retiro y paquete → fase 5; gift cards → fase 8
 
 ## Fase 3 · Checkout (`checkout.html`)
 - ⏳ 3 pasos; Andreani domicilio / sucursal / retiro en el taller con turnos

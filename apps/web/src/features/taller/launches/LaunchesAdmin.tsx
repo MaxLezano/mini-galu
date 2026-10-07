@@ -13,12 +13,14 @@ import { Embroidery } from "@/ui/atoms/Embroidery";
 import { LaunchEditor } from "./LaunchEditor";
 import "./launches.css";
 
-type Props = { initial: AdminLaunch[]; products: AdminProduct[]; collections: Collection[] };
+type Props = { initial: AdminLaunch[]; products: AdminProduct[]; collections: Collection[]; startNew?: boolean };
 
 /** Lanzamientos — design/mockups/admin-lanzamientos.html */
-export function LaunchesAdmin({ initial, products, collections }: Props) {
+export function LaunchesAdmin({ initial, products, collections, startNew = false }: Props) {
   const [launches, setLaunches] = useState(initial);
-  const [editor, setEditor] = useState<{ launch: AdminLaunch | null; copy: boolean } | null>(null);
+  const [editor, setEditor] = useState<{ launch: AdminLaunch | null; copy: boolean } | null>(
+    startNew ? { launch: null, copy: false } : null,
+  );
   const mounted = useMounted();
 
   const next = launches.filter((l) => l.state === "scheduled");
