@@ -35,9 +35,16 @@ const EMPTY = { sizes: [], occ: [], colors: [], max: null, q: "", instock: true 
 
 /** Las transiciones de vista acompañan cada cambio de filtro (si el navegador las soporta). */
 function withTransition(fn: () => void) {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
-  if (doc.startViewTransition && !isStill()) doc.startViewTransition(() => flushSync(fn)).ready.catch(() => {});
-  else fn();
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => { ready: Promise<void>; finished: Promise<void> };
+  };
+  if (!doc.startViewTransition || isStill()) return fn();
+  // solo se animan las tarjetas (view-transition-name por tarjeta): la página no se desvanece (vt-local en atelier.css)
+  const root = document.documentElement;
+  root.classList.add("vt-local");
+  const t = doc.startViewTransition(() => flushSync(fn));
+  t.ready.catch(() => {});
+  t.finished.catch(() => {}).finally(() => root.classList.remove("vt-local"));
 }
 
 /** Catálogo — design/mockups/catalogo.html */
@@ -51,6 +58,8 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
   const knob = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
+  // solo las tarjetas de la primera carga entran con "reveal"; las que llegan por un filtro las anima la transición
+  const firstLoad = useRef(new Set(initialProducts.map((p) => p.slug)));
   const shopCols = collections.filter((c) => c.productCount > 0);
   const colName = collections.find((c) => c.slug === state.col)?.name;
 
@@ -158,6 +167,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
       key={p.slug}
       product={p}
       index={i}
+      reveal={firstLoad.current.has(p.slug)}
       style={{ viewTransitionName: `c-${p.slug}` } as CSSProperties}
     />
   ));

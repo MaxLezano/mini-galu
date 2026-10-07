@@ -26,9 +26,13 @@ export function autoReveal(root: ParentNode = document) {
 }
 
 export function observeReveal(root: ParentNode = document): () => void {
-  const pending = $$("[data-reveal]:not(.is-in), .split:not(.is-in)", root);
+  const pending = $$("[data-reveal]:not([data-in]), .split:not(.is-in)", root);
+  const show = (el: Element) => {
+    el.classList.add("is-in");
+    el.setAttribute("data-in", "");
+  };
   if (isStill()) {
-    for (const el of pending) el.classList.add("is-in");
+    for (const el of pending) show(el);
     return () => {};
   }
   // Las máscaras (clip-path cerrado) nunca "entran" para Chrome: se observa al contenedor.
@@ -37,7 +41,7 @@ export function observeReveal(root: ParentNode = document): () => void {
     (es) => {
       for (const e of es) {
         if (!e.isIntersecting) continue;
-        for (const el of targets.get(e.target) ?? []) el.classList.add("is-in");
+        for (const el of targets.get(e.target) ?? []) show(el);
         targets.delete(e.target);
         io.unobserve(e.target);
       }
