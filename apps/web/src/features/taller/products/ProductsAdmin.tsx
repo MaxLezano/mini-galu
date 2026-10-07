@@ -51,7 +51,6 @@ export function ProductsAdmin({ initial, collections }: { initial: AdminProduct[
           : `${product.name} guardado como borrador`,
       { icon: waiting ? <BellRing className="i-sm" /> : <Check className="i-sm" /> },
     );
-    router.refresh();
   };
 
   const togglePublish = async (p: AdminProduct, published: boolean) => {

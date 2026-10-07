@@ -19,6 +19,23 @@ test("el panel pide ingresar y rechaza una contraseña incorrecta", async ({ pag
   await expect(page.locator(".auth-error")).toContainText("no coinciden");
 });
 
+test("entrar por /taller lleva al panel y salir vuelve a ingresar", async ({ page }) => {
+  await page.goto("/taller");
+  await expect(page).toHaveURL(/\/taller\/ingresar/);
+  await page.getByLabel("Email").fill(ADMIN.email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
+  await page.getByRole("button", { name: "Entrar al taller" }).click();
+  await expect(page).toHaveURL(/\/taller\/productos/);
+  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
+  // en celular la salida está en el menú lateral
+  const burger = page.getByRole("button", { name: "Abrir menú" });
+  if (await burger.isVisible()) await burger.click();
+  await page.getByRole("button", { name: "Salir del panel" }).click();
+  await expect(page).toHaveURL(/\/taller\/ingresar/);
+  await page.goto("/taller/productos");
+  await expect(page).toHaveURL(/\/taller\/ingresar/);
+});
+
 test("cargar stock en el panel se ve en la tienda", async ({ page }) => {
   await login(page);
   await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();

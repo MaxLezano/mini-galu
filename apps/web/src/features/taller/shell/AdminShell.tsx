@@ -140,7 +140,6 @@ function GlobalSearch() {
 /** Armazón del panel del taller (mockup admin.js): menú lateral, barra superior y barra inferior en celular. */
 export function AdminShell({ session, children }: { session: AdminSession; children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
   const current = (href: string) => (href === "/taller" ? pathname === href : pathname.startsWith(href));
 
@@ -153,8 +152,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
 
   const signOut = async () => {
     await adminApi.signOut().catch(() => {});
-    router.replace("/taller/ingresar");
-    router.refresh();
+    window.location.assign("/taller/ingresar");
   };
 
   const link = ({ href, icon: Icon, label, phase }: NavItem) =>

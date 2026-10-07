@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
@@ -11,7 +11,6 @@ import "./login.css";
 
 /** Ingreso al panel del taller (email + contraseña). */
 export function AdminLogin() {
-  const router = useRouter();
   const params = useSearchParams();
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +46,9 @@ export function AdminLogin() {
               setError(null);
               try {
                 await adminApi.signIn(String(fd.get("email")), String(fd.get("password")));
-                router.replace(target);
-                router.refresh();
+                // navegación completa: el panel arranca con la cookie de sesión ya puesta (dos navegaciones del
+                // router en paralelo se pisaban con la redirección de /taller y el render quedaba colgado)
+                window.location.assign(target);
               } catch (err) {
                 setError(
                   err instanceof ApiRequestError && err.status === 401
