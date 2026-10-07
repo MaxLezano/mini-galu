@@ -73,7 +73,8 @@ export class PaymentService {
   async webhook(n: { type: string | null; dataId: string | null; requestId: string; signature: string }) {
     if (!n.dataId || !this.gateway.verifyWebhook({ dataId: n.dataId, requestId: n.requestId, signature: n.signature }))
       throw new UnauthorizedError("Firma inválida");
-    if (n.type && n.type !== "payment") return;
+    // "order": tarjetas (API de Orders) · "payment": dinero en cuenta (preferencia)
+    if (n.type && n.type !== "payment" && n.type !== "order") return;
     await this.sync(n.dataId);
   }
 

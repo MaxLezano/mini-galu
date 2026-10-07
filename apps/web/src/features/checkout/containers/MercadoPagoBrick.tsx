@@ -86,7 +86,8 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
         onSubmit={async ({ selectedPaymentMethod, formData }) => {
           setError(null);
           // dinero en cuenta: el Brick lleva a Mercado Pago con la preferencia y vuelve a /checkout
-          if (selectedPaymentMethod === "wallet_purchase") return;
+          // (también "Crédito de Mercado Pago", que se paga en Mercado Pago con la misma preferencia)
+          if (selectedPaymentMethod === "wallet_purchase" || selectedPaymentMethod === "onboarding_credits") return;
           const card: CardPaymentInput = {
             method:
               selectedPaymentMethod === "debitCard" || selectedPaymentMethod === "prepaidCard" ? "debito" : "credito",

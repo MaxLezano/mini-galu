@@ -92,7 +92,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   próximo lanzamiento
 - ⏳ `admin-tienda`: Mercado Pago y cupones → fase 3; envíos, horarios de retiro y paquete → fase 5; gift cards → fase 8
 
-## Fase 3 · Checkout (`checkout.html`) ✅ (falta probar el sandbox con credenciales)
+## Fase 3 · Checkout (`checkout.html`) ✅ (falta el webhook en el sandbox)
 - ✅ Bolsa en la API: cookie de invitada `mg_cart`, merge con la cuenta al ingresar y con la bolsa vieja del navegador;
   se ajusta sola si baja el stock o se despublica una prenda
 - ✅ 3 pasos con el diseño del mockup (stepper, pasos cerrados con resumen y "Editar", resumen plegable en celular)
@@ -110,7 +110,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   anotados al lanzamiento; panel `admin-tienda` → Cupones (crear, editar, pausar, borrar)
 - ✅ Panel `admin-tienda` → Mercado Pago: medios activos, cuotas sin interés (1/3/6), modo según credenciales
 - ✅ Pantalla de éxito con moño, confeti y pasos según el envío; "pago en revisión" para pendientes
-- ⏳ Probar en el sandbox de Mercado Pago (cuenta de prueba vendedora/compradora) → necesita credenciales
+- ✅ Probado en el sandbox de Mercado Pago (API de **Orders**, la vigente; la de Payments se discontinúa): APRO
+  aprueba, OTHE/FUND/SECU/CALL rechazan con su motivo, CONT queda en revisión; preferencia de dinero en cuenta OK.
+  En prueba el email del pagador tiene que ser de un usuario de prueba (`test_user_<id>@testuser.com`)
+- ⏳ Webhook en el sandbox: necesita URL pública (cloudflared) y `MP_WEBHOOK_SECRET`
+- 🟡 Los logos dentro del Brick (Mercado Pago, tarjetas) los dibuja Mercado Pago a color: no se pueden pasar a monocromo
 - 🟡 Sucursal Andreani: hoy se cotiza por tabla y se confirma la sucursal por mensaje → elegirla en el mapa en la fase 5
 - 🟡 "12 cuotas fijas con CFT" del mockup: las muestra el Brick real según la cuenta; el simulado ofrece 1/3/6
 - 🟡 Las cuotas sin interés del panel se usan en el checkout; los textos de la tienda ("6 cuotas") siguen fijos → fase 9

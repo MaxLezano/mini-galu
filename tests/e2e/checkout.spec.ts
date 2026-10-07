@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
 /**
@@ -28,9 +28,16 @@ async function openSummary(page: Page) {
   if (await toggle.isVisible()) await toggle.click();
 }
 
+/** Con credenciales de Mercado Pago en el .env la API usa el Brick real: estos flujos son del gateway simulado. */
+async function skipIfRealMercadoPago(request: APIRequestContext) {
+  const config = await (await request.get("http://localhost:4000/checkout/config")).json();
+  test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+}
+
 const uniqueEmail = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
 
-test("compra como invitada con retiro en el taller: rechazo y reintento aprobado", async ({ page }) => {
+test("compra como invitada con retiro en el taller: rechazo y reintento aprobado", async ({ page, request }) => {
+  await skipIfRealMercadoPago(request);
   await addBow(page);
   await fillContact(page, uniqueEmail());
 
@@ -58,7 +65,8 @@ test("compra como invitada con retiro en el taller: rechazo y reintento aprobado
   await expect(page.getByText("Tu bolsa está vacía").first()).toBeVisible();
 });
 
-test("cupón de primera compra y pago con dinero en cuenta", async ({ page }) => {
+test("cupón de primera compra y pago con dinero en cuenta", async ({ page, request }) => {
+  await skipIfRealMercadoPago(request);
   await addBow(page);
   await fillContact(page, uniqueEmail());
 
