@@ -1,0 +1,30 @@
+{
+  "name": "@mini-galu/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed/index.ts",
+    "reset": "tsx src/reset.ts && tsx src/migrate.ts && tsx src/seed/index.ts",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mini-galu/contracts": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@mini-galu/config": "workspace:*",
+    "@types/node": "^24.19.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

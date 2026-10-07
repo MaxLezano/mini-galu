@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resumen — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .recent .r { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-radius: 14px; cursor: pointer; }
+  .recent .r:hover { background: var(--linen); }
+  .recent .r b { font-size: 14px; }
+  .recent .r small { display: block; color: var(--cacao-2); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recent .r .end { display: grid; justify-items: end; gap: 4px; font-size: 13px; font-weight: 600; }
+  .low .it { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .low .it:last-child { border-bottom: 0; }
+  .low img { width: 40px; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; }
+  .launch { display: grid; grid-template-columns: 180px 1fr auto; gap: 24px; align-items: center; background: var(--cacao); color: var(--linen); border-radius: var(--r-lg); padding: 16px 24px 16px 16px; }
+  .launch img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 16px; }
+  .launch .display em { color: var(--rosa); }
+  .launch .stats { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; opacity: .85; margin-top: 8px; }
+  .launch .stats b { font: 400 24px/1 var(--f-display); display: block; color: var(--rosa); }
+  @media (max-width: 900px) { .launch { grid-template-columns: 1fr; padding: 16px; } .launch img { aspect-ratio: 21/9; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="resumen">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Martes 6 de octubre</span><h1 class="display">Buen día, <em>Gaby</em></h1><span class="hand greet-note" id="greet-note">hoy hay 3 paquetes para armar ♡</span></div>
+    <div class="actions"><button class="btn btn-sm" id="pick-btn"><span data-icon="list-checks" class="i-sm"></span> Lista de preparación</button></div>
+  </div>
+
+  <section aria-label="Para hacer hoy">
+    <div class="todo-grid" id="todo"></div>
+  </section>
+
+  <div class="kpis">
+    <div class="kpi"><span><span data-icon="banknote" class="i-sm"></span> Ventas de octubre</span><b>$612.400</b><small class="up"><span data-icon="trending-up" class="i-sm"></span> 18% vs septiembre</small></div>
+    <div class="kpi"><span><span data-icon="package" class="i-sm"></span> Pedidos del mes</span><b>14</b><small class="muted">6 de clientes que vuelven</small></div>
+    <div class="kpi"><span><span data-icon="receipt" class="i-sm"></span> Ticket promedio</span><b>$43.700</b><small class="up"><span data-icon="trending-up" class="i-sm"></span> $3.100</small></div>
+    <div class="kpi"><span><span data-icon="message-circle-heart" class="i-sm"></span> Charlas con Galú</span><b>128</b><small class="up">23% terminan en compra</small></div>
+  </div>
+
+  <div class="cols-2">
+    <section class="box">
+      <div class="box-head"><h2>Ventas por semana</h2><div class="seg-btns"><button aria-pressed="true">8 semanas</button><button aria-pressed="false">12 meses</button></div></div>
+      <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+      <div class="chart-stats"><div>Mejor semana<b>$541.000</b></div><div>Promedio semanal<b>$385.400</b></div><div>Proyección octubre<b>$1.950.000</b></div></div>
+      <details style="margin-top:10px"><summary style="font:600 12px var(--f-ui);padding:6px 0;color:var(--cacao-2);cursor:pointer">Ver como tabla</summary><div class="tbl-wrap"><table class="t" id="chart-table"></table></div></details>
+    </section>
+    <section class="box">
+      <div class="box-head"><h2>Últimos pedidos</h2><a class="link" href="admin-pedidos.html" style="font-size:13px">Ver todos</a></div>
+      <div class="recent" id="recent"></div>
+    </section>
+  </div>
+
+  <section class="launch" aria-label="Próximo lanzamiento">
+    <img src="assets/img/hero-otono.webp" alt="">
+    <div><span class="eyebrow" style="color:var(--rosa)">Próximo lanzamiento · domingo 18 de octubre, 10 h</span><p class="display h3" style="margin:8px 0 0">Otoño · Invierno <em>26</em></p>
+      <div class="stats"><span><b>214</b>anotados para el aviso</span><span><b>1</b>producto en borrador</span><span><b>12</b>días</span></div></div>
+    <a class="btn btn-rose" href="admin-lanzamientos.html">Preparar lanzamiento <span data-icon="arrow-right" class="i-sm"></span></a>
+  </section>
+
+  <div class="cols-2e">
+    <section class="box low">
+      <div class="box-head"><h2>Stock para revisar</h2><a class="link" href="admin-productos.html" style="font-size:13px">Ver productos</a></div>
+      <div id="low"></div>
+    </section>
+    <section class="box">
+      <div class="box-head"><h2>Lo que se hizo solo</h2><a class="link" href="admin-automatizaciones.html" style="font-size:13px">Automatizaciones</a></div>
+      <div class="feed" id="feed"></div>
+    </section>
+  </div>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D, cust, total, status, counts, lowStock, openOrder, openPicking } = ADM;
+  const { img, money, icon, brand } = MG;
+  const $ = (s) => document.querySelector(s);
+
+  function render() {
+    const c = counts();
+    const listoEnv = D.orders.filter((o) => o.status === "listo" && o.ship[0] !== "taller").length;
+    const listoTaller = D.orders.filter((o) => o.status === "listo" && o.ship[0] === "taller").length;
+    const prep = c.nuevo + c.preparando;
+    $("#greet-note").textContent = prep ? `hoy hay ${prep} ${prep === 1 ? "paquete" : "paquetes"} para armar ♡` : "todo al día, ¡a coser! ♡";
+    const todos = [
+      ["scissors", c.nuevo + c.preparando, "pedidos para preparar", "admin-pedidos.html", true],
+      ["truck", listoEnv, "para despachar con Andreani", "admin-pedidos.html"],
+      ["store", listoTaller, "para retirar en el taller", "admin-pedidos.html"],
+      ["hourglass", c.esperando_pago, "links de pago sin pagar", "admin-pedidos.html?ver=esperando_pago"],
+      ["message-circle-question", D.conversations.filter((x) => x.outcome === "sin_respuesta").length, "preguntas que Galú no supo", "admin-galu.html"],
+    ];
+    $("#todo").innerHTML = todos.map(([ic, n, t, h, hot]) => `<a class="todo ${hot && n ? "is-hot" : ""}" href="${h}"><span class="ic">${icon(ic, "i-sm")}</span><b>${n}</b><span>${t}</span></a>`).join("");
+
+    $("#recent").innerHTML = D.orders.slice(0, 6).map((o) => {
+      const st = status(o.status);
+      return `<div class="r" data-open-order="${o.id}"><span class="thumbs-row">${o.items.slice(0, 2).map(([s]) => `<img src="${img(MG.bySlug[s])}" alt="">`).join("")}</span><div style="min-width:0"><b>#${o.id} · ${cust(o).name}</b><small>${o.when} · ${ADM.shipShort[o.ship[0]]} · ${ADM.payShort[o.pay[0]]}</small></div><div class="end">${money(total(o))}<span class="pill-status ${st.tone}">${st.short}</span></div></div>`;
+    }).join("");
+
+    $("#low").innerHTML = lowStock().slice(0, 6).map(({ p, s, n }) => `<div class="it"><img src="${img(p)}" alt=""><div><b style="font:400 16px/1.15 var(--f-display)">${p.name}</b><div class="muted" style="font-size:12.5px">Talle ${s}${p.waitlist[s] ? ` · ${p.waitlist[s]} anotados esperando` : ""}</div></div><span class="pill-status ${n ? "st-warn" : "st-rose"}">${n ? "Queda 1" : "Agotado"}</span></div>`).join("");
+  }
+  render();
+  document.addEventListener("adm:changed", render);
+
+  $("#feed").innerHTML = [
+    ["badge-check", "Pago aprobado de <b>#MG-1044</b>. Se descontó el Samanta T8 y se le escribió a Valeria.", "hace 25 min"],
+    ["whatsapp", "Se mandó el seguimiento de <b>#MG-1042</b> a Lucía.", "ayer 16:31"],
+    ["bell-ring", "Volvió el talle 6 del <b>Set Maddie</b>: se avisó a 3 anotados.", "ayer 11:05"],
+    ["link", "Recordatorio de pago a <b>Natalia</b> (#MG-1045).", "ayer 09:00"],
+    ["cake", "Se le mandaron sugerencias a <b>Romina</b> por el cumple de Mía (21/10).", "lun 10:00"],
+    ["star", "Se pidió reseña a <b>Camila</b> (#MG-1035).", "dom 12:00"],
+  ].map(([ic, t, w]) => `<div class="it"><span class="ic">${ic === "whatsapp" ? brand("whatsapp") : icon(ic)}</span><span>${t}</span><small>${w}</small></div>`).join("");
+
+  $("#pick-btn").addEventListener("click", () => openPicking());
+
+  // Ventas por semana: una serie, un tono, sin leyenda, tooltip por barra, extremos redondeados de 4px
+  const data = [["11 ago", 312000], ["18 ago", 268000], ["25 ago", 401000], ["1 sep", 355000], ["8 sep", 298000], ["15 sep", 476000], ["22 sep", 432000], ["29 sep", 541000]];
+  const W = 640, H = 240, pl = 44, pb = 26, max = 600000;
+  const bw = (W - pl) / data.length;
+  const y = (v) => (H - pb) - (v / max) * (H - pb - 8);
+  const grid = [0, 200000, 400000, 600000].map((v) => `<line class="gl" x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${pl - 8}" y="${y(v) + 4}" text-anchor="end">${v / 1000}k</text>`).join("");
+  const bars = data.map(([l, v], i) => {
+    const w = bw - 18, x = pl + i * bw + 9, top = y(v), r = 4;
+    const path = `M${x},${H - pb} V${top + r} Q${x},${top} ${x + r},${top} H${x + w - r} Q${x + w},${top} ${x + w},${top + r} V${H - pb} Z`;
+    return `<rect class="hit" x="${pl + i * bw}" y="0" width="${bw}" height="${H - pb}" data-i="${i}"/><path class="bar ${i === data.length - 1 ? "cur" : ""}" d="${path}"/><text class="ax" x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${l}</text>`;
+  }).join("");
+  $("#chart").insertAdjacentHTML("afterbegin", `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventas por semana, últimas 8 semanas">${grid}${bars}</svg>`);
+  $("#chart-table").innerHTML = "<thead><tr><th>Semana</th><th class='num'>Ventas</th></tr></thead><tbody>" + data.map(([l, v]) => `<tr><td>${l}</td><td class="num">${money(v)}</td></tr>`).join("") + "</tbody>";
+  const tip = $("#tip");
+  $("#chart svg").addEventListener("mousemove", (e) => {
+    const h = e.target.closest(".hit, .bar"); if (!h) return tip.classList.remove("on");
+    const i = +(h.dataset.i ?? h.previousElementSibling.dataset.i);
+    const r = $("#chart").getBoundingClientRect(), sv = $("#chart svg").getBoundingClientRect();
+    tip.innerHTML = `<b>${money(data[i][1])}</b>Semana del ${data[i][0]}`;
+    tip.style.left = (sv.left - r.left) + ((pl + i * bw + bw / 2) / W) * sv.width + "px";
+    tip.style.top = (sv.top - r.top) + (y(data[i][1]) / H) * sv.height + "px";
+    tip.classList.add("on");
+  });
+  $("#chart svg").addEventListener("mouseleave", () => tip.classList.remove("on"));
+});
+</script>
+</body>
+</html>

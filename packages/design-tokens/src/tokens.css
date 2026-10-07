@@ -1,0 +1,60 @@
+/* ==========================================================================
+   Mini Galú — Design tokens · "Atelier de cuento"
+   Fuente única de color, tipografía, forma y movimiento.
+   Extraídos 1:1 de design/mockups/assets/css/styles.css (Fase 0).
+   Regla: ningún color fuera de esta paleta (sin azules ni colores de marcas).
+   ========================================================================== */
+
+
+:root {
+  --announce-h: 36px;
+  /* Color */
+  --paper: #FBF8F3;
+  --paper-2: #FFFDF9;
+  --linen: #F4EDE3;
+  --linen-2: #EADFD0;
+  --linen-3: #DCCDB9;
+  --cacao: #3A2A22;
+  --cacao-2: #6E5A4E;
+  --cacao-3: #A08F83;
+  --canela: #B0643E;
+  --canela-d: #8E4A2A;
+  --canela-l: #EFD6C5;
+  --salvia: #8B9A7C;
+  --salvia-d: #5F6E52;
+  --salvia-l: #E1E6D8;
+  --rosa: #E8C6BF;
+  --rosa-l: #F6E6E1;
+  --rojo: #A3302B;
+  --line: rgba(58, 42, 34, .12);
+  --line-2: rgba(58, 42, 34, .22);
+
+  /* Type */
+  --f-display: var(--font-fraunces, "Fraunces"), "Times New Roman", serif;
+  --f-ui: var(--font-manrope, "Manrope"), system-ui, sans-serif;
+  --f-hand: var(--font-caveat, "Caveat"), cursive;
+
+  /* Shape */
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --arch: 999px 999px var(--r-md) var(--r-md);
+
+  /* Motion */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --t-fast: .2s;
+  --t-med: .45s;
+  --t-slow: .9s;
+
+  --shadow-soft: 0 1px 2px rgba(58,42,34,.05), 0 12px 32px -12px rgba(58,42,34,.18);
+  --shadow-lift: 0 2px 4px rgba(58,42,34,.06), 0 24px 48px -16px rgba(58,42,34,.28);
+  --gutter: clamp(16px, 4vw, 56px);
+  --maxw: 1360px;
+  --header-h: 76px;
+  interpolate-size: allow-keywords;
+}
+@media (min-width: 1800px) { :root { --maxw: 1640px; } }
+@media (min-width: 2400px) { :root { --maxw: 1880px; } }
+@media (max-width: 1000px) { :root { --header-h: 64px; } }

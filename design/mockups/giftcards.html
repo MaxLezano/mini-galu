@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gift cards — Mini Galú</title>
+<meta name="description" content="Regalá una gift card de Mini Galú: llega por mail o WhatsApp con tu mensaje y se usa en la web o en el taller.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  /* Hero */
+  .gh { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); align-items: center; padding-block: clamp(40px, 6vw, 88px) clamp(56px, 7vw, 110px); }
+  .gh h1 { margin: 16px 0 20px; }
+  .gh ul { list-style: none; padding: 0; margin: 28px 0 32px; display: grid; gap: 12px; }
+  .gh li { display: flex; gap: 12px; align-items: center; }
+  .gh li svg { color: var(--canela); }
+  .gh-stage { position: relative; display: grid; place-items: center; padding: 30px 0 50px; }
+  .gh-stage .gc { width: min(100%, 470px); }
+  .gh-stage .gc.back { position: absolute; width: min(86%, 400px); transform: rotate(-9deg) translate(-12%, 12%); opacity: .95; filter: saturate(.9); }
+  .gh-stage .gc.front { transform: rotate(4deg); }
+  .gh-stage .gc.front:hover { transform: rotate(1deg) translateY(-6px); }
+  .gh-stage .note { position: absolute; right: 2%; bottom: 0; font-size: clamp(26px, 2.4vw, 34px); transform: rotate(-5deg); }
+
+  /* Tarjeta */
+  .gc { aspect-ratio: 1.6; border-radius: 22px; padding: clamp(18px, 3vw, 26px); color: var(--linen); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; outline: 1.5px dashed rgba(232,198,191,.5); outline-offset: -12px; box-shadow: var(--shadow-lift); transition: transform .6s var(--ease), background .4s, color .4s; background: var(--cacao); }
+  .gc[data-d="rosa"] { background: var(--rosa); color: var(--cacao); outline-color: rgba(58,42,34,.3); }
+  .gc[data-d="salvia"] { background: var(--salvia-d); }
+  .gc[data-d="lino"] { background: var(--linen-2); color: var(--cacao); outline-color: rgba(58,42,34,.25); }
+  .gc .bow { position: absolute; right: 22px; top: 22px; width: 64px; color: var(--rosa); }
+  .gc[data-d="rosa"] .bow { color: var(--rojo); }
+  .gc[data-d="lino"] .bow { color: var(--canela); }
+  .gc .emb { position: absolute; left: -26px; bottom: -34px; width: 140px; opacity: .14; }
+  .gc .amt { font: italic 300 clamp(40px, 5.4vw, 64px)/1 var(--f-display); position: relative; }
+  .gc .to { font-family: var(--f-hand); font-size: clamp(22px, 2vw, 28px); position: relative; }
+  .gc .row small { font-size: 10px; letter-spacing: .2em; }
+
+  /* Armado */
+  .gb { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(28px, 5vw, 80px); align-items: start; }
+  .gb-form { display: grid; gap: 22px; }
+  .gb-step { display: grid; gap: 12px; padding-bottom: 22px; border-bottom: 1.5px dashed var(--line-2); }
+  .gb-step > .lbl { display: flex; align-items: center; gap: 10px; font: 400 21px/1.2 var(--f-display); color: var(--cacao); }
+  .gb-step > .lbl i { width: 28px; height: 28px; border-radius: 50%; background: var(--linen); display: grid; place-items: center; font: italic 400 15px/1 var(--f-display); color: var(--canela); flex: none; }
+  .designs { display: flex; gap: 12px; flex-wrap: wrap; }
+  .designs button { width: 46px; height: 46px; border-radius: 50%; position: relative; box-shadow: inset 0 0 0 1px var(--line); }
+  .designs button[aria-pressed="true"]::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px dashed var(--cacao); }
+  .amounts { display: grid; grid-template-columns: repeat(4, 1fr) 1.3fr; gap: 8px; }
+  .amounts .chip { height: 48px; }
+  .amounts .other { height: 48px; border-radius: var(--r-pill); padding: 0 16px; font-size: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: var(--linen); justify-self: start; }
+  .seg button { padding: 9px 16px; border-radius: var(--r-pill); display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 13.5px; transition: background var(--t-fast), color var(--t-fast); }
+  .seg button[aria-pressed="true"] { background: var(--cacao); color: var(--paper); }
+  .seg .brand { width: 15px; height: 15px; }
+  .gb-preview { position: sticky; top: calc(var(--header-h) + 24px); display: grid; gap: 18px; }
+  .gb-preview .eyebrow { justify-self: start; }
+  .letter { position: relative; padding: 22px 24px 20px; border-radius: 18px; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line), var(--shadow-soft); font-size: 14.5px; }
+  .letter::before { content: ""; position: absolute; left: 14px; right: 14px; top: 10px; border-top: 1.5px dashed var(--line-2); }
+  .letter p { margin: 6px 0 0; white-space: pre-line; }
+  .letter .hand { font-size: 26px; display: block; margin-top: 12px; }
+  .letter small { color: var(--cacao-2); }
+  .gb-total { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; }
+  .gb-total b { font: 400 30px/1 var(--f-display); }
+
+  /* Cómo funciona */
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 3vw, 40px); position: relative; }
+  .how > div { text-align: center; display: grid; justify-items: center; gap: 8px; padding: 0 10px; position: relative; z-index: 1; }
+  .how > div > svg { width: 64px; height: 64px; padding: 18px; border-radius: 50%; background: var(--paper); color: var(--canela); box-shadow: 0 0 0 1px var(--line), 0 10px 22px -12px rgba(58,42,34,.35); margin-bottom: 8px; }
+  .how b { font: 400 22px/1.2 var(--f-display); }
+  .how p { margin: 0; color: var(--cacao-2); font-size: 14.5px; max-width: 30ch; }
+  .how::before { content: ""; position: absolute; left: 17%; right: 17%; top: 30px; height: 4px; --thread: color-mix(in srgb, var(--canela) 55%, var(--linen));
+    background: repeating-linear-gradient(118deg, var(--thread) 0 1.7px, color-mix(in srgb, var(--thread) 80%, #fff) 1.7px 2.6px);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='19' height='4'%3E%3Crect x='.5' y='.4' width='12' height='3.2' rx='1.6'/%3E%3C/svg%3E") 0 0 / 19px 4px repeat-x;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='19' height='4'%3E%3Crect x='.5' y='.4' width='12' height='3.2' rx='1.6'/%3E%3C/svg%3E") 0 0 / 19px 4px repeat-x; }
+
+  /* Saldo + preguntas */
+  .bal-faq { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 80px); align-items: start; }
+  .bal { padding: clamp(22px, 3vw, 34px); border-radius: var(--r-lg); background: var(--cacao); color: var(--linen); display: grid; gap: 16px; position: relative; overflow: hidden; }
+  .bal h2 em { color: var(--rosa); }
+  .bal form { display: flex; gap: 8px; }
+  .bal .input { background: rgba(244,237,227,.08); border-color: rgba(244,237,227,.22); color: var(--linen); text-transform: uppercase; letter-spacing: .08em; }
+  .bal .input::placeholder { color: rgba(244,237,227,.5); text-transform: none; letter-spacing: 0; }
+  .bal-res { padding: 16px; border-radius: 16px; background: rgba(244,237,227,.08); display: grid; gap: 4px; font-size: 14px; animation: msgIn .45s var(--ease-spring) both; }
+  .bal-res b { font: 400 30px/1.1 var(--f-display); color: var(--rosa); }
+  .bal .big-bow { position: absolute; right: -40px; top: -30px; width: 200px; color: rgba(232,198,191,.08); transform: rotate(-14deg); }
+  .faq details { border-bottom: 1.5px dashed var(--line-2); }
+  .faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 0; font: 400 20px/1.25 var(--f-display); }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary svg { transition: transform var(--t-med) var(--ease); flex: none; }
+  .faq details[open] summary svg { transform: rotate(45deg); }
+  .faq details p { margin: 0 0 18px; color: var(--cacao-2); max-width: 60ch; }
+
+  @media (max-width: 1000px) {
+    .gh, .gb, .bal-faq { grid-template-columns: minmax(0, 1fr); }
+    .gh-stage { order: -1; padding-bottom: 40px; }
+    .gb-preview { position: static; order: -1; }
+  }
+  @media (max-width: 600px) {
+    .amounts { grid-template-columns: repeat(2, 1fr); }
+    .amounts .other { grid-column: span 2; }
+    .grid2 { grid-template-columns: 1fr; }
+    .how { grid-template-columns: 1fr; gap: 28px; }
+    .how::before { display: none; }
+    .bal form { flex-direction: column; }
+    .gh-stage .gc.back { width: 78%; transform: rotate(-7deg) translate(-4%, 10%); }
+    .gh-stage .gc.front { width: 88%; }
+  }
+</style>
+</head>
+<body data-page="giftcards">
+
+<main>
+  <section class="wrap gh">
+    <div class="split">
+      <span class="eyebrow">Gift cards</span>
+      <h1 class="display h1"><span class="split-line"><span style="--d:.1s">Regalá</span></span><span class="split-line"><span style="--d:.22s"><em>a elección</em></span></span></h1>
+      <p class="lead" data-reveal style="--d:.4s">Para cuando no sabés el talle, o querés que la mamá elija. Llega por mail o WhatsApp con tu mensaje y se usa en la web o en el taller.</p>
+      <ul data-reveal style="--d:.5s">
+        <li><span data-icon="send"></span> Llega al instante o el día que elijas</li>
+        <li><span data-icon="calendar-heart"></span> Vale 6 meses y se puede usar en varias compras</li>
+        <li><span data-icon="credit-card"></span> Pagás con crédito, débito o dinero en cuenta</li>
+      </ul>
+      <a class="btn btn-lg" href="#armala" data-reveal style="--d:.6s">Armar la mía <span data-icon="arrow-down"></span></a>
+    </div>
+    <div class="gh-stage" aria-hidden="true">
+      <div class="gc back" data-d="rosa"><div class="bow" data-bow></div><span class="logo" style="font-size:22px">Mini Galú</span><div class="amt">$35.000</div><div class="row"><span class="to">Para Emma ♡</span><small>GIFT CARD</small></div></div>
+      <div class="gc front" data-d="cacao"><span class="emb" data-emb></span><div class="bow" data-bow></div><span class="logo" style="font-size:24px">Mini Galú</span><div class="amt">$20.000</div><div class="row"><span class="to">Para Olivia ♡</span><small>GIFT CARD</small></div></div>
+      <span class="hand note">llega con tu mensaje ♡</span>
+    </div>
+  </section>
+
+  <section class="bg-linen hem-top hem-bottom section" id="armala">
+    <div class="wrap">
+      <div class="section-head"><div><span class="eyebrow">En tres pasos</span><h2 class="display h2" style="margin-top:14px">Armá tu <em>gift card</em></h2></div></div>
+      <div class="gb">
+        <form class="gb-form" id="gb-form">
+          <div class="gb-step">
+            <span class="lbl"><i>1</i> Diseño y monto</span>
+            <div class="designs" id="designs">
+              <button type="button" data-d="cacao" aria-pressed="true" style="background:var(--cacao)" aria-label="Cacao"></button>
+              <button type="button" data-d="rosa" aria-pressed="false" style="background:var(--rosa)" aria-label="Rosa"></button>
+              <button type="button" data-d="salvia" aria-pressed="false" style="background:var(--salvia-d)" aria-label="Salvia"></button>
+              <button type="button" data-d="lino" aria-pressed="false" style="background:var(--linen-2)" aria-label="Lino"></button>
+            </div>
+            <div class="amounts" id="amounts">
+              <button type="button" class="chip" data-a="10000">$10.000</button><button type="button" class="chip is-on" data-a="20000">$20.000</button><button type="button" class="chip" data-a="35000">$35.000</button><button type="button" class="chip" data-a="50000">$50.000</button>
+              <input class="input other" id="gb-other" inputmode="numeric" placeholder="Otro monto" aria-label="Otro monto">
+            </div>
+            <small class="muted">Un vestido sale entre $28.000 y $47.000.</small>
+          </div>
+          <div class="gb-step">
+            <span class="lbl"><i>2</i> Para quién</span>
+            <div class="grid2">
+              <div class="field"><label for="gb-to">Para</label><input class="input" id="gb-to" value="Olivia" maxlength="24"></div>
+              <div class="field"><label for="gb-from">De parte de</label><input class="input" id="gb-from" value="La tía Sole" maxlength="30"></div>
+            </div>
+            <div class="field"><label for="gb-msg">Mensaje</label><textarea class="input" id="gb-msg" rows="3" maxlength="180">¡Feliz cumple, Oli! Elegí el vestido que más te guste.</textarea></div>
+          </div>
+          <div class="gb-step" style="border:0;padding:0">
+            <span class="lbl"><i>3</i> Cómo y cuándo llega</span>
+            <div class="seg" id="via" role="group" aria-label="Enviar por"><button type="button" data-via="wa" aria-pressed="true"><span data-brand="whatsapp"></span> WhatsApp</button><button type="button" data-via="mail" aria-pressed="false"><span data-icon="mail" class="i-sm"></span> Email</button></div>
+            <div class="grid2">
+              <div class="field"><label for="gb-dest" id="gb-dest-l">WhatsApp de quien la recibe</label><input class="input" id="gb-dest" inputmode="tel" placeholder="11 5555-1234" required></div>
+              <div class="field"><label for="gb-when">Cuándo</label><select class="input" id="gb-when"><option>Ahora mismo</option><option>El día del cumple</option><option>Elegir fecha…</option></select></div>
+            </div>
+          </div>
+        </form>
+
+        <aside class="gb-preview" aria-label="Así la recibe">
+          <span class="eyebrow">Así la recibe</span>
+          <div class="gc" id="gc" data-d="cacao"><span class="emb" data-emb></span><div class="bow" data-bow></div><span class="logo" style="font-size:24px">Mini Galú</span><div class="amt" id="gc-amt">$20.000</div><div class="row"><span class="to" id="gc-to">Para Olivia ♡</span><small>GIFT CARD</small></div></div>
+          <div class="letter"><small id="l-via">Por WhatsApp · ahora mismo</small><p id="l-msg"></p><span class="hand" id="l-from"></span></div>
+          <div class="gb-total"><span>Total</span><b id="gb-total">$20.000</b></div>
+          <button class="btn btn-lg btn-block" form="gb-form"><span data-brand="mercadopago" class="i-sm"></span> Pagar con Mercado Pago</button>
+          <small class="muted" style="text-align:center">Tarjeta de crédito (hasta 6 cuotas), débito o dinero en cuenta.</small>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head" style="justify-content:center;text-align:center"><div><span class="eyebrow">Cómo funciona</span><h2 class="display h2" style="margin-top:14px">Simple, como <em>debe ser</em></h2></div></div>
+    <div class="how">
+      <div data-reveal><span data-icon="gift"></span><b>La armás y pagás</b><p>Elegís diseño, monto y mensaje. Pagás con Mercado Pago sin salir de la web.</p></div>
+      <div data-reveal style="--d:.12s"><span data-icon="send"></span><b>Le llega con un código</b><p>Por WhatsApp o mail, cuando vos digas. Con tu mensaje y su código único.</p></div>
+      <div data-reveal style="--d:.24s"><span data-icon="shirt"></span><b>Elige lo que le queda</b><p>Carga el código en el checkout. Si sobra saldo, le queda para la próxima.</p></div>
+    </div>
+  </section>
+
+  <section class="wrap bal-faq" style="padding-bottom:clamp(64px,8vw,120px)">
+    <div class="bal">
+      <span class="big-bow" data-bow></span>
+      <span class="eyebrow" style="color:var(--rosa)">Ya tengo una</span>
+      <h2 class="display h3">Consultá tu <em>saldo</em></h2>
+      <form id="bal-form"><input class="input" id="bal-code" placeholder="Código (ej. GALU-7KQ2)" aria-label="Código de la gift card" required><button class="btn btn-light">Consultar</button></form>
+      <div id="bal-res" aria-live="polite"></div>
+    </div>
+    <div class="faq">
+      <details open><summary>¿Y si no le queda el talle? <span data-icon="plus"></span></summary><p>La gift card no elige talle: lo elige quien la recibe. Y si compra y no le queda, tiene 30 días para cambiarlo.</p></details>
+      <details><summary>¿Se puede usar en el taller? <span data-icon="plus"></span></summary><p>Sí. Se usa en la web o en el taller de Villa Crespo, con turno. Solo hace falta el código.</p></details>
+      <details><summary>¿Cuánto dura? <span data-icon="plus"></span></summary><p>Seis meses desde que llega. Se puede usar en varias compras hasta agotar el saldo.</p></details>
+      <details><summary>¿Puedo programar el envío? <span data-icon="plus"></span></summary><p>Sí: elegí "el día del cumple" o una fecha, y le llega esa mañana a las 9.</p></details>
+    </div>
+  </section>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener("mg:ready", () => {
+  const { money } = MG;
+  const $ = (s) => document.querySelector(s);
+  const st = { amt: 20000, via: "wa" };
+
+  const draw = () => {
+    $("#gc-amt").textContent = money(st.amt);
+    $("#gb-total").textContent = money(st.amt);
+    $("#gc-to").textContent = `Para ${$("#gb-to").value.trim() || "…"} ♡`;
+    $("#l-msg").textContent = $("#gb-msg").value.trim() || "Tu mensaje va acá.";
+    $("#l-from").textContent = $("#gb-from").value.trim() ? `— ${$("#gb-from").value.trim()}` : "";
+    $("#l-via").textContent = `Por ${st.via === "wa" ? "WhatsApp" : "mail"} · ${$("#gb-when").value.toLowerCase()}`;
+  };
+
+  $("#amounts").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-a]"); if (!c) return;
+    document.querySelectorAll("#amounts .chip").forEach((x) => x.classList.toggle("is-on", x === c));
+    $("#gb-other").value = ""; st.amt = +c.dataset.a; draw();
+  });
+  $("#gb-other").addEventListener("input", (e) => {
+    const n = +e.target.value.replace(/\D/g, "");
+    e.target.value = n ? n.toLocaleString("es-AR") : "";
+    document.querySelectorAll("#amounts .chip").forEach((x) => x.classList.remove("is-on"));
+    st.amt = n || 0; draw();
+  });
+  $("#designs").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-d]"); if (!c) return;
+    document.querySelectorAll("#designs button").forEach((x) => x.setAttribute("aria-pressed", x === c));
+    $("#gc").dataset.d = c.dataset.d;
+  });
+  $("#via").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-via]"); if (!c) return;
+    document.querySelectorAll("#via button").forEach((x) => x.setAttribute("aria-pressed", x === c));
+    st.via = c.dataset.via;
+    const mail = st.via === "mail";
+    $("#gb-dest-l").textContent = mail ? "Mail de quien la recibe" : "WhatsApp de quien la recibe";
+    $("#gb-dest").placeholder = mail ? "mama@gmail.com" : "11 5555-1234";
+    $("#gb-dest").type = mail ? "email" : "text";
+    $("#gb-dest").inputMode = mail ? "email" : "tel";
+    draw();
+  });
+  ["#gb-to", "#gb-from", "#gb-msg"].forEach((s) => $(s).addEventListener("input", draw));
+  $("#gb-when").addEventListener("change", draw);
+  $("#gb-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (st.amt < 5000) return MG.toast("El monto mínimo es $5.000", "gift");
+    MG.toast(`Te llevamos a Mercado Pago para pagar ${money(st.amt)}`, "credit-card");
+  });
+
+  // consultar saldo (datos de ejemplo)
+  const CARDS = { "GALU-7KQ2": [12500, "abr 2027", "Olivia"], "GALU-3MZP": [35000, "mar 2027", "Juana"], "GALU-9TRX": [40000, "feb 2027", "Mía"] };
+  $("#bal-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const code = $("#bal-code").value.trim().toUpperCase(), c = CARDS[code];
+    $("#bal-res").innerHTML = c
+      ? `<div class="bal-res"><span>Saldo de <b style="font:inherit;color:inherit">${code}</b> · para ${c[2]}</span><b>${money(c[0])}</b><span style="opacity:.75">Vence en ${c[1]}. Se aplica sola en el checkout.</span></div>`
+      : `<div class="bal-res"><span>No encontramos ese código.</span><span style="opacity:.75">Revisá que empiece con GALU- o escribinos por WhatsApp.</span></div>`;
+  });
+
+  draw();
+  requestAnimationFrame(() => document.querySelector(".gh .split").classList.add("is-in"));
+});
+</script>
+</body>
+</html>

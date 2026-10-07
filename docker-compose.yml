@@ -1,0 +1,40 @@
+name: mini-galu
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-minigalu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-minigalu}
+      POSTGRES_DB: ${POSTGRES_DB:-minigalu}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-minigalu}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # bandeja web: http://localhost:8025
+
+  # Galú en local (fase 7). Levantar con: docker compose --profile ai up -d ollama
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  pgdata:
+  ollama:

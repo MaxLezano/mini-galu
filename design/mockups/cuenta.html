@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi cuenta — Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .acc { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); padding-block: 44px 100px; align-items: start; }
+  .side { position: sticky; top: calc(var(--header-h) + 24px); display: grid; gap: 22px; }
+  .me { display: flex; gap: 14px; align-items: center; }
+  .me .av { width: 56px; height: 56px; border-radius: 50%; background: var(--rosa); display: grid; place-items: center; font: italic 400 26px/1 var(--f-display); flex: none; }
+  .me small { display: block; color: var(--cacao-2); font-size: 12.5px; }
+  .side nav { display: grid; gap: 2px; }
+  .side nav a { display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 14px; font-size: 14.5px; font-weight: 500; transition: background var(--t-fast); white-space: nowrap; }
+  .side nav a:hover { background: var(--linen); }
+  .side nav a[aria-current="true"] { background: var(--cacao); color: var(--paper); }
+  .side nav a .count { margin-left: auto; font-size: 12px; opacity: .6; }
+  .panel { display: none; min-width: 0; }
+  .panel.is-on { display: block; animation: msgIn .5s var(--ease) both; }
+  .panel-head { margin-bottom: 28px; }
+  .panel-head h1 { margin: 12px 0 10px; }
+
+  .nenas { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; margin-bottom: 52px; }
+  .nena-card { border-radius: var(--r-lg); padding: 24px; background: var(--rosa-l); position: relative; overflow: hidden; display: grid; gap: 16px; align-content: start; }
+  .nena-card.salvia { background: var(--salvia-l); }
+  .nena-card .big { font: italic 400 42px/1 var(--f-display); }
+  .nena-card .bow { position: absolute; right: -18px; top: -10px; width: 120px; color: rgba(163,48,43,.12); transform: rotate(12deg); }
+  .nena-card.salvia .bow { color: rgba(95,110,82,.16); }
+  .nena-card .stats { display: flex; gap: 18px; font-size: 13px; }
+  .nena-card .stats b { display: block; font: 400 24px/1 var(--f-display); }
+  .bday { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.6); font-size: 13px; }
+  .add-nena { border-radius: var(--r-lg); border: 2px dashed var(--line-2); display: grid; place-items: center; text-align: center; padding: 24px; min-height: 230px; color: var(--cacao-2); transition: all var(--t-fast); }
+  .add-nena:hover { border-color: var(--canela); color: var(--canela); }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 2vw, 22px); }
+  @media (min-width: 2000px) { .grid4 { grid-template-columns: repeat(5, 1fr); } }
+
+  .orders { display: grid; gap: 12px; }
+  .order { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 18px; align-items: center; padding: 16px 20px; border-radius: var(--r-md); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }
+  .order .ph { display: flex; }
+  .order .ph img { width: 48px; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; box-shadow: 0 0 0 3px var(--paper-2); }
+  .order .ph img + img { margin-left: -14px; }
+  .order b { font: 400 19px/1.1 var(--f-display); }
+
+  .wish { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+  .wish-list { display: grid; gap: 12px; }
+  .wish-item { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 12px; border-radius: var(--r-md); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }
+  .wish-nenas { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .wish-nenas:empty { display: none; }
+  .wish-st { display: flex; align-items: center; gap: 4px; }
+  .wish-st .icon-btn { width: 36px; height: 36px; color: var(--cacao-2); }
+  .wish-st .icon-btn:hover { color: var(--rojo); }
+  .wish-none { text-align: center; display: grid; justify-items: center; gap: 6px; padding: 24px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1.5px var(--line-2); border: 0; }
+  .wish-none .emb { width: 80px; color: var(--canela); }
+  .wish-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .wish-empty { padding: 36px 20px; border-radius: var(--r-lg); background: var(--rosa-l); }
+  .wish-empty .emb { width: 96px; color: var(--canela); }
+  .nena-x { position: absolute; top: 12px; right: 12px; z-index: 1; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--cacao-2); background: color-mix(in srgb, var(--paper) 70%, transparent); opacity: 0; transition: opacity var(--t-fast), background var(--t-fast); }
+  .nena-card:hover .nena-x, .nena-x:focus-visible { opacity: 1; }
+  .nena-x:hover { background: var(--paper); color: var(--rojo); }
+  @media (hover: none) { .nena-x { opacity: 1; } }
+  .wish-item img { width: 64px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; }
+  .wish-item b { font: 400 17px/1.15 var(--f-display); display: block; }
+  .wish-share { padding: 24px; border-radius: var(--r-lg); background: var(--cacao); color: var(--linen); display: grid; gap: 14px; position: sticky; top: calc(var(--header-h) + 24px); }
+  .wish-share .display em { color: var(--rosa); }
+  .share-link { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 14px; border-radius: 999px; background: rgba(244,237,227,.08); font-size: 13px; }
+  .share-link span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .8; }
+
+  .gc-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 56px); align-items: start; }
+  .gc { aspect-ratio: 1.6; border-radius: 22px; padding: clamp(18px, 3vw, 26px); color: var(--linen); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; outline: 1.5px dashed rgba(232,198,191,.5); outline-offset: -12px; box-shadow: var(--shadow-lift); transition: transform .6s var(--ease), background .4s; background: var(--cacao); }
+  .gc[data-d="rosa"] { background: var(--rosa); color: var(--cacao); outline-color: rgba(58,42,34,.3); }
+  .gc[data-d="salvia"] { background: var(--salvia-d); }
+  .gc:hover { transform: rotate(-2deg) translateY(-4px); }
+  .gc .bow { position: absolute; right: 22px; top: 22px; width: 64px; color: var(--rosa); }
+  .gc[data-d="rosa"] .bow { color: var(--rojo); }
+  .gc .amt { font: italic 300 clamp(44px, 6vw, 64px)/1 var(--f-display); }
+  .gc .to { font-family: var(--f-hand); font-size: 26px; }
+  .designs { display: flex; gap: 10px; }
+  .designs button { width: 40px; height: 40px; border-radius: 50%; position: relative; }
+  .designs button[aria-pressed="true"]::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px dashed var(--cacao); }
+  .amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .amounts .chip { height: 48px; }
+  .my-gc { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 14px; background: var(--linen); font-size: 13.5px; margin-top: 18px; }
+  .my-gc code { font-weight: 700; letter-spacing: .06em; }
+
+  @media (max-width: 1000px) {
+    .acc { grid-template-columns: 1fr; padding-top: 24px; }
+    .side { position: static; }
+    .side nav { display: flex; overflow-x: auto; gap: 6px; scrollbar-width: none; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+    .side nav a { box-shadow: inset 0 0 0 1px var(--line-2); border-radius: 999px; padding: 9px 14px; }
+    .grid4 { grid-template-columns: repeat(2, 1fr); }
+    .gc-wrap, .wish { grid-template-columns: 1fr; }
+    .wish-share { position: static; }
+  }
+  @media (max-width: 620px) {
+    .order { grid-template-columns: auto 1fr; } .order .pill-status { justify-self: start; } .order .btn { grid-column: 1 / -1; }
+    .amounts { grid-template-columns: repeat(2, 1fr); }
+    .wish-item { grid-template-columns: 56px 1fr; } .wish-item > :last-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body data-page="cuenta">
+<main class="wrap acc">
+  <aside class="side">
+    <div class="me"><span class="av">L</span><div><b>Lucía Fernández</b><small>Cliente desde mayo 2026</small></div></div>
+    <nav id="tabs" aria-label="Mi cuenta">
+      <a href="#nenas" data-tab="nenas"><span data-icon="baby" class="i-sm"></span>Mis nenas</a>
+      <a href="#pedidos" data-tab="pedidos"><span data-icon="package" class="i-sm"></span>Pedidos <span class="count" id="o-count"></span></a>
+      <a href="#favoritos" data-tab="favoritos"><span data-icon="heart" class="i-sm"></span>Favoritos <span class="count" id="fav-count"></span></a>
+      <a href="#lista" data-tab="lista"><span data-icon="list-checks" class="i-sm"></span>Lista de cumple</a>
+      <a href="#giftcards" data-tab="giftcards"><span data-icon="gift" class="i-sm"></span>Gift cards</a>
+      <a href="#datos" data-tab="datos"><span data-icon="user-round" class="i-sm"></span>Mis datos</a>
+      <a href="index.html" data-logout><span data-icon="log-out" class="i-sm"></span>Salir</a>
+    </nav>
+  </aside>
+
+  <div>
+    <section class="panel" id="p-nenas">
+      <div class="panel-head"><span class="eyebrow">Mis nenas</span><h1 class="display h2">Para <em>quién</em> compramos</h1><p class="lead" style="margin:0">Guardá el talle y el cumple de cada una: el catálogo y Galú te muestran solo lo que les queda, y te avisamos antes del cumple.</p></div>
+      <div class="nenas" id="nenas"></div>
+      <div class="section-head" style="margin-bottom:24px"><h2 class="display h3" style="margin:0" id="for-title">Le quedan a <em>Olivia</em> · talle 6</h2><a class="link" href="catalogo.html" id="for-link">Ver todo <span data-icon="arrow-right" class="i-sm"></span></a></div>
+      <div class="grid4" id="for-olivia"></div>
+    </section>
+
+    <section class="panel" id="p-pedidos">
+      <div class="panel-head"><span class="eyebrow">Pedidos</span><h1 class="display h2">Tus <em>pedidos</em></h1></div>
+      <div class="orders" id="orders"></div>
+    </section>
+
+    <section class="panel" id="p-favoritos">
+      <div class="panel-head"><span class="eyebrow">Favoritos</span><h1 class="display h2">Lo que te <em>enamoró</em></h1></div>
+      <div class="grid4" id="favs"></div>
+    </section>
+
+    <section class="panel" id="p-lista">
+      <div class="panel-head"><span class="eyebrow">Lista de cumple</span><h1 class="display h2" id="wish-title">El cumple de <em>Olivia</em></h1><p class="lead" style="margin:0">Armá una lista con lo que le gusta y compartila con la familia. Cuando alguien compra algo, se marca como regalado para que no se repita.</p></div>
+      <div class="wish-empty empty-state" id="wish-empty" hidden><span data-emb></span><div class="hand" style="font-size:34px">Primero sumá a tu nena</div><p class="muted" style="margin:0 0 8px;max-width:44ch">La lista de cumple se arma para una nena: con su talle y su cumple, la familia sabe qué regalarle.</p><button class="btn" data-modal-open="m-nena"><span data-icon="plus" class="i-sm"></span> Agregar nena</button></div>
+      <div class="wish-nenas" id="wish-nenas"></div>
+      <div class="wish" id="wish-wrap">
+        <div class="wish-list" id="wish"></div>
+        <div class="wish-share">
+          <span class="eyebrow" style="color:var(--rosa)">Compartir</span>
+          <p class="display h3" style="margin:0" id="wish-date">Cumple el <em>14 de noviembre</em></p>
+          <div class="share-link"><span id="wish-link">minigalu.com.ar/lista/olivia-5</span><button class="btn btn-xs btn-light" id="copy">Copiar</button></div>
+          <a class="btn btn-rose" href="${MG.WA}" id="share-wa"><span data-brand="whatsapp" class="i-sm"></span> Mandar por WhatsApp</a>
+          <span style="font-size:12.5px;opacity:.7">Quien la abre puede comprar sin crear cuenta. Vos no ves quién regaló qué hasta el cumple.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="p-giftcards">
+      <div class="panel-head"><span class="eyebrow">Gift cards</span><h1 class="display h2">Regalá <em>a elección</em></h1><p class="lead" style="margin:0">Ideal cuando no sabés el talle. Llega por mail o WhatsApp con tu mensaje y se usa en la web o en el taller.</p></div>
+      <div class="gc-wrap">
+        <div>
+          <div class="gc" id="gc" data-d="cacao"><div class="bow" data-bow></div><span class="logo" style="font-size:24px">Mini Galú</span><div class="amt" id="gc-amt">$20.000</div><div class="row"><span class="to" id="gc-to">Para Olivia ♡</span><span style="font-size:10px;letter-spacing:.2em">GIFT CARD</span></div></div>
+          <div class="my-gc"><span data-icon="wallet" class="i-sm"></span><span>Tenés una gift card activa: <code>GALU-7KQ2</code> · saldo <b>$12.500</b>. Se aplica en el checkout.</span></div>
+        </div>
+        <form style="display:grid;gap:16px" id="gc-form">
+          <div class="field"><span class="lbl">Diseño</span><div class="designs" id="designs"><button type="button" data-d="cacao" aria-pressed="true" style="background:var(--cacao)" aria-label="Cacao"></button><button type="button" data-d="rosa" aria-pressed="false" style="background:var(--rosa)" aria-label="Rosa"></button><button type="button" data-d="salvia" aria-pressed="false" style="background:var(--salvia-d)" aria-label="Salvia"></button></div></div>
+          <div class="field"><span class="lbl">Monto</span><div class="amounts" id="amounts"><button type="button" class="chip" data-a="10000">$10.000</button><button type="button" class="chip is-on" data-a="20000">$20.000</button><button type="button" class="chip" data-a="35000">$35.000</button><button type="button" class="chip" data-a="50000">$50.000</button></div></div>
+          <div class="field"><label for="gc-name">Para</label><input class="input" id="gc-name" value="Olivia"></div>
+          <div class="field"><label for="gc-dest">WhatsApp o email de quien la recibe</label><input class="input" id="gc-dest" placeholder="11 5555-1234 o mama@gmail.com"></div>
+          <div class="field"><label for="gc-msg">Mensaje</label><textarea class="input" id="gc-msg" rows="3" placeholder="¡Feliz cumple! Elegí lo que más te guste"></textarea></div>
+          <button class="btn btn-lg"><span data-brand="mercadopago" class="i-sm"></span> Pagar <span id="gc-pay">$20.000</span> con Mercado Pago</button>
+          <span class="muted" style="font-size:12.5px;text-align:center">Tarjeta de crédito, débito o dinero en cuenta.</span>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel" id="p-datos">
+      <div class="panel-head"><span class="eyebrow">Mis datos</span><h1 class="display h2">Tus <em>datos</em></h1></div>
+      <form style="display:grid;gap:14px;max-width:560px" onsubmit="event.preventDefault();MG.toast('Datos guardados')">
+        <div class="field"><label for="d1">Nombre</label><input class="input" id="d1" value="Lucía Fernández"></div>
+        <div class="field"><label for="d2">Email</label><input class="input" id="d2" value="lucia@gmail.com"></div>
+        <div class="field"><label for="d3">Celular (para avisos de envío)</label><input class="input" id="d3" value="11 5555-1234"></div>
+        <div class="field"><label for="d4">Dirección</label><input class="input" id="d4" value="Gurruchaga 1234, 3° B · CABA · 1414"></div>
+        <label class="check"><input type="checkbox" checked> Avisarme cuando vuelvan talles de mis favoritos</label>
+        <label class="check"><input type="checkbox" checked> Recordarme los cumples de mis nenas</label>
+        <label class="check"><input type="checkbox"> Recibir las Cartas del taller (1 por mes)</label>
+        <button class="btn" style="justify-self:start">Guardar cambios</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="m-nena" role="dialog" aria-label="Agregar nena">
+  <div class="modal-head"><h3 class="display h3" style="margin:0">Agregar <em>nena</em></h3><button class="icon-btn" data-modal-close aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <form class="modal-body" id="nena-form">
+    <div class="field"><label for="nn">Nombre</label><input class="input" id="nn" required placeholder="Ej. Juana"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label for="nb">Cumpleaños</label><input class="input" id="nb" type="date" value="2022-03-03"></div>
+      <div class="field"><label for="ns">Talle actual</label><select class="input" id="ns"><option>12m</option><option>2</option><option selected>4</option><option>6</option><option>8</option><option>10</option></select></div>
+    </div>
+    <div class="field"><label for="nh">Altura <span style="font-weight:400;color:var(--cacao-3)">(opcional)</span></label><div style="position:relative"><input class="input" id="nh" type="number" inputmode="numeric" min="50" max="160" placeholder="Ej. 104" style="padding-right:52px"><span style="position:absolute;right:18px;top:50%;transform:translateY(-50%);color:var(--cacao-2);font-size:14px">cm</span></div><small class="muted" style="font-size:12.5px">Con la altura te recomendamos mejor el talle de cada modelo.</small></div>
+    <button class="btn btn-block">Guardar</button>
+  </form>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener("mg:ready", () => {
+  const { D, products, card, bySlug, money, img, icon, BOW } = MG;
+  const $ = (s) => document.querySelector(s);
+  $("#share-wa").href = `${MG.WA}?text=${encodeURIComponent("¡Hola! Te comparto la lista de cumple de Olivia: minigalu.com.ar/lista/olivia-5")}`;
+
+  // nenas
+  let nenas = MG.nenas.all();
+  const renderNenas = () => {
+    nenas = MG.nenas.all();
+    $("#nenas").innerHTML = nenas.map(([n, a, t, h, b, f], i) => `<div class="nena-card ${i % 2 ? "salvia" : ""}" data-reveal style="--d:${i * 0.1}s"><div class="bow">${BOW}</div><button class="nena-x" data-nena-x="${i}" aria-label="Quitar a ${n}">${icon("x", "i-sm")}</button><div class="big">${n}</div><div class="stats"><span><b>${a}</b>${a === 1 ? "año" : "años"}</span><span><b>${t}</b>talle</span>${h ? `<span><b>${h}</b>cm</span>` : ""}</div><div class="bday">${icon("cake", "i-sm")}<span>Cumple el <b>${b}</b>${f ? ` · ${f}` : ""}</span></div><a class="btn btn-sm" href="catalogo.html">Ver lo que le queda</a></div>`).join("")
+      + `<button class="add-nena" data-modal-open="m-nena"><span>${icon("plus", "i-lg")}<br><b>Agregar nena</b><br><small>Nombre, cumple y talle</small></span></button>`;
+    MG.observeReveal();
+  };
+  renderNenas();
+  $("#nenas").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-nena-x]"); if (!b) return;
+    const l = MG.nenas.all(), [gone] = l.splice(+b.dataset.nenaX, 1);
+    MG.nenas.save(l); renderNenas(); renderWish();
+    MG.toast(`Quitamos a ${gone[0]}`, "baby");
+  });
+  $("#nena-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const d = new Date($("#nb").value + "T12:00");
+    const age = Math.max(0, 2026 - d.getFullYear());
+    MG.nenas.save([...MG.nenas.all(), [$("#nn").value.trim(), age, $("#ns").value, +$("#nh").value || 0, d.toLocaleDateString("es-AR", { day: "numeric", month: "long" }), ""]]);
+    renderNenas(); renderWish(); MG.closeModals(); MG.toast(`Agregamos a ${$("#nn").value}`, "baby"); e.target.reset();
+  });
+  // "le quedan a…": con la primera nena cargada
+  const renderFor = () => {
+    const [f] = MG.nenas.all(), head = $("#for-title").parentElement;
+    head.hidden = $("#for-olivia").hidden = !f;
+    if (!f) return;
+    $("#for-title").innerHTML = `Le quedan a <em>${f[0]}</em> · talle ${f[2]}`;
+    $("#for-link").href = `catalogo.html?talle=${f[2]}`;
+    $("#for-olivia").innerHTML = products.filter((p) => p.sizes[f[2]] > 0).slice(0, 4).map((p, i) => card(p, { i, reveal: false })).join("") || `<p class="muted" style="grid-column:1/-1">Ahora no hay prendas en talle ${f[2]}. Te avisamos cuando lleguen.</p>`;
+  };
+  renderFor();
+  document.addEventListener("mg:nenas", renderFor);
+
+  // pedidos (de los datos de ejemplo)
+  const mine = D.orders.filter((o) => o.c === "lucia").concat(D.orders.filter((o) => o.status === "entregado").slice(0, 2));
+  $("#o-count").textContent = mine.length;
+  $("#orders").innerHTML = mine.map((o) => {
+    const st = D.statuses.find((s) => s.key === o.status);
+    const tot = o.items.reduce((a, [s, , q]) => a + bySlug[s].price * q, 0) + o.ship[1];
+    const cta = o.status === "entregado" ? `<a class="btn btn-sm btn-ghost" href="producto.html?p=${o.items[0][0]}">Volver a comprar</a>` : `<a class="btn btn-sm btn-ghost" href="seguimiento.html?pedido=${o.id}">Seguir</a>`;
+    return `<div class="order"><div class="ph">${o.items.map(([s]) => `<img src="${img(bySlug[s])}" alt="">`).join("")}</div><div><b>#${o.id}</b><div class="muted" style="font-size:13px">${o.date} · ${o.items.length} ${o.items.length === 1 ? "prenda" : "prendas"} · ${money(tot)}</div></div><span class="pill-status ${st.tone}">${st.short}</span>${cta}</div>`;
+  }).join("");
+
+  // favoritos
+  const renderFavs = () => {
+    const list = [...MG.favs].map((s) => bySlug[s]).filter(Boolean);
+    $("#favs").innerHTML = list.length ? list.map((p, i) => card(p, { i, reveal: false })).join("") : `<div class="empty-state" style="grid-column:1/-1">${MG.EMB}<div class="hand" style="font-size:32px">Todavía no guardaste nada</div><p class="muted" style="margin:0 0 8px">Tocá el corazón en cualquier prenda para guardarla acá.</p><a class="btn" href="catalogo.html">Ver catálogo</a></div>`;
+    $("#fav-count").textContent = list.length || "";
+  };
+  renderFavs();
+  document.addEventListener("mg:favs", renderFavs);
+
+  // lista de cumple: una por nena; se agregan prendas desde acá, desde el producto o desde el catálogo
+  let wishFor = null;
+  const renderWish = () => {
+    const ns = MG.nenas.all();
+    if (!ns.length) {
+      $("#wish-wrap").hidden = true; $("#wish-empty").hidden = false;
+      $("#wish-title").innerHTML = "Tu lista de <em>cumple</em>";
+      return;
+    }
+    $("#wish-wrap").hidden = false; $("#wish-empty").hidden = true;
+    if (!ns.some(([n]) => n === wishFor)) wishFor = ns[0][0];
+    const nena = ns.find(([n]) => n === wishFor);
+    $("#wish-title").innerHTML = `El cumple de <em>${wishFor}</em>`;
+    $("#wish-nenas").innerHTML = ns.length > 1 ? ns.map(([n]) => `<button class="chip" aria-pressed="${n === wishFor}" data-wish-nena="${n}">${n}</button>`).join("") : "";
+    const list = MG.wishes.of(wishFor);
+    $("#wish").innerHTML = (list.length ? list.map(([sl, t, st, who], k) => { const p = bySlug[sl]; if (!p) return ""; return `<div class="wish-item"><img src="${img(p)}" alt=""><div><b>${p.name}</b><span class="muted" style="font-size:13px">Talle ${t} · ${money(p.price)}${who ? ` · ${who}` : ""}</span></div><div class="wish-st">${st === "regalado" ? `<span class="pill-status st-ok">Regalado</span>` : `<span class="pill-status st-muted">Disponible</span><button class="icon-btn" data-wish-rm="${k}" aria-label="Quitar de la lista">${icon("trash-2", "i-sm")}</button>`}</div></div>`; }).join("")
+      : `<div class="wish-none">${MG.EMB}<div class="hand" style="font-size:28px">La lista de ${wishFor} está vacía</div><p class="muted" style="margin:0">Sumá lo que le gusta: la familia lo ve y compra sin repetir.</p></div>`)
+      + `<div class="wish-actions"><a class="btn" href="catalogo.html?lista=${encodeURIComponent(wishFor)}">${icon("plus", "i-sm")} Agregar prendas</a><a class="link" href="catalogo.html?lista=${encodeURIComponent(wishFor)}&talle=${nena[2]}">Ver todo en talle ${nena[2]}</a></div>`;
+    $("#wish-date").innerHTML = `Cumple el <em>${nena[4]}</em>`;
+    const slug = `${wishFor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}-${nena[1]}`;
+    $("#wish-link").textContent = `minigalu.com.ar/lista/${slug}`;
+    $("#share-wa").href = `https://wa.me/?text=${encodeURIComponent(`¡Hola! Esta es la lista de cumple de ${wishFor}: https://minigalu.com.ar/lista/${slug}`)}`;
+  };
+  $("#p-lista").addEventListener("click", (e) => {
+    const n = e.target.closest("[data-wish-nena]");
+    if (n) { wishFor = n.dataset.wishNena; return renderWish(); }
+    const rm = e.target.closest("[data-wish-rm]");
+    if (rm) { const l = MG.wishes.of(wishFor); l.splice(+rm.dataset.wishRm, 1); MG.wishes.save(wishFor, l); renderWish(); MG.toast("Quitado de la lista", "list-checks"); }
+  });
+  document.addEventListener("mg:wish", renderWish);
+  renderWish();
+  $("#copy").addEventListener("click", () => { navigator.clipboard?.writeText("https://" + $("#wish-link").textContent).catch(() => {}); MG.toast("Link copiado", "link"); });
+
+  // tabs
+  const show = () => {
+    let t = (location.hash || "#nenas").slice(1);
+    if (!document.getElementById("p-" + t)) t = "nenas";
+    document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("is-on", p.id === "p-" + t));
+    document.querySelectorAll("[data-tab]").forEach((a) => a.setAttribute("aria-current", a.dataset.tab === t));
+    document.querySelector(`[data-tab="${t}"]`)?.scrollIntoView({ inline: "center", block: "nearest" });
+    MG.observeReveal();
+  };
+  addEventListener("hashchange", () => { document.startViewTransition && document.visibilityState === "visible" && !document.documentElement.classList.contains("static") ? document.startViewTransition(show).ready.catch(() => {}) : show(); scrollTo({ top: 0 }); });
+  show();
+
+  // gift cards
+  const setAmt = (a) => { $("#gc-amt").textContent = money(a); $("#gc-pay").textContent = money(a); };
+  $("#amounts").addEventListener("click", (e) => { const c = e.target.closest("[data-a]"); if (!c) return; document.querySelectorAll("#amounts .chip").forEach((x) => x.classList.toggle("is-on", x === c)); setAmt(+c.dataset.a); });
+  $("#designs").addEventListener("click", (e) => { const c = e.target.closest("[data-d]"); if (!c) return; document.querySelectorAll("#designs button").forEach((x) => x.setAttribute("aria-pressed", x === c)); $("#gc").dataset.d = c.dataset.d; });
+  $("#gc-name").addEventListener("input", (e) => ($("#gc-to").textContent = `Para ${e.target.value || "…"} ♡`));
+  $("#gc-form").addEventListener("submit", (e) => { e.preventDefault(); MG.toast("Te llevamos a Mercado Pago para pagar la gift card", "credit-card"); });
+});
+</script>
+</body>
+</html>

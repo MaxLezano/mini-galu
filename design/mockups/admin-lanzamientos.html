@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lanzamientos — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .ln-list { display: grid; gap: 16px; }
+  .ln { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 14px; border-radius: var(--r-lg); background: var(--paper); box-shadow: 0 0 0 1px var(--line); }
+  .ln.is-next { background: var(--cacao); color: var(--linen); box-shadow: none; }
+  .ln img { width: 150px; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--r-md); }
+  .ln h3 { margin: 6px 0 4px; font: 400 26px/1.1 var(--f-display); }
+  .ln h3 em { font-style: italic; color: var(--canela); }
+  .ln.is-next h3 em { color: var(--rosa); }
+  .ln .meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; opacity: .85; }
+  .ln .meta span { display: inline-flex; gap: 6px; align-items: center; }
+  .ln .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .ln.is-next .btn-ghost { --fg: var(--linen); --fill: var(--linen); --fg-h: var(--cacao); box-shadow: inset 0 0 0 1.5px rgba(244,237,227,.6); }
+  .ln.is-past { opacity: .75; }
+  .ln-count { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .ln > div { min-width: 0; }
+  .ln-count span { padding: 6px 10px; border-radius: 10px; background: rgba(244,237,227,.08); font-size: 11px; text-align: center; }
+  .ln-count b { display: block; font: 300 22px/1 var(--f-display); color: var(--rosa); }
+  .sec-t { font: 600 11px/1 var(--f-ui); letter-spacing: .2em; text-transform: uppercase; color: var(--cacao-2); margin: 28px 0 12px; }
+  /* editor */
+  #m-ln { width: min(820px, calc(100vw - 24px)); }
+  .ed { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: start; }
+  .ed-prev { position: sticky; top: 0; display: grid; gap: 10px; }
+  .ed-card { border-radius: var(--r-md); overflow: hidden; background: var(--cacao); color: var(--linen); }
+  .ed-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .ed-card div { padding: 14px; display: grid; gap: 6px; }
+  .ed-card .eyebrow { color: var(--rosa); font-size: 10px; }
+  .ed-card b { font: 400 22px/1.1 var(--f-display); }
+  .ed-card p { margin: 0; font-size: 12.5px; opacity: .8; }
+  .covers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .covers button { aspect-ratio: 1; border-radius: 10px; overflow: hidden; position: relative; background: var(--linen); display: grid; place-items: center; color: var(--cacao-2); }
+  .covers img { width: 100%; height: 100%; object-fit: cover; }
+  .covers button[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 3px var(--cacao); }
+  .prods { display: flex; flex-wrap: wrap; gap: 6px; }
+  .prods button { display: inline-flex; gap: 8px; align-items: center; padding: 4px 12px 4px 4px; border-radius: 999px; font-size: 13px; box-shadow: inset 0 0 0 1px var(--line-2); transition: all var(--t-fast); }
+  .prods button img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+  .prods button[aria-pressed="true"] { background: var(--cacao); color: var(--paper); box-shadow: none; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .social { padding: 14px; border-radius: 14px; background: var(--linen); display: grid; gap: 8px; font-size: 13px; }
+  .social textarea { min-height: 70px; }
+  @media (max-width: 800px) { .ed { grid-template-columns: 1fr; } .ed-prev { position: static; order: -1; } }
+  @media (max-width: 700px) { .ln { grid-template-columns: 96px minmax(0, 1fr); } .ln img { width: 96px; } .ln .acts { grid-column: 1 / -1; justify-content: flex-start; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="lanzamientos">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Día a día</span><h1 class="display">Lanza<em>mientos</em></h1></div>
+    <div class="actions"><button class="btn btn-sm" id="ln-new"><span data-icon="plus" class="i-sm"></span> Nuevo lanzamiento</button></div>
+  </div>
+  <p class="muted" style="margin:-8px 0 18px;max-width:70ch">Los adelantos de lo que viene: se ven en la home con cuenta regresiva, las prendas aparecen como "Próximamente" y se publican solas el día y la hora que elijas. Las personas anotadas reciben el aviso antes.</p>
+  <div id="ln-root"></div>
+</main>
+
+<div class="modal" id="m-ln" role="dialog" aria-label="Lanzamiento">
+  <div class="modal-head"><h3 class="display h3" style="margin:0" id="ln-title">Nuevo <em>lanzamiento</em></h3><button class="icon-btn" data-modal-close aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <form class="modal-body" id="ln-form">
+    <div class="ed">
+      <div style="display:grid;gap:14px">
+        <div class="two">
+          <div class="field"><label for="f-name">Nombre</label><input class="input" id="f-name" required placeholder="Ej. Otoño · Invierno 26"></div>
+          <div class="field"><label for="f-tag">Frase corta</label><input class="input" id="f-tag" placeholder="Ej. se viene el frío ♡"></div>
+        </div>
+        <div class="field"><label for="f-desc">Adelanto</label><textarea class="input" id="f-desc" rows="2" placeholder="Qué trae: telas, colores, para qué ocasión…"></textarea></div>
+        <div class="field"><span class="lbl">Foto de portada</span><div class="covers" id="f-covers"></div></div>
+        <div class="two">
+          <div class="field"><label for="f-date">Fecha</label><input class="input" id="f-date" type="date" required></div>
+          <div class="field"><label for="f-time">Hora</label><input class="input" id="f-time" type="time" value="10:00" required></div>
+        </div>
+        <div class="field"><span class="lbl">Prendas que salen <small class="muted" style="font-weight:400">(las que están en borrador se ven como "Próximamente")</small></span><div class="prods" id="f-prods"></div></div>
+        <label class="switch">Mostrar en la home con cuenta regresiva <input class="tog" type="checkbox" id="f-home" checked></label>
+        <label class="switch">Avisar a los anotados 1 hora antes <input class="tog" type="checkbox" id="f-notify" checked></label>
+        <label class="switch">Publicar las prendas solas a la hora indicada <input class="tog" type="checkbox" id="f-auto" checked></label>
+        <div class="social"><b style="display:flex;gap:8px;align-items:center"><span data-brand="instagram" class="i-sm"></span> Texto para el adelanto en redes</b><textarea class="input" id="f-social" rows="2"></textarea><button type="button" class="link" id="f-copy" style="justify-self:start;font-size:13px">Copiar texto</button></div>
+      </div>
+      <aside class="ed-prev"><span class="eyebrow">Así se ve en la home</span>
+        <div class="ed-card"><img id="p-img" alt=""><div><span class="eyebrow" id="p-when"></span><b id="p-name"></b><p id="p-desc"></p></div></div>
+      </aside>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="f-save">Programar lanzamiento</button>
+      <button type="button" class="btn btn-ghost" id="f-draft">Guardar como borrador</button>
+    </div>
+  </form>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { toast, openModal, closeModals, icon, img, bySlug } = MG;
+  const $ = (s) => document.querySelector(s);
+  const COVERS = ["hero-otono", "hero-bosque", "hero-campo", "maddie-3", "rebeca-2", "samanta-3", "catalina-rojo-1"];
+  const TODAY = new Date("2026-10-06T12:00:00-03:00");
+
+  const launches = [
+    { id: 1, name: "Otoño · Invierno 26", tag: "se viene el frío ♡", desc: "Pana, escocés y lanas suaves. Salen pocas por talle.", cover: "hero-otono", date: "2026-10-18", time: "10:00", prods: ["corazon-pana"], home: true, notify: true, auto: true, state: "programado", stats: [214, 1840, 96, 0] },
+    { id: 2, name: "Navidad 26", tag: "para la foto del arbolito", desc: "Rojos, terciopelo y moños grandes para las fiestas.", cover: "catalina-rojo-1", date: "2026-11-29", time: "10:00", prods: ["catalina"], home: false, notify: true, auto: true, state: "borrador" },
+    { id: 3, name: "Verano 2027", tag: "lino y flores", desc: "Linos lavados, volados y bordados de margaritas.", cover: "maddie-3", date: "2026-09-12", time: "10:00", prods: ["maddie", "elsa", "catalina"], home: false, notify: true, auto: true, state: "pasado", stats: [168, 2410, 0, 31] },
+  ];
+  let editing = null, cover = COVERS[0], prods = new Set();
+
+  const fmt = (d, t) => new Date(`${d}T${t}:00-03:00`).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }) + ` · ${t.replace(":00", "")} h`;
+  const daysTo = (d) => Math.ceil((new Date(d + "T10:00:00-03:00") - TODAY) / 864e5);
+
+  function render() {
+    const next = launches.filter((l) => l.state === "programado").sort((a, b) => a.date.localeCompare(b.date));
+    const drafts = launches.filter((l) => l.state === "borrador");
+    const past = launches.filter((l) => l.state === "pasado");
+    const row = (l) => {
+      const d = daysTo(l.date), isNext = l === next[0];
+      return `<article class="ln ${isNext ? "is-next" : ""} ${l.state === "pasado" ? "is-past" : ""}">
+        <img src="assets/img/${l.cover}.webp" alt="">
+        <div><span class="pill-status ${l.state === "programado" ? "st-warn" : l.state === "borrador" ? "st-muted" : "st-ok"}">${l.state === "programado" ? `En ${d} días` : l.state === "borrador" ? "Borrador" : "Publicado"}</span>
+          <h3>${l.name.replace(/(\d+)$/, "<em>$1</em>")}</h3>
+          <div class="meta"><span>${icon("calendar", "i-sm")} ${fmt(l.date, l.time)}</span><span>${icon("shirt", "i-sm")} ${l.prods.length} ${l.prods.length === 1 ? "prenda" : "prendas"}</span>${l.home ? `<span>${icon("house", "i-sm")} En la home</span>` : ""}</div>
+          ${isNext && l.stats ? `<div class="ln-count"><span><b>${l.stats[0]}</b>anotados</span><span><b>${l.stats[1].toLocaleString("es-AR")}</b>visitas al adelanto</span><span><b>${l.stats[2]}</b>favoritos</span><span><b>${d}</b>días</span></div>` : ""}
+          ${l.state === "pasado" && l.stats ? `<div class="meta" style="margin-top:6px"><span>${icon("shopping-bag", "i-sm")} ${l.stats[3]} vendidas el primer día</span><span>${icon("users", "i-sm")} ${l.stats[0]} anotados</span></div>` : ""}
+        </div>
+        <div class="acts">${l.state !== "pasado" ? `<button class="btn btn-sm btn-ghost" data-edit="${l.id}">${icon("pencil", "i-sm")} Editar</button>` : `<button class="btn btn-sm btn-ghost" data-dup="${l.id}">${icon("copy", "i-sm")} Usar de base</button>`}
+          ${l.state === "borrador" ? `<button class="btn btn-sm" data-pub="${l.id}">Programar</button>` : ""}
+          ${isNext ? `<a class="btn btn-sm btn-rose" href="index.html#lanzamiento">${icon("eye", "i-sm")} Ver en la home</a>` : ""}</div>
+      </article>`;
+    };
+    $("#ln-root").innerHTML = `<div class="ln-list">${next.map(row).join("") || `<div class="box empty-state">${MG.EMB}<b>No hay lanzamientos programados</b><button class="btn btn-sm" data-new>Crear uno</button></div>`}</div>`
+      + (drafts.length ? `<p class="sec-t">Borradores</p><div class="ln-list">${drafts.map(row).join("")}</div>` : "")
+      + (past.length ? `<p class="sec-t">Anteriores</p><div class="ln-list">${past.map(row).join("")}</div>` : "");
+    MG.drawIcons();
+  }
+
+  function preview() {
+    $("#p-img").src = `assets/img/${cover}.webp`;
+    $("#p-name").textContent = $("#f-name").value || "Nombre del lanzamiento";
+    $("#p-desc").textContent = $("#f-desc").value || "El adelanto que va a leer la gente.";
+    $("#p-when").textContent = $("#f-date").value ? `Próximo lanzamiento · ${fmt($("#f-date").value, $("#f-time").value || "10:00")}` : "Próximo lanzamiento";
+    if (!$("#f-social").dataset.touched) $("#f-social").value = `✿ ${$("#f-name").value || "Nuevo lanzamiento"} ✿ ${$("#f-desc").value} Sale ${$("#f-date").value ? fmt($("#f-date").value, $("#f-time").value) : "pronto"} en minigalu.com.ar. Anotate y te avisamos 1 hora antes 🎀`;
+  }
+
+  function open(l) {
+    editing = l || null;
+    $("#ln-title").innerHTML = l ? `Editar <em>lanzamiento</em>` : `Nuevo <em>lanzamiento</em>`;
+    $("#f-name").value = l?.name || ""; $("#f-tag").value = l?.tag || ""; $("#f-desc").value = l?.desc || "";
+    $("#f-date").value = l?.date || "2026-12-05"; $("#f-time").value = l?.time || "10:00";
+    $("#f-home").checked = l?.home ?? true; $("#f-notify").checked = l?.notify ?? true; $("#f-auto").checked = l?.auto ?? true;
+    $("#f-social").dataset.touched = "";
+    cover = l?.cover || COVERS[0]; prods = new Set(l?.prods || []);
+    $("#f-covers").innerHTML = COVERS.map((c) => `<button type="button" data-cover="${c}" aria-pressed="${c === cover}"><img src="assets/img/${c}.webp" alt=""></button>`).join("") + `<button type="button" id="f-upload" aria-label="Subir foto">${icon("image-plus")}</button>`;
+    $("#f-prods").innerHTML = MG.D.products.map((p) => `<button type="button" data-prod="${p.slug}" aria-pressed="${prods.has(p.slug)}"><img src="${img(p)}" alt="">${p.name}${p.draft ? " · borrador" : ""}</button>`).join("");
+    $("#f-save").textContent = l?.state === "programado" ? "Guardar cambios" : "Programar lanzamiento";
+    MG.drawIcons(); preview(); openModal("m-ln");
+  }
+
+  $("#m-ln").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-cover]"); if (c) { cover = c.dataset.cover; document.querySelectorAll("[data-cover]").forEach((x) => x.setAttribute("aria-pressed", x === c)); preview(); }
+    const p = e.target.closest("[data-prod]"); if (p) { prods.has(p.dataset.prod) ? prods.delete(p.dataset.prod) : prods.add(p.dataset.prod); p.setAttribute("aria-pressed", prods.has(p.dataset.prod)); }
+    if (e.target.closest("#f-upload")) toast("Acá se abre el selector de fotos (se optimizan a WebP)", "image-plus");
+    if (e.target.closest("#f-copy")) { navigator.clipboard?.writeText($("#f-social").value).catch(() => {}); toast("Texto copiado para Instagram", "copy"); }
+  });
+  ["#f-name", "#f-desc", "#f-date", "#f-time"].forEach((s) => $(s).addEventListener("input", preview));
+  $("#f-social").addEventListener("input", (e) => (e.target.dataset.touched = "1"));
+
+  const save = (state) => {
+    if (!$("#f-name").value.trim()) { $("#f-name").focus(); return toast("Ponele un nombre al lanzamiento", "pencil"); }
+    if (state === "programado" && !prods.size) return toast("Elegí al menos una prenda que salga", "shirt");
+    const data = { name: $("#f-name").value.trim(), tag: $("#f-tag").value, desc: $("#f-desc").value, cover, date: $("#f-date").value, time: $("#f-time").value, prods: [...prods], home: $("#f-home").checked, notify: $("#f-notify").checked, auto: $("#f-auto").checked, state };
+    if (editing) Object.assign(editing, data); else launches.push({ id: Date.now(), ...data, stats: state === "programado" ? [0, 0, 0, 0] : null });
+    closeModals(); render();
+    toast(state === "programado" ? `${data.name} programado para el ${fmt(data.date, data.time)}` : "Guardado como borrador", state === "programado" ? "calendar-check" : "file-pen");
+  };
+  $("#ln-form").addEventListener("submit", (e) => { e.preventDefault(); save("programado"); });
+  $("#f-draft").addEventListener("click", () => save("borrador"));
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#ln-new, [data-new]")) return open();
+    const ed = e.target.closest("[data-edit]"); if (ed) return open(launches.find((l) => l.id === +ed.dataset.edit));
+    const dup = e.target.closest("[data-dup]"); if (dup) { const b = launches.find((l) => l.id === +dup.dataset.dup); open({ ...b, name: b.name + " (copia)", state: "borrador", date: "2027-09-11" }); editing = null; return; }
+    const pub = e.target.closest("[data-pub]"); if (pub) { const l = launches.find((x) => x.id === +pub.dataset.pub); if (!l.prods.length) return open(l); l.state = "programado"; l.stats = [0, 0, 0, 0]; render(); toast(`${l.name} programado`, "calendar-check"); }
+  });
+  render();
+  if (MG.params.has("nuevo")) open();
+});
+</script>
+</body>
+</html>

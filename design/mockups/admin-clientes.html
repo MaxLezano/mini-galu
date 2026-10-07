@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clientes — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .cav { width: 38px; height: 38px; border-radius: 50%; background: var(--rosa); display: grid; place-items: center; font: italic 400 18px/1 var(--f-display); flex: none; }
+  .cav.s { background: var(--salvia-l); } .cav.l { background: var(--linen-2); }
+  .nena-chip { display: inline-flex; gap: 6px; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--linen); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .bd { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; white-space: nowrap; }
+  .bd.soon { color: var(--rojo); font-weight: 700; }
+  .cd-nenas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .cd-nenas div { padding: 14px; border-radius: 14px; background: var(--rosa-l); font-size: 13px; }
+  .cd-nenas b { display: block; font: italic 400 22px/1 var(--f-display); margin-bottom: 4px; }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="clientes">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Tienda</span><h1 class="display">Clientes</h1></div>
+    <div class="actions"><button class="btn btn-sm btn-ghost" id="export"><span data-icon="download" class="i-sm"></span> Exportar</button></div>
+  </div>
+  <div class="kpis" id="k"></div>
+  <section class="box">
+    <div class="filters-row" style="margin-bottom:16px">
+      <div class="filters-row" id="cf"></div><span style="flex:1"></span>
+      <label class="tiny-search"><span><span data-icon="search" class="i-sm"></span></span><input class="input" id="q" placeholder="Buscar cliente o ciudad" aria-label="Buscar cliente"></label>
+    </div>
+    <div class="tbl-wrap"><table class="t stack" id="ct"></table></div>
+  </section>
+</main>
+
+<div class="scrim" id="cd-scrim"></div>
+<aside class="drawer wide" id="cd" aria-label="Ficha del cliente" aria-hidden="true"><div class="drawer-head" id="cd-head"></div><div class="drawer-body" id="cd-body"></div></aside>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D, total, status } = ADM;
+  const { money, icon, brand, img, bySlug, toast } = MG;
+  const $ = (s) => document.querySelector(s);
+  const MES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+  const today = new Date(2026, 9, 6);
+  const daysTo = (s) => { const [d, m] = s.split(" "); let t = new Date(2026, MES[m], +d); if (t < today) t = new Date(2027, MES[m], +d); return Math.round((t - today) / 864e5); };
+  const rows = Object.entries(D.customers).map(([k, c]) => {
+    const os = D.orders.filter((o) => o.c === k && o.status !== "esperando_pago");
+    const next = c.nenas.map(([n, t, b]) => ({ n, t, b, d: daysTo(b) })).sort((a, b) => a.d - b.d)[0];
+    return { k, c, os, spent: os.reduce((a, o) => a + total(o), 0), next };
+  });
+  let filter = "all", q = "";
+
+  $("#k").innerHTML = [
+    ["users", "Clientes", rows.length, "con al menos una compra o link"],
+    ["repeat", "Volvieron a comprar", rows.filter((r) => r.os.length > 1).length, "más de un pedido"],
+    ["cake", "Cumples en 30 días", rows.filter((r) => r.next && r.next.d <= 30).length, "les llega un mail con ideas"],
+    ["baby", "Nenas registradas", rows.reduce((a, r) => a + r.c.nenas.length, 0), "con talle y cumple"],
+  ].map(([ic, l, v, s]) => `<div class="kpi"><span>${icon(ic, "i-sm")} ${l}</span><b>${v}</b><small class="muted">${s}</small></div>`).join("");
+  $("#cf").innerHTML = [["all", "Todas"], ["bday", "Cumple en 30 días"], ["repeat", "Volvieron a comprar"], ["new", "Nuevas este mes"]].map(([k, l]) => `<button class="chip ${k === filter ? "is-on" : ""}" data-cf="${k}">${l}</button>`).join("");
+
+  function render() {
+    const list = rows.filter((r) => ({ all: true, bday: r.next && r.next.d <= 30, repeat: r.os.length > 1, new: r.c.since === "oct 2026" })[filter] && (!q || `${r.c.name} ${r.c.city}`.toLowerCase().includes(q))).sort((a, b) => b.spent - a.spent);
+    $("#ct").innerHTML = `<thead><tr><th>Cliente</th><th>Nenas</th><th class="num">Pedidos</th><th class="num">Gastado</th><th>Próximo cumple</th><th></th></tr></thead><tbody>` + list.map((r, i) => `<tr class="clickable" data-cust="${r.k}">
+      <td class="full"><div class="pp" style="min-width:0"><span class="cav ${["", "s", "l"][i % 3]}">${r.c.name[0]}</span><div><b>${r.c.name}</b><small>${r.c.city} · desde ${r.c.since}</small></div></div></td>
+      <td class="full"><div style="display:flex;gap:4px;flex-wrap:wrap">${r.c.nenas.map(([n, t]) => `<span class="nena-chip">${n} · T${t}</span>`).join("")}</div></td>
+      <td class="num" data-l="Pedidos">${r.os.length}</td>
+      <td class="num" data-l="Gastado"><b>${r.spent ? money(r.spent) : "—"}</b></td>
+      <td data-l="Cumple">${r.next ? `<span class="bd ${r.next.d <= 30 ? "soon" : ""}">${icon("cake", "i-sm")} ${r.next.n} · ${r.next.b}${r.next.d <= 30 ? ` · en ${r.next.d} días` : ""}</span>` : "—"}</td>
+      <td><a class="icon-btn" href="https://wa.me/549${r.c.phone.replace(/\D/g, "")}" target="_blank" rel="noopener" aria-label="WhatsApp a ${r.c.name}">${brand("whatsapp")}</a></td></tr>`).join("") + "</tbody>";
+  }
+  render();
+
+  function openCust(k) {
+    const r = rows.find((x) => x.k === k), c = r.c;
+    $("#cd-head").innerHTML = `<div style="display:flex;gap:12px;align-items:center"><span class="cav" style="width:48px;height:48px;font-size:22px">${c.name[0]}</span><div><b class="display" style="font-size:24px">${c.name}</b><div class="muted" style="font-size:12.5px">${c.city} · cliente desde ${c.since}</div></div></div><button class="icon-btn" id="cd-x" aria-label="Cerrar">${icon("x")}</button>`;
+    $("#cd-body").innerHTML = `
+      <div class="od-sec"><div class="contact-btns"><a class="btn btn-sm btn-soft" target="_blank" rel="noopener" href="https://wa.me/549${c.phone.replace(/\D/g, "")}">${brand("whatsapp", "brand i-sm")} ${c.phone}</a>${c.email ? `<a class="btn btn-sm btn-soft" href="mailto:${c.email}">${icon("mail", "i-sm")} ${c.email}</a>` : ""}</div></div>
+      <div class="od-sec"><h4>Nenas</h4><div class="cd-nenas">${c.nenas.map(([n, t, b]) => `<div><b>${n}</b>Talle ${t} · cumple ${b}<br><span class="muted">${daysTo(b) <= 30 ? `faltan ${daysTo(b)} días` : ""}</span></div>`).join("") || '<span class="muted">Sin nenas cargadas</span>'}</div></div>
+      <div class="od-sec"><h4>Resumen</h4><dl class="kv2"><dt>Pedidos</dt><dd>${r.os.length}</dd><dt>Gastado</dt><dd>${money(r.spent)}</dd><dt>Ticket promedio</dt><dd>${r.os.length ? money(r.spent / r.os.length) : "—"}</dd><dt>Le gustan</dt><dd>${[...new Set(r.os.flatMap((o) => o.items.map(([s]) => bySlug[s].col)))].join(", ") || "—"}</dd></dl></div>
+      <div class="od-sec"><h4>Pedidos</h4>${D.orders.filter((o) => o.c === k).map((o) => `<div class="row" style="padding:10px;border-radius:12px;background:var(--linen);cursor:pointer" data-open-order="${o.id}"><span class="thumbs-row">${o.items.map(([s]) => `<img src="${img(bySlug[s])}" alt="">`).join("")}</span><span style="flex:1"><b>#${o.id}</b> <span class="muted" style="font-size:12.5px">· ${o.date}</span></span><b>${money(total(o))}</b><span class="pill-status ${status(o.status).tone}">${status(o.status).short}</span></div>`).join("") || '<span class="muted">Sin pedidos</span>'}</div>
+      <div class="od-sec"><h4>Notas</h4><textarea class="input" rows="3" placeholder="Ej. le encantan los cuellos bordados, prefiere retirar en el taller…"></textarea></div>`;
+    $("#cd-x").onclick = closeCust;
+    $("#cd").classList.add("is-open"); $("#cd-scrim").classList.add("is-open"); $("#cd").setAttribute("aria-hidden", "false");
+  }
+  const closeCust = () => { $("#cd").classList.remove("is-open"); $("#cd-scrim").classList.remove("is-open"); $("#cd").setAttribute("aria-hidden", "true"); };
+  $("#cd-scrim").addEventListener("click", closeCust);
+  document.addEventListener("click", (e) => {
+    const f = e.target.closest("[data-cf]"); if (f) { filter = f.dataset.cf; document.querySelectorAll("[data-cf]").forEach((x) => x.classList.toggle("is-on", x === f)); return render(); }
+    if (e.target.closest("a")) return;
+    const r = e.target.closest("[data-cust]"); if (r) openCust(r.dataset.cust);
+    if (e.target.closest("[data-open-order]")) closeCust();
+  });
+  $("#q").addEventListener("input", (e) => { q = e.target.value.toLowerCase(); render(); });
+  $("#export").addEventListener("click", () => toast("Se descargó clientes.csv", "download"));
+});
+</script>
+</body>
+</html>

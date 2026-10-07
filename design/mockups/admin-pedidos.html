@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedidos — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .toolbar .grow { flex: 1; }
+  .status-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .status-chips .chip { height: 34px; font-size: 13px; flex: none; }
+  .hint { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--cacao-2); }
+  .hint .grow { flex: 1; }
+  @media (max-width: 700px) { .hide-s { display: none !important; } .toolbar .tiny-search { max-width: none; flex: 1 1 100%; order: -1; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="pedidos">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Día a día</span><h1 class="display">Pedidos</h1></div>
+    <div class="actions"><button class="btn btn-sm" id="pick-btn"><span data-icon="list-checks" class="i-sm"></span> Lista de preparación</button></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg-btns" role="group" aria-label="Vista"><button data-view="board" aria-pressed="true"><span data-icon="square-kanban" class="i-sm"></span>Tablero</button><button data-view="list" aria-pressed="false"><span data-icon="list" class="i-sm"></span>Lista</button></div>
+    <label class="tiny-search"><span><span data-icon="search" class="i-sm"></span></span><input class="input" id="q" placeholder="Buscar por número, cliente o ciudad" aria-label="Buscar pedidos"></label>
+    <div class="filters-row" id="channels" aria-label="Canal"></div>
+    <select class="input" id="ship-f" style="width:auto;height:40px;border-radius:999px;font-size:13.5px" aria-label="Tipo de envío"><option value="">Todos los envíos</option><option value="domicilio">Domicilio</option><option value="sucursal">Sucursal</option><option value="taller">Retira en taller</option></select>
+  </div>
+  <div class="hint" id="hint"><span class="hide-s" style="display:inline-flex;gap:8px;align-items:center"><span data-icon="grip-vertical" class="i-sm"></span> Arrastrá un pedido a otra columna para cambiarle el estado. Las automatizaciones le avisan al cliente.</span><span class="grow"></span><button class="btn btn-xs btn-ghost" id="select-mode"><span data-icon="square-check" class="i-sm"></span> Seleccionar</button></div>
+
+  <div class="board" id="board"></div>
+
+  <section class="box" id="list-box" hidden>
+    <div class="status-chips" id="status-chips" style="margin-bottom:14px"></div>
+    <div class="tbl-wrap"><table class="t stack" id="list"></table></div>
+  </section>
+</main>
+
+<div class="bulk" id="bulk" role="region" aria-label="Acciones">
+  <b id="bulk-n"></b>
+  <button class="btn" data-bulk="pick"><span data-icon="list-checks" class="i-sm"></span> Preparación</button>
+  <button class="btn" data-bulk="labels"><span data-icon="printer" class="i-sm"></span> Etiquetas</button>
+  <button class="btn" data-bulk="next"><span data-icon="arrow-right" class="i-sm"></span> Avanzar estado</button>
+  <button class="btn" data-bulk="clear" aria-label="Deseleccionar"><span data-icon="x" class="i-sm"></span></button>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/vendor/Sortable.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D, cust, total, status, units, nextAction, moveOrder, openPicking, shipShort, payShort } = ADM;
+  const { img, money, icon, brand, bySlug, toast } = MG;
+  const $ = (s) => document.querySelector(s);
+  const mobile = matchMedia("(max-width: 700px)").matches;
+  const state = { view: mobile || MG.params.get("ver") ? "list" : "board", q: "", ch: "", ship: "", st: MG.params.get("ver") || "", sel: new Set(), selecting: false };
+  const CH = [["", "Todos"], ["Web", "Web"], ["Instagram", "Instagram"], ["WhatsApp", "WhatsApp"], ["Galú", "Galú"]];
+  $("#channels").innerHTML = CH.map(([k, l]) => `<button class="chip ${k === state.ch ? "is-on" : ""}" data-ch="${k}">${l}</button>`).join("");
+
+  const match = (o) => {
+    const q = state.q.toLowerCase();
+    return (!q || `${o.id} ${cust(o).name} ${cust(o).city}`.toLowerCase().includes(q)) && (!state.ch || o.channel === state.ch) && (!state.ship || o.ship[0] === state.ship);
+  };
+  const chIcon = (o) => o.channel === "Instagram" ? brand("instagram") : o.channel === "WhatsApp" ? brand("whatsapp") : o.channel === "Galú" ? icon("message-circle-heart") : icon("globe");
+
+  function ocard(o) {
+    const nx = nextAction(o);
+    const flags = [`<span class="flag">${chIcon(o)}${o.channel}</span>`, `<span class="flag">${icon(ADM.shipIcon[o.ship[0]])}${shipShort[o.ship[0]]}</span>`];
+    if (o.pay[0] === "credito" && o.pay[1] > 1) flags.push(`<span class="flag">${icon("credit-card")}${o.pay[1]} cuotas</span>`);
+    if (o.pay[0] === "giftcard") flags.push(`<span class="flag">${icon("gift")}Gift card</span>`);
+    if (o.when === "hace 25 min" || o.when === "recién") flags.push(`<span class="flag hot">Recién</span>`);
+    return `<article class="ocard" data-id="${o.id}" data-open-order="${o.id}">
+      <label class="sel check" aria-label="Seleccionar"><input type="checkbox" data-sel="${o.id}" ${state.sel.has(o.id) ? "checked" : ""}></label>
+      <div class="top"><b>#${o.id}</b><small>${o.when}</small></div>
+      <div class="who">${cust(o).name}<small>${cust(o).city} · ${units(o)} ${units(o) === 1 ? "prenda" : "prendas"} · ${money(total(o))}</small></div>
+      <div class="bottom"><span class="thumbs-row">${o.items.map(([s]) => `<img src="${img(bySlug[s])}" alt="">`).join("")}</span></div>
+      <div class="flags">${flags.join("")}</div>
+      ${nx.to || nx.wa ? `<button class="btn btn-xs ${o.status === "nuevo" ? "" : "btn-soft"} next" data-act="next" data-id="${o.id}">${icon(nx.icon, "i-sm")} ${nx.label}</button>` : ""}
+    </article>`;
+  }
+
+  function renderBoard() {
+    $("#board").innerHTML = D.statuses.map((s) => {
+      const list = D.orders.filter((o) => o.status === s.key && match(o));
+      const shown = s.key === "entregado" ? list.slice(0, 4) : list;
+      return `<section class="col" aria-label="${s.label}"><div class="col-head">${icon(s.icon, "i-sm")}${s.label}<span class="c">${list.length}</span><span class="sum">${list.length ? money(list.reduce((a, o) => a + total(o), 0)) : ""}</span></div>
+        <div class="col-list" data-status="${s.key}">${shown.map(ocard).join("") || `<div class="col-empty">Nada por acá</div>`}</div>
+        ${list.length > shown.length ? `<button class="link" data-view-list="${s.key}" style="justify-self:center;font-size:12.5px">Ver los ${list.length}</button>` : ""}</section>`;
+    }).join("");
+    $("#board").classList.toggle("selecting", state.selecting);
+    document.querySelectorAll(".col-list").forEach((el) => new Sortable(el, {
+      group: "orders", animation: 220, forceFallback: true, fallbackTolerance: 4, easing: "cubic-bezier(.2,.8,.2,1)", delay: 180, delayOnTouchOnly: true, ghostClass: "sortable-ghost", chosenClass: "sortable-chosen", filter: ".col-empty, button, input", preventOnFilter: false,
+      onEnd: (e) => {
+        const o = D.orders.find((x) => x.id === e.item.dataset.id), to = e.to.dataset.status;
+        if (o && to !== o.status) {
+          if (to === "esperando_pago") { toast("Un pedido pagado no puede volver a 'Esperando pago'", "info"); return render(); }
+          moveOrder(o, to);
+        }
+      },
+    }));
+  }
+
+  function renderList() {
+    if (mobile) {
+      $("#status-chips").innerHTML = [["", "Todos", D.orders.length], ...D.statuses.map((s) => [s.key, s.label, D.orders.filter((o) => o.status === s.key).length])].map(([k, l, n]) => `<button class="chip ${state.st === k ? "is-on" : ""}" data-st="${k}">${l} <span class="count">${n}</span></button>`).join("");
+      const list = D.orders.filter((o) => match(o) && (!state.st || o.status === state.st));
+      $("#list").outerHTML = `<div class="mlist ${state.selecting ? "selecting" : ""}" id="list">${list.map((o) => ocard(o).replace('<div class="top">', `<div class="top"><span class="pill-status ${status(o.status).tone}">${status(o.status).short}</span>`)).join("") || `<div class="empty-state">${MG.EMB}<b>No hay pedidos con estos filtros</b></div>`}</div>`;
+      return;
+    }
+    $("#status-chips").innerHTML = [["", "Todos", D.orders.length], ...D.statuses.map((s) => [s.key, s.label, D.orders.filter((o) => o.status === s.key).length])].map(([k, l, n]) => `<button class="chip ${state.st === k ? "is-on" : ""}" data-st="${k}">${l} <span class="count">${n}</span></button>`).join("");
+    const list = D.orders.filter((o) => match(o) && (!state.st || o.status === state.st));
+    $("#list").innerHTML = `<thead><tr><th class="check"><label class="check"><input type="checkbox" id="sel-all" aria-label="Seleccionar todos"></label></th><th>Pedido</th><th>Cliente</th><th>Prendas</th><th class="num">Total</th><th>Pago</th><th>Envío</th><th>Estado</th><th></th></tr></thead><tbody>` +
+      list.map((o) => { const st = status(o.status), nx = nextAction(o); return `<tr class="clickable ${state.sel.has(o.id) ? "is-sel" : ""}" data-open-order="${o.id}">
+        <td class="check"><label class="check"><input type="checkbox" data-sel="${o.id}" ${state.sel.has(o.id) ? "checked" : ""} aria-label="Seleccionar #${o.id}"></label></td>
+        <td><b>#${o.id}</b><div class="muted" style="font-size:12px">${o.when}</div></td>
+        <td class="full" data-l="Cliente">${cust(o).name}<div class="muted" style="font-size:12px">${cust(o).city}</div></td>
+        <td class="hide-s"><span class="thumbs-row">${o.items.map(([s]) => `<img src="${img(bySlug[s])}" alt="">`).join("")}</span></td>
+        <td class="num" data-l="Total"><b>${money(total(o))}</b></td>
+        <td data-l="Pago"><span class="meta-ico">${o.pay[0] === "link" ? brand("mercadopago") : icon("credit-card", "i-sm")} ${payShort[o.pay[0]]}${o.pay[1] > 1 ? ` · ${o.pay[1]}c` : ""}</span></td>
+        <td data-l="Envío"><span class="meta-ico">${icon(ADM.shipIcon[o.ship[0]], "i-sm")} ${shipShort[o.ship[0]]}</span></td>
+        <td data-l="Estado"><span class="pill-status ${st.tone}">${st.short}</span></td>
+        <td class="full">${nx.to || nx.wa ? `<button class="btn btn-xs btn-soft" data-act="next" data-id="${o.id}">${icon(nx.icon, "i-sm")} ${nx.label}</button>` : ""}</td></tr>`; }).join("") + `</tbody>`;
+    if (!list.length) $("#list").innerHTML += `<tbody><tr><td colspan="9"><div class="empty-state">${MG.EMB}<b>No hay pedidos con estos filtros</b></div></td></tr></tbody>`;
+  }
+
+  function renderBulk() {
+    $("#bulk").classList.toggle("is-on", state.sel.size > 0);
+    $("#bulk-n").textContent = `${state.sel.size} ${state.sel.size === 1 ? "pedido" : "pedidos"}`;
+  }
+  function render() {
+    $("#board").hidden = state.view !== "board";
+    $("#list-box").hidden = state.view !== "list";
+    document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === state.view));
+    state.view === "board" ? renderBoard() : renderList();
+    renderBulk();
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button, input");
+    if (!b) return;
+    if (b.dataset.view) { state.view = b.dataset.view; render(); }
+    else if (b.dataset.viewList) { state.view = "list"; state.st = b.dataset.viewList; render(); }
+    else if (b.dataset.ch !== undefined && b.closest("#channels")) { state.ch = b.dataset.ch; document.querySelectorAll("#channels .chip").forEach((c) => c.classList.toggle("is-on", c === b)); render(); }
+    else if (b.dataset.st !== undefined) { state.st = b.dataset.st; render(); }
+    else if (b.dataset.act === "next") {
+      e.stopPropagation();
+      const o = D.orders.find((x) => x.id === b.dataset.id), nx = nextAction(o);
+      if (nx.wa) ADM.openWA(o, nx.wa); else moveOrder(o, nx.to);
+    }
+    else if (b.dataset.sel) { e.stopPropagation(); b.checked ? state.sel.add(b.dataset.sel) : state.sel.delete(b.dataset.sel); b.closest("tr")?.classList.toggle("is-sel", b.checked); renderBulk(); }
+    else if (b.id === "sel-all") { e.stopPropagation(); D.orders.filter((o) => match(o) && (!state.st || o.status === state.st)).forEach((o) => (b.checked ? state.sel.add(o.id) : state.sel.delete(o.id))); render(); }
+    else if (b.id === "select-mode") { state.selecting = !state.selecting; if (!state.selecting) state.sel.clear(); b.classList.toggle("is-on", state.selecting); render(); }
+    else if (b.dataset.bulk) {
+      const sel = D.orders.filter((o) => state.sel.has(o.id));
+      if (b.dataset.bulk === "pick") openPicking(sel);
+      if (b.dataset.bulk === "labels") { const n = sel.filter((o) => o.ship[0] !== "taller").length; toast(n ? `${n} etiquetas Andreani en un PDF` : "Ninguno de esos pedidos va por Andreani", "printer"); }
+      if (b.dataset.bulk === "next") { sel.forEach((o) => { const nx = nextAction(o); if (nx.to) moveOrder(o, nx.to, true); }); toast(`${sel.length} pedidos avanzados de estado`, "arrow-right"); }
+      if (b.dataset.bulk === "clear") { state.sel.clear(); render(); }
+    }
+  }, true);
+  // los checkbox dentro de tarjetas no deben abrir el detalle
+  document.addEventListener("click", (e) => { if (e.target.closest(".sel, td.check")) e.stopPropagation(); }, true);
+  $("#q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+  $("#ship-f").addEventListener("change", (e) => { state.ship = e.target.value; render(); });
+  $("#pick-btn").addEventListener("click", () => openPicking());
+  document.addEventListener("adm:changed", render);
+  render();
+});
+</script>
+</body>
+</html>

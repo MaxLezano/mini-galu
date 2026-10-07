@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ingresar — Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .auth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: calc(100svh - var(--header-h) - var(--announce-h)); }
+  .auth-media { position: relative; overflow: hidden; }
+  body[data-page="ingresar"] .site-footer { margin-top: 0; } /* la foto llega hasta el footer, sin franja blanca */
+  .auth-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+  .auth-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(40,28,22,0) 45%, rgba(40,28,22,.6)); }
+  .auth-media .quote { position: absolute; left: clamp(24px, 4vw, 56px); right: clamp(24px, 4vw, 56px); bottom: clamp(28px, 5vw, 64px); z-index: 1; color: var(--paper); }
+  .auth-media .quote p { font: italic 300 clamp(26px, 2.6vw, 38px)/1.2 var(--f-display); margin: 0 0 10px; max-width: 18ch; }
+  .auth-media .quote .hand { color: var(--rosa); font-size: 28px; }
+  .auth-box { display: grid; place-items: center; padding: clamp(32px, 6vw, 80px) var(--gutter); }
+  .auth-card { width: min(100%, 440px); display: grid; gap: 18px; }
+  .auth-card h1 { margin: 10px 0 0; }
+  .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: var(--r-pill); background: var(--linen); position: relative; }
+  .auth-tabs button { position: relative; z-index: 1; height: 42px; border-radius: var(--r-pill); font-weight: 600; font-size: 14px; transition: color var(--t-med); }
+  .auth-tabs button[aria-selected="true"] { color: var(--paper); }
+  .auth-tabs .knob { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: var(--r-pill); background: var(--cacao); transition: transform .5s var(--ease-spring); }
+  .auth-tabs[data-tab="crear"] .knob { transform: translateX(100%); }
+  .google { display: flex; align-items: center; justify-content: center; gap: 12px; height: 52px; border-radius: var(--r-pill); background: var(--paper-2); box-shadow: inset 0 0 0 1.5px var(--line-2); font-weight: 600; font-size: 14.5px; transition: box-shadow var(--t-fast), background var(--t-fast); }
+  .google:hover { box-shadow: inset 0 0 0 1.5px var(--cacao); background: var(--paper); }
+  .google .brand { width: 18px; height: 18px; }
+  .or { display: flex; align-items: center; gap: 14px; color: var(--cacao-3); font-size: 12.5px; }
+  .or::before, .or::after { content: ""; flex: 1; border-top: 1.5px dashed var(--line-2); }
+  .auth-form { display: grid; gap: 14px; }
+  .auth-form[hidden] { display: none; }
+  .pass { position: relative; }
+  .pass .input { padding-right: 52px; }
+  .pass button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--cacao-2); }
+  .pass button:hover { background: var(--linen); }
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13.5px; }
+  .perks-mini { list-style: none; margin: 4px 0 0; padding: 14px 16px; border-radius: var(--r-md); background: var(--linen); display: grid; gap: 8px; font-size: 13.5px; color: var(--cacao-2); }
+  .perks-mini li { display: flex; gap: 10px; align-items: center; }
+  .perks-mini svg { color: var(--canela); }
+  .legal { font-size: 12px; color: var(--cacao-3); text-align: center; margin: 0; }
+  .guest { text-align: center; font-size: 13.5px; color: var(--cacao-2); }
+  @media (max-width: 900px) {
+    .auth { grid-template-columns: 1fr; }
+    .auth-media { min-height: 220px; }
+    .auth-media .quote p { font-size: 24px; }
+  }
+</style>
+</head>
+<body data-page="ingresar">
+
+<main class="auth">
+  <div class="auth-media">
+    <img src="assets/img/maddie-3.webp" alt="Nena con el Set Maddie bordado">
+    <div class="quote"><p>Guardamos el talle de tus nenas para mostrarte lo que les queda.</p><span class="hand">— Gaby, desde el taller</span></div>
+  </div>
+
+  <div class="auth-box">
+    <div class="auth-card">
+      <div><span class="eyebrow">Tu cuenta</span><h1 class="display h2" id="a-title">Hola de <em>nuevo</em></h1></div>
+
+      <div class="auth-tabs" role="tablist" id="tabs" data-tab="ingresar"><i class="knob"></i>
+        <button role="tab" aria-selected="true" data-t="ingresar">Ingresar</button>
+        <button role="tab" aria-selected="false" data-t="crear">Crear cuenta</button>
+      </div>
+
+      <button class="google" id="google" type="button"><span data-brand="google"></span> Continuar con Google</button>
+      <div class="or">o con tu mail</div>
+
+      <form class="auth-form" id="f-ingresar">
+        <div class="field"><label for="li-mail">Email</label><input class="input" id="li-mail" type="email" autocomplete="email" required placeholder="tu@email.com"></div>
+        <div class="field"><label for="li-pass">Contraseña</label><div class="pass"><input class="input" id="li-pass" type="password" autocomplete="current-password" required minlength="6" placeholder="••••••••"><button type="button" data-eye aria-label="Mostrar contraseña"><span data-icon="eye" class="i-sm"></span></button></div></div>
+        <div class="row-between"><label class="check"><input type="checkbox" checked> Recordarme</label><button type="button" class="link" id="forgot">¿Te olvidaste la contraseña?</button></div>
+        <button class="btn btn-lg btn-block">Ingresar</button>
+      </form>
+
+      <form class="auth-form" id="f-crear" hidden>
+        <div class="field"><label for="cr-name">Nombre y apellido</label><input class="input" id="cr-name" autocomplete="name" required placeholder="Ej. Lucía Fernández"></div>
+        <div class="field"><label for="cr-mail">Email</label><input class="input" id="cr-mail" type="email" autocomplete="email" required placeholder="tu@email.com"></div>
+        <div class="field"><label for="cr-pass">Contraseña</label><div class="pass"><input class="input" id="cr-pass" type="password" autocomplete="new-password" required minlength="6" placeholder="Mínimo 6 caracteres"><button type="button" data-eye aria-label="Mostrar contraseña"><span data-icon="eye" class="i-sm"></span></button></div></div>
+        <label class="check"><input type="checkbox" checked> Quiero recibir las Cartas del taller (1 por mes)</label>
+        <button class="btn btn-lg btn-block">Crear mi cuenta</button>
+        <ul class="perks-mini">
+          <li><span data-icon="baby" class="i-sm"></span> Guardá el talle y el cumple de tus nenas</li>
+          <li><span data-icon="bell-ring" class="i-sm"></span> Te avisamos cuando vuelve un talle</li>
+          <li><span data-icon="package" class="i-sm"></span> Seguí tus pedidos en un solo lugar</li>
+        </ul>
+      </form>
+
+      <p class="guest">¿Solo querés comprar? <a class="link" href="catalogo.html">Seguí sin cuenta</a></p>
+      <p class="legal">Al continuar aceptás los términos y la política de privacidad de Mini Galú.</p>
+    </div>
+  </div>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener("mg:ready", () => {
+  const $ = (s) => document.querySelector(s);
+  const back = MG.params.get("volver") || "cuenta.html";
+
+  // ya con sesión: directo a la cuenta
+  if (MG.auth.logged()) { location.replace(back); return; }
+
+  const show = (t) => {
+    $("#tabs").dataset.tab = t;
+    document.querySelectorAll("#tabs [data-t]").forEach((b) => b.setAttribute("aria-selected", b.dataset.t === t));
+    $("#f-ingresar").hidden = t !== "ingresar";
+    $("#f-crear").hidden = t !== "crear";
+    $("#a-title").innerHTML = t === "crear" ? "Creá tu <em>cuenta</em>" : "Hola de <em>nuevo</em>";
+  };
+  $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (b) show(b.dataset.t); });
+  if (MG.params.get("crear") !== null) show("crear");
+
+  document.querySelectorAll("[data-eye]").forEach((b) => b.addEventListener("click", () => {
+    const i = b.parentElement.querySelector("input"), on = i.type === "password";
+    i.type = on ? "text" : "password";
+    b.innerHTML = MG.icon(on ? "eye-off" : "eye", "i-sm");
+    b.setAttribute("aria-label", on ? "Ocultar contraseña" : "Mostrar contraseña");
+  }));
+
+  const enter = (msg) => {
+    MG.auth.login();
+    try { sessionStorage.setItem("mg-flash", msg); } catch {}
+    location.href = back;
+  };
+  $("#google").addEventListener("click", () => enter("Ingresaste con Google. ¡Hola, Lucía!"));
+  $("#f-ingresar").addEventListener("submit", (e) => { e.preventDefault(); enter("¡Hola de nuevo, Lucía!"); });
+  $("#f-crear").addEventListener("submit", (e) => { e.preventDefault(); enter(`¡Bienvenida, ${$("#cr-name").value.split(" ")[0]}! Ya podés sumar a tus nenas`); });
+  $("#forgot").addEventListener("click", () => {
+    const m = $("#li-mail").value;
+    MG.toast(m ? `Te mandamos un link a ${m} para crear una contraseña nueva` : "Escribí tu mail y te mandamos un link para recuperarla", "mail");
+  });
+});
+</script>
+</body>
+</html>

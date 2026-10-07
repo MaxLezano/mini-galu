@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Galú — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .gl { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+  .convs { display: grid; gap: 6px; padding: 10px; }
+  .conv { display: grid; gap: 4px; text-align: left; padding: 12px 14px; border-radius: 14px; transition: background var(--t-fast); width: 100%; }
+  .t-result { margin-top: auto; align-self: stretch; display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: 14px; background: var(--salvia-l); color: var(--salvia-d); font-size: 13.5px; border: 1.5px dashed color-mix(in srgb, var(--salvia-d) 30%, transparent); }
+  .t-result b { color: var(--cacao); }
+  .conv:hover { background: var(--linen); }
+  .conv[aria-current="true"] { background: var(--cacao); color: var(--paper); }
+  .conv[aria-current="true"] small { color: rgba(251,248,243,.7); }
+  .conv .r { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .conv small { color: var(--cacao-2); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .transcript { display: flex; flex-direction: column; gap: 10px; min-height: 420px; }
+  .transcript .msg { animation: none; }
+  .transcript .msg.me { align-self: flex-start; background: var(--linen); color: var(--cacao); border-radius: 20px 20px 20px 6px; }
+  .transcript .msg.bot { align-self: flex-end; background: var(--cacao); color: var(--paper); border-radius: 20px 20px 6px 20px; }
+  .teach { display: grid; gap: 12px; }
+  .teach .q { padding: 12px 14px; border-radius: 14px; background: var(--rosa-l); font-size: 13.5px; }
+  .teach .q b { display: block; margin-bottom: 4px; }
+  .facts { display: grid; gap: 6px; font-size: 13px; }
+  .facts div { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--linen); }
+  .facts svg { color: var(--salvia-d); flex: none; margin-top: 2px; }
+  @media (max-width: 1300px) { .gl { grid-template-columns: 280px minmax(0, 1fr); } .gl > :last-child { grid-column: 1 / -1; } }
+  @media (max-width: 800px) { .gl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="galu">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Tienda</span><h1 class="display">Galú, <em>la asistente</em></h1><p class="muted" style="margin:10px 0 0;max-width:62ch">Responde con el catálogo y el stock reales. Acá ves qué le preguntan y le enseñás lo que no sabe.</p></div>
+    <div class="actions"><a class="btn btn-sm btn-ghost" href="index.html"><span data-icon="message-circle-heart" class="i-sm"></span> Probar en la tienda</a></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span><span data-icon="messages-square" class="i-sm"></span> Charlas en 7 días</span><b>128</b><small class="up">▲ 22% vs semana anterior</small></div>
+    <div class="kpi"><span><span data-icon="shopping-bag" class="i-sm"></span> Terminaron en compra</span><b>23%</b><small class="muted">29 pedidos · $1.016.000</small></div>
+    <div class="kpi"><span><span data-icon="bell-ring" class="i-sm"></span> Pidieron aviso de talle</span><b>17</b><small class="muted">pasan a la lista de espera</small></div>
+    <div class="kpi"><span><span data-icon="message-circle-question" class="i-sm"></span> No supo responder</span><b>2</b><small class="down">enseñale abajo</small></div>
+  </div>
+  <div class="gl">
+    <section class="box" style="padding:8px"><div class="box-head" style="padding:12px 12px 0;margin-bottom:6px"><h2>Conversaciones</h2></div><div class="convs" id="convs"></div></section>
+    <section class="box"><div class="box-head"><h2 id="t-title"></h2><span id="t-pill"></span></div><div class="transcript" id="transcript"></div></section>
+    <aside style="display:grid;gap:18px">
+      <section class="box teach" id="teach">
+        <div class="box-head" style="margin:0"><h2>Enseñale</h2></div>
+        <div class="q"><b>“¿Hacen vestidos de comunión a medida?”</b><span class="muted">Preguntado 2 veces esta semana</span></div>
+        <div class="field"><label for="ans">Tu respuesta</label><textarea class="input" id="ans" rows="3" placeholder="Ej. Por ahora no hacemos a medida, pero el Vestido Samanta es ideal para comunión…"></textarea></div>
+        <button class="btn btn-sm" id="teach-save">Guardar respuesta</button>
+      </section>
+      <section class="box">
+        <div class="box-head"><h2>Lo que ya sabe</h2></div>
+        <div class="facts">
+          <div><span data-icon="check" class="i-sm"></span>Stock, talles, precios y fotos de todo el catálogo publicado</div>
+          <div><span data-icon="check" class="i-sm"></span>Envíos Andreani, costos por código postal y retiro en el taller</div>
+          <div><span data-icon="check" class="i-sm"></span>Medios de pago: crédito (hasta 6 cuotas), débito y dinero en cuenta</div>
+          <div><span data-icon="check" class="i-sm"></span>Estado de pedidos (pide el número y el mail)</div>
+          <div><span data-icon="check" class="i-sm"></span>Cambios: 30 días, sin uso y con etiqueta</div>
+        </div>
+      </section>
+      <section class="box" style="display:grid;gap:12px">
+        <div class="box-head" style="margin:0"><h2>Ajustes</h2></div>
+        <label class="switch">Derivar a WhatsApp si no sabe <input class="tog" type="checkbox" checked></label>
+        <label class="switch">Ofrecer gift card cuando no hay talle <input class="tog" type="checkbox" checked></label>
+        <label class="switch">Mostrar solo prendas con stock <input class="tog" type="checkbox" checked></label>
+        <div class="field"><label for="tone">Tono</label><select class="input" id="tone"><option>Cálido y cercano (vos)</option><option>Más formal</option></select></div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D } = ADM;
+  const { toast } = MG;
+  const $ = (s) => document.querySelector(s);
+  const OUT = { compra: ["Compró", "st-ok"], sin_respuesta: ["No supo", "st-rose"], aviso: ["Pidió aviso", "st-warn"] };
+  let cur = 0;
+  function render() {
+    $("#convs").innerHTML = D.conversations.map((c, i) => `<button class="conv" data-c="${i}" aria-current="${i === cur}"><span class="r"><b>${c.who}</b><span class="pill-status ${OUT[c.outcome][1]}">${OUT[c.outcome][0]}</span></span><small>${c.msgs[0][1]}</small><small>${c.when}</small></button>`).join("");
+    const c = D.conversations[cur];
+    $("#t-title").textContent = `${c.who} · ${c.when}`;
+    $("#t-pill").innerHTML = `<span class="pill-status ${OUT[c.outcome][1]}">${OUT[c.outcome][0]}</span>`;
+    $("#transcript").innerHTML = c.msgs.map(([w, t]) => `<div class="msg ${w}">${t}</div>`).join("") + (c.outcome === "sin_respuesta" ? `<button class="btn btn-sm btn-rose" style="align-self:center;margin-top:10px" data-teach>Enseñarle la respuesta</button>` : "")
+      + (c.result ? `<div class="t-result">${MG.icon(c.result[0], "i-sm")}<span>${c.result[1]}</span></div>` : "");
+  }
+  render();
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-c]"); if (b) { cur = +b.dataset.c; render(); }
+    if (e.target.closest("[data-teach]")) { $("#teach").scrollIntoView({ behavior: "smooth", block: "center" }); $("#ans").focus(); }
+  });
+  $("#teach-save").addEventListener("click", () => { if (!$("#ans").value.trim()) return toast("Escribí la respuesta primero", "pencil"); toast("Listo: Galú ya lo sabe", "check"); $("#ans").value = ""; });
+});
+</script>
+</body>
+</html>

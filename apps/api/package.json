@@ -1,0 +1,26 @@
+{
+  "name": "@mini-galu/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.3",
+    "@mini-galu/contracts": "workspace:*",
+    "@mini-galu/db": "workspace:*",
+    "hono": "^4.13.13",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@mini-galu/config": "workspace:*",
+    "@types/node": "^24.19.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,9 @@
+/* Orden: tokens → Tailwind (sin preflight y con prefijo tw: — las clases de los mockups como .ring, .grid o .static
+   chocan con utilidades de Tailwind) → componentes del atelier. Uso: className="tw:flex tw:gap-2". */
+@import "@mini-galu/design-tokens/tokens.css";
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@mini-galu/design-tokens/theme.css";
+@import "./atelier.css";
+
+@source "../";

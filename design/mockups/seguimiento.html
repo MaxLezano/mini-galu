@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seguí tu pedido — Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .tr-hero { padding: clamp(40px, 7vw, 96px) 0 36px; text-align: center; }
+  .tr-hero h1 { margin: 16px 0 14px; }
+  .tr-form { display: flex; gap: 8px; max-width: 640px; margin: 28px auto 0; padding: 8px; border-radius: var(--r-pill); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line), var(--shadow-soft); }
+  .tr-form input { flex: 1; border: 0; outline: none; padding: 0 20px; background: transparent; min-width: 0; font-size: 16px; text-transform: uppercase; }
+  .tr-form .btn { min-height: 48px; }
+  .tr-try { margin-top: 12px; font-size: 13px; color: var(--cacao-2); display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .tr-try button { text-decoration: underline; text-underline-offset: 3px; }
+  .tr-card { border-radius: var(--r-lg); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line), var(--shadow-soft); overflow: hidden; margin-bottom: 100px; max-width: 1200px; margin-inline: auto; }
+  .tr-top { display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; padding: clamp(24px, 4vw, 44px); background: var(--linen); align-items: end; --sc: var(--linen); }
+  .tr-top .eta { font-size: clamp(32px, 4.4vw, 58px); margin: 12px 0 0; }
+  .tr-top .hand { font-size: 30px; transform: rotate(-5deg); display: inline-block; }
+
+  .journey { position: relative; display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); padding: 52px clamp(16px, 4vw, 44px) 36px; }
+  .journey .track, .journey .fill { position: absolute; top: 79px; height: 0; }
+  .journey .track { border-top: 2px dashed var(--line-2); }
+  .journey .fill { top: 78px; height: 4px; border-radius: 2px; background: var(--canela); width: 0; transition: width 1.8s var(--ease); }
+  .journey .truck { position: absolute; top: 58px; width: 44px; height: 44px; border-radius: 50%; background: var(--cacao); color: var(--paper); display: grid; place-items: center; transform: translateX(-50%); transition: left 1.8s var(--ease); box-shadow: 0 0 0 6px var(--paper-2), var(--shadow-soft); z-index: 2; }
+  .stop { text-align: center; display: grid; justify-items: center; gap: 4px; font-size: 13px; position: relative; z-index: 1; padding-inline: 4px; }
+  .stop .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--paper-2); box-shadow: inset 0 0 0 2px var(--line-2); margin: 16px 0 14px; transition: all .4s var(--ease-spring); }
+  .stop.is-done .dot { background: var(--canela); box-shadow: 0 0 0 5px var(--canela-l); }
+  .stop b { font-weight: 600; font-size: 14px; }
+  .stop span { color: var(--cacao-2); }
+  .stop:not(.is-done) { color: var(--cacao-3); }
+
+  .tr-body { display: grid; grid-template-columns: 1.3fr 1fr; border-top: 1.5px dashed var(--line-2); }
+  .tr-body > div { padding: clamp(22px, 4vw, 44px); min-width: 0; }
+  .tr-body > div + div { border-left: 1.5px dashed var(--line-2); background: var(--paper); }
+  .log { list-style: none; margin: 18px 0 0; padding: 0; position: relative; }
+  .log::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; border-left: 1.5px dashed var(--line-2); }
+  .log li { position: relative; padding: 0 0 22px 34px; }
+  .log li::before { content: ""; position: absolute; left: 0; top: 4px; width: 15px; height: 15px; border-radius: 50%; background: var(--paper-2); box-shadow: inset 0 0 0 2px var(--cacao-3); }
+  .log li:first-child::before { background: var(--canela); box-shadow: 0 0 0 5px var(--canela-l); }
+  .log b { display: block; font-size: 15px; }
+  .log small { color: var(--cacao-2); font-size: 12.5px; }
+  .pkg { display: grid; gap: 12px; margin: 16px 0 24px; }
+  .pkg a { display: flex; gap: 12px; align-items: center; font-size: 14px; }
+  .pkg img { width: 52px; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; }
+  .kv { display: grid; gap: 14px; font-size: 14px; margin-bottom: 24px; }
+  .kv span { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--cacao-2); margin-bottom: 2px; }
+  .carrier { font: 700 10px/1 var(--f-ui); letter-spacing: .1em; color: var(--cacao-2); background: var(--linen); padding: 5px 8px; border-radius: 5px; }
+  .actions { display: grid; gap: 10px; }
+  .notify { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--linen); font-size: 13.5px; margin-bottom: 16px; }
+  .pending-pay { display: grid; gap: 12px; padding: 20px; border-radius: var(--r-md); background: var(--rosa-l); margin-top: 8px; }
+  .notfound { text-align: center; padding: 20px 0 100px; }
+  @media (max-width: 860px) {
+    .tr-body { grid-template-columns: 1fr; } .tr-body > div + div { border-left: 0; border-top: 1.5px dashed var(--line-2); }
+    .journey { grid-template-columns: 1fr; padding-top: 24px; }
+    .journey .track, .journey .fill, .journey .truck { display: none; }
+    .stop { grid-template-columns: auto 1fr; text-align: left; justify-items: start; column-gap: 14px; padding: 0; }
+    .stop .dot { grid-row: span 2; margin: 2px 0 18px; }
+    .tr-top { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) { .tr-form { border-radius: 22px; flex-direction: column; } .tr-form input { height: 48px; } }
+</style>
+</head>
+<body data-page="seguimiento">
+<main class="wrap">
+  <section class="tr-hero">
+    <span class="eyebrow">Seguimiento de envío</span>
+    <h1 class="display h1">Seguí tu <em>pedido</em></h1>
+    <p class="lead" style="margin:0 auto">Ingresá tu número de pedido o el código de Andreani. No hace falta iniciar sesión.</p>
+    <form class="tr-form" id="tr-form"><input id="code" value="MG-1042" aria-label="Número de pedido o código Andreani" autocomplete="off"><button class="btn">Buscar <span data-icon="search" class="i-sm"></span></button></form>
+    <div class="tr-try">Probá con: <button data-try="MG-1042">MG-1042</button><button data-try="MG-1040">MG-1040</button><button data-try="MG-1044">MG-1044</button><button data-try="MG-1046">MG-1046</button><button data-try="MG-1035">MG-1035</button></div>
+  </section>
+  <div id="result"></div>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener("mg:ready", () => {
+  const { D, bySlug, img, money, icon, brand } = MG;
+  const $ = (s) => document.querySelector(s);
+
+  const stopsFor = (o) => o.ship[0] === "taller"
+    ? [["Pagado", "Mercado Pago"], ["Preparando", "en el taller"], ["Listo para retirar", "Villa Crespo"], ["Retirado", ""]]
+    : [["Pagado", "Mercado Pago"], ["Preparando", "en el taller"], ["Despachado", "Andreani"], ["En camino", ""], ["Entregado", ""]];
+  const idx = { esperando_pago: -1, nuevo: 0, preparando: 1, listo: 1, en_camino: 3, entregado: 4 };
+  const dates = { "MG-1042": ["vie 2 oct", "sáb 3 oct", "lun 5 oct", "lun 5 oct", "jue 8 (estimado)"] };
+
+  function eventsFor(o) {
+    const ev = [];
+    const pay = D.payLabel[o.pay[0]] + (o.pay[1] > 1 ? ` · ${o.pay[1]} cuotas` : "");
+    if (o.id === "MG-1042") return [
+      ["En tránsito hacia la sucursal de destino", "Lun 5 oct · 21:40 · Centro de distribución Benavídez"],
+      ["Ingresó al centro de distribución", "Lun 5 oct · 18:15 · Benavídez, Buenos Aires"],
+      ["Retirado por Andreani", "Lun 5 oct · 16:30 · Villa Crespo, CABA"],
+      ["Etiqueta generada", "Lun 5 oct · 11:02 · Mini Galú"],
+      ["Preparado en el taller", "Sáb 3 oct · 12:20 · Mini Galú"],
+      ["Pago aprobado", `Vie 2 oct · 21:48 · ${pay}`],
+    ];
+    if (o.status === "entregado") ev.push(["Entregado", "3 días después del pago · Recibió la titular"]);
+    if (["en_camino", "entregado"].includes(o.status)) ev.push(["Retirado por Andreani", "Al día siguiente del pago · Villa Crespo, CABA"]);
+    if (o.status === "listo") ev.push([o.ship[0] === "taller" ? "Listo para retirar en el taller" : "Etiqueta generada · sale en el próximo retiro", "Hoy · Mini Galú"]);
+    if (["preparando", "listo", "en_camino", "entregado"].includes(o.status)) ev.push(["En preparación en el taller", `${o.date} · Mini Galú`]);
+    if (o.status !== "esperando_pago") ev.push(["Pago aprobado", `${o.date} · ${pay}`]);
+    else ev.push(["Pedido creado · esperando el pago", `${o.date} · Link de pago enviado por ${o.channel}`]);
+    return ev;
+  }
+
+  function render(code) {
+    code = code.trim().toUpperCase();
+    const o = D.orders.find((x) => x.id === code || x.tracking === code);
+    if (!o) {
+      $("#result").innerHTML = `<div class="notfound empty-state">${MG.EMB}<div class="hand" style="font-size:34px">No encontramos ese pedido</div><p class="muted" style="margin:0 0 10px">Revisá el número que te llegó por mail o WhatsApp, o preguntale a Galú.</p><button class="btn btn-ghost" data-open-galu>Preguntarle a Galú</button></div>`;
+      return;
+    }
+    const c = D.customers[o.c];
+    const stops = stopsFor(o);
+    const at = o.ship[0] === "taller" ? { esperando_pago: -1, nuevo: 0, preparando: 1, listo: 2, en_camino: 2, entregado: 3 }[o.status] : idx[o.status];
+    const st = D.statuses.find((s) => s.key === o.status);
+    const etaTxt = {
+      esperando_pago: `Esperando <em>tu pago</em>`,
+      nuevo: `Ya lo estamos <em>preparando</em>`,
+      preparando: `Ya lo estamos <em>preparando</em>`,
+      listo: o.ship[0] === "taller" ? `Listo para <em>retirar</em>` : `Sale <em>hoy</em> con Andreani`,
+      en_camino: o.id === "MG-1042" ? `Llega el <em>jueves 8</em> de octubre` : `Llega en <em>2 a 3 días</em>`,
+      entregado: `¡<em>Entregado</em>!`,
+    }[o.status];
+    const hand = { esperando_pago: "te guardamos la prenda 72 h", en_camino: "¡ya casi llega! ♡", entregado: "¡que lo disfrute! ♡", listo: "te esperamos ♡" }[o.status] || "con mucho amor ♡";
+    const subtotal = o.items.reduce((a, [s, , q]) => a + bySlug[s].price * q, 0);
+    const d = dates[o.id] || [];
+    $("#result").innerHTML = `
+    <article class="tr-card" data-reveal>
+      <div class="tr-top hem-bottom">
+        <div>
+          <span class="pill-status ${st.tone}">${st.short}</span>
+          <p class="display eta">${etaTxt}</p>
+          <p class="muted" style="margin:10px 0 0">Pedido <b>#${o.id}</b> · ${o.status === "esperando_pago" ? "creado" : "pagado"} el ${o.date} · ${money(subtotal + o.ship[1])}</p>
+        </div>
+        <span class="hand">${hand}</span>
+      </div>
+      <div class="journey" id="journey" style="--n:${stops.length}">
+        <i class="track" id="track"></i><i class="fill" id="fill"></i>${at >= 0 && at < stops.length - 1 ? `<span class="truck" id="truck">${icon(o.ship[0] === "taller" ? "store" : "truck")}</span>` : ""}
+        ${stops.map(([t, s], i) => `<div class="stop ${i <= at ? "is-done" : ""}"><i class="dot"></i><b>${t}</b><span>${d[i] || (i <= at ? s : i === stops.length - 1 && o.status === "en_camino" ? "estimado en 2–3 días" : s)}</span></div>`).join("")}
+      </div>
+      <div class="tr-body">
+        <div>
+          <div class="row"><h2 class="display h3" style="margin:0">Recorrido</h2>${o.tracking ? '<span class="carrier">ANDREANI</span>' : ""}</div>
+          <ul class="log">${eventsFor(o).map(([b, s]) => `<li><b>${b}</b><small>${s}</small></li>`).join("")}</ul>
+          ${o.status === "esperando_pago" ? `<div class="pending-pay"><b>Te falta pagar ${money(subtotal + o.ship[1])}</b><span class="muted" style="font-size:13.5px">Podés pagar con tarjeta de crédito, débito o dinero en cuenta de Mercado Pago.</span><a class="btn" href="checkout.html?step=3">${brand("mercadopago", "brand i-sm")} Pagar ahora</a></div>` : ""}
+        </div>
+        <div>
+          <div class="notify"><span style="display:inline-flex;gap:10px;align-items:center">${brand("whatsapp", "brand i-sm")} Avisos por WhatsApp</span><input class="tog" type="checkbox" checked aria-label="Avisos por WhatsApp"></div>
+          <h2 class="display h3" style="margin:0">En el paquete</h2>
+          <div class="pkg">${o.items.map(([s, size, q]) => `<a href="producto.html?p=${s}"><img src="${img(bySlug[s])}" alt=""><span><b>${bySlug[s].name}</b><br><span class="muted">Talle ${size}${q > 1 ? ` · x${q}` : ""}</span></span></a>`).join("")}</div>
+          <div class="kv">
+            <div><span>${o.ship[0] === "taller" ? "Retiro en" : "Entrega en"}</span>${o.ship[0] === "taller" ? "El taller · Villa Crespo, CABA" : o.ship[0] === "sucursal" ? `Sucursal Andreani · ${c.city}` : `${o.c === "lucia" ? "Gurruchaga 1234, 3° B · " : ""}${c.city}`}</div>
+            ${o.tracking ? `<div><span>Nº Andreani</span><b>${o.tracking}</b></div>` : ""}
+            <div><span>Recibe</span>${c.name}</div>
+          </div>
+          <div class="actions">
+            ${o.tracking ? `<a class="btn btn-ghost btn-block" href="#">Ver en Andreani ${icon("external-link", "i-sm")}</a>` : ""}
+            <button class="btn btn-rose btn-block" data-open-galu>${icon("message-circle-heart", "i-sm")} Preguntarle a Galú</button>
+            <a class="link" href="${MG.WA}" style="justify-self:center;font-size:13px;margin-top:6px">${brand("whatsapp", "brand i-sm")} Escribirle a Gaby</a>
+          </div>
+        </div>
+      </div>
+    </article>`;
+    MG.observeReveal();
+    requestAnimationFrame(() => setTimeout(place, 350));
+  }
+
+  // ubica la línea y el camión sobre el centro real de cada punto
+  function place() {
+    const j = $("#journey"); if (!j || getComputedStyle($("#track")).display === "none") return;
+    const dots = [...j.querySelectorAll(".dot")]; const jr = j.getBoundingClientRect();
+    const cx = (el) => el.getBoundingClientRect().left + el.offsetWidth / 2 - jr.left;
+    const first = cx(dots[0]), last = cx(dots[dots.length - 1]);
+    const doneDots = j.querySelectorAll(".stop.is-done .dot");
+    const cur = doneDots.length ? cx(doneDots[doneDots.length - 1]) : first;
+    Object.assign($("#track").style, { left: first + "px", width: last - first + "px" });
+    $("#fill").style.left = first + "px";
+    $("#fill").style.width = Math.max(0, cur - first) + "px";
+    if ($("#truck")) { $("#truck").style.left = first + "px"; requestAnimationFrame(() => ($("#truck").style.left = cur + "px")); }
+  }
+  addEventListener("resize", () => { const t = $("#truck"); if (t) t.style.transition = "none"; place(); });
+
+  $("#tr-form").addEventListener("submit", (e) => { e.preventDefault(); render($("#code").value); });
+  document.querySelectorAll("[data-try]").forEach((b) => b.addEventListener("click", () => { $("#code").value = b.dataset.try; render(b.dataset.try); }));
+  render(MG.params.get("pedido") || "MG-1042");
+});
+</script>
+</body>
+</html>

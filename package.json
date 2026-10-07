@@ -1,0 +1,38 @@
+{
+  "name": "mini-galu",
+  "private": true,
+  "description": "Mini Galú — tienda, catálogo y sistema de pedidos automatizado para prendas de diseño para niñas.",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "db:up": "docker compose up -d postgres mailpit",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @mini-galu/db generate",
+    "db:migrate": "pnpm --filter @mini-galu/db migrate",
+    "db:seed": "pnpm --filter @mini-galu/db seed",
+    "db:reset": "pnpm --filter @mini-galu/db reset",
+    "db:studio": "pnpm --filter @mini-galu/db studio",
+    "mockups": "npx serve design/mockups -l 5500",
+    "prepare": "husky",
+    "test:e2e": "playwright test",
+    "shots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@playwright/test": "^1.63.0",
+    "husky": "^9.1.7",
+    "turbo": "^2.11.7",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tienda y pagos — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
+  .box > .stack { display: grid; gap: 14px; }
+  .conn { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: var(--linen); }
+  .conn .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--paper); display: grid; place-items: center; flex: none; }
+  .conn .ic .brand, .conn .ic svg { width: 24px; height: 24px; }
+  .conn > div { flex: 1; font-size: 13px; }
+  .conn b { display: block; font-size: 15px; }
+  .pm { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .pm:last-child { border-bottom: 0; }
+  .pm .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--linen); display: grid; place-items: center; }
+  .pm .ic .brand { width: 20px; height: 20px; }
+  .pm small { display: block; color: var(--cacao-2); font-size: 12px; }
+  .heroes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .heroes button { aspect-ratio: 16/10; border-radius: 12px; overflow: hidden; position: relative; }
+  .heroes img { width: 100%; height: 100%; object-fit: cover; }
+  .heroes button[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 3px var(--cacao); }
+  .launch-prev { display: grid; grid-template-columns: 90px 1fr; gap: 14px; align-items: center; padding: 12px; border-radius: 16px; background: var(--cacao); color: var(--linen); }
+  .launch-prev img { width: 90px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; }
+  .launch-prev em { color: var(--rosa); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .inline-input { position: relative; }
+  .inline-input span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--cacao-2); font-weight: 600; }
+  .inline-input .input { padding-left: 38px; }
+  .heroes { grid-template-columns: repeat(4, 1fr); }
+  .heroes .up { display: grid; place-content: center; justify-items: center; gap: 4px; background: var(--linen); color: var(--cacao-2); box-shadow: inset 0 0 0 1.5px var(--line-2); }
+  .heroes .up small { font-size: 11px; font-weight: 600; }
+  .hero-prev { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16/8; color: var(--paper); }
+  .hero-prev img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .4s; }
+  .hero-prev::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(40,28,22,.65), rgba(40,28,22,0) 70%); }
+  .hero-prev > div { position: absolute; left: 18px; bottom: 16px; right: 40%; z-index: 1; display: grid; gap: 6px; }
+  .hero-prev .eyebrow { color: var(--rosa); font-size: 9.5px; }
+  .hero-prev b { font: 400 clamp(18px, 2vw, 24px)/1.05 var(--f-display); }
+  .hero-prev p { margin: 0; font-size: 11px; opacity: .85; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .hp-btn { justify-self: start; padding: 6px 12px; border-radius: 999px; background: var(--paper); color: var(--cacao); font-size: 10.5px; font-weight: 700; }
+  .cp-edit { color: var(--cacao-2); }
+  #cp-rows tr { cursor: pointer; }
+  @media (max-width: 1100px) { .set-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="tienda">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Ajustes</span><h1 class="display">Tienda y <em>pagos</em></h1></div>
+  </div>
+
+  <div class="set-grid">
+    <section class="box" id="pagos">
+      <div class="box-head"><h2>Mercado Pago</h2><div class="seg-btns" role="group" aria-label="Modo"><button aria-pressed="true" data-mode="test">Prueba</button><button aria-pressed="false" data-mode="prod">Producción</button></div></div>
+      <div class="stack">
+        <div class="conn"><span class="ic"><span data-brand="mercadopago"></span></span><div><b>Cuenta conectada</b><span class="muted" id="mode-txt">Modo prueba: los pagos son de mentira, con tarjetas de prueba.</span></div><span class="pill-status st-ok">Activa</span></div>
+        <div>
+          <div class="pm"><span class="ic"><span data-icon="credit-card" class="i-sm"></span></span><div><b>Tarjeta de crédito</b><small>Visa, Mastercard, American Express, Naranja y más</small></div><input class="tog" type="checkbox" checked aria-label="Crédito"></div>
+          <div class="pm"><span class="ic"><span data-icon="layers" class="i-sm"></span></span><div><b>Cuotas sin interés</b><small>Las pagás vos como comercio. Se muestran en la tienda.</small></div><select class="input" style="width:auto;height:38px;font-size:13px" aria-label="Cuotas sin interés"><option>Sin cuotas sin interés</option><option>Hasta 3</option><option selected>Hasta 6</option></select></div>
+          <div class="pm"><span class="ic"><span data-icon="wallet-cards" class="i-sm"></span></span><div><b>Tarjeta de débito</b><small>Visa Débito, Maestro, Cabal</small></div><input class="tog" type="checkbox" checked aria-label="Débito"></div>
+          <div class="pm"><span class="ic"><span data-brand="mercadopago"></span></span><div><b>Dinero en cuenta de Mercado Pago</b><small>Se paga con el saldo de Mercado Pago, sin tarjeta</small></div><input class="tog" type="checkbox" checked aria-label="Dinero en cuenta"></div>
+          <div class="pm"><span class="ic"><span data-icon="link" class="i-sm"></span></span><div><b>Links de pago automáticos</b><small>Si un pago queda pendiente, el pedido genera su link solo y se le reenvía al cliente. El stock se reserva 72 h.</small></div><input class="tog" type="checkbox" checked aria-label="Links de pago"></div>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin:0">La comisión y el plazo de acreditación los elegís en tu cuenta de Mercado Pago. Cada pago aprobado mueve solo el pedido a “Nuevos”.</p>
+      </div>
+    </section>
+
+    <section class="box" id="envios">
+      <div class="box-head"><h2>Envíos</h2></div>
+      <div class="stack">
+        <div class="conn"><span class="ic"><span data-icon="truck"></span></span><div><b>Andreani</b><span class="muted">Modo simulado: cotiza con una tabla y genera seguimientos de prueba. Cuando tengas contrato, cargás las credenciales.</span></div><button class="btn btn-xs btn-ghost" id="andreani">Conectar</button></div>
+        <div class="two">
+          <div class="field"><label for="free">Envío gratis desde</label><div class="inline-input"><span>$</span><input class="input" id="free" value="90.000" inputmode="numeric"></div></div>
+          <div class="field"><label for="pkg">Paquete por defecto</label><select class="input" id="pkg"><option>Bolsa 30×40 · 500 g</option><option>Caja chica 25×20×8 · 1 kg</option></select></div>
+        </div>
+        <label class="switch">Envío a domicilio <input class="tog" type="checkbox" checked></label>
+        <label class="switch">Envío a sucursal Andreani <input class="tog" type="checkbox" checked></label>
+        <label class="switch">Retiro en el taller <input class="tog" type="checkbox" checked></label>
+        <div class="field"><label for="hours">Horarios de retiro</label><input class="input" id="hours" value="Lunes a sábado · 10 a 13 h · Villa Crespo"></div>
+      </div>
+    </section>
+
+    <section class="box" id="lanzamiento">
+      <div class="box-head"><h2>Lanzamientos</h2><span class="pill-status st-warn">Próximo en 12 días</span></div>
+      <div class="stack">
+        <div class="launch-prev"><img src="assets/img/hero-otono.webp" alt=""><div><span class="eyebrow" style="color:var(--rosa)">Así se ve en la home</span><p class="display h3" style="margin:6px 0 0">Otoño · Invierno <em>26</em></p><span style="font-size:12.5px;opacity:.8">18 de octubre · 10 h · 214 anotados</span></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="admin-lanzamientos.html">Editar lanzamientos</a><a class="btn btn-sm btn-ghost" href="admin-lanzamientos.html?nuevo">+ Nuevo lanzamiento</a></div>
+      </div>
+    </section>
+
+    <section class="box" id="home">
+      <div class="box-head"><h2>Portada de la tienda</h2><a class="link" href="index.html" style="font-size:13px">Ver</a></div>
+      <div class="stack">
+        <div class="hero-prev" id="hero-prev"><img id="hp-img" src="assets/img/hero-campo.webp" alt=""><div><span class="eyebrow" id="hp-eye">Otoño · Invierno 26</span><b id="hp-title">Hecho a mano, para crecer soñando.</b><p id="hp-sub"></p><span class="hp-btn" id="hp-btn">Ver la colección</span></div></div>
+        <div class="field"><span class="lbl">Foto principal</span><div class="heroes" id="heroes"><button aria-pressed="true" data-src="hero-campo"><img src="assets/img/hero-campo.webp" alt="Campo"></button><button aria-pressed="false" data-src="hero-bosque"><img src="assets/img/hero-bosque.webp" alt="Bosque"></button><button aria-pressed="false" data-src="hero-otono"><img src="assets/img/hero-otono.webp" alt="Otoño"></button><button aria-pressed="false" id="hero-up" class="up" aria-label="Subir foto"><span data-icon="image-plus"></span><small>Subir foto</small></button></div></div>
+        <div class="two"><div class="field"><label for="he">Etiqueta</label><input class="input" id="he" value="Otoño · Invierno 26"></div><div class="field"><label for="hb">Texto del botón</label><input class="input" id="hb" value="Ver la colección"></div></div>
+        <div class="field"><label for="ht">Título</label><input class="input" id="ht" value="Hecho a mano, para crecer soñando."></div>
+        <div class="field"><label for="hs">Bajada</label><textarea class="input" id="hs" rows="2">Prendas de diseño para niñas de 12 meses a talle 10. Pocas de cada modelo, bordadas en nuestro taller.</textarea></div>
+        <div class="field"><label for="ann">Barra de anuncios <small class="muted" style="font-weight:400">(separá cada mensaje con ·)</small></label><input class="input" id="ann" value="Envíos a todo el país con Andreani · Hasta 6 cuotas sin interés · Envío gratis desde $90.000"></div>
+        <div class="field"><label for="hwhen">Publicar</label><select class="input" id="hwhen"><option>Ahora</option><option>Programar para una fecha…</option><option>Junto con el próximo lanzamiento (18/10)</option></select></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" id="hero-save">Guardar portada</button><button class="btn btn-sm btn-ghost" id="hero-reset">Descartar cambios</button></div>
+      </div>
+    </section>
+
+    <section class="box" id="cupones">
+      <div class="box-head"><h2>Cupones</h2><button class="btn btn-xs" id="cp-new">+ Nuevo cupón</button></div>
+      <div class="tbl-wrap"><table class="t stack"><thead><tr><th>Código</th><th>Descuento</th><th class="num">Usos</th><th>Activo</th><th></th></tr></thead><tbody id="cp-rows"></tbody></table></div>
+    </section>
+
+    <section class="box">
+      <div class="box-head"><h2>Gift cards</h2><span class="muted" style="font-size:13px">9 vendidas</span></div>
+      <div class="kpis" style="grid-template-columns:1fr 1fr;margin-bottom:16px"><div class="kpi" style="background:var(--linen);box-shadow:none"><span>Vendido</span><b>$245.000</b></div><div class="kpi" style="background:var(--linen);box-shadow:none"><span>Saldo sin usar</span><b>$87.500</b></div></div>
+      <div class="tbl-wrap"><table class="t stack"><thead><tr><th>Código</th><th>Para</th><th class="num">Saldo</th><th>Vence</th></tr></thead><tbody>
+        <tr><td><b>GALU-7KQ2</b></td><td data-l="Para">Olivia (de Lucía F.)</td><td class="num" data-l="Saldo">$12.500</td><td data-l="Vence">abr 2027</td></tr>
+        <tr><td><b>GALU-3MZP</b></td><td data-l="Para">Juana (de Carla M.)</td><td class="num" data-l="Saldo">$35.000</td><td data-l="Vence">mar 2027</td></tr>
+        <tr><td><b>GALU-9TRX</b></td><td data-l="Para">Mía (de la tía Sole)</td><td class="num" data-l="Saldo">$40.000</td><td data-l="Vence">feb 2027</td></tr>
+      </tbody></table></div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="m-cp" role="dialog" aria-label="Cupón">
+  <div class="modal-head"><h3 class="display h3" style="margin:0" id="cp-title">Nuevo <em>cupón</em></h3><button class="icon-btn" data-modal-close aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <form class="modal-body" id="cp-form">
+    <div class="field"><label for="cp-code">Código</label><input class="input" id="cp-code" required maxlength="20" placeholder="Ej. PRIMAVERA15" style="text-transform:uppercase;letter-spacing:.06em"></div>
+    <div class="field"><span class="lbl">Tipo de descuento</span><div class="seg-btns" id="cp-type" role="group"><button type="button" data-t="pct" aria-pressed="true">Porcentaje</button><button type="button" data-t="fix" aria-pressed="false">Monto fijo</button><button type="button" data-t="ship" aria-pressed="false">Envío gratis</button></div></div>
+    <div class="two">
+      <div class="field" id="cp-val-f"><label for="cp-val">Valor</label><div class="inline-input"><span id="cp-unit">%</span><input class="input" id="cp-val" inputmode="numeric" value="10"></div></div>
+      <div class="field"><label for="cp-min">Compra mínima</label><div class="inline-input"><span>$</span><input class="input" id="cp-min" inputmode="numeric" placeholder="Sin mínimo"></div></div>
+    </div>
+    <div class="field"><label for="cp-who">Para quién</label><select class="input" id="cp-who"><option>Todos</option><option>Primera compra</option><option>Después de dejar una reseña</option><option>Mail de cumpleaños</option><option>Anotados al lanzamiento</option></select></div>
+    <div class="two">
+      <div class="field"><label for="cp-end">Vence</label><input class="input" id="cp-end" type="date"></div>
+      <div class="field"><label for="cp-lim">Usos máximos</label><input class="input" id="cp-lim" type="number" min="1" placeholder="Sin límite"></div>
+    </div>
+    <label class="switch">Un uso por cliente <input class="tog" type="checkbox" id="cp-once" checked></label>
+    <label class="switch">Activo <input class="tog" type="checkbox" id="cp-on" checked></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="cp-save">Crear cupón</button><button type="button" class="btn btn-ghost" id="cp-del" hidden>Eliminar</button></div>
+  </form>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { toast } = MG;
+  const $ = (s) => document.querySelector(s);
+  document.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("[data-mode]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    $("#mode-txt").textContent = b.dataset.mode === "prod" ? "Producción: los pagos son reales y se acreditan en tu cuenta." : "Modo prueba: los pagos son de mentira, con tarjetas de prueba.";
+    toast(b.dataset.mode === "prod" ? "Mercado Pago en producción" : "Mercado Pago en modo prueba", "credit-card");
+  }));
+  // portada: vista previa en vivo
+  const H0 = { src: "hero-campo", he: $("#he").value, hb: $("#hb").value, ht: $("#ht").value, hs: $("#hs").value, ann: $("#ann").value };
+  const heroDraw = () => { $("#hp-eye").textContent = $("#he").value; $("#hp-title").textContent = $("#ht").value; $("#hp-sub").textContent = $("#hs").value; $("#hp-btn").textContent = $("#hb").value; };
+  ["#he", "#hb", "#ht", "#hs"].forEach((s) => $(s).addEventListener("input", heroDraw)); heroDraw();
+  $("#heroes").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "hero-up") return toast("Acá se abre el selector de fotos (se recorta y optimiza sola)", "image-plus");
+    document.querySelectorAll("#heroes button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    $("#hp-img").src = `assets/img/${b.dataset.src}.webp`;
+  });
+  $("#hero-save").addEventListener("click", () => toast($("#hwhen").selectedIndex === 0 ? "Portada publicada en la tienda" : "Portada programada", "check"));
+  $("#hero-reset").addEventListener("click", () => {
+    ["he", "hb", "ht", "hs", "ann"].forEach((k) => ($("#" + k).value = H0[k]));
+    document.querySelectorAll("#heroes button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.src === H0.src));
+    $("#hp-img").src = `assets/img/${H0.src}.webp`; heroDraw(); toast("Cambios descartados", "undo-2");
+  });
+
+  // cupones
+  const coupons = [
+    { code: "BIENVENIDA10", t: "pct", v: 10, who: "Primera compra", uses: 18, on: true, min: "", end: "", lim: "" },
+    { code: "RESENA10", t: "pct", v: 10, who: "Después de dejar una reseña", uses: 6, on: true, min: "", end: "", lim: "" },
+    { code: "CUMPLE15", t: "pct", v: 15, who: "Mail de cumpleaños", uses: 4, on: true, min: "", end: "", lim: "" },
+    { code: "FIESTAS", t: "fix", v: 5000, who: "Todos", uses: 0, on: false, min: "40000", end: "2026-12-24", lim: "" },
+  ];
+  const disc = (c) => (c.t === "pct" ? `${c.v}%` : c.t === "fix" ? MG.money(c.v) : "Envío gratis");
+  const cpDraw = () => {
+    $("#cp-rows").innerHTML = coupons.map((c, i) => `<tr data-cp="${i}"><td><b>${c.code}</b><div class="muted" style="font-size:12px">${c.who}${c.end ? ` · vence ${c.end.split("-").reverse().slice(0, 2).join("/")}` : ""}${c.min ? ` · desde ${MG.money(+c.min)}` : ""}</div></td><td data-l="Descuento">${disc(c)}</td><td class="num" data-l="Usos">${c.uses}${c.lim ? ` / ${c.lim}` : ""}</td><td data-l="Activo"><input class="tog" type="checkbox" ${c.on ? "checked" : ""} data-cp-on="${i}" aria-label="Activo"></td><td><button class="icon-btn cp-edit" aria-label="Editar ${c.code}">${MG.icon("pencil", "i-sm")}</button></td></tr>`).join("");
+    MG.drawIcons();
+  };
+  let cpEdit = null, cpType = "pct";
+  const setType = (t) => {
+    cpType = t; document.querySelectorAll("#cp-type button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.t === t));
+    $("#cp-val-f").hidden = t === "ship"; $("#cp-unit").textContent = t === "pct" ? "%" : "$";
+  };
+  const cpOpen = (i) => {
+    cpEdit = i ?? null; const c = i != null ? coupons[i] : { code: "", t: "pct", v: 10, who: "Todos", on: true, min: "", end: "", lim: "" };
+    $("#cp-title").innerHTML = i != null ? `Editar <em>${c.code}</em>` : "Nuevo <em>cupón</em>";
+    $("#cp-code").value = c.code; $("#cp-val").value = c.v; $("#cp-min").value = c.min; $("#cp-who").value = c.who; $("#cp-end").value = c.end; $("#cp-lim").value = c.lim; $("#cp-on").checked = c.on;
+    setType(c.t); $("#cp-save").textContent = i != null ? "Guardar cambios" : "Crear cupón"; $("#cp-del").hidden = i == null;
+    MG.openModal("m-cp"); setTimeout(() => $("#cp-code").focus(), 300);
+  };
+  $("#cp-new").addEventListener("click", () => cpOpen());
+  $("#cp-type").addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (b) setType(b.dataset.t); });
+  $("#cp-rows").addEventListener("click", (e) => { if (e.target.closest(".tog")) return; const r = e.target.closest("[data-cp]"); if (r) cpOpen(+r.dataset.cp); });
+  $("#cp-rows").addEventListener("change", (e) => { const t = e.target.closest("[data-cp-on]"); if (t) { coupons[+t.dataset.cpOn].on = t.checked; toast(t.checked ? "Cupón activado" : "Cupón pausado", "ticket"); } });
+  $("#cp-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const code = $("#cp-code").value.trim().toUpperCase().replace(/\s+/g, "");
+    if (coupons.some((c, i) => c.code === code && i !== cpEdit)) return toast("Ya existe un cupón con ese código", "ticket");
+    const c = { code, t: cpType, v: +$("#cp-val").value.replace(/\D/g, "") || 0, who: $("#cp-who").value, min: $("#cp-min").value.replace(/\D/g, ""), end: $("#cp-end").value, lim: $("#cp-lim").value, on: $("#cp-on").checked, uses: cpEdit != null ? coupons[cpEdit].uses : 0 };
+    if (cpType !== "ship" && !c.v) return toast("Poné el valor del descuento", "ticket");
+    cpEdit != null ? (coupons[cpEdit] = c) : coupons.unshift(c);
+    MG.closeModals(); cpDraw(); toast(cpEdit != null ? `${code} actualizado` : `Cupón ${code} creado`, "ticket");
+  });
+  $("#cp-del").addEventListener("click", () => { const [c] = coupons.splice(cpEdit, 1); MG.closeModals(); cpDraw(); toast(`${c.code} eliminado`, "trash-2"); });
+  cpDraw();
+  $("#andreani").addEventListener("click", () => toast("Acá se cargan usuario, contraseña y número de contrato de Andreani", "key-round"));
+  document.querySelectorAll("[data-save]").forEach((b) => b.addEventListener("click", () => toast("Cambios guardados", "check")));
+  document.querySelectorAll(".tog:not(#m-cp .tog)").forEach((t) => !t.dataset.cpOn && t.addEventListener("change", () => toast("Cambio guardado", "check")));
+  if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+});
+</script>
+</body>
+</html>

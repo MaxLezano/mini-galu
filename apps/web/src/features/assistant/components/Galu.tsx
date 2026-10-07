@@ -1,0 +1,224 @@
+"use client";
+
+import { formatARS, type ProductSummary, type Size } from "@mini-galu/contracts";
+import { SendHorizontal, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useAddToCart } from "@/features/cart/use-add-to-cart";
+import { useShellData } from "@/features/shell/shell-context";
+import { useUi } from "@/features/shell/ui-store";
+import { cover, sizesIn, stockOf } from "@/lib/product";
+import { SITE } from "@/lib/site";
+import { Bow } from "@/ui/atoms/Bow";
+import { answer, contextSuggestions, DEFAULT_SUGGESTIONS, type GaluReply, greeting } from "../galu-engine";
+
+type MsgBody =
+  | { role: "me" | "bot" | "typing"; content?: ReactNode }
+  | { role: "cards"; products: ProductSummary[]; size?: Size };
+type Msg = MsgBody & { id: number };
+
+let mid = 0;
+
+function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (p: ProductSummary, s: Size) => void }) {
+  const s = size && stockOf(p, size) ? size : sizesIn(p)[0];
+  const n = s ? stockOf(p, s) : 0;
+  return (
+    <div className="mini-card">
+      <Link href={`/producto/${p.slug}`}>
+        <img src={cover(p)} alt={p.name} />
+      </Link>
+      <div>
+        <b>{p.name}</b>
+        <div className="muted">{formatARS(p.priceCents)}</div>
+        <div className="stock">
+          {s ? `${n === 1 ? "¡Queda 1!" : `${n} en stock`} · talle ${s}` : "Sin stock · avisame"}
+        </div>
+        {s ? (
+          <button type="button" className="btn" onClick={() => onAdd(p, s)}>
+            Agregar
+          </button>
+        ) : (
+          <Link className="btn btn-ghost" href={`/producto/${p.slug}`}>
+            Ver
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Galú: el moño flotante + el panel de chat (mockup app.js → galu). */
+export function Galu() {
+  const { products } = useShellData();
+  const { galu, openGalu, closeGalu, consumeGaluQuestion } = useUi();
+  const pathname = usePathname();
+  const addToCart = useAddToCart();
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [sugs, setSugs] = useState<string[]>([]);
+  const [hint, setHint] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const ctxSlug = pathname.startsWith("/producto/") ? decodeURIComponent(pathname.split("/")[2] ?? "") : null;
+  const ctx = products.find((p) => p.slug === ctxSlug) ?? null;
+
+  // pista "¡Hola! Soy Galú" una vez por sesión, se va sola a los 12 s
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("mg-hint") || location.search.includes("static")) return;
+    } catch {}
+    setHint(true);
+    const t = setTimeout(() => setHint(false), 12000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const push = (m: MsgBody) => setMsgs((l) => [...l, { ...m, id: ++mid }]);
+
+  const reply = async (q: string) => {
+    push({ role: "me", content: q });
+    const typingId = ++mid;
+    setMsgs((l) => [...l, { id: typingId, role: "typing" }]);
+    await new Promise((r) => setTimeout(r, 650 + Math.random() * 450));
+    const out: GaluReply[] = answer(q, products, ctx);
+    setMsgs((l) => [
+      ...l.filter((m) => m.id !== typingId),
+      ...out.map((r) =>
+        r.kind === "cards"
+          ? ({ id: ++mid, role: "cards", products: r.products, size: r.size } as Msg)
+          : ({ id: ++mid, role: "bot", content: r.content } as Msg),
+      ),
+    ]);
+  };
+
+  // al abrir: saludo (una vez) y, si viene una pregunta (chips "Preguntale a Galú"), la responde
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solo reacciona a abrir/cerrar
+  useEffect(() => {
+    if (!galu.open) {
+      document.body.classList.remove("galu-open");
+      return;
+    }
+    document.body.classList.add("galu-open");
+    if (!msgs.length) {
+      push({ role: "bot", content: greeting(ctx) });
+      setSugs(ctx ? contextSuggestions(ctx) : DEFAULT_SUGGESTIONS);
+    }
+    const q = consumeGaluQuestion();
+    if (q) void reply(q);
+    else if (matchMedia("(hover: hover)").matches) setTimeout(() => input.current?.focus(), 300);
+  }, [galu.open, galu.pending]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: baja al último mensaje cada vez que llega uno
+  useEffect(() => {
+    body.current?.scrollTo({ top: 1e6 });
+  }, [msgs]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeGalu();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [closeGalu]);
+
+  return (
+    <>
+      <div className={`galu-fab ${galu.open ? "is-hidden" : ""} ${hint ? "" : "no-hint"}`} id="galu-fab">
+        <button type="button" className="galu-orb" aria-label="Abrir asistente Galú" onClick={() => openGalu()}>
+          <Bow />
+        </button>
+        <div className="galu-hint">
+          <button
+            type="button"
+            className="x"
+            aria-label="Cerrar"
+            onClick={() => {
+              setHint(false);
+              try {
+                sessionStorage.setItem("mg-hint", "1");
+              } catch {}
+            }}
+          >
+            <X className="i-sm" />
+          </button>
+          <b>¡Hola! Soy Galú</b>¿Te ayudo a encontrar el talle o un vestido para un cumple?
+        </div>
+      </div>
+
+      <section
+        className={`galu ${galu.open ? "is-open" : ""}`}
+        id="galu"
+        aria-label="Asistente Galú"
+        aria-hidden={!galu.open}
+        role="dialog"
+      >
+        <div className="galu-head hem-bottom">
+          <div className="avatar">
+            <Bow />
+          </div>
+          <div>
+            <h3>Galú</h3>
+            <p>Responde con el stock real del taller</p>
+          </div>
+          <button type="button" className="icon-btn close" aria-label="Cerrar" onClick={closeGalu}>
+            <X />
+          </button>
+        </div>
+        <div className="galu-body" ref={body} aria-live="polite">
+          {msgs.map((m) =>
+            m.role === "cards" ? (
+              <div key={m.id} className="msg cards">
+                {m.products.map((p) => (
+                  <MiniCard key={p.slug} p={p} size={m.size} onAdd={(prod, s) => addToCart(prod, s)} />
+                ))}
+              </div>
+            ) : m.role === "typing" ? (
+              <div key={m.id} className="msg bot" style={{ padding: 0 }}>
+                <span className="typing">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
+            ) : (
+              <div key={m.id} className={`msg ${m.role}`}>
+                {m.content}
+              </div>
+            ),
+          )}
+        </div>
+        <div className="galu-sugs">
+          {sugs.map((s) => (
+            <button key={s} type="button" className="chip" onClick={() => void reply(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+        <form
+          className="galu-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = input.current?.value.trim();
+            if (v && input.current) {
+              input.current.value = "";
+              void reply(v);
+            }
+          }}
+        >
+          <input
+            ref={input}
+            placeholder="Preguntame por talles, stock, envíos…"
+            autoComplete="off"
+            aria-label="Mensaje"
+          />
+          <button type="submit" aria-label="Enviar">
+            <SendHorizontal />
+          </button>
+        </form>
+        <div className="galu-note">
+          ¿Algo más?{" "}
+          <a className="link" href={SITE.whatsapp}>
+            Escribile a Gaby por WhatsApp
+          </a>
+        </div>
+      </section>
+    </>
+  );
+}

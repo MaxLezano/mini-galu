@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Productos — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .p-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .p-filters .chip { height: 34px; font-size: 13px; }
+  .p-filters .grow { flex: 1; }
+  .stock-note { font-size: 11.5px; color: var(--cacao-2); }
+  .wl { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+  .wl b { font-variant-numeric: tabular-nums; }
+  .ed-sec { padding: 18px 0; border-bottom: 1.5px dashed var(--line-2); display: grid; gap: 14px; }
+  .ed-sec:last-child { border-bottom: 0; }
+  .ed-sec h4 { margin: 0; font: 600 11px/1 var(--f-ui); letter-spacing: .18em; text-transform: uppercase; color: var(--cacao-2); display: flex; justify-content: space-between; align-items: center; }
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+  .photo { position: relative; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; cursor: grab; background: var(--linen); }
+  .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .photo .main { position: absolute; left: 6px; top: 6px; font-size: 9.5px; padding: 3px 7px; }
+  .photo .rm { position: absolute; right: 6px; top: 6px; width: 26px; height: 26px; border-radius: 50%; background: color-mix(in srgb, var(--paper) 90%, transparent); display: grid; place-items: center; opacity: 0; transition: opacity var(--t-fast); }
+  .photo:hover .rm { opacity: 1; }
+  .photo.add { border: 2px dashed var(--line-2); background: none; display: grid; place-items: center; text-align: center; font-size: 11.5px; color: var(--cacao-2); cursor: pointer; }
+  .photo.add:hover { border-color: var(--canela); color: var(--canela); }
+  .photo.sortable-ghost { opacity: .3; }
+  .occ { display: flex; gap: 6px; flex-wrap: wrap; }
+  .occ .chip { height: 32px; font-size: 12.5px; }
+  .sv { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .sv th { text-align: left; font: 600 10.5px/1 var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-2); padding: 0 6px 10px; }
+  .sv td { padding: 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  .sv .input { height: 38px; border-radius: 10px; font-size: 13px; padding: 0 10px; }
+  .sv .notify { font-size: 11.5px; color: var(--salvia-d); font-weight: 600; display: flex; gap: 4px; align-items: center; }
+  @media (max-width: 560px) { .sv .meas-col { display: none; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="productos">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Tienda</span><h1 class="display">Productos</h1></div>
+    <div class="actions"><button class="btn btn-sm" id="new-p"><span data-icon="plus" class="i-sm"></span> Nuevo producto</button></div>
+  </div>
+
+  <div class="kpis" id="pk"></div>
+
+  <section class="box">
+    <div class="p-filters" style="margin-bottom:16px">
+      <div class="filters-row" id="pf"></div>
+      <span class="grow"></span>
+      <label class="tiny-search"><span><span data-icon="search" class="i-sm"></span></span><input class="input" id="q" placeholder="Buscar producto" aria-label="Buscar producto"></label>
+      <select class="input" id="sort" style="width:auto;height:40px;border-radius:999px;font-size:13.5px" aria-label="Ordenar"><option value="name">Nombre</option><option value="stock">Menos stock</option><option value="sold">Más vendidos</option><option value="wait">Más lista de espera</option></select>
+    </div>
+    <div class="tbl-wrap"><table class="t stack" id="prods"></table></div>
+  </section>
+</main>
+
+<div class="scrim" id="ed-scrim"></div>
+<aside class="drawer wide" id="editor" aria-label="Editar producto" aria-hidden="true">
+  <div class="drawer-head"><div><span class="eyebrow" id="ed-eyebrow">Editar</span><h2 class="display h3" id="ed-title" style="margin-top:6px"></h2></div><button class="icon-btn" id="ed-x" aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <div class="drawer-body" id="ed-body"></div>
+  <div class="drawer-foot"><div style="display:flex;gap:8px"><button class="btn btn-ghost" id="ed-draft">Guardar borrador</button><button class="btn" style="flex:1" id="ed-save">Guardar y publicar</button></div><span class="muted" style="font-size:12px" id="ed-hint"></span></div>
+</aside>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/vendor/Sortable.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D } = ADM;
+  const { img, money, icon, toast, stockOf } = MG;
+  const $ = (s) => document.querySelector(s);
+  const state = { f: "all", q: "", sort: "name" };
+  const waitOf = (p) => Object.values(p.waitlist || {}).reduce((a, b) => a + b, 0);
+  const lvl = (p) => { const t = stockOf(p); return p.draft ? "draft" : t === 0 ? "out" : t <= 3 || Object.values(p.sizes).some((n) => n === 1) ? "low" : "ok"; };
+
+  function renderKpis() {
+    const pub = D.products.filter((p) => !p.draft);
+    $("#pk").innerHTML = [
+      ["shirt", "Publicados", pub.length, `${D.products.length - pub.length} en borrador`],
+      ["package", "Unidades en stock", pub.reduce((a, p) => a + stockOf(p), 0), `${pub.reduce((a, p) => a + Object.values(p.sizes).filter((n) => n === 0).length, 0)} talles agotados`],
+      ["bell-ring", "Anotadas esperando talle", D.products.reduce((a, p) => a + waitOf(p), 0), "se avisan solas al cargar stock"],
+      ["trending-up", "Vendidas en 30 días", pub.reduce((a, p) => a + p.sold30, 0), "Moño Verde es el más vendido"],
+    ].map(([ic, l, v, s]) => `<div class="kpi"><span>${icon(ic, "i-sm")} ${l}</span><b>${v}</b><small class="muted">${s}</small></div>`).join("");
+  }
+
+  function render() {
+    const F = [["all", "Todos"], ["pub", "Publicados"], ["draft", "Borradores"], ["low", "Stock bajo"], ["out", "Con talles agotados"]];
+    const cnt = { all: D.products.length, pub: D.products.filter((p) => !p.draft).length, draft: D.products.filter((p) => p.draft).length, low: D.products.filter((p) => lvl(p) === "low").length, out: D.products.filter((p) => !p.draft && Object.values(p.sizes).some((n) => n === 0)).length };
+    $("#pf").innerHTML = F.map(([k, l]) => `<button class="chip ${state.f === k ? "is-on" : ""}" data-f="${k}">${l} <span class="count">${cnt[k]}</span></button>`).join("");
+    let list = D.products.filter((p) => ({ all: true, pub: !p.draft, draft: p.draft, low: lvl(p) === "low", out: !p.draft && Object.values(p.sizes).some((n) => n === 0) })[state.f] && (!state.q || p.name.toLowerCase().includes(state.q.toLowerCase())));
+    const so = { name: (a, b) => a.name.localeCompare(b.name), stock: (a, b) => stockOf(a) - stockOf(b), sold: (a, b) => b.sold30 - a.sold30, wait: (a, b) => waitOf(b) - waitOf(a) };
+    list = list.sort(so[state.sort]);
+    $("#prods").innerHTML = `<thead><tr><th>Producto</th><th>Colección</th><th>Talles</th><th>Stock</th><th class="num">Precio</th><th class="num">Vendidas 30 d</th><th>Lista de espera</th><th>Publicado</th><th></th></tr></thead><tbody>` + list.map((p) => {
+      const t = stockOf(p), l = lvl(p), outs = Object.values(p.sizes).filter((n) => n === 0).length;
+      return `<tr class="clickable" data-edit="${p.slug}">
+        <td class="full"><div class="pp"><img src="${img(p)}" alt=""><div><b>${p.name}</b><small>${p.color[0]} · ${p.fabric}</small></div></div></td>
+        <td class="hide-s">${p.col}</td>
+        <td data-l="Talles"><div class="szs">${Object.entries(p.sizes).map(([s, n]) => `<span class="sz ${n === 0 ? "out" : ""}" title="${n ? n + " en stock" : "agotado"}">${s}</span>`).join("")}</div></td>
+        <td data-l="Stock"><div class="stock-cell ${l === "out" || l === "draft" ? "out" : l}"><div class="row"><b>${t}</b><span class="muted" style="font-size:12px">${t === 1 ? "unidad" : "unidades"}</span>${p.draft ? "" : l === "low" ? '<span class="pill-status st-warn">Bajo</span>' : t === 0 ? '<span class="pill-status st-rose">Sin stock</span>' : ""}</div><div class="bar"><i style="width:${Math.min(100, (t / 10) * 100)}%"></i></div>${outs && !p.draft ? `<span class="stock-note">${outs} ${outs === 1 ? "talle agotado" : "talles agotados"}</span>` : ""}</div></td>
+        <td class="num" data-l="Precio">${money(p.price)}${p.was ? `<div class="muted" style="font-size:11.5px;text-decoration:line-through">${money(p.was)}</div>` : ""}</td>
+        <td class="num hide-s">${p.sold30}</td>
+        <td data-l="Esperando">${waitOf(p) ? `<span class="wl">${icon("bell-ring", "i-sm")}<b>${waitOf(p)}</b> <span class="muted">· ${Object.entries(p.waitlist).filter(([, n]) => n).map(([s]) => "T" + s).join(", ")}</span></span>` : '<span class="muted">—</span>'}</td>
+        <td data-l="Publicado"><input class="tog" type="checkbox" data-pub="${p.slug}" ${p.draft ? "" : "checked"} aria-label="Publicado"></td>
+        <td class="hide-s"><button class="icon-btn" data-edit="${p.slug}" aria-label="Editar ${p.name}">${icon("pencil", "i-sm")}</button></td></tr>`;
+    }).join("") + "</tbody>";
+    renderKpis();
+  }
+
+  /* editor */
+  let cur = null, draftSizes = {};
+  const OCC = { diario: "Día a día", cumple: "Cumple", fiesta: "Fiesta", bautismo: "Bautismo", navidad: "Navidad", casamiento: "Casamiento", comunion: "Comunión" };
+  function openEditor(p) {
+    cur = p || { slug: "", name: "", price: 0, col: "Verano 2027", occ: [], color: ["", "#CDB79A"], photos: [], sizes: { 2: 0, 4: 0, 6: 0 }, waitlist: {}, fabric: "", desc: "", draft: true };
+    draftSizes = JSON.parse(JSON.stringify(cur.sizes));
+    $("#ed-eyebrow").textContent = p ? (p.draft ? "Borrador" : "Publicado") : "Nuevo";
+    $("#ed-title").textContent = p ? p.name : "Nuevo producto";
+    $("#ed-body").innerHTML = `
+      <div class="ed-sec"><h4>Fotos <span class="muted" style="letter-spacing:0;text-transform:none;font-weight:500">arrastrá para ordenar · la primera es la portada</span></h4>
+        <div class="photos" id="photos">${cur.photos.map((f, i) => `<div class="photo" data-f="${f}"><img src="assets/img/${f}.webp" alt="">${i === 0 ? '<span class="label-tag is-dark main">Portada</span>' : ""}<button class="rm" aria-label="Quitar foto">${icon("x", "i-sm")}</button></div>`).join("")}<button class="photo add" id="add-photo">${icon("image-plus")}<span>Subir fotos<br>(se recortan 3:4)</span></button></div></div>
+      <div class="ed-sec"><h4>Datos</h4>
+        <div class="field"><label for="e-name">Nombre</label><input class="input" id="e-name" value="${cur.name}"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label for="e-col">Colección</label><select class="input" id="e-col">${["Verano 2027", "Fiestas", "Atemporal", "Accesorios", "Otoño · Invierno 26"].map((c) => `<option ${c === cur.col ? "selected" : ""}>${c}</option>`).join("")}</select></div>
+          <div class="field"><label for="e-color">Color</label><input class="input" id="e-color" value="${cur.color[0]}"></div>
+          <div class="field"><label for="e-price">Precio</label><input class="input" id="e-price" inputmode="numeric" value="${cur.price ? money(cur.price) : ""}" placeholder="$"></div>
+          <div class="field"><label for="e-was">Precio anterior (opcional)</label><input class="input" id="e-was" inputmode="numeric" value="${cur.was ? money(cur.was) : ""}" placeholder="Para mostrar descuento"></div>
+        </div>
+        <div class="field"><label for="e-desc">Descripción</label><textarea class="input" id="e-desc" rows="3">${cur.desc}</textarea></div>
+        <div class="field"><label for="e-fab">Tela</label><input class="input" id="e-fab" value="${cur.fabric}"></div>
+        <div class="field"><span class="lbl">Ocasiones (las usa Galú para recomendar)</span><div class="occ">${Object.entries(OCC).map(([k, v]) => `<button type="button" class="chip ${cur.occ.includes(k) ? "is-on" : ""}" data-occ="${k}">${v}</button>`).join("")}</div></div>
+      </div>
+      <div class="ed-sec"><h4>Talles y stock</h4>
+        <table class="sv"><thead><tr><th>Talle</th><th>Stock</th><th class="meas-col">Medidas</th><th>Esperando</th></tr></thead><tbody id="sv"></tbody></table>
+        <div style="display:flex;gap:8px;align-items:center"><select class="input" id="add-size" style="height:38px;width:auto;font-size:13px"><option value="">Agregar talle…</option>${["12m", "2", "4", "6", "8", "10", "Único"].filter((s) => !(s in cur.sizes)).map((s) => `<option>${s}</option>`).join("")}</select></div>
+      </div>
+      <div class="ed-sec"><h4>Visibilidad</h4>
+        <label class="switch">Mostrar en la tienda <input class="tog" type="checkbox" id="e-pub" ${cur.draft ? "" : "checked"}></label>
+        <label class="switch">Destacar en “Lo nuevo de la semana” <input class="tog" type="checkbox" ${cur.tag === "Nuevo" ? "checked" : ""}></label>
+        <label class="switch">Que Galú lo recomiende <input class="tog" type="checkbox" checked></label>
+      </div>`;
+    renderSizes();
+    new Sortable($("#photos"), { animation: 200, filter: ".add, .rm", draggable: ".photo:not(.add)", ghostClass: "sortable-ghost", onEnd: () => { document.querySelectorAll("#photos .main").forEach((x) => x.remove()); const f = document.querySelector("#photos .photo:not(.add)"); f?.insertAdjacentHTML("beforeend", '<span class="label-tag is-dark main">Portada</span>'); } });
+    $("#editor").classList.add("is-open"); $("#ed-scrim").classList.add("is-open"); $("#editor").setAttribute("aria-hidden", "false");
+  }
+  function renderSizes() {
+    const MEAS = cur.measures || {};
+    let notify = 0;
+    $("#sv").innerHTML = Object.entries(draftSizes).map(([s, n]) => {
+      const w = cur.waitlist?.[s] || 0, back = w && n > 0 && !cur.sizes[s];
+      if (back) notify += w;
+      return `<tr><td><span class="sz">${s}</span></td><td><span class="stepper-n"><button type="button" data-st="${s}" data-d="-1" aria-label="Menos">${icon("minus", "i-sm")}</button><span>${n}</span><button type="button" data-st="${s}" data-d="1" aria-label="Más">${icon("plus", "i-sm")}</button></span></td><td class="meas-col"><input class="input" value="${MEAS[s] || ""}" placeholder="Largo · axila"></td><td>${w ? `${back ? `<span class="notify">${icon("bell-ring", "i-sm")} Se avisa a ${w}</span>` : `<span class="wl">${icon("bell", "i-sm")} ${w}</span>`}` : '<span class="muted">—</span>'}</td></tr>`;
+    }).join("");
+    $("#ed-hint").innerHTML = notify ? `${icon("workflow", "i-sm")} Al guardar, se les avisa por WhatsApp a <b>${notify}</b> personas anotadas que volvió su talle.` : "Los cambios de stock se reflejan al instante en la tienda y en Galú.";
+  }
+  const closeEd = () => { $("#editor").classList.remove("is-open"); $("#ed-scrim").classList.remove("is-open"); $("#editor").setAttribute("aria-hidden", "true"); };
+
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    const f = t.closest("[data-f]"); if (f) { state.f = f.dataset.f; return render(); }
+    if (t.closest("[data-pub]")) { const p = D.products.find((x) => x.slug === t.dataset.pub); p.draft = !t.checked; toast(t.checked ? `${p.name} publicado` : `${p.name} oculto de la tienda`, t.checked ? "eye" : "eye-off"); return render(); }
+    const ed = t.closest("[data-edit]"); if (ed) return openEditor(D.products.find((x) => x.slug === ed.dataset.edit));
+    const st = t.closest("[data-st]"); if (st) { draftSizes[st.dataset.st] = Math.max(0, draftSizes[st.dataset.st] + +st.dataset.d); return renderSizes(); }
+    const oc = t.closest("#ed-body [data-occ]"); if (oc) return oc.classList.toggle("is-on");
+    if (t.closest(".photo .rm")) return t.closest(".photo").remove();
+    if (t.closest("#add-photo")) return toast("Acá se abre el selector de fotos (se optimizan a WebP)", "image-plus");
+  });
+  document.addEventListener("change", (e) => { if (e.target.id === "add-size" && e.target.value) { draftSizes[e.target.value] = 0; e.target.querySelector(`option[value="${e.target.value}"]`)?.remove(); e.target.value = ""; renderSizes(); } });
+  $("#ed-x").addEventListener("click", closeEd);
+  $("#ed-scrim").addEventListener("click", closeEd);
+  $("#new-p").addEventListener("click", () => openEditor(null));
+  const save = (pub) => { if (cur.slug) { cur.sizes = draftSizes; cur.draft = !pub; } closeEd(); render(); ADM.changed(); toast(pub ? "Guardado y publicado" : "Borrador guardado", "check"); };
+  $("#ed-save").addEventListener("click", () => save(true));
+  $("#ed-draft").addEventListener("click", () => save(false));
+  $("#q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+  $("#sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
+  render();
+  const edit = MG.params.get("edit"); if (edit) openEditor(D.products.find((x) => x.slug === edit));
+});
+</script>
+</body>
+</html>

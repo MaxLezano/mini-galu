@@ -1,0 +1,4 @@
+{
+  "extends": "@mini-galu/config/tsconfig.node.json",
+  "include": ["src"]
+}

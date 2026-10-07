@@ -1,0 +1,43 @@
+# dependencias
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# entorno (nunca subir secretos)
+.env
+.env.*
+!.env.example
+
+# datos locales
+apps/api/storage/
+*.db
+*.sqlite
+
+# tests
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# logs y SO
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editores
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Claude Code (local)
+.claude/settings.local.json

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Automatizaciones — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .channels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .chan { display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; padding: 14px; border-radius: var(--r-md); background: var(--paper); box-shadow: 0 0 0 1px var(--line); font-size: 13px; }
+  .chan .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--linen); display: grid; place-items: center; }
+  .chan .ic .brand, .chan .ic svg { width: 20px; height: 20px; }
+  .chan b { display: block; font-size: 14px; }
+  .autos { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  @media (min-width: 2000px) { .autos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .auto { display: grid; gap: 14px; padding: 20px; border-radius: var(--r-lg); background: var(--paper); box-shadow: 0 0 0 1px var(--line); align-content: start; transition: opacity var(--t-fast); }
+  .auto.off { opacity: .6; }
+  .auto .head { display: flex; gap: 12px; align-items: center; }
+  .auto .head .ic { width: 42px; height: 42px; border-radius: 14px; background: var(--rosa-l); color: var(--rojo); display: grid; place-items: center; flex: none; }
+  .auto .head b { font: 400 20px/1.1 var(--f-display); flex: 1; }
+  .auto .when { font-size: 13px; color: var(--cacao-2); display: flex; gap: 8px; align-items: flex-start; }
+  .auto .when b { color: var(--cacao); font-weight: 600; }
+  .does { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .does li { display: flex; gap: 8px; align-items: center; font-size: 13.5px; padding: 8px 10px; border-radius: 10px; background: var(--linen); }
+  .does li svg { color: var(--salvia-d); flex: none; }
+  .auto .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; border-top: 1.5px dashed var(--line-2); font-size: 12.5px; color: var(--cacao-2); }
+  .auto .foot .chs { display: flex; gap: 6px; align-items: center; }
+  .auto .foot .chs .brand, .auto .foot .chs svg { width: 15px; height: 15px; }
+  .vars { display: flex; gap: 6px; flex-wrap: wrap; }
+  .vars button { font: 600 12px var(--f-ui); padding: 4px 9px; border-radius: 8px; background: var(--linen); }
+  .vars button:hover { background: var(--linen-2); }
+  @media (max-width: 1100px) { .channels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .channels { grid-template-columns: 1fr; } .autos { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="automatizaciones">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Ajustes</span><h1 class="display">Automatizaciones</h1><p class="muted" style="margin:10px 0 0;max-width:60ch">Lo que el taller hace solo: avisos a los clientes, stock, seguimiento y recordatorios. Vos te ocupás de coser.</p></div>
+    <div class="actions"><button class="btn btn-sm btn-ghost" data-modal-open="m-test"><span data-icon="send" class="i-sm"></span> Enviarme una prueba</button></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span><span data-icon="send" class="i-sm"></span> Mensajes enviados en octubre</span><b>142</b><small class="muted">118 por WhatsApp · 24 por mail</small></div>
+    <div class="kpi"><span><span data-icon="clock" class="i-sm"></span> Tiempo que te ahorraste</span><b>~11 h</b><small class="muted">a 4 min por mensaje</small></div>
+    <div class="kpi"><span><span data-icon="bell-ring" class="i-sm"></span> Ventas por avisos de talle</span><b>$156.000</b><small class="up">5 compras después del aviso</small></div>
+    <div class="kpi"><span><span data-icon="link" class="i-sm"></span> Links de pago recuperados</span><b>3 de 5</b><small class="muted">después del recordatorio</small></div>
+  </div>
+
+  <section>
+    <div class="box-head" style="margin-bottom:12px"><h2 class="display" style="font-size:22px;margin:0">Canales</h2></div>
+    <div class="channels">
+      <div class="chan"><span class="ic"><span data-brand="whatsapp"></span></span><div><b>WhatsApp Business</b><span class="pill-status st-warn">Modo prueba</span></div></div>
+      <div class="chan"><span class="ic"><span data-icon="mail"></span></span><div><b>Mail</b><span class="pill-status st-ok">Conectado</span></div></div>
+      <div class="chan"><span class="ic"><span data-brand="mercadopago"></span></span><div><b>Mercado Pago</b><span class="pill-status st-ok">Avisos de pago activos</span></div></div>
+      <div class="chan"><span class="ic"><span data-icon="truck"></span></span><div><b>Andreani</b><span class="pill-status st-warn">Simulado</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="box-head" style="margin-bottom:12px"><h2 class="display" style="font-size:22px;margin:0">Reglas</h2><span class="muted" style="font-size:13px" id="on-n"></span></div>
+    <div class="autos" id="autos"></div>
+  </section>
+
+  <section class="box">
+    <div class="box-head"><h2>Registro</h2><span class="muted" style="font-size:13px">últimas 24 h</span></div>
+    <div class="tbl-wrap"><table class="t stack" id="log"></table></div>
+  </section>
+</main>
+
+<div class="modal" id="m-tpl" role="dialog" aria-label="Editar mensaje" style="width:min(620px, calc(100vw - 24px))">
+  <div class="modal-head"><h3 class="display h3" style="margin:0" id="tpl-title">Editar mensaje</h3><button class="icon-btn" data-modal-close aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <div class="modal-body">
+    <div class="field"><label for="tpl-txt">Mensaje</label><textarea class="input" id="tpl-txt" rows="4"></textarea></div>
+    <div class="field"><span class="lbl">Insertar dato</span><div class="vars" id="vars"></div></div>
+    <div class="wa-preview"><div class="wa-bubble" id="tpl-prev"></div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-ghost" data-modal-close>Cancelar</button><button class="btn" style="flex:1" id="tpl-save">Guardar mensaje</button></div>
+  </div>
+</div>
+<div class="modal" id="m-test" role="dialog" aria-label="Enviarme una prueba">
+  <div class="modal-head"><h3 class="display h3" style="margin:0">Enviarme una <em>prueba</em></h3><button class="icon-btn" data-modal-close aria-label="Cerrar"><span data-icon="x"></span></button></div>
+  <form class="modal-body" onsubmit="event.preventDefault();MG.closeModals();MG.toast('Te mandamos los mensajes de prueba','send')">
+    <p class="muted" style="margin:0">Te llegan todos los mensajes activos con datos de ejemplo, para ver cómo lo recibe el cliente.</p>
+    <div class="field"><label for="tw">Tu WhatsApp</label><input class="input" id="tw" value="11 4444-0000"></div>
+    <button class="btn btn-block">Enviar prueba</button>
+  </form>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+<script>
+document.addEventListener("adm:ready", () => {
+  const { D } = ADM;
+  const { icon, brand, toast } = MG;
+  const $ = (s) => document.querySelector(s);
+  const msgs = {
+    "Pago aprobado": "Hola {nombre}! Recibimos el pago de tu pedido #{pedido}. Ya lo estamos preparando en el taller ✿",
+    "Despachado": "{nombre}, tu pedido #{pedido} ya salió con Andreani. Seguilo acá: {link_seguimiento}",
+    "Entregado": "Hola {nombre}! ¿Cómo le quedó? Si nos mandás una foto nos alegra el día.",
+    "Listo para retirar": "Hola {nombre}! Tu pedido #{pedido} está listo para retirar en el taller. Lunes a sábado de 10 a 13 h.",
+    "Volvió un talle": "Hola {nombre}! Volvió el talle {talle} del {prenda}. Te lo guardamos 24 h: {link_producto}",
+    "Link de pago sin pagar": "Hola {nombre}, te dejo de nuevo el link para pagar tu pedido #{pedido}: {link_pago}",
+    "Bolsa abandonada": "Hola {nombre}! Te quedaron prendas en la bolsa. Todavía hay stock en tu talle: {link_bolsa}",
+    "Se acerca un cumple": "Hola {nombre}! Se viene el cumple de {nena}. Te dejamos ideas en talle {talle}: {link_catalogo}",
+  };
+  const sample = { nombre: "Lucía", pedido: "MG-1043", link_seguimiento: "minigalu.com.ar/seguimiento?pedido=MG-1043", talle: "6", prenda: "Vestido Samanta", link_producto: "minigalu.com.ar/p/samanta", link_pago: "mpago.la/1043Kq8", link_bolsa: "minigalu.com.ar/bolsa", nena: "Olivia", link_catalogo: "minigalu.com.ar/talle/6" };
+  const fill = (t) => t.replace(/\{(\w+)\}/g, (_, k) => sample[k] ?? `{${k}}`);
+
+  function render() {
+    $("#on-n").textContent = `${D.automations.filter((a) => a.on).length} de ${D.automations.length} activas`;
+    $("#autos").innerHTML = D.automations.map((a, i) => `<article class="auto ${a.on ? "" : "off"}">
+      <div class="head"><span class="ic">${icon(a.icon)}</span><b>${a.title}</b><input class="tog" type="checkbox" data-tog="${i}" ${a.on ? "checked" : ""} aria-label="Activar ${a.title}"></div>
+      <div class="when">${icon("corner-down-right", "i-sm")}<span><b>Cuando</b> ${a.when}</span></div>
+      <ul class="does">${a.does.map((d) => `<li>${icon("check", "i-sm")}${d}</li>`).join("")}</ul>
+      <div class="foot"><span class="chs">${a.channel.map((c) => c === "whatsapp" ? brand("whatsapp") : icon("mail")).join("") || icon("bell")}<span>${a.runs ? `${a.runs} veces este mes` : "Todavía no se usó"}</span></span>${msgs[a.title] ? `<button class="link" data-tpl="${a.title}" style="font-size:12.5px">Editar mensaje</button>` : ""}</div>
+    </article>`).join("");
+  }
+  render();
+
+  let editing = null;
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-tog]");
+    if (t) { const a = D.automations[+t.dataset.tog]; a.on = t.checked; toast(`${a.title}: ${a.on ? "activada" : "pausada"}`, a.on ? "play" : "pause"); render(); return; }
+    const tp = e.target.closest("[data-tpl]");
+    if (tp) {
+      editing = tp.dataset.tpl;
+      $("#tpl-title").innerHTML = `Mensaje: <em>${editing}</em>`;
+      $("#tpl-txt").value = msgs[editing];
+      $("#tpl-prev").innerHTML = fill(msgs[editing]) + "<small>ahora ✓✓</small>";
+      $("#vars").innerHTML = [...new Set((msgs[editing].match(/\{\w+\}/g) || []).concat(["{nombre}", "{pedido}"]))].map((v) => `<button type="button" data-var="${v}">${v}</button>`).join("");
+      MG.openModal("m-tpl");
+    }
+    const v = e.target.closest("[data-var]");
+    if (v) { const ta = $("#tpl-txt"); const p = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, p) + v.dataset.var + ta.value.slice(p); ta.dispatchEvent(new Event("input")); ta.focus(); }
+  });
+  $("#tpl-txt").addEventListener("input", (e) => ($("#tpl-prev").innerHTML = fill(e.target.value) + "<small>ahora ✓✓</small>"));
+  $("#tpl-save").addEventListener("click", () => { msgs[editing] = $("#tpl-txt").value; MG.closeModals(); toast("Mensaje guardado", "check"); });
+
+  $("#log").innerHTML = `<thead><tr><th>Hora</th><th>Regla</th><th>Qué pasó</th><th>Canal</th><th>Estado</th></tr></thead><tbody>` + [
+    ["01:05", "Pago aprobado", "#MG-1044 · Valeria Gómez · stock descontado (Samanta T8)", "whatsapp", "ok"],
+    ["00:58", "Pago aprobado", "#MG-1043 · Lucía Fernández · stock descontado (Romántico T8, Moño)", "whatsapp", "ok"],
+    ["ayer 21:40", "Despachado", "#MG-1042 · link de seguimiento enviado", "whatsapp", "ok"],
+    ["ayer 11:05", "Volvió un talle", "Set Maddie T6 · aviso a 3 anotados", "whatsapp", "ok"],
+    ["ayer 09:00", "Link de pago sin pagar", "#MG-1045 · recordatorio a Natalia Ruiz", "whatsapp", "ok"],
+    ["ayer 08:30", "Stock bajo", "Vestido Samanta T10 quedó en 1", "panel", "ok"],
+    ["ayer 08:12", "Despachado", "#MG-1037 · no se pudo enviar (número sin WhatsApp) · se mandó por mail", "mail", "warn"],
+  ].map(([h, r, q, c, s]) => `<tr><td data-l="Hora" class="nowrap">${h}</td><td data-l="Regla"><b>${r}</b></td><td class="full">${q}</td><td data-l="Canal"><span class="meta-ico">${c === "whatsapp" ? brand("whatsapp") : c === "mail" ? icon("mail", "i-sm") : icon("layout-dashboard", "i-sm")} ${c === "panel" ? "Aviso en el panel" : c === "mail" ? "Mail" : "WhatsApp"}</span></td><td data-l="Estado"><span class="pill-status ${s === "ok" ? "st-ok" : "st-warn"}">${s === "ok" ? "Enviado" : "Con aviso"}</span></td></tr>`).join("") + "</tbody>";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checkout — Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .co { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: clamp(28px, 5vw, 72px); padding-block: 36px 100px; align-items: start; max-width: 1280px; }
+  .stepper { display: flex; align-items: center; gap: 10px; margin: 18px 0 28px; font-size: 13px; font-weight: 600; color: var(--cacao-3); }
+  .stepper span { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .stepper i { width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; display: grid; place-items: center; font-style: normal; font-size: 12px; transition: all var(--t-med) var(--ease-spring); flex: none; }
+  .stepper .on { color: var(--cacao); }
+  .stepper .on i { background: var(--cacao); color: var(--paper); box-shadow: none; }
+  .stepper .done { color: var(--salvia-d); }
+  .stepper .done i { background: var(--salvia-d); color: #fff; box-shadow: none; }
+  .stepper hr { flex: 1; border: 0; border-top: 1.5px dashed var(--line-2); min-width: 16px; max-width: 80px; }
+  .step { border-radius: var(--r-lg); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); margin-bottom: 14px; }
+  .step-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; flex-wrap: wrap; }
+  .step-head .n { width: 34px; height: 34px; border-radius: 50%; background: var(--linen); display: grid; place-items: center; font: italic 400 18px/1 var(--f-display); flex: none; }
+  .step-head h2 { margin: 0; font: 400 24px/1 var(--f-display); flex: 1; }
+  .step-head .sum { font-size: 13px; color: var(--cacao-2); display: none; width: 100%; padding-left: 48px; margin-top: -6px; }
+  .step-head .edit { display: none; }
+  .step-body { padding: 0 24px 24px; display: grid; gap: 14px; }
+  .step:not(.is-open) .step-body { display: none; }
+  .step.is-done .step-head .n { background: var(--salvia-d); color: #fff; }
+  .step.is-done .sum, .step.is-done .edit { display: block; }
+  .step.is-open { box-shadow: 0 0 0 1.5px var(--cacao), var(--shadow-soft); }
+  .step.is-open .step-body { animation: msgIn .5s var(--ease) both; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .opt-price { font-weight: 700; white-space: nowrap; }
+  .carrier { font: 700 10px/1 var(--f-ui); letter-spacing: .1em; color: var(--cacao-2); background: var(--linen); padding: 4px 7px; border-radius: 5px; vertical-align: 2px; margin-left: 4px; }
+  .slots { display: flex; gap: 8px; flex-wrap: wrap; }
+  .slots .chip { height: 40px; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--cacao-2); font-size: 12px; }
+  .divider::before, .divider::after { content: ""; flex: 1; border-top: 1.5px dashed var(--line-2); }
+
+  /* Brick de Mercado Pago (simulado, con estilos del tema) */
+  .mp-brick { border-radius: 20px; padding: 18px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 12px; }
+  .mp-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
+  .mp-logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+  .mp-logo .brand { width: 26px; height: 26px; }
+  .pay-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--linen); display: grid; place-items: center; flex: none; }
+  .pay-ico .brand { width: 20px; height: 20px; }
+  .pay-panel { display: grid; gap: 12px; padding: 4px 2px 6px; }
+  .card-prev { aspect-ratio: 1.6; width: min(100%, 340px); border-radius: 18px; padding: 22px; color: var(--paper); background: linear-gradient(135deg, var(--cacao), #5a3f31 55%, var(--canela)); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-lift); position: relative; overflow: hidden; }
+  .card-prev::before { content: ""; position: absolute; right: -50px; top: -50px; width: 180px; height: 180px; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,.25); }
+  .card-prev .num { font: 500 clamp(16px, 4.6vw, 20px)/1 ui-monospace, Menlo, monospace; letter-spacing: .1em; }
+  .card-prev .chip-c { width: 40px; height: 30px; border-radius: 6px; background: linear-gradient(135deg, #e9d29a, #b8964b); }
+  .card-prev .kind { font: italic 400 18px/1 var(--f-display); }
+  .cuotas-sel { display: grid; gap: 8px; }
+  .cuotas-sel .option { padding: 12px 14px; }
+  .mp-account { display: grid; gap: 10px; justify-items: start; padding: 16px; border-radius: 16px; background: var(--linen); font-size: 14px; }
+
+  .summary { position: sticky; top: calc(var(--header-h) + 24px); border-radius: var(--r-lg); background: var(--linen); padding: 24px; display: grid; gap: 18px; }
+  .summary h3 { margin: 0; font: 400 26px/1 var(--f-display); }
+  .s-item { display: grid; grid-template-columns: 60px 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+  .s-item .ph { position: relative; }
+  .s-item img { width: 60px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; }
+  .s-item .q { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--cacao); color: var(--paper); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  .s-item b { font: 400 16px/1.2 var(--f-display); display: block; }
+  .coupon { display: flex; gap: 8px; }
+  .coupon .input { height: 44px; }
+  .coupon .btn { min-height: 44px; }
+  .applied { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--salvia-d); font-weight: 600; }
+  .totals { display: grid; gap: 8px; font-size: 14px; }
+  .totals .total { font-size: 22px; font-weight: 700; padding-top: 12px; border-top: 1.5px dashed var(--line-2); }
+  .sum-toggle { display: none; }
+  .secure { display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 12px; color: var(--cacao-2); }
+  .secure .brand { width: 18px; height: 18px; }
+
+  /* Éxito */
+  .done-ov { position: fixed; inset: 0; z-index: 130; background: var(--paper); display: grid; place-items: center; text-align: center; padding: 24px; clip-path: circle(0% at 50% 100%); visibility: hidden; transition: clip-path 1s var(--ease), visibility 0s 1s; overflow: auto; }
+  .done-ov.is-on { clip-path: circle(150% at 50% 100%); visibility: visible; transition: clip-path 1s var(--ease); }
+  .done-ov .bowdraw { width: 150px; color: var(--canela); margin: 0 auto 10px; }
+  .done-ov .bowdraw path, .done-ov .bowdraw circle { stroke-dasharray: 200; stroke-dashoffset: 200; }
+  .done-ov.is-on .bowdraw path, .done-ov.is-on .bowdraw circle { animation: draw 1.6s .6s var(--ease) forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .done-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 640px; margin: 0 auto 28px; text-align: left; }
+  .done-steps div { padding: 14px; border-radius: 14px; background: var(--linen); font-size: 13px; display: grid; gap: 6px; }
+  .done-steps svg { color: var(--canela); }
+  .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .confetti i { position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 3px; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  .promise { list-style: none; margin: 0; padding: 16px 0 0; border-top: 1.5px dashed var(--line-2); display: grid; gap: 12px; font-size: 13px; }
+  .promise li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: center; color: var(--cacao-2); }
+  .promise li > svg { width: 34px; height: 34px; padding: 8px; border-radius: 50%; background: var(--paper); color: var(--canela); }
+  .promise b { display: block; color: var(--cacao); font-weight: 600; }
+  .promise .link { font-size: 12.5px; }
+  .promise-note { font-size: 24px; justify-self: center; transform: rotate(-2deg); }
+  @media (max-width: 1000px) {
+    .co { grid-template-columns: 1fr; padding-top: 20px; }
+    .summary { position: static; order: -1; padding: 0; background: none; gap: 0; }
+    .sum-toggle { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 18px; background: var(--linen); font-weight: 600; }
+    .sum-toggle svg { transition: transform var(--t-med) var(--ease); }
+    .summary.is-open .sum-toggle svg { transform: rotate(180deg); }
+    .sum-inner { display: none; padding: 18px; background: var(--linen); border-radius: 0 0 18px 18px; margin-top: -14px; padding-top: 28px; gap: 18px; }
+    .summary.is-open .sum-inner { display: grid; }
+  }
+  @media (min-width: 1001px) { .sum-inner { display: grid; gap: 18px; } }
+  @media (max-width: 560px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .stepper span:not(.on) b { display: none; }
+    .step-head { padding: 18px; } .step-body { padding: 0 18px 18px; }
+    .step-head .sum { padding-left: 0; }
+    .done-steps { grid-template-columns: 1fr; }
+    .option { grid-template-columns: auto 1fr; } .option .opt-price { grid-column: 2; }
+  }
+</style>
+</head>
+<body data-page="checkout">
+<main class="wrap co">
+  <div>
+    <a class="link" href="catalogo.html" style="font-size:13px"><span data-icon="arrow-left" class="i-sm"></span> Seguir comprando</a>
+    <h1 class="display h2" style="margin-top:18px">Último <em>paso</em></h1>
+    <div class="stepper" id="stepper" aria-label="Pasos"><span data-s="1"><i>1</i><b>Tus datos</b></span><hr><span data-s="2"><i>2</i><b>Envío</b></span><hr><span data-s="3"><i>3</i><b>Pago</b></span></div>
+
+    <section class="step" data-step="1">
+      <div class="step-head"><span class="n">1</span><h2>Tus datos</h2><button class="link edit" data-goto="1" style="font-size:13px">Editar</button><span class="sum">lucia@gmail.com · 11 5555-1234</span></div>
+      <div class="step-body">
+        <button class="btn btn-ghost btn-block"><span data-brand="google" class="i-sm"></span> Continuar con Google</button>
+        <div class="divider">o como invitada</div>
+        <div class="field"><label for="em">Email</label><input class="input" id="em" type="email" value="lucia@gmail.com" autocomplete="email"></div>
+        <div class="grid2"><div class="field"><label for="nm">Nombre y apellido</label><input class="input" id="nm" value="Lucía Fernández" autocomplete="name"></div><div class="field"><label for="ph">Celular</label><input class="input" id="ph" inputmode="tel" value="11 5555-1234" autocomplete="tel"></div></div>
+        <label class="check"><input type="checkbox" checked> Quiero recibir el seguimiento por WhatsApp</label>
+        <button class="btn" data-next="2">Continuar al envío <span data-icon="arrow-right"></span></button>
+      </div>
+    </section>
+
+    <section class="step" data-step="2">
+      <div class="step-head"><span class="n">2</span><h2>Envío</h2><button class="link edit" data-goto="2" style="font-size:13px">Editar</button><span class="sum" id="ship-sum">Andreani a domicilio · CABA</span></div>
+      <div class="step-body">
+        <div class="grid2"><div class="field"><label for="cp">Código postal</label><input class="input" id="cp" inputmode="numeric" value="1414"></div><div class="field"><label for="prov">Provincia</label><select class="input" id="prov"><option>CABA</option><option>Buenos Aires</option><option>Córdoba</option><option>Santa Fe</option><option>Mendoza</option></select></div></div>
+        <label class="option"><input type="radio" name="ship" value="5900" data-label="Andreani a domicilio" checked><span><b>Envío a domicilio</b><span class="carrier">ANDREANI</span><small>Llega entre el jueves 8 y el viernes 9 de octubre</small></span><span class="opt-price">$5.900</span></label>
+        <label class="option"><input type="radio" name="ship" value="4250" data-label="Andreani a sucursal"><span><b>Retiro en sucursal</b><span class="carrier">ANDREANI</span><small>Sucursal Palermo · Av. Córdoba 4545 · a 1,2 km</small></span><span class="opt-price">$4.250</span></label>
+        <label class="option"><input type="radio" name="ship" value="0" data-label="Retiro en el taller"><span><b>Retiro en el taller</b><small>Villa Crespo · elegís día y horario</small></span><span class="opt-price" style="color:var(--salvia-d)">Gratis</span></label>
+        <div id="addr" class="grid2"><div class="field"><label for="st">Calle y número</label><input class="input" id="st" value="Gurruchaga 1234" autocomplete="street-address"></div><div class="field"><label for="fl">Piso / depto</label><input class="input" id="fl" value="3° B"></div></div>
+        <div id="slots" class="field" hidden><span class="lbl">¿Cuándo pasás a retirar?</span><div class="slots"><button class="chip is-on" type="button">Jue 8 · 10 a 13 h</button><button class="chip" type="button">Jue 8 · 16 a 19 h</button><button class="chip" type="button">Vie 9 · 10 a 13 h</button><button class="chip" type="button">Sáb 10 · 10 a 13 h</button></div></div>
+        <button class="btn" data-next="3">Continuar al pago <span data-icon="arrow-right"></span></button>
+      </div>
+    </section>
+
+    <section class="step" data-step="3">
+      <div class="step-head"><span class="n">3</span><h2>Pago</h2></div>
+      <div class="step-body">
+        <div class="mp-brick">
+          <div class="mp-head"><span class="mp-logo"><span data-brand="mercadopago"></span>Mercado Pago</span><span class="muted" style="display:inline-flex;gap:6px;align-items:center"><span data-icon="shield-check" class="i-sm"></span> Pago protegido</span></div>
+
+          <label class="option"><input type="radio" name="pay" value="credito" checked><span><b>Tarjeta de crédito</b><small>Hasta 6 cuotas sin interés</small></span><span class="pay-ico"><span data-icon="credit-card" class="i-sm"></span></span></label>
+          <label class="option"><input type="radio" name="pay" value="debito"><span><b>Tarjeta de débito</b><small>Se debita en el momento</small></span><span class="pay-ico"><span data-icon="wallet-cards" class="i-sm"></span></span></label>
+          <label class="option"><input type="radio" name="pay" value="cuenta"><span><b>Dinero en cuenta de Mercado Pago</b><small>Pagás con tu saldo sin cargar la tarjeta</small></span><span class="pay-ico"><span data-brand="mercadopago"></span></span></label>
+
+          <div class="pay-panel" id="card-form">
+            <div class="card-prev"><div class="row"><span class="chip-c"></span><span class="kind" id="ckind">Crédito</span></div><div class="num" id="cnum">4509 •••• •••• 3704</div><div class="row" style="font-size:12px;opacity:.85"><span>LUCÍA FERNÁNDEZ</span><span>11/29</span></div></div>
+            <div class="field"><label for="cn">Número de tarjeta</label><input class="input" id="cn" value="4509 9535 6623 3704" inputmode="numeric" autocomplete="cc-number"></div>
+            <div class="grid2"><div class="field"><label for="ce">Vencimiento</label><input class="input" id="ce" value="11/29" autocomplete="cc-exp"></div><div class="field"><label for="cc">Código de seguridad</label><input class="input" id="cc" value="123" inputmode="numeric" autocomplete="cc-csc"></div></div>
+            <div class="grid2"><div class="field"><label for="dni">DNI del titular</label><input class="input" id="dni" inputmode="numeric" value="30.123.456"></div><div class="field"><label for="hol">Nombre como figura</label><input class="input" id="hol" value="Lucía Fernández"></div></div>
+            <div class="field" id="cuotas-f"><span class="lbl">Cuotas</span><div class="cuotas-sel" id="cuotas"></div></div>
+          </div>
+          <div class="pay-panel" id="acct" hidden>
+            <div class="mp-account"><span data-brand="mercadopago" style="width:32px;height:32px"></span><b>Te llevamos a Mercado Pago para confirmar</b><span class="muted">Ingresás con tu cuenta, elegís pagar con el saldo y volvés a la tienda automáticamente. En el celular se abre la app.</span></div>
+          </div>
+        </div>
+        <button class="btn btn-lg btn-block" id="pay">Pagar <span id="pay-total"></span></button>
+        <div class="secure"><span data-icon="lock" class="i-sm"></span> Los datos de tu tarjeta los procesa Mercado Pago, nunca pasan por nuestra web.</div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="summary" id="summary" aria-label="Resumen del pedido">
+    <button class="sum-toggle" id="sum-toggle" aria-expanded="false"><span style="display:inline-flex;gap:8px;align-items:center"><span data-icon="shopping-bag" class="i-sm"></span> Ver resumen</span><span style="display:inline-flex;gap:8px;align-items:center"><b id="t-total-m"></b><span data-icon="chevron-down" class="i-sm"></span></span></button>
+    <div class="sum-inner">
+      <div class="row"><h3>Tu pedido</h3><button class="link" style="font-size:13px" id="edit-bag">Editar bolsa</button></div>
+      <div id="s-items" style="display:grid;gap:16px"></div>
+      <hr class="seam">
+      <div id="coupon-box"><div class="coupon"><input class="input" id="coupon" placeholder="Cupón o código de gift card" aria-label="Cupón o gift card"><button class="btn btn-sm btn-ghost" id="apply">Aplicar</button></div></div>
+      <div class="totals">
+        <div class="row"><span class="muted">Subtotal</span><span id="t-sub"></span></div>
+        <div class="row" id="t-disc-row" hidden><span class="muted">Gift card GALU-7KQ2</span><span id="t-disc" style="color:var(--salvia-d)"></span></div>
+        <div class="row"><span class="muted">Envío</span><span id="t-ship"></span></div>
+        <div class="row total"><span>Total</span><span id="t-total"></span></div>
+        <div class="muted" style="font-size:12.5px;text-align:right" id="t-cuotas"></div>
+      </div>
+      <div class="secure"><span data-brand="mercadopago"></span> Pago seguro con Mercado Pago</div>
+      <ul class="promise">
+        <li><span data-icon="refresh-ccw"></span><span><b>30 días para cambiar el talle</b>Sin uso y con la etiqueta.</span></li>
+        <li><span data-icon="scissors"></span><span><b>Revisada a mano antes de salir</b>Cada prenda pasa por las manos de Gaby.</span></li>
+        <li><span data-brand="whatsapp"></span><span><b>¿Dudas? Escribinos</b><a class="link" href="https://wa.me/5491100000000">WhatsApp del taller</a></span></li>
+      </ul>
+      <span class="hand promise-note">gracias por elegir algo hecho a mano ♡</span>
+    </div>
+  </aside>
+</main>
+
+<div class="done-ov" id="done" aria-live="polite" role="dialog" aria-label="Pago aprobado">
+  <div class="confetti" id="confetti"></div>
+  <div style="position:relative;max-width:720px">
+    <svg class="bowdraw" viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><path d="M20 11C14 3 4 1 3 8s9 9 17 3Z"/><path d="M20 11c6-8 16-10 17-3s-9 9-17 3Z"/><path d="M18 12.5 13 24M22 12.5 27 24"/><circle cx="20" cy="11.2" r="2.6"/></svg>
+    <span class="eyebrow" id="done-eyebrow">Pago aprobado · Pedido #MG-1047</span>
+    <h2 class="display h1" style="margin:16px 0">¡Gracias, <em>Lucía!</em></h2>
+    <p class="lead" style="margin:0 auto 28px">Gaby ya recibió tu pedido. Te vamos avisando por WhatsApp y mail en cada paso.</p>
+    <div class="done-steps">
+      <div><span data-icon="scissors"></span><b>Hoy</b>Preparamos tu pedido en el taller</div>
+      <div><span data-icon="truck"></span><b>Mañana</b>Sale con Andreani y te mandamos el seguimiento</div>
+      <div><span data-icon="house"></span><b>Jue 8 – vie 9</b>Llega a tu casa</div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a class="btn" href="seguimiento.html">Seguir mi pedido <span data-icon="package-search"></span></a><a class="btn btn-ghost" href="index.html">Volver al inicio</a></div>
+  </div>
+</div>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener("mg:ready", () => {
+  const { bySlug, img, money, icon } = MG;
+  const $ = (s) => document.querySelector(s);
+  let step = 1, gift = 0;
+
+  function go(n) {
+    step = n;
+    document.querySelectorAll(".step").forEach((s) => { const k = +s.dataset.step; s.classList.toggle("is-open", k === n); s.classList.toggle("is-done", k < n); });
+    document.querySelectorAll("#stepper [data-s]").forEach((s) => {
+      const k = +s.dataset.s;
+      s.className = k === n ? "on" : k < n ? "done" : "";
+      s.querySelector("i").innerHTML = k < n ? icon("check", "i-sm") : k;
+    });
+  }
+  const sub = () => MG.cart().reduce((a, it) => a + bySlug[it.slug].price * it.qty, 0);
+  const ship = () => (sub() >= 90000 ? 0 : +document.querySelector("[name=ship]:checked").value);
+  const total = () => Math.max(0, sub() + ship() - gift);
+  const method = () => document.querySelector("[name=pay]:checked").value;
+
+  function renderSummary() {
+    const items = MG.cart();
+    $("#s-items").innerHTML = items.length ? items.map((it) => {
+      const p = bySlug[it.slug];
+      return `<div class="s-item"><span class="ph"><img src="${img(p)}" alt=""><span class="q">${it.qty}</span></span><span><b>${p.name}</b><span class="muted">Talle ${it.size}</span></span><span>${money(p.price * it.qty)}</span></div>`;
+    }).join("") : `<p class="muted" style="margin:0">Tu bolsa está vacía. <a class="link" href="catalogo.html">Ver catálogo</a></p>`;
+    $("#t-sub").textContent = money(sub());
+    $("#t-ship").innerHTML = ship() ? money(ship()) : `<b style="color:var(--salvia-d)">Gratis</b>`;
+    $("#t-disc-row").hidden = !gift; $("#t-disc").textContent = "-" + money(gift);
+    $("#t-total").textContent = money(total()); $("#t-total-m").textContent = money(total());
+    $("#t-cuotas").textContent = `o 6 cuotas sin interés de ${money(total() / 6)}`;
+    $("#pay-total").textContent = money(total());
+    $("#pay").disabled = !items.length;
+    const sel = document.querySelector("[name=cuo]:checked")?.value || "6";
+    $("#cuotas").innerHTML = [[1, "1 pago"], [3, "3 cuotas sin interés"], [6, "6 cuotas sin interés"], [12, "12 cuotas fijas"]].map(([n, l]) =>
+      `<label class="option"><input type="radio" name="cuo" value="${n}" ${String(n) === sel ? "checked" : ""}><span>${l}${n === 12 ? '<small>CFT 98,5% · TNA 79%</small>' : ""}</span><b class="opt-price">${n === 12 ? money((total() * 1.42) / n) : money(total() / n)}${n > 1 ? "/mes" : ""}</b></label>`).join("");
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-next],[data-goto]");
+    if (b) { e.preventDefault(); go(+(b.dataset.next || b.dataset.goto)); document.querySelector(`[data-step="${step}"]`).scrollIntoView({ behavior: "smooth", block: "start" }); }
+    const sl = e.target.closest(".slots .chip");
+    if (sl) document.querySelectorAll(".slots .chip").forEach((c) => c.classList.toggle("is-on", c === sl));
+  });
+  document.querySelectorAll("[name=ship]").forEach((r) => r.addEventListener("change", () => {
+    $("#ship-sum").textContent = r.dataset.label + " · " + $("#prov").value;
+    $("#addr").hidden = r.value === "0"; $("#slots").hidden = r.value !== "0";
+    renderSummary();
+  }));
+  document.querySelectorAll("[name=pay]").forEach((r) => r.addEventListener("change", () => {
+    const m = method();
+    $("#card-form").hidden = m === "cuenta"; $("#acct").hidden = m !== "cuenta";
+    $("#cuotas-f").hidden = m !== "credito";
+    $("#ckind").textContent = m === "debito" ? "Débito" : "Crédito";
+    $("#pay").innerHTML = m === "cuenta" ? `Ir a Mercado Pago · <span id="pay-total">${money(total())}</span>` : `Pagar <span id="pay-total">${money(total())}</span>`;
+  }));
+  $("#cn").addEventListener("input", (e) => { const d = e.target.value.replace(/\D/g, "").padEnd(16, "•"); $("#cnum").textContent = d.slice(0, 4) + " •••• •••• " + d.slice(12, 16); });
+  $("#edit-bag").addEventListener("click", MG.openDrawer);
+  document.addEventListener("mg:cart", renderSummary);
+  $("#sum-toggle").addEventListener("click", () => { const o = $("#summary").classList.toggle("is-open"); $("#sum-toggle").setAttribute("aria-expanded", o); });
+  $("#apply").addEventListener("click", () => {
+    if (!$("#coupon").value.trim()) return MG.toast("Escribí un cupón o código de gift card", "ticket");
+    gift = 12500;
+    $("#coupon-box").innerHTML = `<div class="applied">${icon("gift", "i-sm")} Gift card aplicada: se descuentan ${money(gift)}</div>`;
+    renderSummary();
+  });
+
+  $("#pay").addEventListener("click", () => {
+    const b = $("#pay");
+    b.innerHTML = `<span class="typing" style="padding:0"><i style="background:var(--paper)"></i><i style="background:var(--paper)"></i><i style="background:var(--paper)"></i></span> Procesando con Mercado Pago`;
+    setTimeout(() => {
+      const labels = { credito: "Tarjeta de crédito", debito: "Tarjeta de débito", cuenta: "Dinero en cuenta" };
+      $("#done-eyebrow").textContent = `Pago aprobado · ${labels[method()]} · Pedido #MG-1047`;
+      $("#confetti").innerHTML = Array.from({ length: 70 }, () => {
+        const c = ["#E8C6BF", "#B0643E", "#8B9A7C", "#A3302B", "#EADFD0"][Math.floor(Math.random() * 5)];
+        return `<i style="left:${Math.random() * 100}%;background:${c};animation-duration:${2.4 + Math.random() * 2.6}s;animation-delay:${Math.random() * 0.8}s;transform:rotate(${Math.random() * 360}deg)"></i>`;
+      }).join("");
+      $("#done").classList.add("is-on");
+      document.body.style.overflow = "hidden";
+    }, 1400);
+  });
+
+  renderSummary();
+  const st = +MG.params.get("step") || 2;
+  go(st);
+});
+</script>
+</body>
+</html>
