@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { createDb } from "../client";
 import { databaseUrl, repoRoot } from "../env";
 import * as s from "../schema";
+import { upsertAdmin } from "./admin";
 import * as data from "./data";
 
 /** Fotos de prueba: no están en el repo (ver local-assets/README.md). */
@@ -167,7 +168,9 @@ await db.transaction(async (tx) => {
   await tx.insert(s.contentBlocks).values({ key: "home", value: data.home });
 });
 
+const adminEmail = await upsertAdmin(db);
 await db.close();
 console.log(`✓ seed: ${data.products.length} productos, ${data.collections.length} colecciones, 1 lanzamiento`);
+console.log(`✓ panel del taller: ${adminEmail}`);
 if (missing.length)
   console.warn(`⚠ ${missing.length} fotos sin copiar: falta local-assets/mockups/img (ver local-assets/README.md)`);

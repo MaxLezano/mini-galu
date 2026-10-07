@@ -24,6 +24,7 @@ export function makeProduct(over: Partial<Product> = {}): Product {
     unitsSold: 0,
     rating: { average: 0, count: 0 },
     createdAt: new Date(2026, 0, n),
+    updatedAt: new Date(2026, 0, n),
     ...over,
   };
 }

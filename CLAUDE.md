@@ -18,7 +18,7 @@ Todo en español rioplatense (código de dominio, UI, commits y docs). Lo de ter
 
 ```bash
 pnpm db:up          # Postgres (puerto 5433) + Mailpit (http://localhost:8025)
-pnpm db:reset       # borra la base local, migra y siembra
+pnpm db:reset       # borra la base local, migra y siembra (crea la cuenta del taller)
 pnpm dev            # web :3000 + api :4000
 pnpm lint           # Biome (pnpm lint:fix para arreglar)
 pnpm typecheck && pnpm test      # tipos + Vitest en todos los paquetes

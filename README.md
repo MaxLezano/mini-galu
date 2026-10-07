@@ -45,6 +45,9 @@ pnpm db:reset               # migraciones + seed (11 productos, colecciones y el
 pnpm dev                    # web http://localhost:3000 · api http://localhost:4000
 ```
 
+Panel del taller: http://localhost:3000/taller — en local entra con `gaby@minigalu.com.ar` / `taller-mini-galu`
+(o lo que pongas en `ADMIN_EMAIL` / `ADMIN_PASSWORD` del `.env` antes de `pnpm db:seed`).
+
 Mockups: `pnpm mockups` → http://localhost:5500
 
 ## Scripts
@@ -72,8 +75,13 @@ Mockups: `pnpm mockups` → http://localhost:5500
 | GET | `/content/home` | portada, lanzamiento, lookbook, reseñas, Instagram |
 | POST | `/content/launches/:id/signups` | anotarse al lanzamiento |
 | GET | `/media/*` | imágenes (ImageStorage local) |
+| POST | `/auth/sign-in/email` · `/auth/sign-out` · GET `/auth/get-session` | sesión del panel (Better Auth) |
+| GET/POST | `/admin/catalog/products` | panel: listado con lista de espera / crear (requiere sesión admin) |
+| GET/PUT | `/admin/catalog/products/:slug` | panel: ver / guardar (avisa talles que vuelven) |
+| PATCH | `/admin/catalog/products/:slug/status` | panel: publicar u ocultar |
+| POST | `/admin/catalog/images` | panel: subir foto (multipart `file`, máx. 8 MB) |
 
 ## Estado
 
-Fase 1 (base) ✅ · Fase 2 (catálogo) en curso: tienda (home, catálogo, ficha, Galú con stock real, bolsa) lista;
-falta el panel de productos y lanzamientos. Detalle en [docs/ROADMAP.md](docs/ROADMAP.md).
+Fase 1 (base) ✅ · Fase 2 (catálogo) en curso: tienda lista y panel de productos con login; faltan lanzamientos y
+portada en el panel. Detalle en [docs/ROADMAP.md](docs/ROADMAP.md).

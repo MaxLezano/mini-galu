@@ -1,0 +1,40 @@
+/* Productos del panel — copiado de design/mockups/admin-productos.html */
+.p-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.p-filters .chip { height: 34px; font-size: 13px; }
+.p-filters .grow { flex: 1; }
+.stock-note { font-size: 11.5px; color: var(--cacao-2); }
+.wl { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+.wl b { font-variant-numeric: tabular-nums; }
+.ed-sec { padding: 18px 0; border-bottom: 1.5px dashed var(--line-2); display: grid; gap: 14px; }
+.ed-sec:last-child { border-bottom: 0; }
+.ed-sec h4 { margin: 0; font: 600 11px/1 var(--f-ui); letter-spacing: .18em; text-transform: uppercase; color: var(--cacao-2); display: flex; justify-content: space-between; align-items: center; }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+.photo { position: relative; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; cursor: grab; background: var(--linen); }
+.photo img { width: 100%; height: 100%; object-fit: cover; }
+.photo .main { position: absolute; left: 6px; top: 6px; font-size: 9.5px; padding: 3px 7px; }
+.photo .rm { position: absolute; right: 6px; top: 6px; width: 26px; height: 26px; border-radius: 50%; background: color-mix(in srgb, var(--paper) 90%, transparent); display: grid; place-items: center; opacity: 0; transition: opacity var(--t-fast); }
+.photo:hover .rm { opacity: 1; }
+.photo.add { border: 2px dashed var(--line-2); background: none; display: grid; place-items: center; text-align: center; font-size: 11.5px; color: var(--cacao-2); cursor: pointer; }
+.photo.add:hover { border-color: var(--canela); color: var(--canela); }
+.photo.sortable-ghost { opacity: .3; }
+.occ { display: flex; gap: 6px; flex-wrap: wrap; }
+.occ .chip { height: 32px; font-size: 12.5px; }
+.sv { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.sv th { text-align: left; font: 600 10.5px/1 var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-2); padding: 0 6px 10px; }
+.sv td { padding: 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+.sv .input { height: 38px; border-radius: 10px; font-size: 13px; padding: 0 10px; }
+.sv .notify { font-size: 11.5px; color: var(--salvia-d); font-weight: 600; display: flex; gap: 4px; align-items: center; }
+@media (max-width: 560px) { .sv .meas-col { display: none; } }
+/* agregados: medidas en números, drag de fotos nativo, avisos del editor */
+.sv .meas { display: flex; gap: 4px; }
+.sv .meas .input { width: 58px; padding: 0 6px; text-align: center; }
+.photo[draggable="true"] { cursor: grab; }
+.photo.is-over { box-shadow: 0 0 0 2px var(--canela); }
+.photo .mv { position: absolute; bottom: 6px; display: flex; gap: 4px; left: 6px; right: 6px; justify-content: space-between; opacity: 0; transition: opacity var(--t-fast); }
+.photo:hover .mv, .photo:focus-within .mv { opacity: 1; }
+.photo .mv button { width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, var(--paper) 90%, transparent); display: grid; place-items: center; }
+.photo.is-uploading { display: grid; place-items: center; font-size: 11.5px; color: var(--cacao-2); }
+.ed-error { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--rosa-l); color: var(--rojo); font-size: 13px; font-weight: 600; }
+.color-field { display: flex; gap: 8px; }
+.color-field input[type="color"] { width: 52px; height: 52px; padding: 4px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--paper-2); cursor: pointer; flex: none; }
+.empty-row td { text-align: center; padding: 40px 10px !important; color: var(--cacao-2); }

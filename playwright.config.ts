@@ -7,6 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: false,
+  workers: 1, // los tests del panel cambian datos: uno a la vez
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: "http://localhost:3000", trace: "retain-on-failure" },

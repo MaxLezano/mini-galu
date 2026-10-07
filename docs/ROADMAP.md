@@ -70,7 +70,17 @@ Regla: nada de los mockups se descarta en silencio. Si algo cambia, se anota ac�
 - ⏳ LLM + tools + "enseñale" → fase 7
 
 ### Panel del taller (fase 2)
-- ⏳ `admin-productos`: talles y stock en columnas, editor con fotos ordenables y stock por talle (al cargar stock de un talle con lista de espera → evento `StockReplenished`)
+- ✅ Ingreso del taller (`/taller/ingresar`): Better Auth email + contraseña, sin registro público; la cuenta la crea el seed
+  (adelantado de la fase 8; Google y cuentas de clientes siguen en la fase 8)
+- ✅ Armazón del panel: menú lateral (secciones futuras marcadas con su fase), búsqueda `/`, barra inferior en celular, salir
+- ✅ `admin-productos`: KPIs, filtros (todos, publicados, borradores, stock bajo, agotados), búsqueda, orden, tabla con talles
+  y stock, lista de espera por talle, publicar/ocultar
+- ✅ Editor: fotos (subir, quitar, ordenar arrastrando o con flechas; la primera es la portada), datos, ocasiones, cuidados,
+  etiqueta, accesorio, talles y stock con medidas, guardar borrador / publicar
+- ✅ Volvió un talle: al cargar stock de un talle con anotadas, el editor lo avisa y la API publica `StockReplenished`
+  (el envío del aviso es la fase 6)
+- 🟡 Fotos: se guardan como se suben → recorte 3:4 y AVIF/WebP en varios tamaños (sharp) en la fase 9
+- ⏳ Resumen del día y notificaciones (campana) → fase 4
 - ⏳ `admin-lanzamientos`: crear/editar/programar, portada, prendas, cuenta regresiva en la home, aviso a anotados, texto para redes
 - ⏳ `admin-tienda` (portada editable con vista previa) — el modelo `content_blocks` ya está
 

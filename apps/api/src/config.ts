@@ -10,7 +10,11 @@ const EnvSchema = z.object({
   MEDIA_DIR: z.string().default("./storage/media"),
   /** URL pública de la API (para armar las URLs de imágenes). */
   PUBLIC_API_URL: z.string().optional(),
+  BETTER_AUTH_SECRET: z.string().optional(),
 });
+
+/** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
+const DEV_AUTH_SECRET = "solo-desarrollo-mini-galu-no-usar-en-produccion";
 
 export type Config = {
   env: "development" | "test" | "production";
@@ -19,6 +23,7 @@ export type Config = {
   webOrigin: string;
   mediaDir: string;
   publicUrl: string;
+  authSecret: string;
 };
 
 export function loadConfig(): Config {
@@ -26,6 +31,7 @@ export function loadConfig(): Config {
   const rootEnv = resolve(process.cwd(), "../../.env");
   if (!process.env.DATABASE_URL && existsSync(rootEnv)) process.loadEnvFile(rootEnv);
   const env = EnvSchema.parse(process.env);
+  if (env.NODE_ENV === "production" && !env.BETTER_AUTH_SECRET) throw new Error("Falta BETTER_AUTH_SECRET");
   return {
     env: env.NODE_ENV,
     port: env.API_PORT,
@@ -33,5 +39,6 @@ export function loadConfig(): Config {
     webOrigin: env.WEB_ORIGIN,
     mediaDir: resolve(process.cwd(), env.MEDIA_DIR),
     publicUrl: env.PUBLIC_API_URL ?? `http://localhost:${env.API_PORT}`,
+    authSecret: env.BETTER_AUTH_SECRET || DEV_AUTH_SECRET,
   };
 }

@@ -10,7 +10,7 @@ import type {
 import type { Product, Review } from "../domain/product";
 
 export class DrizzleProductRepository implements ProductRepository {
-  constructor(private readonly db: Db) {}
+  constructor(protected readonly db: Db) {}
 
   findPublished() {
     return this.load(eq(s.products.status, "published"));
@@ -110,7 +110,7 @@ export class DrizzleProductRepository implements ProductRepository {
     return { average: r?.average ? Math.round(Number(r.average) * 10) / 10 : 0, count: r?.count ?? 0 };
   }
 
-  private async load(where: SQL): Promise<Product[]> {
+  protected async load(where: SQL): Promise<Product[]> {
     const rows = await this.db
       .select({ p: s.products, col: { slug: s.collections.slug, name: s.collections.name } })
       .from(s.products)
@@ -157,6 +157,7 @@ export class DrizzleProductRepository implements ProductRepository {
         unitsSold: p.unitsSold,
         rating: { average: r ? Math.round(Number(r.average) * 10) / 10 : 0, count: r?.count ?? 0 },
         createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
       };
     });
   }

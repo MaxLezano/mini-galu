@@ -11,6 +11,10 @@ export function onError(err: Error, c: Context) {
     const body: ApiError = { error: { code: err.code, message: err.message, details: err.details } };
     return c.json(body, STATUS[err.code] ?? 400);
   }
+  if (err instanceof SyntaxError) {
+    const body: ApiError = { error: { code: "bad_request", message: "El cuerpo no es JSON válido" } };
+    return c.json(body, 400);
+  }
   console.error(err);
   const body: ApiError = { error: { code: "internal_error", message: "Algo salió mal" } };
   return c.json(body, 500);

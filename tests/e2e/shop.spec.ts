@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("la home muestra el lanzamiento con cuenta regresiva y el carrusel", async ({ page }) => {
   await page.goto("/");

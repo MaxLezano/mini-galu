@@ -27,6 +27,7 @@ export type Product = {
   unitsSold: number;
   rating: ReviewStats;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Review = {
