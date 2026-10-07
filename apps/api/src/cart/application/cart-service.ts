@@ -2,7 +2,7 @@ import type { CartItemInput, CartLine, CartView } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { type CartItem, mergeItems } from "../domain/cart";
-import type { CartOwner, CartRepository, VariantCatalog, VariantInfo } from "./ports";
+import type { CartOwner, CartRepository, CartReservations, VariantCatalog, VariantInfo } from "./ports";
 
 export type CartSnapshot = {
   cartId: string | null;
@@ -14,6 +14,7 @@ export class CartService {
     private readonly carts: CartRepository,
     private readonly variants: VariantCatalog,
     private readonly storage: ImageStorage,
+    private readonly reservations: CartReservations | null = null,
   ) {}
 
   async view(owner: CartOwner | null): Promise<CartView> {
@@ -28,7 +29,8 @@ export class CartService {
     const cartId = owner ? await this.carts.findId(owner) : null;
     if (!cartId) return { cartId: null, lines: [] };
     const items = await this.carts.items(cartId);
-    const info = new Map((await this.variants.byIds(items.map((i) => i.variantId))).map((v) => [v.variantId, v]));
+    const found = await this.withHeld(cartId, await this.variants.byIds(items.map((i) => i.variantId)));
+    const info = new Map(found.map((v) => [v.variantId, v]));
     const fixed = items
       .map((i) => {
         const v = info.get(i.variantId);
@@ -45,17 +47,19 @@ export class CartService {
 
   /** Fija la cantidad de un talle (0 lo saca). */
   async set(owner: CartOwner, input: CartItemInput): Promise<CartView> {
-    const v = await this.variant(input);
-    if (input.qty > v.stock) throw noStock(v);
     const cartId = await this.ensure(owner);
+    const [v] = await this.withHeld(cartId, [await this.variant(input)]);
+    if (!v) throw new NotFoundError("Esa prenda ya no está disponible");
+    if (input.qty > v.stock) throw noStock(v);
     await this.carts.setQty(cartId, v.variantId, input.qty);
     return this.view(owner);
   }
 
   /** Suma unidades a lo que ya había. */
   async add(owner: CartOwner, input: CartItemInput): Promise<CartView> {
-    const v = await this.variant(input);
     const cartId = await this.ensure(owner);
+    const [v] = await this.withHeld(cartId, [await this.variant(input)]);
+    if (!v) throw new NotFoundError("Esa prenda ya no está disponible");
     const current = (await this.carts.items(cartId)).find((i) => i.variantId === v.variantId)?.qty ?? 0;
     if (current + input.qty > v.stock) throw noStock(v);
     await this.carts.setQty(cartId, v.variantId, current + input.qty);
@@ -69,9 +73,9 @@ export class CartService {
     );
     if (found.length) {
       const cartId = await this.ensure(owner);
-      const stock = new Map(found.map(({ v }) => [v.variantId, v.stock]));
       const current = await this.carts.items(cartId);
-      for (const i of await this.variants.byIds(current.map((c) => c.variantId))) stock.set(i.variantId, i.stock);
+      const known = [...found.map(({ v }) => v), ...(await this.variants.byIds(current.map((c) => c.variantId)))];
+      const stock = new Map((await this.withHeld(cartId, known)).map((v) => [v.variantId, v.stock]));
       const incoming: CartItem[] = found.map(({ v, qty }) => ({ variantId: v.variantId, qty }));
       await this.carts.replace(
         cartId,
@@ -90,10 +94,9 @@ export class CartService {
       const userCart = await this.ensure({ userId });
       const current = await this.carts.items(userCart);
       const stock = new Map(
-        (await this.variants.byIds([...guest, ...current].map((i) => i.variantId))).map((v) => [
-          v.variantId,
-          v.published ? v.stock : 0,
-        ]),
+        (await this.withHeld(userCart, await this.variants.byIds([...guest, ...current].map((i) => i.variantId)))).map(
+          (v) => [v.variantId, v.published ? v.stock : 0],
+        ),
       );
       await this.carts.replace(
         userCart,
@@ -106,6 +109,13 @@ export class CartService {
   /** Pago aprobado: la bolsa con la que se compró queda vacía. */
   async empty(cartId: string): Promise<void> {
     await this.carts.replace(cartId, []);
+  }
+
+  /** Stock que esta bolsa puede usar: el libre más lo que ella misma tiene reservado en un pedido sin pagar. */
+  private async withHeld(cartId: string | null, list: VariantInfo[]): Promise<VariantInfo[]> {
+    if (!cartId || !this.reservations) return list;
+    const held = await this.reservations.heldBy(cartId);
+    return list.map((v) => (held.has(v.variantId) ? { ...v, stock: v.stock + (held.get(v.variantId) ?? 0) } : v));
   }
 
   private async ensure(owner: CartOwner) {

@@ -31,3 +31,11 @@ export interface VariantCatalog {
   find(slug: string, size: Size): Promise<VariantInfo | null>;
   byIds(ids: string[]): Promise<VariantInfo[]>;
 }
+
+/**
+ * Lo que la misma bolsa tiene reservado en pedidos sin pagar (variantId → unidades). Ese stock ya está descontado,
+ * pero sigue siendo de esta bolsa: si no se suma, al volver al checkout la bolsa se achicaría sola.
+ */
+export interface CartReservations {
+  heldBy(cartId: string): Promise<Map<string, number>>;
+}

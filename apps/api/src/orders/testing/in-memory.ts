@@ -1,9 +1,10 @@
 import type { PaymentMethod } from "@mini-galu/contracts";
+import type { CartReservations } from "../../cart/application/ports";
 import type { MemoryVariants } from "../../cart/testing/in-memory";
 import type { NewOrder, OrderRecord, OrderRepository } from "../application/ports";
 
 /** Pedidos en memoria que descuentan y devuelven el stock de MemoryVariants. */
-export class MemoryOrders implements OrderRepository {
+export class MemoryOrders implements OrderRepository, CartReservations {
   items: OrderRecord[] = [];
   unitsSold = new Map<string, number>();
   private seq = 1001;
@@ -39,6 +40,13 @@ export class MemoryOrders implements OrderRepository {
   }
   async pendingForCart(cartId: string) {
     return this.items.filter((o) => o.cartId === cartId && o.status === "esperando_pago").map((o) => o.id);
+  }
+  async heldBy(cartId: string) {
+    const held = new Map<string, number>();
+    for (const o of this.items)
+      if (o.cartId === cartId && o.status === "esperando_pago")
+        for (const i of o.items) if (i.variantId) held.set(i.variantId, (held.get(i.variantId) ?? 0) + i.qty);
+    return held;
   }
   async expired(now: Date) {
     return this.items

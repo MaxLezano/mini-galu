@@ -118,6 +118,10 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       .then((q) => {
         if (!alive) return;
         setQuote(q);
+        // lo que se cobra manda: si la bolsa del navegador quedó distinta (stock, otra pestaña), se actualiza
+        const key = (l: { slug: string; size: string; qty: number }[]) =>
+          l.map((x) => `${x.slug}:${x.size}:${x.qty}`).join("|");
+        if (key(q.lines) !== key(useCart.getState().lines)) useCart.setState({ lines: q.lines });
         if (coupon && q.couponError) {
           toast(q.couponError, { icon: <Info className="i-sm" /> });
           setCoupon(null);
@@ -506,7 +510,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       </div>
 
       <OrderSummary
-        lines={lines}
+        lines={quote?.lines ?? lines}
         quote={quote}
         maxInstallments={config.methods.credito ? config.maxInstallments : 1}
         couponBusy={false}

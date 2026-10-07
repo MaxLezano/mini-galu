@@ -87,9 +87,9 @@ export function buildApp(config: Config) {
   const launches = new AdminLaunchesService(new DrizzleAdminLaunchRepository(db), publisher, storage, events);
 
   // checkout: bolsa → pedido (reserva stock) → pago
-  const cart = new CartService(new DrizzleCartRepository(db), new DrizzleVariantCatalog(db), storage);
-  const coupons = new CouponService(new DrizzleCouponRepository(db));
   const orders = new DrizzleOrderRepository(db);
+  const cart = new CartService(new DrizzleCartRepository(db), new DrizzleVariantCatalog(db), storage, orders);
+  const coupons = new CouponService(new DrizzleCouponRepository(db));
   const checkout = new CheckoutService(cart, new ShippingService(new TableShippingRates()), coupons, orders, storage);
   const orderPayments = new OrderPayments(orders, cart, coupons, events);
   const webhookUrl = `${config.publicUrl}/payments/webhook`;

@@ -1,5 +1,6 @@
 import type { PaymentMethod } from "@mini-galu/contracts";
 import { and, type Db, eq, gte, lt, schema as s, sql } from "@mini-galu/db";
+import type { CartReservations } from "../../cart/application/ports";
 import type { NewOrder, OrderRecord, OrderRepository, ReserveResult } from "../application/ports";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -10,7 +11,8 @@ class OutOfStock extends Error {
   }
 }
 
-export class DrizzleOrderRepository implements OrderRepository {
+/** También le dice a la bolsa cuánto stock tiene reservado en pedidos sin pagar (CartReservations). */
+export class DrizzleOrderRepository implements OrderRepository, CartReservations {
   constructor(private readonly db: Db) {}
 
   async createReserving({ items, ...o }: NewOrder): Promise<ReserveResult> {
@@ -42,6 +44,16 @@ export class DrizzleOrderRepository implements OrderRepository {
       .from(s.orders)
       .where(and(eq(s.orders.cartId, cartId), eq(s.orders.status, "esperando_pago")));
     return rows.map((r) => r.id);
+  }
+
+  async heldBy(cartId: string) {
+    const rows = await this.db
+      .select({ variantId: s.orderItems.variantId, qty: sql<number>`sum(${s.orderItems.qty})::int` })
+      .from(s.orderItems)
+      .innerJoin(s.orders, eq(s.orders.id, s.orderItems.orderId))
+      .where(and(eq(s.orders.cartId, cartId), eq(s.orders.status, "esperando_pago")))
+      .groupBy(s.orderItems.variantId);
+    return new Map(rows.flatMap((r) => (r.variantId ? [[r.variantId, r.qty] as const] : [])));
   }
 
   async expired(now: Date) {

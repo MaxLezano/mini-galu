@@ -46,7 +46,7 @@ beforeEach(async () => {
   variants = new MemoryVariants([variant("maddie", "4", 2), variant("elsa", "2", 1, { priceCents: 30_000_00 })]);
   orders = new MemoryOrders(variants);
   coupons = new MemoryCoupons();
-  cart = new CartService(new MemoryCarts(), variants, storage);
+  cart = new CartService(new MemoryCarts(), variants, storage, orders);
   const bus = new EventBus();
   events = [];
   for (const t of ["PaymentApproved", "OrderExpired", "PaymentNeedsRefund"]) bus.on(t, (e) => void events.push(e));
@@ -109,6 +109,19 @@ describe("CheckoutService", () => {
     await checkout.place(guest, null, order());
     expect(orders.items.map((o) => o.status)).toEqual(["cancelado", "esperando_pago"]);
     expect(variants.list[0]?.stock).toBe(1);
+  });
+
+  it("la reserva propia no achica la bolsa: volver a pedir con todo el stock en la bolsa cobra lo mismo", async () => {
+    // caso real (MG-1008 → MG-1009): la bolsa tenía todo el stock de un talle
+    await cart.add(guest, { slug: "maddie", size: "4", qty: 1 }); // 2 de 2
+    const first = await checkout.place(guest, null, order());
+    expect(variants.list[0]?.stock).toBe(0);
+    const view = await cart.view(guest);
+    expect(view.lines[0]).toMatchObject({ qty: 2, maxStock: 2 });
+    const again = await checkout.place(guest, null, order());
+    expect(again.totalCents).toBe(first.totalCents);
+    expect(orders.items.map((o) => o.status)).toEqual(["cancelado", "esperando_pago"]);
+    expect(variants.list[0]?.stock).toBe(0);
   });
 
   it("si otra persona compró el último talle mientras tanto, avisa sin crear el pedido", async () => {
