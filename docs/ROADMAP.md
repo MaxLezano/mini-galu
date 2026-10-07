@@ -119,6 +119,14 @@ Regla: nada de los mockups se descarta en silencio. Si algo cambia, se anota ac�
 - ⏳ Gift cards con diseño elegible y vista previa, consulta de saldo
 - ⏳ Clientes en el panel: nenas, cumples próximos, ficha con pedidos
 
+## Seguridad del panel — obligatorio antes del deploy (fase 10)
+- ⏳ **Verificación en dos pasos** para las cuentas admin (TOTP con app autenticadora + códigos de respaldo;
+  plugin `twoFactor` de Better Auth). Sin 2FA activado, el panel no se habilita en producción.
+- ⏳ **Límite de intentos de login**: bloqueo temporal por IP y por cuenta tras varios intentos fallidos (rate limit de
+  Better Auth en `/sign-in/email` + aviso por mail a la cuenta), mensajes que no revelan si el email existe.
+- ✅ El panel vive en `/taller` del mismo dominio (sin subdominio), sin links desde la tienda y con `noindex`;
+  la API exige sesión con rol admin en todo `/admin/*`.
+
 ## Fase 9 · Pulido / Fase 10 · Deploy
 - ⏳ a11y AA, Lighthouse ≥ 90, SEO, imágenes AVIF/WebP con `srcset` (sharp), View Transitions, páginas de ayuda
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)

@@ -199,7 +199,7 @@ Detalle de cada una en el [README de mockups](../design/mockups/README.md).
 | **7. Galú** | `assistant` con Ollama + tools + "enseñale" | Responde stock/precio/talles con datos reales |
 | **8. Cuenta** | Auth, nenas, favoritos, lista de cumple, gift cards, lista de espera | |
 | **9. Pulido** | a11y, performance, SEO, e2e Playwright en 4 tamaños | Lighthouse ≥ 90 |
-| **10. Deploy** | Vercel (web) + Render/Fly (api) + Neon (Postgres) — free tiers | URL pública |
+| **10. Deploy** | Vercel (web) + Render/Fly (api) + Neon (Postgres) — free tiers. **Antes de abrir el panel:** 2FA obligatorio para admins y límite de intentos de login | URL pública; panel en `/taller` con 2FA |
 
 ---
 
