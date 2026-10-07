@@ -1,0 +1,190 @@
+import { type PlaceOrderInput, PlaceOrderInputSchema } from "@mini-galu/contracts";
+import { beforeEach, describe, expect, it } from "vitest";
+import { CartService } from "../../cart/application/cart-service";
+import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
+import { CouponService } from "../../coupons/application/coupon-service";
+import { MemoryCoupons } from "../../coupons/testing/in-memory";
+import { NotFoundError, ValidationError } from "../../shared/domain/errors";
+import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
+import type { ImageStorage } from "../../shared/media/image-storage";
+import { ShippingService } from "../../shipping/application/shipping-service";
+import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { MemoryOrders } from "../testing/in-memory";
+import { CheckoutService } from "./checkout-service";
+import { OrderPayments } from "./order-payments";
+
+const storage: ImageStorage = { url: (p) => `http://api/media/${p}`, save: async (p) => p };
+const guest = { token: "t1" };
+let now = new Date("2026-10-07T12:00:00-03:00");
+const clock = () => now;
+
+let variants: MemoryVariants;
+let orders: MemoryOrders;
+let coupons: MemoryCoupons;
+let cart: CartService;
+let checkout: CheckoutService;
+let payments: OrderPayments;
+let events: DomainEvent[];
+
+const order = (over: Partial<PlaceOrderInput> = {}) =>
+  PlaceOrderInputSchema.parse({
+    contact: { email: "lucia@gmail.com", firstName: "Lucía", lastName: "Fernández", phone: "11 5555-1234" },
+    shipping: {
+      method: "domicilio",
+      postalCode: "1414",
+      province: "CABA",
+      street: "Gurruchaga",
+      number: "1234",
+      unit: "3° B",
+      city: "CABA",
+    },
+    ...over,
+  });
+
+beforeEach(async () => {
+  now = new Date("2026-10-07T12:00:00-03:00");
+  variants = new MemoryVariants([variant("maddie", "4", 2), variant("elsa", "2", 1, { priceCents: 30_000_00 })]);
+  orders = new MemoryOrders(variants);
+  coupons = new MemoryCoupons();
+  cart = new CartService(new MemoryCarts(), variants, storage);
+  const bus = new EventBus();
+  events = [];
+  for (const t of ["PaymentApproved", "OrderExpired", "PaymentNeedsRefund"]) bus.on(t, (e) => void events.push(e));
+  const couponService = new CouponService(coupons, clock);
+  checkout = new CheckoutService(
+    cart,
+    new ShippingService(new TableShippingRates(), clock),
+    couponService,
+    orders,
+    storage,
+    clock,
+    () => "tok",
+  );
+  payments = new OrderPayments(orders, cart, couponService, bus, clock);
+  await cart.add(guest, { slug: "maddie", size: "4", qty: 1 });
+});
+
+describe("CheckoutService", () => {
+  it("cotiza envío por CP y aplica el cupón sin cortar la compra si no sirve", async () => {
+    await coupons.create({
+      code: "OTONO10",
+      kind: "percent",
+      value: 10,
+      minSubtotalCents: null,
+      audience: "todos",
+      endsAt: null,
+      maxUses: null,
+      oncePerCustomer: true,
+      active: true,
+    });
+    const q = await checkout.quote(guest, {
+      method: "domicilio",
+      postalCode: "1414",
+      couponCode: "otono10",
+      email: "a@b.co",
+    });
+    expect(q).toMatchObject({ subtotalCents: 38_000_00, discountCents: 3_800_00, shippingCents: 5_900_00 });
+    expect(q.totalCents).toBe(38_000_00 - 3_800_00 + 5_900_00);
+    const bad = await checkout.quote(guest, { method: "taller", couponCode: "NADA" });
+    expect(bad).toMatchObject({ shippingCents: 0, couponError: "Ese código no existe", coupon: null });
+  });
+
+  it("envío gratis desde $90.000", async () => {
+    await cart.add(guest, { slug: "maddie", size: "4", qty: 1 });
+    await cart.add(guest, { slug: "elsa", size: "2", qty: 1 });
+    expect((await checkout.quote(guest, { method: "domicilio", postalCode: "5000" })).shippingCents).toBe(0);
+  });
+
+  it("crear el pedido reserva el stock y queda esperando pago", async () => {
+    const p = await checkout.place(guest, null, order());
+    expect(p).toMatchObject({ number: "MG-1001", accessToken: "tok", totalCents: 38_000_00 + 5_900_00 });
+    expect(variants.list[0]?.stock).toBe(1);
+    const r = await checkout.receipt("MG-1001", "tok");
+    expect(r).toMatchObject({ status: "esperando_pago", firstName: "Lucía", shippingMethod: "domicilio" });
+    await expect(checkout.receipt("MG-1001", "otro")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("si se vuelve a pedir desde la misma bolsa, el pedido anterior se cancela y devuelve el stock", async () => {
+    await checkout.place(guest, null, order());
+    await checkout.place(guest, null, order());
+    expect(orders.items.map((o) => o.status)).toEqual(["cancelado", "esperando_pago"]);
+    expect(variants.list[0]?.stock).toBe(1);
+  });
+
+  it("si otra persona compró el último talle mientras tanto, avisa sin crear el pedido", async () => {
+    const snapshot = cart.snapshot.bind(cart);
+    cart.snapshot = async (o) => {
+      const s = await snapshot(o);
+      variants.setStock("maddie-4", 0); // la otra compra entra justo después de leer la bolsa
+      return s;
+    };
+    await expect(checkout.place(guest, null, order())).rejects.toThrow("Se acaba de agotar el maddie en talle 4");
+    expect(orders.items).toHaveLength(0);
+  });
+
+  it("valida bolsa vacía, horario de retiro y cupón inválido", async () => {
+    await expect(checkout.place({ token: "vacia" }, null, order())).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      checkout.place(guest, null, order({ shipping: { method: "taller", pickupSlot: "2026-10-07T10-13" } })),
+    ).rejects.toThrow("horario");
+    await expect(checkout.place(guest, null, order({ couponCode: "NADA" }))).rejects.toThrow("no existe");
+    const ok = await checkout.place(
+      guest,
+      null,
+      order({ shipping: { method: "taller", pickupSlot: "2026-10-08T10-13" } }),
+    );
+    expect(ok.totalCents).toBe(38_000_00);
+  });
+});
+
+describe("OrderPayments", () => {
+  it("pago aprobado: pedido nuevo, bolsa vacía, cupón usado y evento (una sola vez)", async () => {
+    const c = await new CouponService(coupons, clock).create({
+      code: "OTONO10",
+      kind: "percent",
+      value: 10,
+      minSubtotalCents: null,
+      audience: "todos",
+      endsAt: null,
+      maxUses: null,
+      oncePerCustomer: true,
+      active: true,
+    });
+    const p = await checkout.place(guest, null, order({ couponCode: "OTONO10" }));
+    await payments.approved(p.orderId, { method: "credito", installments: 6 });
+    await payments.approved(p.orderId, { method: "credito", installments: 6 });
+    expect(orders.items[0]).toMatchObject({ status: "nuevo", paymentMethod: "credito", installments: 6 });
+    expect(orders.unitsSold.get("maddie")).toBe(1);
+    expect((await cart.view(guest)).count).toBe(0);
+    expect((await coupons.findById(c.id))?.timesUsed).toBe(1);
+    expect(events.map((e) => e.type)).toEqual(["PaymentApproved"]);
+    await expect(payments.payable("MG-1001", "tok")).rejects.toThrow("ya está pagado");
+  });
+
+  it("libera el stock de los pedidos que no se pagaron a tiempo", async () => {
+    await checkout.place(guest, null, order());
+    now = new Date(now.getTime() + 31 * 60_000);
+    await expect(payments.payable("MG-1001", "tok")).rejects.toThrow("venció");
+    expect(await payments.releaseExpired()).toBe(1);
+    expect(variants.list[0]?.stock).toBe(2);
+    expect(events.map((e) => e.type)).toEqual(["OrderExpired"]);
+  });
+
+  it("si el pago llega después de vencer: reserva de nuevo si hay stock, si no pide reembolso", async () => {
+    const a = await checkout.place(guest, null, order());
+    now = new Date(now.getTime() + 31 * 60_000);
+    await payments.releaseExpired();
+    await payments.approved(a.orderId, { method: "debito", installments: 1 });
+    expect(orders.items[0]?.status).toBe("nuevo");
+    expect(variants.list[0]?.stock).toBe(1);
+
+    await cart.add({ token: "b" }, { slug: "elsa", size: "2", qty: 1 });
+    const b = await checkout.place({ token: "b" }, null, order());
+    now = new Date(now.getTime() + 31 * 60_000);
+    await payments.releaseExpired();
+    variants.setStock("elsa-2", 0);
+    await payments.approved(b.orderId, { method: "credito", installments: 1 });
+    expect(orders.items[1]?.status).toBe("cancelado");
+    expect(events.at(-1)?.type).toBe("PaymentNeedsRefund");
+  });
+});

@@ -4,7 +4,12 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
 import { AppError, ValidationError } from "../domain/errors";
 
-const STATUS: Record<string, ContentfulStatusCode> = { not_found: 404, validation_error: 422, conflict: 409 };
+const STATUS: Record<string, ContentfulStatusCode> = {
+  not_found: 404,
+  validation_error: 422,
+  conflict: 409,
+  unauthorized: 401,
+};
 
 export function onError(err: Error, c: Context) {
   if (err instanceof AppError) {

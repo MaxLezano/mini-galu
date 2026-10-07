@@ -194,6 +194,9 @@ await db.transaction(async (tx) => {
   );
 
   await tx.insert(s.contentBlocks).values({ key: "home", value: data.home });
+
+  // cupones demo del mockup: si ya existen (los editó el taller) no se pisan
+  await tx.insert(s.coupons).values(data.demoCoupons).onConflictDoNothing({ target: s.coupons.code });
 });
 
 const adminEmail = await upsertAdmin(db);

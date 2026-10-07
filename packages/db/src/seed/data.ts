@@ -430,3 +430,19 @@ export const home: HomeBlock = {
 
 /** Imágenes que no son de producto (portada, lanzamiento, colecciones). */
 export const contentImages = ["hero-campo", "hero-bosque", "hero-otono"];
+
+/** Cupones demo (admin-tienda.html). BIENVENIDA10 lo usa el e2e del checkout. */
+export const demoCoupons = [
+  { code: "BIENVENIDA10", kind: "percent", value: 10, audience: "primera_compra", oncePerCustomer: true },
+  { code: "CUMPLE15", kind: "percent", value: 15, audience: "cumple", oncePerCustomer: true },
+  {
+    code: "FIESTAS",
+    kind: "fixed",
+    value: 5_000_00,
+    minSubtotalCents: 40_000_00,
+    audience: "todos",
+    endsAt: new Date("2026-12-24T23:59:59-03:00"),
+    oncePerCustomer: true,
+    active: false,
+  },
+] as const satisfies typeof import("../schema").coupons.$inferInsert[];

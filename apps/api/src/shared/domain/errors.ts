@@ -21,3 +21,7 @@ export class ValidationError extends AppError {
 export class ConflictError extends AppError {
   readonly code = "conflict";
 }
+
+export class UnauthorizedError extends AppError {
+  readonly code = "unauthorized";
+}
