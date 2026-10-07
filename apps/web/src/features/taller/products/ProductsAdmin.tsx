@@ -55,12 +55,15 @@ export function ProductsAdmin({ initial, collections }: { initial: AdminProduct[
 
   const togglePublish = async (p: AdminProduct, published: boolean) => {
     setBusy(p.slug);
+    // optimista: el switch cambia al toque y vuelve atrás si la API no acepta
+    upsert({ ...p, status: published ? "published" : "draft" });
     try {
       upsert(await adminApi.setStatus(p.slug, published ? "published" : "draft"));
       toast(published ? `${p.name} publicado` : `${p.name} oculto de la tienda`, {
         icon: published ? <Check className="i-sm" /> : <EyeOff className="i-sm" />,
       });
     } catch (e) {
+      upsert(p);
       toast(e instanceof ApiRequestError ? e.message : "No se pudo cambiar, probá de nuevo");
     } finally {
       setBusy(null);
