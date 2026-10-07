@@ -19,7 +19,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   if (!cookie) return null;
   const res = await fetch(`${API_URL}/auth/get-session`, { headers: { cookie }, cache: "no-store" }).catch(() => null);
   const data = (await res?.json().catch(() => null)) as { user?: AdminSession & { role?: string } } | null;
-  if (!data?.user || data.user.role !== "admin") return null;
+  if (data?.user?.role !== "admin") return null;
   return { id: data.user.id, name: data.user.name, email: data.user.email };
 }
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV"],
+  "globalEnv": ["NODE_ENV", "ADMIN_EMAIL", "ADMIN_PASSWORD"],
   "globalDependencies": [".env"],
   "tasks": {
     "build": {
