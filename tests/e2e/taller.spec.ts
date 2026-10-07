@@ -1,6 +1,11 @@
 import type { Page } from "@playwright/test";
 import { ADMIN, expect, test } from "./fixtures";
 
+/** El panel ya hidrató: AdminShell agrega `adm-body` en un efecto (corre cuando React terminó). */
+async function ready(page: Page) {
+  await expect(page.locator("body.adm-body")).toBeAttached();
+}
+
 async function login(page: Page) {
   await page.goto("/taller/productos");
   await expect(page).toHaveURL(/\/taller\/ingresar/);
@@ -8,6 +13,7 @@ async function login(page: Page) {
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller\/productos/);
+  await ready(page);
 }
 
 test("el panel pide ingresar y rechaza una contraseña incorrecta", async ({ page }) => {
@@ -75,6 +81,7 @@ test("ocultar un producto lo saca del catálogo", async ({ page }) => {
 test("editar la portada se ve en la home", async ({ page }) => {
   await login(page);
   await page.goto("/taller/tienda");
+  await ready(page);
   const eyebrow = page.getByLabel("Etiqueta");
   const original = await eyebrow.inputValue();
   await eyebrow.fill("Prueba e2e");
@@ -93,6 +100,7 @@ test("editar la portada se ve en la home", async ({ page }) => {
 test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
   await login(page);
   await page.goto("/taller/lanzamientos");
+  await ready(page);
   await page.getByRole("button", { name: "Nuevo lanzamiento" }).click();
   const modal = page.getByRole("dialog", { name: "Lanzamiento" });
   await modal.getByLabel("Nombre").fill("Prueba e2e 99");
@@ -115,6 +123,7 @@ test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
 test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) => {
   await login(page);
   await page.goto("/taller/tienda");
+  await ready(page);
   await expect(page.locator("#pagos")).toContainText("Simulado");
 
   const code = `E2E${Date.now() % 1_000_000}`;
