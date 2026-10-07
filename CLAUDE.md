@@ -65,6 +65,10 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 - **Ninguna imagen de contenido va al repo.** Fotos de prueba y export viejo: `local-assets/` (ignorada). En
   producción las fotos se suben desde el panel al `ImageStorage`.
 - Secretos solo en `.env` (nunca commitear). `.env.example` documenta cada variable.
+- **Pagos**: sin `MP_ACCESS_TOKEN` la API usa `SimulatedGateway` (local y CI); el titular de la tarjeta decide el
+  resultado (APRO aprueba, OTHE rechaza, CONT pendiente). Nunca se aprueba un pedido sin consultar el pago al gateway.
+- **Stock**: se descuenta al crear el pedido (reserva de 30 min) dentro de una transacción; se devuelve al vencer o
+  cancelar. Los e2e del checkout compran `mono-verde` (el de más stock del seed): si se agota, `pnpm db:reset`.
 
 ## Tests
 

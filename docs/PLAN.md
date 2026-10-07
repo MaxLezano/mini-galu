@@ -191,8 +191,8 @@ Detalle de cada una en el [README de mockups](../design/mockups/README.md).
 |---|---|---|
 | **0. Diseño** ✅ | Mockups HTML (tienda + panel) + ideas | Gaby aprueba look & feel y flujo de pedidos |
 | **1. Base** ✅ | Monorepo, docker-compose, CI, tokens, Biome, commitlint | `pnpm dev` levanta web+api+db |
-| **2. Catálogo** 🟡 | `catalog` + `content`, seed legacy, panel de productos con stock por talle | Catálogo navegable con datos reales (✅ tienda; falta el panel) |
-| **3. Checkout** | `cart`, `orders`, `payments` (Brick + webhook vía cloudflared) | Compra con crédito, débito y dinero en cuenta en sandbox |
+| **2. Catálogo** ✅ | `catalog` + `content`, seed legacy, panel de productos con stock por talle | Catálogo navegable con datos reales |
+| **3. Checkout** 🟡 | `cart`, `orders`, `payments`, `coupons`, `shipping` (Brick + webhook vía cloudflared) | Compra con crédito, débito y dinero en cuenta en sandbox (✅ con gateway simulado; falta el sandbox) |
 | **4. Panel de pedidos** | Tablero, detalle, picking, links de pago | Gaby opera un pedido de punta a punta |
 | **5. Envíos** | `shipping` con FakeAndreani + seguimiento público | Pedido pasa por todos los estados |
 | **6. Automatizaciones** | `notifications` + `automations` + registro | Avisos salen solos (mail; WhatsApp en modo prueba) |

@@ -50,6 +50,23 @@ Panel del taller: http://localhost:3000/taller — en local entra con `gaby@mini
 
 Mockups: `pnpm mockups` → http://localhost:5500
 
+### Pagos (Mercado Pago)
+
+Sin credenciales, el checkout usa un **gateway simulado** (no cobra nada). Como las tarjetas de prueba de Mercado Pago,
+el nombre del titular decide el resultado: `APRO` aprueba, `OTHE` rechaza, `CONT` queda en revisión, `FUND` sin saldo.
+
+Para probar con Mercado Pago de verdad (modo prueba), en el `.env`:
+
+```bash
+MP_ACCESS_TOKEN=APP_USR-…      # credenciales de prueba de la cuenta vendedora de prueba
+MP_PUBLIC_KEY=APP_USR-…
+MP_WEBHOOK_SECRET=…            # "Webhooks" → clave secreta, en el panel de developers de Mercado Pago
+MP_MODE=prueba                 # o produccion
+```
+
+El webhook (`/payments/webhook`) necesita una URL pública https: `cloudflared tunnel --url http://localhost:4000` y
+`PUBLIC_API_URL` con esa URL. Sin túnel igual funciona: al volver de Mercado Pago la web confirma el pago consultándolo.
+
 ## Scripts
 
 | Comando | Qué hace |
@@ -64,7 +81,7 @@ Mockups: `pnpm mockups` → http://localhost:5500
 | `pnpm db:generate` | nueva migración desde el schema |
 | `pnpm db:migrate` / `db:seed` / `db:reset` / `db:studio` | base de datos |
 
-## API (fase 2)
+## API
 
 | Método | Ruta | |
 |---|---|---|
@@ -80,8 +97,17 @@ Mockups: `pnpm mockups` → http://localhost:5500
 | GET/PUT | `/admin/catalog/products/:slug` | panel: ver / guardar (avisa talles que vuelven) |
 | PATCH | `/admin/catalog/products/:slug/status` | panel: publicar u ocultar |
 | POST | `/admin/catalog/images` | panel: subir foto (multipart `file`, máx. 8 MB) |
+| GET | `/cart` · POST/PUT `/cart/items` · POST `/cart/merge` | bolsa (cookie de invitada `mg_cart` o cuenta) |
+| GET | `/checkout/config` · `/checkout/shipping?cp=` | medios de pago activos · opciones de envío y franjas de retiro |
+| POST | `/checkout/quote` | subtotal, cupón, envío y total |
+| POST | `/checkout/orders` | crea el pedido y reserva el stock 30 min |
+| GET | `/checkout/orders/:numero?t=` | comprobante (número + token) |
+| POST | `/checkout/orders/:numero/pay` · `/wallet` · `/sync` | tarjeta (token del Brick) · dinero en cuenta · confirmar la vuelta |
+| POST | `/payments/webhook` | avisos de Mercado Pago (firma `x-signature`) |
+| GET/PUT | `/admin/payments` | panel: medios de pago y cuotas sin interés |
+| GET/POST/PUT/PATCH/DELETE | `/admin/coupons` | panel: cupones |
 
 ## Estado
 
-Fase 1 (base) ✅ · Fase 2 (catálogo) en curso: tienda lista y panel de productos con login; faltan lanzamientos y
-portada en el panel. Detalle en [docs/ROADMAP.md](docs/ROADMAP.md).
+Fase 1 (base) ✅ · Fase 2 (catálogo) ✅ · Fase 3 (checkout) ✅ con gateway simulado; falta la prueba en el sandbox
+de Mercado Pago con credenciales. Detalle en [docs/ROADMAP.md](docs/ROADMAP.md).

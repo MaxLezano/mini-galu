@@ -92,10 +92,30 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   próximo lanzamiento
 - ⏳ `admin-tienda`: Mercado Pago y cupones → fase 3; envíos, horarios de retiro y paquete → fase 5; gift cards → fase 8
 
-## Fase 3 · Checkout (`checkout.html`)
-- ⏳ 3 pasos; Andreani domicilio / sucursal / retiro en el taller con turnos
-- ⏳ Mercado Pago Payment Brick: crédito (cuotas), débito, dinero en cuenta; gift card como saldo; pantalla de éxito
-- ⏳ Bolsa de invitada en la API (cookie) + merge al loguear; webhook con firma e idempotencia
+## Fase 3 · Checkout (`checkout.html`) ✅ (falta probar el sandbox con credenciales)
+- ✅ Bolsa en la API: cookie de invitada `mg_cart`, merge con la cuenta al ingresar y con la bolsa vieja del navegador;
+  se ajusta sola si baja el stock o se despublica una prenda
+- ✅ 3 pasos con el diseño del mockup (stepper, pasos cerrados con resumen y "Editar", resumen plegable en celular)
+- ✅ Datos: email, nombre, apellido (separado: lo pide Andreani), celular normalizado a +54 9…, seguimiento por WhatsApp
+- ✅ Envío: a domicilio (calle, altura, piso, localidad, indicaciones), sucursal y retiro en el taller con franjas
+  (desde mañana, lun–vie 10–13 / 16–19, sáb 10–13); envío gratis desde $90.000
+- ✅ Pedido con número MG-1001…, precios congelados y **stock reservado 30 min** (se libera solo cada minuto); si se
+  vuelve a pedir desde la misma bolsa, el anterior se cancela
+- ✅ Pago: puerto `PaymentGateway` → `MercadoPagoGateway` (Payment Brick con los colores del taller: crédito, débito y
+  dinero en cuenta) y `SimulatedGateway` (local/CI, mismo aspecto que el mockup; APRO/OTHE/CONT/FUND)
+- ✅ Webhook `/payments/webhook` con firma `x-signature`, estado consultado a MP, idempotente por pago; monto que no
+  coincide no aprueba. Pago aprobado → pedido "nuevo", bolsa vacía, cupón usado, `PaymentApproved`
+- ✅ Pago que llega después de vencer la reserva: se vuelve a reservar si hay stock; si no, `PaymentNeedsRefund`
+- ✅ Cupones: porcentaje, monto fijo, envío gratis; mínimo, vencimiento, usos, uno por cliente, primera compra y
+  anotados al lanzamiento; panel `admin-tienda` → Cupones (crear, editar, pausar, borrar)
+- ✅ Panel `admin-tienda` → Mercado Pago: medios activos, cuotas sin interés (1/3/6), modo según credenciales
+- ✅ Pantalla de éxito con moño, confeti y pasos según el envío; "pago en revisión" para pendientes
+- ⏳ Probar en el sandbox de Mercado Pago (cuenta de prueba vendedora/compradora) → necesita credenciales
+- 🟡 Sucursal Andreani: hoy se cotiza por tabla y se confirma la sucursal por mensaje → elegirla en el mapa en la fase 5
+- 🟡 "12 cuotas fijas con CFT" del mockup: las muestra el Brick real según la cuenta; el simulado ofrece 1/3/6
+- 🟡 Las cuotas sin interés del panel se usan en el checkout; los textos de la tienda ("6 cuotas") siguen fijos → fase 9
+- ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
+- ⏳ Mail/WhatsApp de "pago aprobado" → fase 6 · ver pedidos y reembolsos en el panel → fase 4
 
 ## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`)
 - ⏳ Resumen: tareas del día, métricas, ventas por semana, últimos pedidos, lanzamiento, stock, registro automático
