@@ -54,7 +54,9 @@ pnpm db:reset    # vuelve al estado del seed
 pnpm db:studio   # Drizzle Studio
 ```
 
-Los datos de `docs/legacy/` son la exportación del proyecto viejo; el seed curado vive en `packages/db/src/seed/data.ts`.
+El seed curado vive en `packages/db/src/seed/data.ts`. Las fotos de prueba y el export del proyecto viejo están en
+`local-assets/` (ignorada por git; ver su README). **Ninguna imagen de contenido va al repo**: en producción se suben
+desde el panel.
 
 ## Secretos
 

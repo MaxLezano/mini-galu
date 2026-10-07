@@ -1,7 +1,7 @@
 /**
- * Datos de arranque. Productos reales de Mini Galú (exportados del proyecto viejo a docs/legacy/products.json)
+ * Datos de arranque. Productos reales de Mini Galú (exportados del proyecto viejo, ver local-assets/legacy)
  * curados en la Fase 0 (design/mockups/assets/js/data.js): slugs, colecciones, ocasiones, colores y telas.
- * Fotos: design/mockups/assets/img (versiones recortadas de docs/legacy/images).
+ * Fotos de prueba: local-assets/mockups/img (fuera del repo). En producción se cargan desde el panel.
  *
  * ⚠️ DEMO: reseñas, anotadas a listas de espera y al lanzamiento son de ejemplo para poder ver el panel con datos.
  */

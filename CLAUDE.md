@@ -62,6 +62,8 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 - Lo que todavía no existe se marca con `TODO(fase N · módulo)` y figura en `docs/ROADMAP.md`. No se inventan datos
   en la UI: si falta el backend, se dice (ver `ui/organisms/InTheWorks`).
 - Seed (`packages/db/src/seed/data.ts`): productos reales; reseñas, anotadas y listas de espera son **demo**.
+- **Ninguna imagen de contenido va al repo.** Fotos de prueba y export viejo: `local-assets/` (ignorada). En
+  producción las fotos se suben desde el panel al `ImageStorage`.
 - Secretos solo en `.env` (nunca commitear). `.env.example` documenta cada variable.
 
 ## Tests

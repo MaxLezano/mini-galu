@@ -28,7 +28,8 @@ packages/
   design-tokens/  paleta, tipografías, forma y movimiento (1:1 con los mockups)
   config/     tsconfig base
 design/mockups/   HTML estático aprobado (referencia visual y de comportamiento)
-docs/             plan, roadmap, ideas, ADRs y datos legacy para el seed
+docs/             plan, roadmap, ideas y ADRs
+local-assets/     (ignorada) fotos de prueba y export del proyecto viejo — ver local-assets/README.md
 ```
 
 ## Arrancar
@@ -40,6 +41,7 @@ pnpm install
 cp .env.example .env        # en Windows: copy .env.example .env
 pnpm db:up                  # Postgres en :5433 y Mailpit en :8025
 pnpm db:reset               # migraciones + seed (11 productos, colecciones y el lanzamiento)
+                            # las fotos de prueba salen de local-assets/ (no está en git; sin ella, productos sin foto)
 pnpm dev                    # web http://localhost:3000 · api http://localhost:4000
 ```
 

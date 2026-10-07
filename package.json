@@ -21,7 +21,7 @@
     "db:seed": "pnpm --filter @mini-galu/db seed",
     "db:reset": "pnpm --filter @mini-galu/db reset",
     "db:studio": "pnpm --filter @mini-galu/db studio",
-    "mockups": "npx serve design/mockups -l 5500",
+    "mockups": "node scripts/serve-mockups.mjs",
     "prepare": "husky",
     "test:e2e": "playwright test",
     "shots": "node scripts/screenshots.mjs"

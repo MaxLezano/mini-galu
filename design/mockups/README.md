@@ -1,12 +1,13 @@
 # Mockups — Mini Galú
 
-HTML estático, sin build. Usa las fotos reales de `assets/img/` y los productos reales del seed.
+HTML estático, sin build. Usa fotos de prueba y los productos reales del seed. Las fotos **no están en el repo**:
+viven en `local-assets/mockups/img` (carpeta ignorada, ver `local-assets/README.md`) y el servidor las sirve como `assets/img/`.
 Las librerías están copiadas en `assets/vendor/` (funcionan sin internet, salvo las tipografías de Google Fonts).
 
 ## Cómo verlos
 
 ```bash
-npx serve design/mockups      # o: python -m http.server -d design/mockups 5500
+pnpm mockups                  # http://localhost:5500 (scripts/serve-mockups.mjs)
 ```
 
 Abrir en Chrome o Edge. También funcionan con doble clic (file://), pero las transiciones entre páginas necesitan servidor.

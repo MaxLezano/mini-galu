@@ -8,12 +8,18 @@ out/
 dist/
 build/
 *.tsbuildinfo
+next-env.d.ts
 .turbo/
 
 # entorno (nunca subir secretos)
 .env
 .env.*
 !.env.example
+
+# contenido local que NO va al repo: fotos de prueba de los mockups y export del proyecto viejo
+# (en producción las imágenes se suben desde el panel al ImageStorage). Ver local-assets/README.md
+local-assets/*
+!local-assets/README.md
 
 # datos locales
 apps/api/storage/

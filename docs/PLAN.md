@@ -21,8 +21,8 @@ Estado de cada feature: [ROADMAP.md](ROADMAP.md) · Decisiones: [adr/](adr/)
 | Sin pedidos, pagos ni envíos | — | Módulos `orders`, `payments`, `shipping`, `notifications` |
 | Admin = ABM de productos | No sirve para operar | **Panel del taller**: tablero de pedidos, qué coser, clientas, automatizaciones |
 
-Datos reales exportados a [`docs/legacy/products.json`](legacy/products.json) + fotos en `docs/legacy/images/`
-(10 productos, sin el producto de prueba), más la portada vieja (`legacy/site_config.json` + `legacy/home_content/`).
+Datos reales exportados (10 productos, sin el de prueba) + fotos y portada vieja: quedan **fuera del repo** en
+`local-assets/legacy/` (carpeta ignorada; las imágenes de contenido se cargan desde el panel en producción).
 El seed curado vive en `packages/db/src/seed/data.ts`. El proyecto viejo ya fue borrado (ver §9).
 
 ---
@@ -99,11 +99,12 @@ mini-galu/
 │        └─ shared/               # Result, errores, event bus, config
 ├─ packages/
 │  ├─ contracts/                  # schemas zod + tipos compartidos web ↔ api
-│  ├─ db/                         # schema Drizzle, migraciones, seed (usa docs/legacy)
+│  ├─ db/                         # schema Drizzle, migraciones, seed (datos curados del export viejo)
 │  ├─ design-tokens/              # colores, tipografías, radios, motion → CSS vars + Tailwind
 │  └─ config/                     # tsconfig, biome base
 ├─ design/mockups/                # HTML estático (Fase 0)
-├─ docs/                          # PLAN, IDEAS, ADRs, legacy seed
+├─ docs/                          # PLAN, IDEAS, ROADMAP, ADRs
+├─ local-assets/                  # (ignorada) fotos de prueba y export viejo
 ├─ docker-compose.yml             # postgres+pgvector, mailpit, ollama
 └─ turbo.json / pnpm-workspace.yaml
 ```
@@ -204,8 +205,8 @@ Detalle de cada una en el [README de mockups](../design/mockups/README.md).
 
 ## 9. Repo nuevo y cierre del viejo
 
-1. ⏳ Crear repo nuevo en GitHub (`mini-galu`, privado) — monorepo desde cero, sin historial viejo (`git init` local hecho).
-2. ⏳ Subir: `design/`, `docs/` (incluye `legacy/` como seed) y el scaffolding de la fase 1.
+1. ✅ Repo nuevo en GitHub, monorepo desde cero, sin historial viejo.
+2. ✅ Subido a https://github.com/MaxLezano/mini-galu (`main` producción, `develop` desarrollo). Las imágenes quedan fuera.
 3. ✅ No se copiaron `.env` viejos. ⏳ Rotar cualquier credencial de Google OAuth vieja.
 4. ✅ El seed funciona con el nuevo schema (`pnpm db:reset`).
-5. ✅ Borrados `mini-galu-back/`, `mini-galu-front/` y sus `.git` (antes se rescató la portada a `docs/legacy/`).
+5. ✅ Borrados `mini-galu-back/`, `mini-galu-front/` y sus `.git` (antes se rescató la portada a `local-assets/legacy/`).

@@ -5,15 +5,18 @@ import { databaseUrl, repoRoot } from "../env";
 import * as s from "../schema";
 import * as data from "./data";
 
-const MOCKUP_IMG = resolve(repoRoot, "design/mockups/assets/img");
+/** Fotos de prueba: no están en el repo (ver local-assets/README.md). */
+const SAMPLE_IMG = resolve(repoRoot, "local-assets/mockups/img");
 const MEDIA_DIR = resolve(repoRoot, "apps/api", process.env.MEDIA_DIR ?? "./storage/media");
+const missing: string[] = [];
 
-/** Copia las fotos al ImageStorage local (apps/api/storage/media). */
+/** Copia la foto al ImageStorage local (apps/api/storage/media). Si no está, igual guarda la ruta (CI, clon nuevo). */
 function copyImage(name: string, folder: "products" | "content"): string {
-  const from = resolve(MOCKUP_IMG, `${name}.webp`);
-  if (!existsSync(from)) throw new Error(`Falta la imagen ${from}`);
-  mkdirSync(resolve(MEDIA_DIR, folder), { recursive: true });
-  copyFileSync(from, resolve(MEDIA_DIR, folder, `${name}.webp`));
+  const from = resolve(SAMPLE_IMG, `${name}.webp`);
+  if (existsSync(from)) {
+    mkdirSync(resolve(MEDIA_DIR, folder), { recursive: true });
+    copyFileSync(from, resolve(MEDIA_DIR, folder, `${name}.webp`));
+  } else missing.push(name);
   return `${folder}/${name}.webp`;
 }
 
@@ -166,3 +169,5 @@ await db.transaction(async (tx) => {
 
 await db.close();
 console.log(`✓ seed: ${data.products.length} productos, ${data.collections.length} colecciones, 1 lanzamiento`);
+if (missing.length)
+  console.warn(`⚠ ${missing.length} fotos sin copiar: falta local-assets/mockups/img (ver local-assets/README.md)`);
