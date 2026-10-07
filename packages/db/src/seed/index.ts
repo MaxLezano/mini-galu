@@ -28,6 +28,7 @@ const db = createDb(databaseUrl(), { max: 1 });
 await db.transaction(async (tx) => {
   // Idempotente: limpia lo sembrado (orden inverso por FKs).
   await tx.delete(s.launchSignups);
+  await tx.delete(s.launchProducts);
   await tx.delete(s.launches);
   await tx.delete(s.contentBlocks);
   await tx.delete(s.reviews);
@@ -157,6 +158,33 @@ await db.transaction(async (tx) => {
     })
     .returning({ id: s.launches.id });
   if (!l) throw new Error("No se insertó el lanzamiento");
+  const launchProductIds = data.launch.products.flatMap((slug) => productId.get(slug) ?? []);
+  if (launchProductIds.length)
+    await tx
+      .insert(s.launchProducts)
+      .values(launchProductIds.map((id, position) => ({ launchId: l.id, productId: id, position })));
+
+  for (const o of data.otherLaunches) {
+    const [ol] = await tx
+      .insert(s.launches)
+      .values({
+        title: o.title,
+        collectionId: o.collection ? colId.get(o.collection) : null,
+        startsAt: new Date(o.startsAt),
+        teaser: o.teaser,
+        coverPath: o.cover,
+        coverNote: o.coverNote,
+        showCountdown: o.showCountdown,
+        status: o.status,
+        publishedAt: o.published ? new Date(o.startsAt) : null,
+      })
+      .returning({ id: s.launches.id });
+    const ids = o.products.flatMap((slug) => productId.get(slug) ?? []);
+    if (ol && ids.length)
+      await tx
+        .insert(s.launchProducts)
+        .values(ids.map((id, position) => ({ launchId: ol.id, productId: id, position })));
+  }
   await tx.insert(s.launchSignups).values(
     Array.from({ length: data.launch.demoSignups }, (_, k) => ({
       launchId: l.id,

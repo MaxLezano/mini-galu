@@ -342,7 +342,37 @@ export const launch = {
   socialText:
     "Se viene Otoño · Invierno 26 🍂 Pana, escocés y lanas suaves. Anotate en la web y te avisamos una hora antes.",
   demoSignups: 214,
+  /** Prendas que salen con el lanzamiento (en borrador hasta la fecha). */
+  products: ["corazon-pana"],
 };
+
+/** Lanzamientos de ejemplo para el panel: uno anterior (ya publicado) y un borrador. */
+export const otherLaunches = [
+  {
+    title: "Verano 2027",
+    collection: "verano-2027",
+    startsAt: "2026-09-12T10:00:00-03:00",
+    teaser: "Linos lavados, volados y bordados de margaritas.",
+    cover: "products/maddie-3.webp",
+    coverNote: "lino y flores",
+    status: "scheduled" as const,
+    published: true,
+    showCountdown: false,
+    products: ["maddie", "elsa", "catalina"],
+  },
+  {
+    title: "Navidad 26",
+    collection: null,
+    startsAt: "2026-11-29T10:00:00-03:00",
+    teaser: "Rojos, terciopelo y moños grandes para las fiestas.",
+    cover: "products/catalina-rojo-1.webp",
+    coverNote: "para la foto del arbolito",
+    status: "draft" as const,
+    published: false,
+    showCountdown: false,
+    products: ["catalina"],
+  },
+];
 
 export const home: HomeBlock = {
   announcements: [
@@ -356,6 +386,7 @@ export const home: HomeBlock = {
     eyebrow: "Otoño · Invierno 26",
     titleLines: ["Hecho a mano,", "para *crecer*", "*soñando.*"],
     lead: "Prendas de diseño para niñas de 12 meses a talle 10. Pocas de cada modelo, bordadas en nuestro taller.",
+    ctaLabel: "Ver la colección",
     imagePath: "content/hero-campo.webp",
     imageAlt: "Nena con vestido lila y sombrero de paja en un campo",
   },

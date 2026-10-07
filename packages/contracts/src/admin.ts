@@ -76,3 +76,55 @@ export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 /* ------------------------------------------------------------------ sesión */
 export const AdminSessionSchema = z.object({ id: z.string(), name: z.string(), email: z.string() });
 export type AdminSession = z.infer<typeof AdminSessionSchema>;
+
+/* ------------------------------------------------------------------ lanzamientos (panel) */
+export const LaunchStateSchema = z.enum(["draft", "scheduled", "past"]);
+export type LaunchState = z.infer<typeof LaunchStateSchema>;
+
+export const AdminLaunchSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  /** "Frase corta" que va manuscrita sobre la foto. */
+  coverNote: z.string().nullable(),
+  /** "Adelanto": qué trae la colección. */
+  teaser: z.string(),
+  coverPath: z.string().nullable(),
+  coverUrl: z.string().nullable(),
+  startsAt: z.string(),
+  collectionSlug: z.string().nullable(),
+  products: z.array(
+    z.object({ slug: z.string(), name: z.string(), imageUrl: z.string().nullable(), status: ProductStatusSchema }),
+  ),
+  showCountdown: z.boolean(),
+  notifyBefore: z.boolean(),
+  autoPublish: z.boolean(),
+  socialText: z.string().nullable(),
+  /** draft = borrador · scheduled = programado y por venir · past = ya salió. */
+  state: LaunchStateSchema,
+  publishedAt: z.string().nullable(),
+  signups: z.number().int(),
+});
+export type AdminLaunch = z.infer<typeof AdminLaunchSchema>;
+
+export const LaunchInputSchema = z
+  .object({
+    title: z.string().trim().min(2, "Ponele un nombre al lanzamiento").max(60),
+    coverNote: z.string().trim().max(40).nullable(),
+    teaser: z.string().trim().min(1, "Contá qué trae el lanzamiento").max(300),
+    coverPath: z.string().min(1).nullable(),
+    startsAt: z.iso.datetime({ offset: true, message: "Fecha y hora inválidas" }),
+    collectionSlug: z.string().min(1).nullable(),
+    productSlugs: z.array(z.string().min(1)).max(40),
+    showCountdown: z.boolean(),
+    notifyBefore: z.boolean(),
+    autoPublish: z.boolean(),
+    socialText: z.string().trim().max(2200).nullable(),
+    status: z.enum(["draft", "scheduled"]),
+  })
+  .superRefine((l, ctx) => {
+    if (l.status !== "scheduled") return;
+    if (!l.productSlugs.length)
+      ctx.addIssue({ code: "custom", path: ["productSlugs"], message: "Elegí al menos una prenda que salga" });
+    if (!l.coverPath) ctx.addIssue({ code: "custom", path: ["coverPath"], message: "Elegí una foto de portada" });
+  });
+export type LaunchInput = z.infer<typeof LaunchInputSchema>;

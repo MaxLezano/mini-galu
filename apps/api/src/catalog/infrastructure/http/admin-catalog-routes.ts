@@ -23,6 +23,10 @@ export function adminCatalogRoutes(admin: AdminCatalogService, catalog: CatalogS
       const body = await c.req.parseBody();
       const file = body.file;
       if (!(file instanceof File)) throw new ValidationError("Falta la foto (campo file)");
-      return c.json(await admin.uploadImage({ type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) }), 201);
+      const folder = body.folder === "content" ? "content" : "products";
+      return c.json(
+        await admin.uploadImage({ type: file.type, bytes: new Uint8Array(await file.arrayBuffer()) }, folder),
+        201,
+      );
     });
 }

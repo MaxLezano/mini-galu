@@ -1,6 +1,10 @@
 import type {
+  AdminHome,
+  AdminLaunch,
   AdminProduct,
   Collection,
+  HomeHeroInput,
+  LaunchInput,
   ProductInput,
   ProductStatus,
   SaveProductResult,
@@ -49,9 +53,18 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
-  uploadImage: (file: File) => {
+  uploadImage: (file: File, folder: "products" | "content" = "products") => {
     const fd = new FormData();
     fd.set("file", file);
+    fd.set("folder", folder);
     return adminRequest<UploadResult>("/admin/catalog/images", { method: "POST", body: fd });
   },
+  launches: () => adminRequest<AdminLaunch[]>("/admin/content/launches"),
+  saveHome: (input: HomeHeroInput) =>
+    adminRequest<AdminHome>("/admin/content/home", { method: "PUT", body: JSON.stringify(input) }),
+  createLaunch: (input: LaunchInput) =>
+    adminRequest<AdminLaunch>("/admin/content/launches", { method: "POST", body: JSON.stringify(input) }),
+  updateLaunch: (id: string, input: LaunchInput) =>
+    adminRequest<AdminLaunch>(`/admin/content/launches/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteLaunch: (id: string) => adminRequest<null>(`/admin/content/launches/${id}`, { method: "DELETE" }),
 };

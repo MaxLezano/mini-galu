@@ -3,7 +3,7 @@ import { buildApp } from "./app";
 import { loadConfig } from "./config";
 
 const config = loadConfig();
-const { app, db } = buildApp(config);
+const { app, db, scheduler } = buildApp(config);
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`✓ API de Mini Galú en http://localhost:${info.port}`);
@@ -11,6 +11,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
 
 for (const sig of ["SIGINT", "SIGTERM"] as const) {
   process.on(sig, () => {
+    scheduler.stop();
     server.close();
     void db.close().finally(() => process.exit(0));
   });

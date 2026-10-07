@@ -58,7 +58,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
             </p>
             <div className="hero-cta" data-reveal="" style={d(0.85)}>
               <Link className="btn btn-light" href="/catalogo">
-                Ver la colección <ArrowRight />
+                {home.hero.ctaLabel} <ArrowRight />
               </Link>
               <OpenGaluButton className="btn btn-ghost-light">
                 <MessageCircleHeart /> Ayudame a elegir

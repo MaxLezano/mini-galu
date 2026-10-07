@@ -1,4 +1,11 @@
-import { HomeBlockSchema, type HomeContent, type Launch, type LaunchSignupRequest } from "@mini-galu/contracts";
+import {
+  type AdminHome,
+  HomeBlockSchema,
+  type HomeContent,
+  type HomeHeroInput,
+  type Launch,
+  type LaunchSignupRequest,
+} from "@mini-galu/contracts";
 import type { CatalogService } from "../../catalog/application/catalog-service";
 import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { ImageStorage } from "../../shared/media/image-storage";
@@ -13,9 +20,7 @@ export class ContentService {
   ) {}
 
   async home(): Promise<HomeContent> {
-    const raw = await this.content.getHomeBlock();
-    if (!raw) throw new NotFoundError("La portada todavía no está cargada (corré pnpm db:seed)");
-    const block = HomeBlockSchema.parse(raw);
+    const block = await this.block();
     const [facets, reviews, launchRow] = await Promise.all([
       this.catalog.facets(),
       this.catalog.featuredReviews(),
@@ -39,6 +44,34 @@ export class ContentService {
         imageUrls: block.instagram.imagePaths.map(url),
       },
     };
+  }
+
+  /** Portada para el panel: lo editable + fotos para elegir. */
+  async adminHome(): Promise<AdminHome> {
+    const block = await this.block();
+    const paths = [
+      block.hero.imagePath,
+      ...block.lookbook.map((l) => l.imagePath),
+      ...(await this.content.launchCoverPaths()),
+    ];
+    return {
+      hero: block.hero,
+      announcements: block.announcements,
+      heroImageUrl: this.storage.url(block.hero.imagePath),
+      imageOptions: [...new Set(paths)].map((path) => ({ path, url: this.storage.url(path) })),
+    };
+  }
+
+  async saveHero(input: HomeHeroInput): Promise<AdminHome> {
+    const block = await this.block();
+    await this.content.saveHomeBlock({ ...block, hero: input.hero, announcements: input.announcements });
+    return this.adminHome();
+  }
+
+  private async block() {
+    const raw = await this.content.getHomeBlock();
+    if (!raw) throw new NotFoundError("La portada todavía no está cargada (corré pnpm db:seed)");
+    return HomeBlockSchema.parse(raw);
   }
 
   async joinLaunch(launchId: string, req: LaunchSignupRequest): Promise<{ created: boolean; signups: number }> {

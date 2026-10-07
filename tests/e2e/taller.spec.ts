@@ -54,3 +54,43 @@ test("ocultar un producto lo saca del catálogo", async ({ page }) => {
   await toggle.check();
   await expect(page.locator("#toast")).toContainText("publicado");
 });
+
+test("editar la portada se ve en la home", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/tienda");
+  const eyebrow = page.getByLabel("Etiqueta");
+  const original = await eyebrow.inputValue();
+  await eyebrow.fill("Prueba e2e");
+  await page.getByRole("button", { name: "Guardar portada" }).click();
+  await expect(page.locator("#toast")).toContainText("Portada publicada");
+
+  const shop = await page.context().newPage();
+  await shop.goto("/");
+  await expect(shop.locator(".hero .eyebrow")).toHaveText("Prueba e2e");
+
+  await eyebrow.fill(original);
+  await page.getByRole("button", { name: "Guardar portada" }).click();
+  await expect(page.locator("#toast")).toContainText("Portada publicada");
+});
+
+test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/lanzamientos");
+  await page.getByRole("button", { name: "Nuevo lanzamiento" }).click();
+  const modal = page.getByRole("dialog", { name: "Lanzamiento" });
+  await modal.getByLabel("Nombre").fill("Prueba e2e 99");
+  await modal.getByLabel("Adelanto").fill("Un lanzamiento de prueba.");
+  await modal.getByRole("button", { name: "Guardar como borrador" }).click();
+  await expect(page.locator("#toast")).toContainText("borrador");
+  const card = page.locator(".ln", { hasText: "Prueba e2e" });
+  await expect(card).toContainText("Borrador");
+
+  // programarlo sin prendas no se puede: abre el editor con el motivo
+  await card.getByRole("button", { name: "Programar" }).click();
+  await expect(page.locator("#toast")).toContainText("Elegí al menos una prenda");
+  await page.keyboard.press("Escape");
+
+  page.once("dialog", (d) => d.accept());
+  await card.getByRole("button", { name: /Borrar/ }).click();
+  await expect(page.locator(".ln", { hasText: "Prueba e2e" })).toHaveCount(0);
+});

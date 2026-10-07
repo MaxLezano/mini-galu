@@ -1,5 +1,5 @@
 import "server-only";
-import type { AdminProduct, AdminSession, Collection } from "@mini-galu/contracts";
+import type { AdminHome, AdminLaunch, AdminProduct, AdminSession, Collection } from "@mini-galu/contracts";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_URL } from "./api";
@@ -26,4 +26,6 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 export const adminServer = {
   products: () => serverRequest<AdminProduct[]>("/admin/catalog/products"),
   collections: () => serverRequest<Collection[]>("/admin/catalog/collections"),
+  launches: () => serverRequest<AdminLaunch[]>("/admin/content/launches"),
+  home: () => serverRequest<AdminHome>("/admin/content/home"),
 };

@@ -20,6 +20,8 @@ export const HeroSchema = z.object({
   /** Líneas del título; *texto* se muestra en itálica (em). */
   titleLines: z.array(z.string()),
   lead: z.string(),
+  /** Texto del botón principal ("Ver la colección"). */
+  ctaLabel: z.string(),
   imageUrl: z.string(),
   imageAlt: z.string(),
 });
@@ -64,6 +66,7 @@ export const HomeBlockSchema = z.object({
     eyebrow: z.string(),
     titleLines: z.array(z.string()),
     lead: z.string(),
+    ctaLabel: z.string().default("Ver la colección"),
     imagePath: z.string(),
     imageAlt: z.string(),
   }),
@@ -82,6 +85,31 @@ export const HomeBlockSchema = z.object({
   instagram: z.object({ handle: z.string(), url: z.string(), imagePaths: z.array(z.string()) }),
 });
 export type HomeBlock = z.infer<typeof HomeBlockSchema>;
+
+/** Portada editable desde el panel (mockup admin-tienda.html → "Portada de la tienda"). */
+export const HomeHeroInputSchema = z.object({
+  hero: z.object({
+    eyebrow: z.string().trim().max(40),
+    /** Cada línea del título; *palabra* va en itálica. */
+    titleLines: z
+      .array(z.string().trim().min(1).max(40))
+      .min(1, "Poné un título")
+      .max(4, "El título va en hasta 4 líneas"),
+    lead: z.string().trim().max(220),
+    ctaLabel: z.string().trim().min(2, "Poné el texto del botón").max(30),
+    imagePath: z.string().min(1, "Elegí una foto"),
+    imageAlt: z.string().trim().max(140),
+  }),
+  announcements: z.array(z.string().trim().min(2).max(80)).min(1, "Dejá al menos un anuncio").max(8),
+});
+export type HomeHeroInput = z.infer<typeof HomeHeroInputSchema>;
+
+export const AdminHomeSchema = HomeHeroInputSchema.extend({
+  heroImageUrl: z.string(),
+  /** Fotos para elegir: las de la portada, el lookbook y los lanzamientos. */
+  imageOptions: z.array(z.object({ path: z.string(), url: z.string() })),
+});
+export type AdminHome = z.infer<typeof AdminHomeSchema>;
 
 export const LaunchSignupRequestSchema = ContactSchema;
 export type LaunchSignupRequest = z.infer<typeof LaunchSignupRequestSchema>;

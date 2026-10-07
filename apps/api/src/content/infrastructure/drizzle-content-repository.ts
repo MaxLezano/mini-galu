@@ -10,8 +10,25 @@ export class DrizzleContentRepository implements ContentRepository {
     return (row?.value as HomeBlock | undefined) ?? null;
   }
 
+  async saveHomeBlock(block: HomeBlock) {
+    await this.db
+      .insert(s.contentBlocks)
+      .values({ key: "home", value: block })
+      .onConflictDoUpdate({ target: s.contentBlocks.key, set: { value: block } });
+  }
+
+  async launchCoverPaths() {
+    const rows = await this.db
+      .select({ path: s.launches.coverPath })
+      .from(s.launches)
+      .orderBy(asc(s.launches.startsAt));
+    return rows.flatMap((r) => (r.path ? [r.path] : []));
+  }
+
   findUpcomingLaunch(now: Date) {
-    return this.one(and(eq(s.launches.status, "scheduled"), gt(s.launches.startsAt, now)) as SQL);
+    return this.one(
+      and(eq(s.launches.status, "scheduled"), eq(s.launches.showCountdown, true), gt(s.launches.startsAt, now)) as SQL,
+    );
   }
 
   findLaunch(id: string) {

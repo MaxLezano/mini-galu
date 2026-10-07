@@ -77,11 +77,14 @@ export class AdminCatalogService {
   }
 
   /** Sube una foto de producto. TODO(fase 9): recorte 3:4 y AVIF/WebP en varios tamaños con sharp. */
-  async uploadImage(file: { type: string; bytes: Uint8Array }): Promise<UploadResult> {
+  async uploadImage(
+    file: { type: string; bytes: Uint8Array },
+    folder: "products" | "content" = "products",
+  ): Promise<UploadResult> {
     const ext = EXT[file.type as keyof typeof EXT];
     if (!ext) throw new ValidationError("Formato no soportado: subí WebP, JPG, PNG o AVIF");
     if (file.bytes.byteLength > MAX_IMAGE_BYTES) throw new ValidationError("La foto pesa más de 8 MB");
-    const path = await this.storage.save(`products/${randomUUID()}.${ext}`, file.bytes);
+    const path = await this.storage.save(`${folder}/${randomUUID()}.${ext}`, file.bytes);
     return { path, url: this.storage.url(path) };
   }
 

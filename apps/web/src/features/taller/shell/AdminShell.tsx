@@ -36,7 +36,7 @@ const NAV: [string, NavItem[]][] = [
     [
       { href: "/taller", icon: LayoutDashboard, label: "Resumen", phase: "Fase 4" },
       { href: "/taller/pedidos", icon: Inbox, label: "Pedidos", phase: "Fase 4" },
-      { href: "/taller/lanzamientos", icon: CalendarHeart, label: "Lanzamientos", phase: "Pronto" },
+      { href: "/taller/lanzamientos", icon: CalendarHeart, label: "Lanzamientos" },
     ],
   ],
   [
@@ -51,7 +51,7 @@ const NAV: [string, NavItem[]][] = [
     "Ajustes",
     [
       { href: "/taller/automatizaciones", icon: Workflow, label: "Automatizaciones", phase: "Fase 6" },
-      { href: "/taller/tienda", icon: Store, label: "Tienda y pagos", phase: "Pronto" },
+      { href: "/taller/tienda", icon: Store, label: "Tienda y pagos" },
     ],
   ],
 ];

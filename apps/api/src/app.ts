@@ -16,12 +16,18 @@ import {
 import { adminCatalogRoutes } from "./catalog/infrastructure/http/admin-catalog-routes";
 import { catalogRoutes } from "./catalog/infrastructure/http/catalog-routes";
 import type { Config } from "./config";
+import { AdminLaunchesService } from "./content/application/admin-launches-service";
 import { ContentService } from "./content/application/content-service";
+import type { ProductPublisher } from "./content/application/launch-ports";
+import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
+import { adminHomeRoutes } from "./content/infrastructure/http/admin-home-routes";
+import { adminLaunchesRoutes } from "./content/infrastructure/http/admin-launches-routes";
 import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
+import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
 export function buildApp(config: Config) {
@@ -39,8 +45,30 @@ export function buildApp(config: Config) {
   const adminCatalog = new AdminCatalogService(new DrizzleAdminProductRepository(db), storage, events);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
 
+  // los lanzamientos publican prendas a través del catálogo (que valida, por ejemplo, que tengan foto)
+  const publisher: ProductPublisher = {
+    async publish(slugs) {
+      const published: string[] = [];
+      const skipped: { slug: string; reason: string }[] = [];
+      for (const slug of slugs) {
+        try {
+          await adminCatalog.setStatus(slug, "published");
+          published.push(slug);
+        } catch (e) {
+          skipped.push({ slug, reason: e instanceof Error ? e.message : "error" });
+        }
+      }
+      return { published, skipped };
+    },
+  };
+  const launches = new AdminLaunchesService(new DrizzleAdminLaunchRepository(db), publisher, storage, events);
+  const scheduler = new IntervalScheduler();
+  if (config.env !== "test") scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
+
   // TODO(fase 6 · automations): "Volvió un talle" avisa a la lista de espera por WhatsApp/mail
   events.on("StockReplenished", (e) => console.info("[eventos] Volvió un talle:", JSON.stringify(e.payload)));
+  // TODO(fase 6 · automations): avisar a los anotados que ya salió (y 1 hora antes si notifyBefore)
+  events.on("LaunchPublished", (e) => console.info("[eventos] Lanzamiento publicado:", JSON.stringify(e.payload)));
 
   const app = new Hono()
     .use(logger())
@@ -59,10 +87,12 @@ export function buildApp(config: Config) {
     .route("/auth", authRoutes(auth))
     .use("/admin/*", requireAdmin(auth))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
+    .route("/admin/content/launches", adminLaunchesRoutes(launches))
+    .route("/admin/content/home", adminHomeRoutes(content))
     .onError(onError)
     .notFound((c) => c.json({ error: { code: "not_found", message: "Ruta inexistente" } }, 404));
 
-  return { app, db, events };
+  return { app, db, events, scheduler };
 }
 
 export type AppType = ReturnType<typeof buildApp>["app"];
