@@ -1,9 +1,11 @@
-import type { AdminHome, AdminLaunch } from "@mini-galu/contracts";
-import { CreditCard, Gift, TicketPercent, Truck } from "lucide-react";
+import type { AdminCoupon, AdminHome, AdminLaunch, AdminPayments } from "@mini-galu/contracts";
+import { Gift, Truck } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { launchWhen } from "@/lib/date";
+import { CouponsEditor } from "./CouponsEditor";
 import { HeroEditor } from "./HeroEditor";
+import { PaymentsEditor } from "./PaymentsEditor";
 import "./store.css";
 
 function Soon({
@@ -32,7 +34,9 @@ function Soon({
 }
 
 /** Tienda y pagos — design/mockups/admin-tienda.html */
-export function StoreSettings({ home, next }: { home: AdminHome; next: AdminLaunch | null }) {
+type Props = { home: AdminHome; next: AdminLaunch | null; payments: AdminPayments; coupons: AdminCoupon[] };
+
+export function StoreSettings({ home, next, payments, coupons }: Props) {
   return (
     <main className="adm-content">
       <div className="adm-head">
@@ -45,8 +49,12 @@ export function StoreSettings({ home, next }: { home: AdminHome; next: AdminLaun
       </div>
 
       <div className="set-grid">
-        <HeroEditor initial={home} />
+        <PaymentsEditor initial={payments} />
 
+        <Soon title="Envíos" icon={<Truck className="i-sm" />} phase="Fase 5">
+          Andreani a domicilio y a sucursal, retiro en el taller con horarios, envío gratis desde un monto (hoy fijo en
+          $90.000) y paquete por defecto.
+        </Soon>
         <section className="box" id="lanzamiento">
           <div className="box-head">
             <h2>Lanzamientos</h2>
@@ -77,22 +85,15 @@ export function StoreSettings({ home, next }: { home: AdminHome; next: AdminLaun
               <Link className="btn btn-sm" href="/taller/lanzamientos">
                 Editar lanzamientos
               </Link>
+              <Link className="btn btn-sm btn-ghost" href="/taller/lanzamientos?nuevo">
+                + Nuevo lanzamiento
+              </Link>
             </div>
           </div>
         </section>
 
-        <Soon title="Mercado Pago" icon={<CreditCard className="i-sm" />} phase="Fase 3">
-          Crédito con cuotas sin interés, débito, dinero en cuenta y links de pago automáticos. Se configura acá cuando
-          conectemos la cuenta (primero en modo prueba).
-        </Soon>
-        <Soon title="Envíos" icon={<Truck className="i-sm" />} phase="Fase 5">
-          Andreani a domicilio y a sucursal, retiro en el taller con horarios, envío gratis desde un monto (hoy fijo en
-          $90.000) y paquete por defecto.
-        </Soon>
-        <Soon title="Cupones" icon={<TicketPercent className="i-sm" />} phase="Fase 3">
-          Porcentaje, monto fijo o envío gratis; compra mínima, vencimiento, usos y para quién (primera compra, cumple,
-          anotados).
-        </Soon>
+        <HeroEditor initial={home} />
+        <CouponsEditor initial={coupons} />
         <Soon title="Gift cards" icon={<Gift className="i-sm" />} phase="Fase 8">
           Vendidas, saldo sin usar y vencimientos de cada tarjeta.
         </Soon>

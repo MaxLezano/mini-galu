@@ -111,3 +111,31 @@ test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
   await card.getByRole("button", { name: /Borrar/ }).click();
   await expect(page.locator(".ln", { hasText: "Prueba e2e" })).toHaveCount(0);
 });
+
+test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/tienda");
+  await expect(page.locator("#pagos")).toContainText("Simulado");
+
+  const code = `E2E${Date.now() % 1_000_000}`;
+  await page.getByRole("button", { name: "+ Nuevo cupón" }).click();
+  const modal = page.getByRole("dialog", { name: "Cupón" });
+  await modal.getByLabel("Código").fill(code.toLowerCase());
+  await modal.getByRole("button", { name: "Monto fijo" }).click();
+  await modal.getByLabel("Valor").fill("5000");
+  await modal.getByLabel("Compra mínima").fill("40000");
+  await modal.getByRole("button", { name: "Crear cupón" }).click();
+  await expect(page.locator("#toast")).toContainText(`Cupón ${code} creado`);
+
+  const row = page.locator("#cp-rows tr", { hasText: code });
+  await expect(row).toContainText("$5.000");
+  await expect(row).toContainText("desde $40.000");
+  await row.getByLabel(`${code} activo`).uncheck();
+  await expect(page.locator("#toast")).toContainText("Cupón pausado");
+
+  await row.click();
+  page.once("dialog", (d) => d.accept());
+  await modal.getByRole("button", { name: "Eliminar" }).click();
+  await expect(page.locator("#toast")).toContainText(`${code} eliminado`);
+  await expect(page.locator("#cp-rows tr", { hasText: code })).toHaveCount(0);
+});

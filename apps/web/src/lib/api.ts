@@ -1,12 +1,24 @@
 import type {
   ApiError,
+  CardPaymentInput,
+  CartItemInput,
+  CartView,
   CatalogQueryInput,
+  CheckoutConfig,
   ContactChannel,
   Facets,
   HomeContent,
+  OrderReceipt,
+  PayResult,
+  PlacedOrder,
+  PlaceOrderInput,
   ProductDetail,
   ProductSummary,
+  Quote,
+  QuoteRequest,
+  ShippingOptions,
   Size,
+  WalletPreference,
 } from "@mini-galu/contracts";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -16,6 +28,7 @@ export class ApiRequestError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly details?: unknown,
   ) {
     super(message);
   }
@@ -25,14 +38,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers },
+    // la bolsa y el checkout viajan con la cookie de invitada (mg_cart)
+    credentials: "include",
     // stock y precios cambian: nada de cache en el server de Next
     cache: "no-store",
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as ApiError | null;
-    throw new ApiRequestError(res.status, body?.error.code ?? "http_error", body?.error.message ?? res.statusText);
+    throw new ApiRequestError(
+      res.status,
+      body?.error.code ?? "http_error",
+      body?.error.message ?? res.statusText,
+      body?.error.details,
+    );
   }
-  return res.json() as Promise<T>;
+  return (res.status === 204 ? undefined : res.json()) as Promise<T>;
 }
 
 export function toSearchParams(q: CatalogQueryInput): string {
@@ -60,5 +80,35 @@ export const api = {
     request<{ created: boolean; signups: number }>(`/content/launches/${launchId}/signups`, {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+
+  /* bolsa (fase 3: guardada en el servidor) */
+  cart: () => request<CartView>("/cart"),
+  cartAdd: (body: CartItemInput) => request<CartView>("/cart/items", { method: "POST", body: JSON.stringify(body) }),
+  cartSet: (body: CartItemInput) => request<CartView>("/cart/items", { method: "PUT", body: JSON.stringify(body) }),
+  cartMerge: (lines: CartItemInput[]) =>
+    request<CartView>("/cart/merge", { method: "POST", body: JSON.stringify({ lines }) }),
+  /* checkout */
+  checkoutConfig: () => request<CheckoutConfig>("/checkout/config"),
+  shipping: (cp?: string) => request<ShippingOptions>(`/checkout/shipping${cp ? `?cp=${encodeURIComponent(cp)}` : ""}`),
+  quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
+  placeOrder: (body: PlaceOrderInput) =>
+    request<PlacedOrder>("/checkout/orders", { method: "POST", body: JSON.stringify(body) }),
+  receipt: (number: string, t: string) =>
+    request<OrderReceipt>(`/checkout/orders/${encodeURIComponent(number)}?t=${encodeURIComponent(t)}`),
+  payCard: (number: string, t: string, card: CardPaymentInput) =>
+    request<PayResult>(`/checkout/orders/${encodeURIComponent(number)}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ t, card }),
+    }),
+  wallet: (number: string, t: string) =>
+    request<WalletPreference>(`/checkout/orders/${encodeURIComponent(number)}/wallet`, {
+      method: "POST",
+      body: JSON.stringify({ t }),
+    }),
+  syncPayment: (number: string, t: string, paymentId: string) =>
+    request<void>(`/checkout/orders/${encodeURIComponent(number)}/sync`, {
+      method: "POST",
+      body: JSON.stringify({ t, paymentId }),
     }),
 };

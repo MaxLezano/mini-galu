@@ -1,10 +1,14 @@
 import type {
+  AdminCoupon,
   AdminHome,
   AdminLaunch,
+  AdminPayments,
   AdminProduct,
   Collection,
+  CouponInput,
   HomeHeroInput,
   LaunchInput,
+  PaymentSettings,
   ProductInput,
   ProductStatus,
   SaveProductResult,
@@ -32,7 +36,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
       issue ?? body?.error?.message ?? res.statusText,
     );
   }
-  return body as T;
+  return (res.status === 204 ? null : body) as T;
 }
 
 export const adminApi = {
@@ -67,4 +71,14 @@ export const adminApi = {
   updateLaunch: (id: string, input: LaunchInput) =>
     adminRequest<AdminLaunch>(`/admin/content/launches/${id}`, { method: "PUT", body: JSON.stringify(input) }),
   deleteLaunch: (id: string) => adminRequest<null>(`/admin/content/launches/${id}`, { method: "DELETE" }),
+  payments: () => adminRequest<AdminPayments>("/admin/payments"),
+  savePayments: (s: PaymentSettings) =>
+    adminRequest<AdminPayments>("/admin/payments", { method: "PUT", body: JSON.stringify(s) }),
+  createCoupon: (input: CouponInput) =>
+    adminRequest<AdminCoupon>("/admin/coupons", { method: "POST", body: JSON.stringify(input) }),
+  updateCoupon: (id: string, input: CouponInput) =>
+    adminRequest<AdminCoupon>(`/admin/coupons/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+  setCouponActive: (id: string, active: boolean) =>
+    adminRequest<AdminCoupon>(`/admin/coupons/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
+  deleteCoupon: (id: string) => adminRequest<null>(`/admin/coupons/${id}`, { method: "DELETE" }),
 };

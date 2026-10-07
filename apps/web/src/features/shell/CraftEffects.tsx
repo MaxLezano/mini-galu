@@ -15,7 +15,7 @@ export function CraftEffects() {
   // una vez: modo captura, stores persistidos, cinta métrica y medida del panel de talles de las tarjetas en arco
   useEffect(() => {
     if (new URLSearchParams(location.search).has("static")) document.documentElement.classList.add("static");
-    void useCart.persist.rehydrate();
+    void Promise.resolve(useCart.persist.rehydrate()).then(() => useCart.getState().refresh());
     void useFavorites.persist.rehydrate();
     const stopTape = measuringTape();
     const measureQuick = (e: Event) => {

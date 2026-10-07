@@ -1,5 +1,13 @@
 import "server-only";
-import type { AdminHome, AdminLaunch, AdminProduct, AdminSession, Collection } from "@mini-galu/contracts";
+import type {
+  AdminCoupon,
+  AdminHome,
+  AdminLaunch,
+  AdminPayments,
+  AdminProduct,
+  AdminSession,
+  Collection,
+} from "@mini-galu/contracts";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_URL } from "./api";
@@ -28,4 +36,6 @@ export const adminServer = {
   collections: () => serverRequest<Collection[]>("/admin/catalog/collections"),
   launches: () => serverRequest<AdminLaunch[]>("/admin/content/launches"),
   home: () => serverRequest<AdminHome>("/admin/content/home"),
+  payments: () => serverRequest<AdminPayments>("/admin/payments"),
+  coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),
 };
