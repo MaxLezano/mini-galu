@@ -50,6 +50,14 @@ export function pickupSlots(now: Date, count = 4): Slot[] {
   return slots;
 }
 
+/** "2026-10-08T10-13" → "Jue 8 · 10 a 13 h" (null si el id no tiene esa forma). */
+export function slotLabel(id: string): string | null {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{1,2})-(\d{1,2})$/.exec(id);
+  if (!m) return null;
+  const day = new Date(`${m[1]}T12:00:00Z`);
+  return `${DAYS[day.getUTCDay()]} ${day.getUTCDate()} · ${m[2]} a ${m[3]} h`;
+}
+
 export function isValidSlot(id: string, now: Date): boolean {
   return pickupSlots(now, 12).some((s) => s.id === id);
 }

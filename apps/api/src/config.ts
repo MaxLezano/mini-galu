@@ -16,6 +16,12 @@ const EnvSchema = z.object({
   MP_PUBLIC_KEY: z.string().optional(),
   MP_WEBHOOK_SECRET: z.string().optional(),
   MP_MODE: z.enum(["prueba", "produccion"]).default("prueba"),
+  /** Mails. Local: Mailpit (docker compose) en localhost:1025; la bandeja se ve en http://localhost:8025. */
+  SMTP_HOST: z.string().default("localhost"),
+  SMTP_PORT: z.coerce.number().int().default(1025),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  MAIL_FROM: z.string().default("Mini Galú <hola@minigalu.com.ar>"),
 });
 
 /** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
@@ -35,6 +41,7 @@ export type Config = {
     webhookSecret: string | null;
     mode: "prueba" | "produccion";
   } | null;
+  smtp: { host: string; port: number; user?: string; pass?: string; from: string };
 };
 
 export function loadConfig(): Config {
@@ -62,5 +69,12 @@ export function loadConfig(): Config {
             mode: env.MP_MODE,
           }
         : null,
+    smtp: {
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+      from: env.MAIL_FROM,
+    },
   };
 }

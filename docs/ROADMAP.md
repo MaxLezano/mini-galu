@@ -126,7 +126,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
   real en la fase 7
 - ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
-- ⏳ Mail/WhatsApp de "pago aprobado" → fase 6 · ver pedidos y reembolsos en el panel → fase 4
+- ✅ Mail "Recibimos tu pago" (Mailpit en local) · ⏳ WhatsApp → fase 6 · ver pedidos y reembolsos en el panel → fase 4
 
 ## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`)
 - ⏳ Resumen: tareas del día, métricas, ventas por semana, últimos pedidos, lanzamiento, stock, registro automático
@@ -141,7 +141,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 
 ## Fase 6 · Automatizaciones (`admin-automatizaciones.html`)
 - ⏳ Reglas activables (pago aprobado, etiqueta, despachado, entregado, listo para retirar, volvió un talle, link sin pagar, bolsa abandonada, cumple, stock bajo)
-- ⏳ Editor de mensajes con vista previa, registro; mail (Mailpit) + WhatsApp en modo prueba
+- ✅ Adelantado: módulo `notifications` con puerto `Mailer` (SMTP → Mailpit en local) y el mail "Recibimos tu pago"
+  (evento `PaymentApproved`, una vez por pedido) con prendas, totales, cupón, envío o retiro y link de seguimiento
+- ⏳ Editor de mensajes con vista previa, registro; resto de los mails + WhatsApp en modo prueba; Resend en producción
 - ⏳ Newsletter "Cartas del taller"
 
 ## Fase 7 · Galú (`admin-galu.html`)

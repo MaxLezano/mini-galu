@@ -31,6 +31,8 @@ import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
+import { OrderNotifications } from "./notifications/application/order-notifications";
+import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
 import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
@@ -49,7 +51,8 @@ import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
-import { ShippingService } from "./shipping/application/shipping-service";
+import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
+import { slotLabel } from "./shipping/domain/pickup";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
@@ -121,6 +124,43 @@ export function buildApp(config: Config) {
   events.on("LaunchPublished", (e) => console.info("[eventos] Lanzamiento publicado:", JSON.stringify(e.payload)));
   // TODO(fase 6 · automations): mail + WhatsApp de "pago aprobado" al cliente y aviso al taller
   events.on("PaymentApproved", (e) => console.info("[eventos] Pago aprobado:", JSON.stringify(e.payload)));
+  // "Recibimos tu pago" por mail (el resto de los avisos y WhatsApp llegan con las automatizaciones, fase 6)
+  const notifications = new OrderNotifications(
+    {
+      async find(orderId) {
+        const o = await orders.findById(orderId);
+        if (!o) return null;
+        const r = checkout.toReceipt(o);
+        const a = o.shippingAddress;
+        return {
+          number: r.number,
+          firstName: o.firstName,
+          email: o.email,
+          items: r.items,
+          subtotalCents: o.subtotalCents,
+          discountCents: o.discountCents,
+          shippingCents: o.shippingCents,
+          totalCents: o.totalCents,
+          couponCode: o.couponCode,
+          shippingMethod: o.shippingMethod,
+          shippingAddress: a
+            ? `${a.street} ${a.number}${a.unit ? `, ${a.unit}` : ""} · ${a.city}, ${a.province} (${a.postalCode})`
+            : null,
+          pickupLabel: o.pickupSlot ? slotLabel(o.pickupSlot) : null,
+          paymentMethod: o.paymentMethod,
+          installments: o.installments,
+        };
+      },
+    },
+    new SmtpMailer(config.smtp),
+    (number) => ({
+      tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
+      whatsapp: "https://wa.me/5491100000000",
+      site: config.webOrigin,
+      workshop: WORKSHOP,
+    }),
+  );
+  events.on("PaymentApproved", (e) => notifications.paymentApproved(String(e.payload.orderId)).then(() => undefined));
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
   // TODO(fase 4 · orders): mostrar en el panel los pagos a reembolsar o revisar
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])

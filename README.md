@@ -50,6 +50,13 @@ Panel del taller: http://localhost:3000/taller — en local entra con `gaby@mini
 
 Mockups: `pnpm mockups` → http://localhost:5500
 
+### Mails
+
+Los mails al cliente salen por SMTP. En local van a **Mailpit** (lo levanta `pnpm db:up`) y se ven en
+http://localhost:8025: no llega nada a casillas reales. Hoy sale "Recibimos tu pago" cuando Mercado Pago aprueba un
+pago; el resto de los avisos llega con las automatizaciones (fase 6). Variables opcionales: `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (por defecto, Mailpit en `localhost:1025`).
+
 ### Pagos (Mercado Pago)
 
 Sin credenciales, el checkout usa un **gateway simulado** (no cobra nada). Como las tarjetas de prueba de Mercado Pago,

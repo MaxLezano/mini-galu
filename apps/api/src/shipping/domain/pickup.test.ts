@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isValidSlot, pickupSlots } from "./pickup";
+import { isValidSlot, pickupSlots, slotLabel } from "./pickup";
+
+describe("slotLabel", () => {
+  it("convierte el id de la franja en texto", () => {
+    expect(slotLabel("2026-10-08T10-13")).toBe("Jue 8 · 10 a 13 h");
+    expect(slotLabel("cualquier cosa")).toBeNull();
+  });
+});
 
 describe("pickupSlots", () => {
   it("arranca mañana en hora argentina y salta el domingo", () => {
