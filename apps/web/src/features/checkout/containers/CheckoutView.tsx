@@ -3,6 +3,7 @@
 import {
   type CheckoutConfig,
   formatARS,
+  installmentsLabel,
   type OrderReceipt,
   type PayResult,
   type PlacedOrder,
@@ -14,6 +15,7 @@ import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/features/cart/cart-store";
+import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
@@ -274,6 +276,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     ) : null;
 
   const totalCents = currentOrder?.totalCents ?? quote?.totalCents ?? 0;
+  const plan = useInstallmentPlan(totalCents);
   const empty = !lines.length && !done && !returning;
   const contactSummary = useMemo(() => `${contact.email} · ${contact.phone}`, [contact.email, contact.phone]);
 
@@ -542,7 +545,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       <OrderSummary
         lines={quote?.lines ?? lines}
         quote={quote}
-        maxInstallments={config.methods.credito ? config.maxInstallments : 1}
+        installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
         couponBusy={couponBusy}
         couponError={couponError}
         onCouponInput={() => setCouponError(null)}

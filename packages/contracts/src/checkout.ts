@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { SizeSchema } from "./catalog";
-import type { Cents } from "./money";
+import { type Cents, installment } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
 
 /* ------------------------------------------------------------------ bolsa */
@@ -231,8 +231,11 @@ export const PaymentSettingsSchema = z.object({
   credito: z.boolean(),
   debito: z.boolean(),
   dinero_cuenta: z.boolean(),
-  /** Cuotas sin interés que ofrece la tienda (1 = sin cuotas sin interés). */
-  maxInstallments: z.union([z.literal(1), z.literal(3), z.literal(6)]),
+  /**
+   * Cuotas máximas que se ofrecen en el checkout (1 = solo un pago). Con o sin interés lo decide la cuenta de
+   * Mercado Pago: las cuotas sin interés se activan allá y las paga el comercio.
+   */
+  maxInstallments: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(12)]),
 });
 export type PaymentSettings = z.infer<typeof PaymentSettingsSchema>;
 
@@ -242,6 +245,20 @@ export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   dinero_cuenta: true,
   maxInstallments: 6,
 };
+
+/**
+ * Lo que Mercado Pago ofrece para un monto. `interestFree`: cuotas sin interés que da cualquier tarjeta Visa o
+ * Mastercard (1 = ninguna). `max`: cuotas máximas (con interés), con el tope del panel.
+ */
+export type InstallmentPlan = { interestFree: number; max: number };
+
+/** Texto de cuotas para la tienda. Solo promete "sin interés" si Mercado Pago lo confirma para ese monto. */
+export function installmentsLabel(plan: InstallmentPlan, cents: Cents, money: (c: Cents) => string): string | null {
+  if (plan.interestFree > 1)
+    return `${plan.interestFree} cuotas sin interés de ${money(installment(cents, plan.interestFree))}`;
+  if (plan.max > 1) return `Hasta ${plan.max} cuotas con Mercado Pago`;
+  return null;
+}
 
 export type AdminPayments = {
   settings: PaymentSettings;

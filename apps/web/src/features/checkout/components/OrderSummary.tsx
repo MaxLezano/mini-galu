@@ -1,4 +1,4 @@
-import { type CartLine, formatARS, installment, offersInstallments, type Quote } from "@mini-galu/contracts";
+import { type CartLine, formatARS, type Quote } from "@mini-galu/contracts";
 import { ChevronDown, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -8,8 +8,8 @@ import { BrandIcon } from "@/ui/atoms/BrandIcon";
 type Props = {
   lines: CartLine[];
   quote: Quote | null;
-  /** Cuotas sin interés que ofrece la tienda (1 = ninguna). */
-  maxInstallments: number;
+  /** Texto de cuotas de Mercado Pago para el total (solo dice "sin interés" si lo confirma Mercado Pago). */
+  installmentsText: string | null;
   couponBusy: boolean;
   /** Por qué no se aplicó el cupón (queda debajo del campo). */
   couponError: string | null;
@@ -23,7 +23,7 @@ type Props = {
 export function OrderSummary({
   lines,
   quote,
-  maxInstallments,
+  installmentsText,
   couponBusy,
   couponError,
   onCouponInput,
@@ -35,7 +35,6 @@ export function OrderSummary({
   const [code, setCode] = useState("");
   const subtotal = quote?.subtotalCents ?? lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
   const total = quote?.totalCents ?? subtotal;
-  const cuotas = maxInstallments > 1 && offersInstallments(total);
 
   return (
     <aside className={`summary ${open ? "is-open" : ""}`} aria-label="Resumen del pedido">
@@ -153,9 +152,10 @@ export function OrderSummary({
             <span>Total</span>
             <span>{formatARS(total)}</span>
           </div>
-          {cuotas && (
+          {installmentsText && (
             <div className="muted" style={{ fontSize: 12.5, textAlign: "right" }}>
-              o {maxInstallments} cuotas sin interés de {formatARS(installment(total, maxInstallments))}
+              o {installmentsText[0]?.toLowerCase()}
+              {installmentsText.slice(1)}
             </div>
           )}
         </div>

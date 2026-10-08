@@ -1,9 +1,6 @@
 /** Los precios viajan siempre en centavos (int). Nunca float. */
 export type Cents = number;
 
-export const MAX_INSTALLMENTS = 6;
-/** Hasta este monto no se ofrecen cuotas (ej. moños). */
-export const INSTALLMENTS_FROM_CENTS: Cents = 10_000_00;
 /** Envío gratis desde $90.000. */
 export const FREE_SHIPPING_FROM_CENTS: Cents = 90_000_00;
 
@@ -15,12 +12,9 @@ export function formatARS(cents: Cents): string {
   return `${pesos < 0 ? "-" : ""}$${groupThousands(Math.abs(pesos))}`;
 }
 
-export function installment(cents: Cents, n = MAX_INSTALLMENTS): Cents {
+/** Valor de cada cuota sin interés (las cuotas con interés las calcula Mercado Pago). */
+export function installment(cents: Cents, n: number): Cents {
   return Math.round(cents / n);
-}
-
-export function offersInstallments(cents: Cents): boolean {
-  return cents > INSTALLMENTS_FROM_CENTS;
 }
 
 export function discountPercent(priceCents: Cents, compareAtCents: Cents | null | undefined): number | null {

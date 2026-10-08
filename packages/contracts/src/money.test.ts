@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { discountPercent, formatARS, installment, offersInstallments } from "./money";
+import { installmentsLabel } from "./checkout";
+import { discountPercent, formatARS, installment } from "./money";
 
 describe("money", () => {
   it("formatea centavos como pesos es-AR", () => {
@@ -9,13 +10,18 @@ describe("money", () => {
     expect(formatARS(0)).toBe("$0");
   });
 
-  it("calcula la cuota de 6 sin interés", () => {
-    expect(formatARS(installment(39_000_00))).toBe("$6.500");
+  it("calcula la cuota sin interés", () => {
+    expect(formatARS(installment(39_000_00, 6))).toBe("$6.500");
   });
 
-  it("no ofrece cuotas en accesorios baratos", () => {
-    expect(offersInstallments(2_500_00)).toBe(false);
-    expect(offersInstallments(26_900_00)).toBe(true);
+  it("solo promete cuotas sin interés si Mercado Pago las confirma", () => {
+    expect(installmentsLabel({ interestFree: 6, max: 12 }, 39_000_00, formatARS)).toBe(
+      "6 cuotas sin interés de $6.500",
+    );
+    expect(installmentsLabel({ interestFree: 1, max: 12 }, 39_000_00, formatARS)).toBe(
+      "Hasta 12 cuotas con Mercado Pago",
+    );
+    expect(installmentsLabel({ interestFree: 1, max: 1 }, 39_000_00, formatARS)).toBeNull();
   });
 
   it("calcula el descuento contra el precio anterior", () => {

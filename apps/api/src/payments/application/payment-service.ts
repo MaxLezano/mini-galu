@@ -1,4 +1,11 @@
-import type { AdminPayments, CheckoutConfig, PaymentSettings, PayResult, WalletPreference } from "@mini-galu/contracts";
+import type {
+  AdminPayments,
+  CheckoutConfig,
+  InstallmentPlan,
+  PaymentSettings,
+  PayResult,
+  WalletPreference,
+} from "@mini-galu/contracts";
 import type { OrderPayments } from "../../orders/application/order-payments";
 import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
@@ -14,6 +21,30 @@ export class PaymentService {
     private readonly events: EventBus,
     private readonly urls: { web: string; webhook: string },
   ) {}
+
+  private plans = new Map<number, { plan: InstallmentPlan; at: number }>();
+
+  /**
+   * Cuotas por monto (en centavos), consultadas a Mercado Pago y guardadas 1 hora. Se aplica el tope de cuotas
+   * del panel: nunca se muestran más cuotas de las que la tienda ofrece en el checkout.
+   */
+  async installments(amounts: number[]): Promise<Record<number, InstallmentPlan>> {
+    const s = await this.settings.get();
+    const cap = s.credito ? s.maxInstallments : 1;
+    const out: Record<number, InstallmentPlan> = {};
+    await Promise.all(
+      [...new Set(amounts)].map(async (amount) => {
+        const hit = this.plans.get(amount);
+        let plan = hit && Date.now() - hit.at < 3_600_000 ? hit.plan : null;
+        if (!plan) {
+          plan = await this.gateway.installments(amount);
+          this.plans.set(amount, { plan, at: Date.now() });
+        }
+        out[amount] = { interestFree: Math.min(plan.interestFree, cap), max: Math.min(plan.max, cap) };
+      }),
+    );
+    return out;
+  }
 
   async config(): Promise<CheckoutConfig> {
     const s = await this.settings.get();

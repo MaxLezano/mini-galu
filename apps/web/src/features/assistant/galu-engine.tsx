@@ -1,11 +1,4 @@
-import {
-  discountPercent,
-  formatARS,
-  GARMENT_SIZES,
-  installment,
-  type ProductSummary,
-  type Size,
-} from "@mini-galu/contracts";
+import { discountPercent, formatARS, GARMENT_SIZES, type ProductSummary, type Size } from "@mini-galu/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { sizesIn, stockOf, stripAccents, totalStock } from "@/lib/product";
@@ -105,8 +98,8 @@ export function answer(raw: string, products: ProductSummary[], ctx: ProductSumm
     return [
       text(
         <>
-          Pagás con <b>Mercado Pago</b> sin salir de la web: <b>tarjeta de crédito</b> (hasta 6 cuotas sin interés),{" "}
-          <b>débito</b> o <b>dinero en cuenta</b>.
+          Pagás con <b>Mercado Pago</b> sin salir de la web: <b>tarjeta de crédito</b> (en cuotas: al cargar la tarjeta
+          ves los planes de tu banco), <b>débito</b> o <b>dinero en cuenta</b>.
         </>,
       ),
     ];
@@ -118,7 +111,7 @@ export function answer(raw: string, products: ProductSummary[], ctx: ProductSumm
         <>
           El <b>{target.name}</b> está <b>{formatARS(target.priceCents)}</b>
           {off && target.compareAtCents ? ` (antes ${formatARS(target.compareAtCents)})` : ""}. Con tarjeta de crédito
-          lo pagás en <b>6 cuotas sin interés de {formatARS(installment(target.priceCents))}</b>.
+          lo podés pagar en cuotas.
         </>,
       ),
       ...cards([target]),

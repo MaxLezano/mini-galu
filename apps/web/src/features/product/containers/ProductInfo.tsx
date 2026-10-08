@@ -5,8 +5,7 @@ import {
   discountPercent,
   FREE_SHIPPING_FROM_CENTS,
   formatARS,
-  installment,
-  offersInstallments,
+  installmentsLabel,
   type ProductDetail,
   type Size,
   sizeAge,
@@ -30,6 +29,7 @@ import { useEffect, useRef, useState } from "react";
 import { contextSuggestions } from "@/features/assistant/galu-engine";
 import { cartTotal, useCart } from "@/features/cart/cart-store";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
+import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
@@ -69,6 +69,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const toggleFav = useToggleFavorite();
   const isFav = useIsFavorite(p.slug);
   const lines = useCart((s) => s.lines);
+  const plan = useInstallmentPlan(p.priceCents);
+  const cuotas = plan ? installmentsLabel(plan, p.priceCents, formatARS) : null;
   const { openModal, closeModal, openGalu } = useUi();
   const draft = p.status === "draft";
   const only = p.variants.length === 1 && sizesIn(p).length === 1 ? sizesIn(p)[0] : undefined;
@@ -170,9 +172,9 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
             <span className="label-tag is-sale">-{off}%</span>
           </>
         )}
-        {offersInstallments(p.priceCents) && (
+        {cuotas && (
           <span className="cuotas">
-            <BrandIcon name="mercadopago" /> 6 cuotas sin interés de {formatARS(installment(p.priceCents))}
+            <BrandIcon name="mercadopago" /> {cuotas}
           </span>
         )}
       </div>

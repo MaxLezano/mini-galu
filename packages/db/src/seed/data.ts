@@ -377,7 +377,7 @@ export const otherLaunches = [
 export const home: HomeBlock = {
   announcements: [
     "Envíos a todo el país con Andreani",
-    "Hasta 6 cuotas sin interés con Mercado Pago",
+    "Pagás en cuotas con Mercado Pago",
     "Diseños propios, bordados a mano",
     "Talles 12 meses a 10 años",
     "Envío gratis desde $90.000",

@@ -1,4 +1,4 @@
-import { type CheckoutPaymentMethod, formatARS, installment } from "@mini-galu/contracts";
+import { type CheckoutPaymentMethod, formatARS } from "@mini-galu/contracts";
 import { CreditCard, FlaskConical, Lock, ShieldCheck, WalletCards } from "lucide-react";
 import { useState } from "react";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
@@ -38,11 +38,12 @@ export function SimulatedBrick({ methods, maxInstallments, totalCents, busy, err
   const [cvv, setCvv] = useState("123");
   const [dni, setDni] = useState("30123456");
   const [holder, setHolder] = useState("APRO");
-  const [cuotas, setCuotas] = useState(Math.min(6, maxInstallments));
+  const [cuotas, setCuotas] = useState(1);
   const digits = number.replace(/\D/g, "").padEnd(16, "•");
-  const plans = [1, 3, 6].filter((n) => n <= maxInstallments);
+  // simulado: sin tasas reales, se muestran las cuotas sin prometer interés (el real lo calcula Mercado Pago)
+  const plans = [1, 3, 6, 12].filter((n) => n <= maxInstallments);
   const subtitle: Record<CheckoutPaymentMethod, string> = {
-    credito: maxInstallments > 1 ? `Hasta ${maxInstallments} cuotas sin interés` : "En un pago",
+    credito: maxInstallments > 1 ? `Hasta ${maxInstallments} cuotas` : "En un pago",
     debito: "Se debita en el momento",
     dinero_cuenta: "Pagás con tu saldo sin cargar la tarjeta",
   };
@@ -167,11 +168,7 @@ export function SimulatedBrick({ methods, maxInstallments, totalCents, busy, err
                   {plans.map((n) => (
                     <label className="option" key={n}>
                       <input type="radio" name="cuo" checked={cuotas === n} onChange={() => setCuotas(n)} />
-                      <span>{n === 1 ? "1 pago" : `${n} cuotas sin interés`}</span>
-                      <b className="opt-price">
-                        {formatARS(installment(totalCents, n))}
-                        {n > 1 ? "/mes" : ""}
-                      </b>
+                      <span>{n === 1 ? `1 pago de ${formatARS(totalCents)}` : `${n} cuotas`}</span>
                     </label>
                   ))}
                 </div>

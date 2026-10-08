@@ -164,6 +164,22 @@ describe("PaymentService", () => {
   });
 });
 
+describe("PaymentService.installments", () => {
+  it("aplica el tope del panel y guarda la consulta una hora", async () => {
+    let calls = 0;
+    gateway.installments = async () => {
+      calls++;
+      return { interestFree: 6, max: 12 };
+    };
+    expect(await service.installments([39_000_00, 39_000_00])).toEqual({ 3900000: { interestFree: 6, max: 6 } });
+    settings.value = { ...settings.value, maxInstallments: 3 };
+    expect(await service.installments([39_000_00])).toEqual({ 3900000: { interestFree: 3, max: 3 } });
+    expect(calls).toBe(1);
+    settings.value = { ...settings.value, credito: false };
+    expect(await service.installments([39_000_00])).toEqual({ 3900000: { interestFree: 1, max: 1 } });
+  });
+});
+
 describe("MercadoPagoGateway.verifyWebhook", () => {
   const mp = new MercadoPagoGateway({
     accessToken: "x",

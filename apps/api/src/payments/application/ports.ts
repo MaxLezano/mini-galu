@@ -45,6 +45,11 @@ export interface PaymentGateway {
     backUrl: string;
   }): Promise<WalletPreference>;
   fetch(paymentId: string): Promise<GatewayPayment | null>;
+  /**
+   * Cuotas para un monto, sin conocer la tarjeta: `interestFree` = cuotas sin interés que da CUALQUIER tarjeta
+   * Visa o Mastercard (1 si no hay), `max` = máximo de cuotas que ofrece la cuenta (con interés).
+   */
+  installments(amountCents: number): Promise<{ interestFree: number; max: number }>;
   /** Firma `x-signature` del webhook. */
   verifyWebhook(n: { dataId: string; requestId: string; signature: string }): boolean;
 }

@@ -79,7 +79,7 @@ export function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
                   <img src={cover(p)} alt="" loading="lazy" />
                 </span>
                 <b>{p.name}</b>
-                <small>{formatARS(p.priceCents)} · 6 cuotas sin interés</small>
+                <small>{formatARS(p.priceCents)}</small>
               </Link>
             ))}
           </div>

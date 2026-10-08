@@ -117,7 +117,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 Los logos dentro del Brick (Mercado Pago, tarjetas) los dibuja Mercado Pago a color: no se pueden pasar a monocromo
 - 🟡 Sucursal Andreani: hoy se cotiza por tabla y se confirma la sucursal por mensaje → elegirla en el mapa en la fase 5
 - 🟡 "12 cuotas fijas con CFT" del mockup: las muestra el Brick real según la cuenta; el simulado ofrece 1/3/6
-- 🟡 Las cuotas sin interés del panel se usan en el checkout; los textos de la tienda ("6 cuotas") siguen fijos → fase 9
+- ✅ Cuotas reales: la API consulta a Mercado Pago los planes de Visa y Mastercard por monto (caché 1 h). La tienda
+  dice "N cuotas sin interés" solo si TODOS los bancos las dan sin recargo; si no, "Hasta N cuotas con Mercado Pago".
+  El panel define cuántas cuotas se ofrecen (1/3/6/12); las sin interés se activan en la cuenta de Mercado Pago
+- 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
+  real en la fase 7
 - ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
 - ⏳ Mail/WhatsApp de "pago aprobado" → fase 6 · ver pedidos y reembolsos en el panel → fase 4
 

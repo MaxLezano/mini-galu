@@ -150,6 +150,31 @@ export class MercadoPagoGateway implements PaymentGateway {
     }
   }
 
+  /**
+   * Planes de cuotas de la cuenta para Visa y Mastercard (todos los bancos). Sin interés = el máximo de cuotas con
+   * tasa 0 que comparten TODOS los emisores, para que la promesa valga con cualquier tarjeta.
+   */
+  async installments(amountCents: number) {
+    type Plan = { payer_costs: { installments: number; installment_rate: number }[] };
+    const amount = (amountCents / 100).toFixed(2);
+    const plans = (
+      await Promise.all(
+        ["visa", "master"].map((pm) =>
+          this.call<Plan[]>(`/v1/payment_methods/installments?amount=${amount}&payment_method_id=${pm}`).catch(
+            () => [] as Plan[],
+          ),
+        ),
+      )
+    ).flat();
+    if (!plans.length) return { interestFree: 1, max: 1 };
+    const freeUpTo = (p: Plan) =>
+      Math.max(1, ...p.payer_costs.filter((c) => c.installment_rate === 0).map((c) => c.installments));
+    return {
+      interestFree: Math.min(...plans.map(freeUpTo)),
+      max: Math.max(...plans.flatMap((p) => p.payer_costs.map((c) => c.installments))),
+    };
+  }
+
   /** x-signature: "ts=…,v1=…"; v1 = HMAC-SHA256(secret, "id:{data.id};request-id:{x-request-id};ts:{ts};"). */
   verifyWebhook(n: { dataId: string; requestId: string; signature: string }) {
     if (!this.cfg.webhookSecret) return false;

@@ -10,6 +10,18 @@ const Token = z.object({ t: z.string().min(1) });
 export function checkoutPaymentRoutes(payments: PaymentService) {
   return new Hono()
     .get("/config", async (c) => c.json(await payments.config()))
+    .get("/installments", async (c) => {
+      const { amounts } = parse(
+        z.object({
+          amounts: z
+            .string()
+            .transform((s) => s.split(",").map(Number))
+            .pipe(z.array(z.number().int().positive()).min(1).max(60)),
+        }),
+        c.req.query(),
+      );
+      return c.json(await payments.installments(amounts));
+    })
     .post("/orders/:number/pay", async (c) => {
       const body = await c.req.json();
       const { t } = parse(Token, body);

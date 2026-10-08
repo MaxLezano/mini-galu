@@ -93,20 +93,25 @@ export function PaymentsEditor({ initial }: { initial: AdminPayments }) {
               <Layers className="i-sm" />
             </span>
             <div>
-              <b>Cuotas sin interés</b>
-              <small>Las pagás vos como comercio. Se muestran en el checkout.</small>
+              <b>Cuotas en el checkout</b>
+              <small>
+                Cuántas cuotas se ofrecen. Si son con o sin interés lo define tu cuenta de Mercado Pago (las cuotas sin
+                interés se activan allá y las pagás vos): la tienda solo dice “sin interés” cuando Mercado Pago lo
+                confirma.
+              </small>
             </div>
             <select
               className="input"
               style={{ width: "auto", height: 38, fontSize: 13 }}
-              aria-label="Cuotas sin interés"
+              aria-label="Cuotas en el checkout"
               value={s.maxInstallments}
               disabled={busy}
-              onChange={(e) => save({ ...s, maxInstallments: Number(e.target.value) as 1 | 3 | 6 })}
+              onChange={(e) => save({ ...s, maxInstallments: Number(e.target.value) as 1 | 3 | 6 | 12 })}
             >
-              <option value={1}>Sin cuotas sin interés</option>
+              <option value={1}>Solo en un pago</option>
               <option value={3}>Hasta 3</option>
               <option value={6}>Hasta 6</option>
+              <option value={12}>Hasta 12</option>
             </select>
           </div>
           <div className="pm">

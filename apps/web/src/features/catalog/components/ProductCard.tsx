@@ -1,11 +1,4 @@
-import {
-  discountPercent,
-  formatARS,
-  installment,
-  offersInstallments,
-  type ProductSummary,
-  type Size,
-} from "@mini-galu/contracts";
+import { discountPercent, formatARS, installment, type ProductSummary, type Size } from "@mini-galu/contracts";
 import { Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -14,6 +7,8 @@ import { cover, totalStock } from "@/lib/product";
 export type ProductCardProps = {
   product: ProductSummary;
   isFavorite: boolean;
+  /** Cuotas sin interés confirmadas por Mercado Pago para este precio (1 = ninguna: no se muestra nada). */
+  interestFree?: number;
   /** Tarjeta en arco (carrusel de la home). */
   arch?: boolean;
   /** Posición en la grilla, para escalonar la entrada. */
@@ -31,6 +26,7 @@ export type ProductCardProps = {
 export function ProductCard({
   product: p,
   isFavorite,
+  interestFree = 1,
   arch,
   index = 0,
   reveal = true,
@@ -106,7 +102,11 @@ export function ProductCard({
         <div className="price">
           {p.compareAtCents && <s>{formatARS(p.compareAtCents)}</s>}
           {formatARS(p.priceCents)}
-          {offersInstallments(p.priceCents) && <small>6 × {formatARS(installment(p.priceCents))}</small>}
+          {interestFree > 1 && (
+            <small>
+              {interestFree} × {formatARS(installment(p.priceCents, interestFree))} sin interés
+            </small>
+          )}
         </div>
       </div>
     </article>

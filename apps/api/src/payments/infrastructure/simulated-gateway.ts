@@ -56,6 +56,11 @@ export class SimulatedGateway implements PaymentGateway {
     return this.payments.get(id) ?? null;
   }
 
+  /** Sin cuenta no hay promociones: nunca se prometen cuotas sin interés. */
+  async installments() {
+    return { interestFree: 1, max: 12 };
+  }
+
   verifyWebhook() {
     return false;
   }

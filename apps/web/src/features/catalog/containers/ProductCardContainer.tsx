@@ -3,6 +3,7 @@
 import type { ProductSummary } from "@mini-galu/contracts";
 import { type CSSProperties, useState } from "react";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
+import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
 import { ProductCard } from "../components/ProductCard";
 
@@ -21,12 +22,14 @@ export function ProductCardContainer({ product, ...rest }: Props) {
   const toggleFavorite = useToggleFavorite();
   const addToCart = useAddToCart();
   const [quick, setQuick] = useState(false);
+  const plan = useInstallmentPlan(product.priceCents);
 
   return (
     <ProductCard
       {...rest}
       product={product}
       isFavorite={isFavorite}
+      interestFree={plan?.interestFree ?? 1}
       quickOpen={quick}
       onToggleFavorite={(btn) => toggleFavorite(product.slug, btn)}
       onQuickToggle={() => setQuick((q) => !q)}

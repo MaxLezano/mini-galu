@@ -8,6 +8,7 @@ import type {
   ContactChannel,
   Facets,
   HomeContent,
+  InstallmentPlan,
   OrderReceipt,
   PayResult,
   PlacedOrder,
@@ -90,6 +91,8 @@ export const api = {
     request<CartView>("/cart/merge", { method: "POST", body: JSON.stringify({ lines }) }),
   /* checkout */
   checkoutConfig: () => request<CheckoutConfig>("/checkout/config"),
+  installments: (amounts: number[]) =>
+    request<Record<number, InstallmentPlan>>(`/checkout/installments?amounts=${amounts.join(",")}`),
   shipping: (cp?: string) => request<ShippingOptions>(`/checkout/shipping${cp ? `?cp=${encodeURIComponent(cp)}` : ""}`),
   quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
   placeOrder: (body: PlaceOrderInput) =>

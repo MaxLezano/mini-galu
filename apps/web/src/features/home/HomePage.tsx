@@ -272,7 +272,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
         <div>
           <CreditCard />
           <span>
-            <b>Hasta 6 cuotas sin interés</b>Crédito, débito o dinero en cuenta
+            <b>Pagás en cuotas</b>Crédito, débito o dinero en cuenta con Mercado Pago
           </span>
         </div>
         <div>

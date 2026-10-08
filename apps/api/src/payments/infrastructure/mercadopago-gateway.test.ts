@@ -106,3 +106,25 @@ describe("MercadoPagoGateway (API de Orders)", () => {
     expect(f.mock.calls[1]?.[0]).toBe("https://api.mercadopago.com/v1/payments/123");
   });
 });
+
+describe("MercadoPagoGateway.installments", () => {
+  const plan = (free: number[], all: number[]) => ({
+    payer_costs: all.map((n) => ({ installments: n, installment_rate: free.includes(n) ? 0 : 20 })),
+  });
+
+  it("solo cuenta como sin interés lo que dan todos los bancos de Visa y Mastercard", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) =>
+      String(url).includes("payment_method_id=visa")
+        ? new Response(JSON.stringify([plan([1, 3, 6], [1, 3, 6, 12]), plan([1, 3], [1, 3, 6, 12])]))
+        : new Response(JSON.stringify([plan([1, 3, 6], [1, 3, 6, 9, 12, 24])])),
+    );
+    expect(await mp.installments(90_000_00)).toEqual({ interestFree: 3, max: 24 });
+  });
+
+  it("sin promociones o sin respuesta no promete nada", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([plan([1], [1, 6, 12])])));
+    expect(await mp.installments(90_000_00)).toEqual({ interestFree: 1, max: 12 });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 500 }));
+    expect(await mp.installments(90_000_00)).toEqual({ interestFree: 1, max: 1 });
+  });
+});
