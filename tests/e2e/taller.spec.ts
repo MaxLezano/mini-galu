@@ -124,7 +124,8 @@ test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) =>
   await login(page);
   await page.goto("/taller/tienda");
   await ready(page);
-  await expect(page.locator("#pagos")).toContainText("Simulado");
+  // el modo depende de las credenciales del .env (simulado en CI, prueba en local)
+  await expect(page.locator("#pagos")).toContainText(/Simulado|Prueba|Activa/);
 
   const code = `E2E${Date.now() % 1_000_000}`;
   await page.getByRole("button", { name: "+ Nuevo cupón" }).click();
