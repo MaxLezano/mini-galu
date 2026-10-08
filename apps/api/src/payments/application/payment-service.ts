@@ -1,5 +1,6 @@
 import type {
   AdminPayments,
+  CardPlans,
   CheckoutConfig,
   InstallmentPlan,
   PaymentSettings,
@@ -44,6 +45,15 @@ export class PaymentService {
       }),
     );
     return out;
+  }
+
+  /** Planes de la tarjeta que se está cargando, para el total del pedido y con el tope de cuotas del panel. */
+  async cardPlans(number: string, token: string, bin: string): Promise<CardPlans> {
+    const order = await this.orders.payable(number, token);
+    const s = await this.settings.get();
+    const r = await this.gateway.cardPlans(order.totalCents, bin);
+    const cap = r.debit || !s.credito ? 1 : s.maxInstallments;
+    return { ...r, plans: r.plans.filter((p) => p.installments <= cap) };
   }
 
   async config(): Promise<CheckoutConfig> {

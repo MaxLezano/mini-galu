@@ -175,6 +175,40 @@ export class MercadoPagoGateway implements PaymentGateway {
     };
   }
 
+  async cardPlans(amountCents: number, bin: string) {
+    type Result = {
+      payment_type_id: string;
+      issuer?: { name: string };
+      payer_costs: {
+        installments: number;
+        installment_rate: number;
+        installment_amount: number;
+        total_amount: number;
+        labels?: string[];
+      }[];
+    };
+    const amount = (amountCents / 100).toFixed(2);
+    const [r] = await this.call<Result[]>(
+      `/v1/payment_methods/installments?amount=${amount}&bin=${encodeURIComponent(bin)}`,
+    ).catch(() => [] as Result[]);
+    if (!r) return { brand: null, debit: false, plans: [] };
+    const cents = (n: number) => Math.round(n * 100);
+    return {
+      brand: r.issuer?.name ?? null,
+      debit: r.payment_type_id !== "credit_card",
+      plans: r.payer_costs.map((c) => {
+        const label = c.labels?.find((l) => l.startsWith("CFT_"));
+        return {
+          installments: c.installments,
+          installmentCents: cents(c.installment_amount),
+          totalCents: cents(c.total_amount),
+          interestFree: c.installment_rate === 0,
+          cft: label ? (label.split("|")[0]?.replace("CFT_", "") ?? null) : null,
+        };
+      }),
+    };
+  }
+
   /** x-signature: "ts=…,v1=…"; v1 = HMAC-SHA256(secret, "id:{data.id};request-id:{x-request-id};ts:{ts};"). */
   verifyWebhook(n: { dataId: string; requestId: string; signature: string }) {
     if (!this.cfg.webhookSecret) return false;

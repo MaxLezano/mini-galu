@@ -252,6 +252,20 @@ export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
  */
 export type InstallmentPlan = { interestFree: number; max: number };
 
+/** Una opción de cuotas de una tarjeta puntual (lo que cobra su banco, con el interés incluido). */
+export type CardInstallment = {
+  installments: number;
+  installmentCents: Cents;
+  /** Lo que termina pagando el cliente (el pedido cobra el precio; el interés lo financia la tarjeta). */
+  totalCents: Cents;
+  interestFree: boolean;
+  /** Costo financiero total ("199,00%"): obligatorio mostrarlo al ofrecer financiación. */
+  cft: string | null;
+};
+
+/** Planes de la tarjeta que se está cargando (se consultan por los primeros dígitos). */
+export type CardPlans = { brand: string | null; debit: boolean; plans: CardInstallment[] };
+
 /** Texto de cuotas para la tienda. Solo promete "sin interés" si Mercado Pago lo confirma para ese monto. */
 export function installmentsLabel(plan: InstallmentPlan, cents: Cents, money: (c: Cents) => string): string | null {
   if (plan.interestFree > 1)

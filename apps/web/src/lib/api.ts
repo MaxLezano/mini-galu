@@ -1,6 +1,7 @@
 import type {
   ApiError,
   CardPaymentInput,
+  CardPlans,
   CartItemInput,
   CartView,
   CatalogQueryInput,
@@ -116,6 +117,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ t, couponCode }),
     }),
+  /** Planes de la tarjeta que se está cargando (por sus primeros dígitos) para el total del pedido. */
+  cardPlans: (number: string, t: string, bin: string) =>
+    request<CardPlans>(
+      `/checkout/orders/${encodeURIComponent(number)}/installments?t=${encodeURIComponent(t)}&bin=${encodeURIComponent(bin)}`,
+    ),
   syncPayment: (number: string, t: string, paymentId: string) =>
     request<void>(`/checkout/orders/${encodeURIComponent(number)}/sync`, {
       method: "POST",

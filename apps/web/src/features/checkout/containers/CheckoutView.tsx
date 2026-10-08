@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type CardPlans,
   type CheckoutConfig,
   formatARS,
   installmentsLabel,
@@ -53,6 +54,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const [coupon, setCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+  const [cardBin, setCardBin] = useState<string | null>(null);
+  const [chosenInstallments, setChosenInstallments] = useState<number | null>(null);
+  const [cardPlans, setCardPlans] = useState<CardPlans | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [order, setOrder] = useState<(PlacedOrder & { key: string }) | null>(null);
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
@@ -277,6 +281,22 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
 
   const totalCents = currentOrder?.totalCents ?? quote?.totalCents ?? 0;
   const plan = useInstallmentPlan(totalCents);
+
+  // plan de la tarjeta cargada (vuelve a consultarse si el total cambia por un cupón)
+  const orderNumber = currentOrder?.number;
+  const orderToken = currentOrder?.accessToken;
+  const orderTotal = currentOrder?.totalCents;
+  useEffect(() => {
+    if (!cardBin || !orderNumber || !orderToken || !orderTotal) return setCardPlans(null);
+    let alive = true;
+    api
+      .cardPlans(orderNumber, orderToken, cardBin)
+      .then((r) => alive && setCardPlans(r.plans.length ? r : null))
+      .catch(() => alive && setCardPlans(null));
+    return () => {
+      alive = false;
+    };
+  }, [cardBin, orderNumber, orderToken, orderTotal]);
   const empty = !lines.length && !done && !returning;
   const contactSummary = useMemo(() => `${contact.email} · ${contact.phone}`, [contact.email, contact.phone]);
 
@@ -520,7 +540,14 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
               {!currentOrder ? (
                 <p className="muted">Reservando tus prendas…</p>
               ) : config.gateway === "mercadopago" ? (
-                <MercadoPagoBrick config={config} order={currentOrder} email={contact.email} onResult={onPayResult} />
+                <MercadoPagoBrick
+                  config={config}
+                  order={currentOrder}
+                  email={contact.email}
+                  onResult={onPayResult}
+                  onCardBin={setCardBin}
+                  onInstallments={setChosenInstallments}
+                />
               ) : (
                 <SimulatedBrick
                   methods={config.methods}
@@ -546,6 +573,8 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         lines={quote?.lines ?? lines}
         quote={quote}
         installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
+        cardPlans={step === 3 ? cardPlans : null}
+        chosenInstallments={step === 3 ? chosenInstallments : null}
         couponBusy={couponBusy}
         couponError={couponError}
         onCouponInput={() => setCouponError(null)}

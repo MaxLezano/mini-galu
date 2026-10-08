@@ -1,4 +1,10 @@
-import type { CardPaymentInputSchema, PaymentMethod, PaymentSettings, WalletPreference } from "@mini-galu/contracts";
+import type {
+  CardPaymentInputSchema,
+  CardPlans,
+  PaymentMethod,
+  PaymentSettings,
+  WalletPreference,
+} from "@mini-galu/contracts";
 import type { z } from "zod";
 
 export type CardPayment = z.output<typeof CardPaymentInputSchema>;
@@ -50,6 +56,8 @@ export interface PaymentGateway {
    * Visa o Mastercard (1 si no hay), `max` = máximo de cuotas que ofrece la cuenta (con interés).
    */
   installments(amountCents: number): Promise<{ interestFree: number; max: number }>;
+  /** Planes de una tarjeta puntual por su BIN (primeros 6 a 8 dígitos), con interés y CFT. */
+  cardPlans(amountCents: number, bin: string): Promise<CardPlans>;
   /** Firma `x-signature` del webhook. */
   verifyWebhook(n: { dataId: string; requestId: string; signature: string }): boolean;
 }

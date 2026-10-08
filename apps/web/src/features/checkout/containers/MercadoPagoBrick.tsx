@@ -16,13 +16,17 @@ type Props = {
   order: { number: string; accessToken: string; totalCents: number };
   email: string;
   onResult: (r: PayResult) => void;
+  /** Primeros dígitos de la tarjeta que se está cargando (null si se borra). */
+  onCardBin?: (bin: string | null) => void;
+  /** Cuotas elegidas en el formulario de Mercado Pago (null si todavía no eligió). */
+  onInstallments?: (n: number | null) => void;
 };
 
 /**
  * Payment Brick de Mercado Pago (crédito, débito y dinero en cuenta) con los colores del taller.
  * La tarjeta se tokeniza en el Brick; la web solo manda el token a la API, que cobra.
  */
-export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
+export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, onInstallments }: Props) {
   const [preferenceId, setPreferenceId] = useState<string | null | undefined>(
     config.methods.dinero_cuenta ? undefined : null,
   );
@@ -48,8 +52,8 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
 
   // El Brick del SDK se vuelve a armar cada vez que cambian estas props (las compara por referencia): tienen que
   // ser estables. Si no, cada render del checkout (escribir el cupón) montaba otro formulario encima.
-  const latest = useRef({ order, email, onResult });
-  latest.current = { order, email, onResult };
+  const latest = useRef({ order, email, onResult, onCardBin, onInstallments });
+  latest.current = { order, email, onResult, onCardBin, onInstallments };
   const { credito, debito, dinero_cuenta } = config.methods;
 
   // el monto inicial sale del pedido; si después cambia (cupón) se actualiza en el Brick montado, sin rearmarlo
@@ -132,11 +136,31 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
   );
 
   const onError = useCallback((e: unknown) => console.warn("[mercado pago]", e), []);
+  // el Brick no avisa qué cuota se elige: con los primeros dígitos se consulta el plan de esa tarjeta
+  const onBinChange = useCallback((bin: string) => {
+    latest.current.onCardBin?.(bin || null);
+    latest.current.onInstallments?.(null);
+  }, []);
+
+  // El SDK tampoco avisa la cuota elegida, pero el formulario se dibuja en esta página: las opciones son radios
+  // name="installments" con la cantidad de cuotas como value. Si Mercado Pago cambia su HTML, no pasa nada:
+  // el resumen vuelve a mostrar el plan completo de la tarjeta.
+  const containerId = `mp-brick-${order.number}`.replace(/[^\w-]/g, "");
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      const el = e.target;
+      if (!(el instanceof HTMLInputElement) || el.name !== "installments" || !el.closest(`#${containerId}`)) return;
+      const n = Number(el.value);
+      latest.current.onInstallments?.(Number.isInteger(n) && n > 0 ? n : null);
+    };
+    document.addEventListener("change", onChange);
+    return () => document.removeEventListener("change", onChange);
+  }, [containerId]);
 
   if (preferenceId === undefined) return <p className="muted">Preparando el pago…</p>;
 
   // cada pedido en su propio contenedor (un cambio de total no lo rearma: se actualiza el monto)
-  const brickId = `mp-brick-${order.number}`.replace(/[^\w-]/g, "");
+  const brickId = containerId;
 
   return (
     <>
@@ -148,6 +172,7 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
         customization={customization}
         onSubmit={onSubmit}
         onError={onError}
+        onBinChange={onBinChange}
       />
       {error && (
         <p className="pay-error" role="alert">

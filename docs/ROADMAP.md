@@ -120,6 +120,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Cuotas reales: la API consulta a Mercado Pago los planes de Visa y Mastercard por monto (caché 1 h). La tienda
   dice "N cuotas sin interés" solo si TODOS los bancos las dan sin recargo; si no, "Hasta N cuotas con Mercado Pago".
   El panel define cuántas cuotas se ofrecen (1/3/6/12); las sin interés se activan en la cuenta de Mercado Pago
+- ✅ Resumen del checkout con la cuota elegida: con los primeros dígitos de la tarjeta se consulta su plan (cuota,
+  total con interés y CFT) y al elegir las cuotas en el Brick el resumen muestra cuánto se paga. El SDK no avisa la
+  cuota elegida: se lee del radio `installments` del formulario (si Mercado Pago lo cambia, se ve el plan completo)
 - 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
   real en la fase 7
 - ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8

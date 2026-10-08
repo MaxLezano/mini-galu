@@ -105,3 +105,8 @@
 .field-error { color: var(--rojo); font-size: 12.5px; font-weight: 600; }
 .pay-error { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--rosa-l); color: var(--rojo); font-size: 13.5px; font-weight: 600; }
 .applied .icon-btn svg { width: 14px; height: 14px; }
+/* plan de cuotas de la tarjeta cargada (no está en el mockup: el Brick real no avisa la cuota elegida) */
+.card-plans { display: grid; gap: 6px; font-size: 12.5px; padding-top: 10px; border-top: 1.5px dashed var(--line-2); }
+.card-plans .row b { font-weight: 600; }
+.card-plans.is-chosen { font-size: 14px; }
+.card-plans.is-chosen .row b { font-size: 18px; font-weight: 700; }

@@ -1,4 +1,4 @@
-import { type CartLine, formatARS, type Quote } from "@mini-galu/contracts";
+import { type CardPlans, type CartLine, formatARS, type Quote } from "@mini-galu/contracts";
 import { ChevronDown, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +10,10 @@ type Props = {
   quote: Quote | null;
   /** Texto de cuotas de Mercado Pago para el total (solo dice "sin interés" si lo confirma Mercado Pago). */
   installmentsText: string | null;
+  /** Planes de la tarjeta que se está cargando: reemplazan al texto general de cuotas. */
+  cardPlans: CardPlans | null;
+  /** Cuotas elegidas en el formulario de pago: el resumen muestra cuánto se paga así. */
+  chosenInstallments: number | null;
   couponBusy: boolean;
   /** Por qué no se aplicó el cupón (queda debajo del campo). */
   couponError: string | null;
@@ -24,6 +28,8 @@ export function OrderSummary({
   lines,
   quote,
   installmentsText,
+  cardPlans,
+  chosenInstallments,
   couponBusy,
   couponError,
   onCouponInput,
@@ -35,6 +41,7 @@ export function OrderSummary({
   const [code, setCode] = useState("");
   const subtotal = quote?.subtotalCents ?? lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
   const total = quote?.totalCents ?? subtotal;
+  const chosen = (chosenInstallments && cardPlans?.plans.find((p) => p.installments === chosenInstallments)) || null;
 
   return (
     <aside className={`summary ${open ? "is-open" : ""}`} aria-label="Resumen del pedido">
@@ -152,11 +159,61 @@ export function OrderSummary({
             <span>Total</span>
             <span>{formatARS(total)}</span>
           </div>
-          {installmentsText && (
-            <div className="muted" style={{ fontSize: 12.5, textAlign: "right" }}>
-              o {installmentsText[0]?.toLowerCase()}
-              {installmentsText.slice(1)}
+          {chosen ? (
+            <div className="card-plans is-chosen" aria-live="polite">
+              <div className="row">
+                <span>
+                  {chosen.installments === 1 ? "Pagás en 1 pago" : `Pagás en ${chosen.installments} cuotas de`}
+                </span>
+                <b>{formatARS(chosen.installments === 1 ? chosen.totalCents : chosen.installmentCents)}</b>
+              </div>
+              {chosen.installments > 1 && (
+                <>
+                  <div className="row">
+                    <span className="muted">
+                      {chosen.interestFree ? "Sin interés · total" : "Total con el interés de tu tarjeta"}
+                    </span>
+                    <span>{formatARS(chosen.totalCents)}</span>
+                  </div>
+                  {!chosen.interestFree && chosen.cft && (
+                    <small className="muted">
+                      CFT {chosen.cft}. El interés lo cobra tu tarjeta; el taller recibe {formatARS(total)}.
+                    </small>
+                  )}
+                </>
+              )}
             </div>
+          ) : cardPlans ? (
+            <div className="card-plans">
+              <span className="muted">
+                Con tu tarjeta{cardPlans.brand ? ` ${cardPlans.brand}` : ""} (elegís las cuotas en el pago):
+              </span>
+              {cardPlans.plans.map((p) => (
+                <div className="row" key={p.installments}>
+                  <span>
+                    {p.installments === 1
+                      ? "1 pago"
+                      : `${p.installments} cuotas de ${formatARS(p.installmentCents)}${p.interestFree ? " sin interés" : ""}`}
+                  </span>
+                  <span>
+                    <b>{formatARS(p.totalCents)}</b>
+                    {!p.interestFree && p.cft && <small className="muted"> · CFT {p.cft}</small>}
+                  </span>
+                </div>
+              ))}
+              {cardPlans.plans.some((p) => !p.interestFree) && (
+                <small className="muted">
+                  El interés de las cuotas lo cobra tu tarjeta; el taller recibe el total de arriba.
+                </small>
+              )}
+            </div>
+          ) : (
+            installmentsText && (
+              <div className="muted" style={{ fontSize: 12.5, textAlign: "right" }}>
+                o {installmentsText[0]?.toLowerCase()}
+                {installmentsText.slice(1)}
+              </div>
+            )
           )}
         </div>
         <div className="secure">

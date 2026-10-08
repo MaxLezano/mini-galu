@@ -22,6 +22,10 @@ export function checkoutPaymentRoutes(payments: PaymentService) {
       );
       return c.json(await payments.installments(amounts));
     })
+    .get("/orders/:number/installments", async (c) => {
+      const { t, bin } = parse(Token.extend({ bin: z.string().regex(/^\d{6,8}$/) }), c.req.query());
+      return c.json(await payments.cardPlans(c.req.param("number"), t, bin));
+    })
     .post("/orders/:number/pay", async (c) => {
       const body = await c.req.json();
       const { t } = parse(Token, body);

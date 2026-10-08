@@ -1,3 +1,4 @@
+import type { CardPlans } from "@mini-galu/contracts";
 import type { GatewayPayment, PaymentGateway } from "../application/ports";
 
 /**
@@ -59,6 +60,11 @@ export class SimulatedGateway implements PaymentGateway {
   /** Sin cuenta no hay promociones: nunca se prometen cuotas sin interés. */
   async installments() {
     return { interestFree: 1, max: 12 };
+  }
+
+  /** Sin cuenta no hay tasas reales: no se muestra un plan inventado. */
+  async cardPlans(): Promise<CardPlans> {
+    return { brand: null, debit: false, plans: [] };
   }
 
   verifyWebhook() {

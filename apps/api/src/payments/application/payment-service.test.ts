@@ -180,6 +180,24 @@ describe("PaymentService.installments", () => {
   });
 });
 
+describe("PaymentService.cardPlans", () => {
+  const plans = [1, 3, 6, 12].map((n) => ({
+    installments: n,
+    installmentCents: 100,
+    totalCents: 100 * n,
+    interestFree: n === 1,
+    cft: null,
+  }));
+
+  it("respeta el tope del panel y el débito va en un pago", async () => {
+    gateway.cardPlans = async () => ({ brand: "Mastercard", debit: false, plans });
+    expect((await service.cardPlans(number, "tok", "503175")).plans.map((p) => p.installments)).toEqual([1, 3, 6]);
+    gateway.cardPlans = async () => ({ brand: "Maestro", debit: true, plans });
+    expect((await service.cardPlans(number, "tok", "503175")).plans.map((p) => p.installments)).toEqual([1]);
+    await expect(service.cardPlans(number, "otro", "503175")).rejects.toThrow("No encontramos");
+  });
+});
+
 describe("MercadoPagoGateway.verifyWebhook", () => {
   const mp = new MercadoPagoGateway({
     accessToken: "x",

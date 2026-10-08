@@ -128,3 +128,42 @@ describe("MercadoPagoGateway.installments", () => {
     expect(await mp.installments(90_000_00)).toEqual({ interestFree: 1, max: 1 });
   });
 });
+
+describe("MercadoPagoGateway.cardPlans", () => {
+  it("convierte el plan de la tarjeta (respuesta real del sandbox por BIN 50317557)", async () => {
+    const f = respond(200, [
+      {
+        payment_type_id: "credit_card",
+        issuer: { name: "Mastercard" },
+        payer_costs: [
+          {
+            installments: 1,
+            installment_rate: 0,
+            installment_amount: 47000,
+            total_amount: 47000,
+            labels: ["CFT_0,00%|TEA_0,00%"],
+          },
+          {
+            installments: 3,
+            installment_rate: 19.69,
+            installment_amount: 18751.43,
+            total_amount: 56254.3,
+            labels: ["CFT_199,00%|TEA_150,00%"],
+          },
+        ],
+      },
+    ]);
+    const r = await mp.cardPlans(47_000_00, "50317557");
+    expect(f.mock.calls[0]?.[0]).toBe(
+      "https://api.mercadopago.com/v1/payment_methods/installments?amount=47000.00&bin=50317557",
+    );
+    expect(r).toEqual({
+      brand: "Mastercard",
+      debit: false,
+      plans: [
+        { installments: 1, installmentCents: 47_000_00, totalCents: 47_000_00, interestFree: true, cft: "0,00%" },
+        { installments: 3, installmentCents: 18_751_43, totalCents: 56_254_30, interestFree: false, cft: "199,00%" },
+      ],
+    });
+  });
+});
