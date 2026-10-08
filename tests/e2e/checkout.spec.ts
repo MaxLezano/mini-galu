@@ -74,7 +74,7 @@ test("cupón de primera compra y pago con dinero en cuenta", async ({ page, requ
   const coupon = page.getByLabel("Cupón de descuento");
   await coupon.fill("NOEXISTE");
   await page.getByRole("button", { name: "Aplicar" }).click();
-  await expect(page.locator("#toast")).toContainText("no existe");
+  await expect(page.locator("#coupon-error")).toContainText("no existe");
   await coupon.fill("bienvenida10");
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.locator(".applied")).toContainText("BIENVENIDA10 · 10%");

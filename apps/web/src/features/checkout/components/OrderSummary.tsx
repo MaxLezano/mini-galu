@@ -11,6 +11,9 @@ type Props = {
   /** Cuotas sin interés que ofrece la tienda (1 = ninguna). */
   maxInstallments: number;
   couponBusy: boolean;
+  /** Por qué no se aplicó el cupón (queda debajo del campo). */
+  couponError: string | null;
+  onCouponInput: () => void;
   onApplyCoupon: (code: string) => void;
   onRemoveCoupon: () => void;
   onEditBag: () => void;
@@ -22,6 +25,8 @@ export function OrderSummary({
   quote,
   maxInstallments,
   couponBusy,
+  couponError,
+  onCouponInput,
   onApplyCoupon,
   onRemoveCoupon,
   onEditBag,
@@ -102,13 +107,23 @@ export function OrderSummary({
                 placeholder="Cupón de descuento"
                 aria-label="Cupón de descuento"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  onCouponInput();
+                }}
+                aria-invalid={!!couponError}
+                aria-describedby={couponError ? "coupon-error" : undefined}
                 style={{ textTransform: "uppercase" }}
               />
               <button type="submit" className="btn btn-sm btn-ghost" disabled={couponBusy}>
-                Aplicar
+                {couponBusy ? "Revisando…" : "Aplicar"}
               </button>
             </form>
+          )}
+          {couponError && !quote?.coupon && (
+            <span className="field-error" id="coupon-error" role="alert" style={{ display: "block", marginTop: 8 }}>
+              {couponError}
+            </span>
           )}
         </div>
         <div className="totals">

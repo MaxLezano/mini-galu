@@ -49,6 +49,8 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const [ship, setShip] = useState<ShippingForm>(EMPTY_SHIPPING);
   const [options, setOptions] = useState<ShippingOptions | null>(null);
   const [coupon, setCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [order, setOrder] = useState<(PlacedOrder & { key: string }) | null>(null);
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
@@ -122,8 +124,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         const key = (l: { slug: string; size: string; qty: number }[]) =>
           l.map((x) => `${x.slug}:${x.size}:${x.qty}`).join("|");
         if (key(q.lines) !== key(useCart.getState().lines)) useCart.setState({ lines: q.lines });
+        // un cupón ya aplicado puede dejar de servir (cambió la bolsa o el email)
         if (coupon && q.couponError) {
-          toast(q.couponError, { icon: <Info className="i-sm" /> });
+          setCouponError(q.couponError);
           setCoupon(null);
         }
       })
@@ -227,9 +230,21 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     }
   };
 
-  const applyCoupon = (code: string) => {
-    if (!code.trim()) return toast("Escribí un cupón", { icon: <Info className="i-sm" /> });
-    setCoupon(code.trim().toUpperCase());
+  /** Se valida antes de tocar el pedido: si no sirve, el motivo queda debajo del campo y el pago no se rearma. */
+  const applyCoupon = async (code: string) => {
+    const c = code.trim().toUpperCase();
+    if (!c) return setCouponError("Escribí un cupón");
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const q = await api.quote({ method: ship.method, postalCode: cp, couponCode: c, email });
+      if (q.couponError) setCouponError(q.couponError);
+      else setCoupon(c);
+    } catch {
+      setCouponError("No pudimos revisar el cupón. Probá de nuevo.");
+    } finally {
+      setCouponBusy(false);
+    }
   };
 
   const selected = options?.options.find((o) => o.method === ship.method);
@@ -513,7 +528,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         lines={quote?.lines ?? lines}
         quote={quote}
         maxInstallments={config.methods.credito ? config.maxInstallments : 1}
-        couponBusy={false}
+        couponBusy={couponBusy}
+        couponError={couponError}
+        onCouponInput={() => setCouponError(null)}
         onApplyCoupon={applyCoupon}
         onRemoveCoupon={() => setCoupon(null)}
         onEditBag={() => setDrawer(true)}
