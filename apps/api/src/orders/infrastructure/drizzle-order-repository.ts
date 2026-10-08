@@ -82,6 +82,24 @@ export class DrizzleOrderRepository implements OrderRepository, CartReservations
     });
   }
 
+  async updateTotals(
+    id: string,
+    t: {
+      discountCents: number;
+      shippingCents: number;
+      totalCents: number;
+      couponId: string | null;
+      couponCode: string | null;
+    },
+  ) {
+    const [row] = await this.db
+      .update(s.orders)
+      .set(t)
+      .where(and(eq(s.orders.id, id), eq(s.orders.status, "esperando_pago")))
+      .returning({ id: s.orders.id });
+    return !!row;
+  }
+
   async markPaid(id: string, p: { method: PaymentMethod | null; installments: number | null; at: Date }) {
     return this.db.transaction(async (tx) => {
       const [row] = await tx

@@ -12,7 +12,7 @@ import {
 } from "@mini-galu/contracts";
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/features/cart/cart-store";
 import { isStill } from "@/features/shell/craft";
 import { toast, useUi } from "@/features/shell/ui-store";
@@ -61,8 +61,11 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
 
   const cartKey = lines.map((l) => `${l.slug}:${l.size}:${l.qty}`).join("|");
   const cp = ship.method === "taller" ? undefined : quotablePostalCode(ship.postalCode) ? ship.postalCode : undefined;
-  /** El pedido se crea al pasar al pago; si cambia algo de esto, se vuelve a crear (y el anterior se cancela). */
-  const orderKey = JSON.stringify([cartKey, contact, toShippingInput(ship), coupon]);
+  /**
+   * El pedido se crea al pasar al pago; si cambia algo de esto, se vuelve a crear (y el anterior se cancela).
+   * El cupón no: se aplica sobre el mismo pedido para no rearmar el formulario de pago (y no borrar la tarjeta).
+   */
+  const orderKey = JSON.stringify([cartKey, contact, toShippingInput(ship)]);
   const currentOrder = order?.key === orderKey ? order : null;
 
   // al entrar: bolsa fresca del servidor
@@ -127,7 +130,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         // un cupón ya aplicado puede dejar de servir (cambió la bolsa o el email)
         if (coupon && q.couponError) {
           setCouponError(q.couponError);
-          setCoupon(null);
+          void couponOnOrder.current(null);
         }
       })
       .catch(() => undefined);
@@ -230,6 +233,17 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     }
   };
 
+  /** Cambia el cupón; si ya hay pedido (paso de pago), lo recalcula en el servidor sin crear otro. */
+  const setCouponOnOrder = async (c: string | null) => {
+    if (currentOrder) {
+      const updated = await api.changeCoupon(currentOrder.number, currentOrder.accessToken, c);
+      setOrder((o) => (o ? { ...o, totalCents: updated.totalCents } : o));
+    }
+    setCoupon(c);
+  };
+  const couponOnOrder = useRef(setCouponOnOrder);
+  couponOnOrder.current = setCouponOnOrder;
+
   /** Se valida antes de tocar el pedido: si no sirve, el motivo queda debajo del campo y el pago no se rearma. */
   const applyCoupon = async (code: string) => {
     const c = code.trim().toUpperCase();
@@ -239,8 +253,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     try {
       const q = await api.quote({ method: ship.method, postalCode: cp, couponCode: c, email });
       if (q.couponError) setCouponError(q.couponError);
-      else setCoupon(c);
-    } catch {
+      else await setCouponOnOrder(c);
+    } catch (e) {
+      if (e instanceof ApiRequestError) return setCouponError(e.message);
       setCouponError("No pudimos revisar el cupón. Probá de nuevo.");
     } finally {
       setCouponBusy(false);
@@ -532,7 +547,10 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         couponError={couponError}
         onCouponInput={() => setCouponError(null)}
         onApplyCoupon={applyCoupon}
-        onRemoveCoupon={() => setCoupon(null)}
+        onRemoveCoupon={() => {
+          setCouponError(null);
+          setCouponOnOrder(null).catch(() => setCouponError("No pudimos quitar el cupón. Probá de nuevo."));
+        }}
         onEditBag={() => setDrawer(true)}
       />
 

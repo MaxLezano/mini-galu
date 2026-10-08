@@ -74,6 +74,17 @@ export interface OrderRepository {
   /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */
   cancelReleasing(id: string, reason: string, at: Date): Promise<boolean>;
   /** esperando_pago → nuevo y suma a las vendidas. false si ya no estaba esperando pago. */
+  /** Cambia cupón y totales de un pedido que espera pago (sin tocar la reserva). false si ya no espera pago. */
+  updateTotals(
+    id: string,
+    t: {
+      discountCents: number;
+      shippingCents: number;
+      totalCents: number;
+      couponId: string | null;
+      couponCode: string | null;
+    },
+  ): Promise<boolean>;
   markPaid(
     id: string,
     payment: { method: PaymentMethod | null; installments: number | null; at: Date },

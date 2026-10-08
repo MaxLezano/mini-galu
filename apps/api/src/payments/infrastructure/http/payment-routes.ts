@@ -16,8 +16,11 @@ export function checkoutPaymentRoutes(payments: PaymentService) {
       return c.json(await payments.payCard(c.req.param("number"), t, parse(CardPaymentInputSchema, body.card)));
     })
     .post("/orders/:number/wallet", async (c) => {
-      const { t } = parse(Token, await c.req.json());
-      return c.json(await payments.wallet(c.req.param("number"), t));
+      const { t, preferenceId } = parse(
+        Token.extend({ preferenceId: z.string().max(80).nullable().default(null) }),
+        await c.req.json(),
+      );
+      return c.json(await payments.wallet(c.req.param("number"), t, preferenceId));
     })
     .post("/orders/:number/sync", async (c) => {
       const { t, paymentId } = parse(Token.extend({ paymentId: z.string().min(1).max(40) }), await c.req.json());

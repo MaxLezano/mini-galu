@@ -53,11 +53,12 @@ export class PaymentService {
   }
 
   /** Dinero en cuenta de Mercado Pago: el Brick redirige con esta preferencia. */
-  async wallet(number: string, token: string): Promise<WalletPreference> {
+  async wallet(number: string, token: string, preferenceId: string | null = null): Promise<WalletPreference> {
     if (!(await this.settings.get()).dinero_cuenta) throw new ValidationError("Ese medio de pago no está disponible");
     const order = await this.orders.payable(number, token);
     const back = `${this.urls.web}/checkout?pedido=${encodeURIComponent(order.number)}&t=${encodeURIComponent(token)}`;
     return this.gateway.walletPreference({
+      preferenceId,
       orderId: order.id,
       amountCents: order.totalCents,
       title: order.title,

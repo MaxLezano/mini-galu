@@ -60,6 +60,21 @@ export class MemoryOrders implements OrderRepository, CartReservations {
     this.move(o.items, +1);
     return true;
   }
+  async updateTotals(
+    id: string,
+    t: {
+      discountCents: number;
+      shippingCents: number;
+      totalCents: number;
+      couponId: string | null;
+      couponCode: string | null;
+    },
+  ) {
+    const o = this.items.find((x) => x.id === id);
+    if (o?.status !== "esperando_pago") return false;
+    Object.assign(o, t);
+    return true;
+  }
   async markPaid(id: string, p: { method: PaymentMethod | null; installments: number | null; at: Date }) {
     const o = this.items.find((x) => x.id === id);
     if (o?.status !== "esperando_pago") return false;

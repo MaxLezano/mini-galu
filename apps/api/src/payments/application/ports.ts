@@ -32,8 +32,12 @@ export interface PaymentGateway {
     description: string;
     card: CardPayment;
   }): Promise<GatewayPayment>;
-  /** Dinero en cuenta: preferencia para que el Brick lleve a Mercado Pago y vuelva a `backUrl`. */
+  /**
+   * Dinero en cuenta: preferencia para que el Brick lleve a Mercado Pago y vuelva a `backUrl`.
+   * Con `preferenceId` actualiza esa misma (cambió el total por un cupón) si es de este pedido.
+   */
   walletPreference(req: {
+    preferenceId?: string | null;
     orderId: string;
     amountCents: number;
     title: string;

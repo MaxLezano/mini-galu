@@ -1,6 +1,6 @@
 "use client";
 
-import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
+import { initMercadoPago, Payment, usePaymentBrick } from "@mercadopago/sdk-react";
 import type { CardPaymentInput, CheckoutConfig, PayResult } from "@mini-galu/contracts";
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -52,14 +52,25 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
   latest.current = { order, email, onResult };
   const { credito, debito, dinero_cuenta } = config.methods;
 
+  // el monto inicial sale del pedido; si después cambia (cupón) se actualiza en el Brick montado, sin rearmarlo
   const initialization = useMemo(
     () => ({
-      amount: order.totalCents / 100,
+      amount: latest.current.order.totalCents / 100,
       preferenceId: preferenceId ?? undefined,
       payer: { email: latest.current.email },
     }),
-    [order.totalCents, preferenceId],
+    [preferenceId],
   );
+  const { update } = usePaymentBrick();
+  const shownAmount = useRef(order.totalCents);
+  useEffect(() => {
+    if (shownAmount.current === order.totalCents) return;
+    shownAmount.current = order.totalCents;
+    update({ amount: order.totalCents / 100 });
+    // dinero en cuenta cobra lo que dice la preferencia: se actualiza la misma
+    const { order: o } = latest.current;
+    if (preferenceId) void api.wallet(o.number, o.accessToken, preferenceId).catch(() => undefined);
+  }, [order.totalCents, preferenceId, update]);
 
   const customization = useMemo(() => {
     const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -124,8 +135,8 @@ export function MercadoPagoBrick({ config, order, email, onResult }: Props) {
 
   if (preferenceId === undefined) return <p className="muted">Preparando el pago…</p>;
 
-  // cada pedido/total en su propio contenedor: el viejo se desmonta con su DOM
-  const brickId = `mp-brick-${order.number}-${order.totalCents}`.replace(/[^\w-]/g, "");
+  // cada pedido en su propio contenedor (un cambio de total no lo rearma: se actualiza el monto)
+  const brickId = `mp-brick-${order.number}`.replace(/[^\w-]/g, "");
 
   return (
     <>

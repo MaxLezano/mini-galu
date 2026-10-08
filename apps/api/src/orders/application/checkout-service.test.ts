@@ -150,6 +150,41 @@ describe("CheckoutService", () => {
   });
 });
 
+describe("CheckoutService.changeCoupon", () => {
+  const otono = {
+    code: "OTONO10",
+    kind: "percent" as const,
+    value: 10,
+    minSubtotalCents: null,
+    audience: "todos" as const,
+    endsAt: null,
+    maxUses: null,
+    oncePerCustomer: true,
+    active: true,
+  };
+
+  it("aplica y quita el cupón sobre el mismo pedido, sin soltar la reserva", async () => {
+    await coupons.create(otono);
+    const placed = await checkout.place(guest, null, order());
+    const withCoupon = await checkout.changeCoupon(placed.number, "tok", "otono10");
+    expect(withCoupon).toMatchObject({ number: placed.number, totalCents: 38_000_00 - 3_800_00 + 5_900_00 });
+    expect(orders.items).toHaveLength(1);
+    expect(orders.items[0]).toMatchObject({ couponCode: "OTONO10", discountCents: 3_800_00, status: "esperando_pago" });
+    expect(variants.list[0]?.stock).toBe(1);
+    const without = await checkout.changeCoupon(placed.number, "tok", null);
+    expect(without.totalCents).toBe(placed.totalCents);
+    expect(orders.items[0]).toMatchObject({ couponCode: null, discountCents: 0 });
+  });
+
+  it("rechaza cupones inválidos, tokens ajenos y pedidos ya pagados", async () => {
+    const placed = await checkout.place(guest, null, order());
+    await expect(checkout.changeCoupon(placed.number, "tok", "NADA")).rejects.toThrow("no existe");
+    await expect(checkout.changeCoupon(placed.number, "otro", null)).rejects.toBeInstanceOf(NotFoundError);
+    await payments.approved(placed.orderId, { method: "credito", installments: 1 });
+    await expect(checkout.changeCoupon(placed.number, "tok", null)).rejects.toThrow("ya no espera pago");
+  });
+});
+
 describe("OrderPayments", () => {
   it("pago aprobado: pedido nuevo, bolsa vacía, cupón usado y evento (una sola vez)", async () => {
     const c = await new CouponService(coupons, clock).create({

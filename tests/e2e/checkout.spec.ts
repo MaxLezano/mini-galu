@@ -110,3 +110,22 @@ test("la bolsa se guarda en el servidor y sobrevive a borrar el navegador", asyn
   await expect(page.locator("#drawer")).toContainText("Tu bolsa está vacía");
   await context.clearCookies();
 });
+
+test("aplicar un cupón en el paso de pago no borra lo que se cargó de la tarjeta", async ({ page, request }) => {
+  await skipIfRealMercadoPago(request);
+  await addBow(page);
+  await fillContact(page, uniqueEmail());
+  await page.getByRole("radio", { name: /Retiro en el taller/ }).check();
+  await page.locator(".slots .chip").first().click();
+  await page.getByRole("button", { name: /Continuar al pago/ }).click();
+
+  const holder = page.getByLabel("Nombre como figura");
+  await holder.fill("Lucía Fernández");
+  const before = await page.locator(".totals .total").textContent();
+  await openSummary(page);
+  await page.getByLabel("Cupón de descuento").fill("CUMPLE15");
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await expect(page.locator(".applied")).toContainText("CUMPLE15");
+  await expect(page.locator(".totals .total")).not.toHaveText(before ?? "");
+  await expect(holder).toHaveValue("Lucía Fernández");
+});

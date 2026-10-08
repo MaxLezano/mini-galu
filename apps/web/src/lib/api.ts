@@ -101,10 +101,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ t, card }),
     }),
-  wallet: (number: string, t: string) =>
+  /** Con `preferenceId` actualiza esa preferencia (cambió el total) en vez de crear otra. */
+  wallet: (number: string, t: string, preferenceId: string | null = null) =>
     request<WalletPreference>(`/checkout/orders/${encodeURIComponent(number)}/wallet`, {
       method: "POST",
-      body: JSON.stringify({ t }),
+      body: JSON.stringify({ t, preferenceId }),
+    }),
+  /** Cupón en el paso de pago: recalcula el mismo pedido (no se rearma el formulario de pago). */
+  changeCoupon: (number: string, t: string, couponCode: string | null) =>
+    request<PlacedOrder>(`/checkout/orders/${encodeURIComponent(number)}/coupon`, {
+      method: "POST",
+      body: JSON.stringify({ t, couponCode }),
     }),
   syncPayment: (number: string, t: string, paymentId: string) =>
     request<void>(`/checkout/orders/${encodeURIComponent(number)}/sync`, {

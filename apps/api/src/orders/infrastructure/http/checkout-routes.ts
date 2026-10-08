@@ -19,5 +19,12 @@ export function checkoutRoutes(checkout: CheckoutService) {
       const input = parse(PlaceOrderInputSchema, await c.req.json());
       return c.json(await checkout.place(c.get("cartOwner"), c.get("userId"), input), 201);
     })
+    .post("/orders/:number/coupon", async (c) => {
+      const { t, couponCode } = parse(
+        z.object({ t: z.string().min(1), couponCode: z.string().trim().max(30).nullable() }),
+        await c.req.json(),
+      );
+      return c.json(await checkout.changeCoupon(c.req.param("number"), t, couponCode || null));
+    })
     .get("/orders/:number", async (c) => c.json(await checkout.receipt(c.req.param("number"), c.req.query("t") ?? "")));
 }

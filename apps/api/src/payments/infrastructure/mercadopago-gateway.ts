@@ -109,25 +109,32 @@ export class MercadoPagoGateway implements PaymentGateway {
 
   async walletPreference(req: Parameters<PaymentGateway["walletPreference"]>[0]) {
     const https = req.backUrl.startsWith("https://");
-    const pref = await this.call<{ id: string; init_point: string; sandbox_init_point: string }>(
-      "/checkout/preferences",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          items: [
-            { id: req.orderId, title: req.title, quantity: 1, unit_price: req.amountCents / 100, currency_id: "ARS" },
-          ],
-          payer: { email: req.email },
-          external_reference: req.orderId,
-          purpose: "wallet_purchase",
-          back_urls: { success: req.backUrl, pending: req.backUrl, failure: req.backUrl },
-          // auto_return exige back_urls https
-          auto_return: https ? "approved" : undefined,
-          notification_url: this.cfg.notificationUrl ?? undefined,
-          statement_descriptor: "MINIGALU",
-        }),
-      },
-    );
+    const body = {
+      items: [
+        { id: req.orderId, title: req.title, quantity: 1, unit_price: req.amountCents / 100, currency_id: "ARS" },
+      ],
+      payer: { email: req.email },
+      external_reference: req.orderId,
+      purpose: "wallet_purchase",
+      back_urls: { success: req.backUrl, pending: req.backUrl, failure: req.backUrl },
+      // auto_return exige back_urls https
+      auto_return: https ? "approved" : undefined,
+      notification_url: this.cfg.notificationUrl ?? undefined,
+      statement_descriptor: "MINIGALU",
+    };
+    // cambió el total (cupón): se actualiza la misma preferencia para no rearmar el Brick (probado en el sandbox)
+    if (req.preferenceId) {
+      const path = `/checkout/preferences/${encodeURIComponent(req.preferenceId)}`;
+      const current = await this.call<{ external_reference: string | null }>(path).catch(() => null);
+      if (current?.external_reference === req.orderId) {
+        await this.call(path, { method: "PUT", body: JSON.stringify(body) });
+        return { preferenceId: req.preferenceId, redirectUrl: null };
+      }
+    }
+    const pref = await this.call<{ id: string }>("/checkout/preferences", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
     return { preferenceId: pref.id, redirectUrl: null };
   }
 

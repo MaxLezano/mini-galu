@@ -140,6 +140,43 @@ export class CheckoutService {
     };
   }
 
+  /**
+   * Aplicar o quitar un cupón en el paso de pago: se recalcula el mismo pedido (misma reserva, mismo número)
+   * para que el formulario de pago no se rearme y no se pierda lo que la persona ya cargó.
+   */
+  async changeCoupon(number: string, token: string, code: string | null): Promise<PlacedOrder> {
+    const o = await findOwned(this.orders, number, token);
+    if (o.status !== "esperando_pago") throw new ConflictError("Este pedido ya no espera pago: volvé a la bolsa");
+    const shippingCents =
+      (await this.shipping.cost(o.shippingMethod, o.postalCode ?? undefined, o.subtotalCents)) ?? o.shippingCents;
+    let coupon: { id: string; code: string } | null = null;
+    let discountCents = 0;
+    let freeShipping = false;
+    if (code) {
+      const r = await this.coupons.check(code, o.subtotalCents, o.email);
+      if (!r.coupon) throw new ValidationError(r.reason);
+      if (!r.result.ok) throw new ValidationError(r.result.reason);
+      coupon = { id: r.coupon.id, code: r.coupon.code };
+      ({ discountCents, freeShipping } = r.result);
+    }
+    const totals = computeTotals({ subtotalCents: o.subtotalCents, shippingCents, discountCents, freeShipping });
+    const ok = await this.orders.updateTotals(o.id, {
+      discountCents: totals.discountCents,
+      shippingCents: totals.shippingCents,
+      totalCents: totals.totalCents,
+      couponId: coupon?.id ?? null,
+      couponCode: coupon?.code ?? null,
+    });
+    if (!ok) throw new ConflictError("Este pedido ya no espera pago: volvé a la bolsa");
+    return {
+      orderId: o.id,
+      number: formatOrderNumber(o.number),
+      accessToken: token,
+      totalCents: totals.totalCents,
+      reservedUntil: (o.reservedUntil ?? new Date()).toISOString(),
+    };
+  }
+
   /** Comprobante para la pantalla de éxito (sin cuenta: número + token). */
   async receipt(number: string, token: string): Promise<OrderReceipt> {
     return this.toReceipt(await findOwned(this.orders, number, token));
