@@ -573,6 +573,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         lines={quote?.lines ?? lines}
         quote={quote}
         installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
+        pickup={ship.method === "taller"}
         cardPlans={step === 3 ? cardPlans : null}
         chosenInstallments={step === 3 ? chosenInstallments : null}
         couponBusy={couponBusy}

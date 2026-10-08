@@ -52,7 +52,8 @@ describe("paymentApprovedMail", () => {
       links,
     );
     expect(m.text).toContain("Retirás en el taller (Villa Crespo) el Jue 8 · 10 a 13 h.");
-    expect(m.text).toContain("Envío: Gratis");
+    expect(m.text).toContain("Retiro en el taller: Sin costo");
+    expect(m.text).not.toContain("Envío:");
     expect(m.html).not.toContain("Cupón");
   });
 

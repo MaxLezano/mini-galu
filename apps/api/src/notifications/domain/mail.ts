@@ -69,7 +69,10 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
     ...(o.discountCents > 0
       ? [[`Cupón ${o.couponCode ?? ""}`.trim(), `-${money(o.discountCents)}`] as [string, string]]
       : []),
-    ["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"],
+    // retirar en el taller no es un envío: no se dice "envío gratis"
+    o.shippingMethod === "taller"
+      ? ["Retiro en el taller", "Sin costo"]
+      : ["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"],
   ];
 
   const items = o.items

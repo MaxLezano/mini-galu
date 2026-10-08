@@ -10,6 +10,8 @@ type Props = {
   quote: Quote | null;
   /** Texto de cuotas de Mercado Pago para el total (solo dice "sin interés" si lo confirma Mercado Pago). */
   installmentsText: string | null;
+  /** Retiro en el taller: no hay envío (no se muestra "envío gratis"). */
+  pickup: boolean;
   /** Planes de la tarjeta que se está cargando: reemplazan al texto general de cuotas. */
   cardPlans: CardPlans | null;
   /** Cuotas elegidas en el formulario de pago: el resumen muestra cuánto se paga así. */
@@ -28,6 +30,7 @@ export function OrderSummary({
   lines,
   quote,
   installmentsText,
+  pickup,
   cardPlans,
   chosenInstallments,
   couponBusy,
@@ -144,9 +147,11 @@ export function OrderSummary({
             </div>
           )}
           <div className="row">
-            <span className="muted">Envío</span>
+            <span className="muted">{pickup ? "Retiro en el taller" : "Envío"}</span>
             <span>
-              {quote && quote.shippingCents > 0 ? (
+              {pickup ? (
+                <span>Sin costo</span>
+              ) : quote && quote.shippingCents > 0 ? (
                 formatARS(quote.shippingCents)
               ) : quote ? (
                 <b style={{ color: "var(--salvia-d)" }}>Gratis</b>
