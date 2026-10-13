@@ -49,3 +49,24 @@ export function toArInputs(iso: string): { date: string; time: string } {
 export const fromArInputs = (date: string, time: string) => `${date}T${time || "10:00"}:00-03:00`;
 
 export const daysUntil = (iso: string, now = Date.now()) => Math.ceil((new Date(iso).getTime() - now) / 864e5);
+
+/** "6 oct" */
+export const shortDate = (iso: string) =>
+  new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", timeZone: TZ })
+    .format(new Date(iso))
+    .replace(".", "");
+
+/** "recién", "hace 25 min", "hace 2 h", "ayer", "4 oct" (como las tarjetas del tablero del mockup). */
+export function relativeWhen(iso: string, now = Date.now()): string {
+  const ms = now - new Date(iso).getTime();
+  const min = Math.floor(ms / 60_000);
+  if (min < 2) return "recién";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  const today = toArInputs(new Date(now).toISOString()).date;
+  const day = toArInputs(iso).date;
+  if (day === today) return `hace ${h} h`;
+  const yesterday = toArInputs(new Date(now - 86_400_000).toISOString()).date;
+  if (day === yesterday) return "ayer";
+  return shortDate(iso);
+}

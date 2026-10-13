@@ -33,9 +33,11 @@ import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
 import { OrderNotifications } from "./notifications/application/order-notifications";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
+import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
 import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
+import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
 import { PaymentService } from "./payments/application/payment-service";
 import type { PaymentGateway } from "./payments/application/ports";
@@ -95,6 +97,7 @@ export function buildApp(config: Config) {
   const coupons = new CouponService(new DrizzleCouponRepository(db));
   const checkout = new CheckoutService(cart, new ShippingService(new TableShippingRates()), coupons, orders, storage);
   const orderPayments = new OrderPayments(orders, cart, coupons, events);
+  const adminOrders = new AdminOrdersService(orders, storage, events, slotLabel);
   const webhookUrl = `${config.publicUrl}/payments/webhook`;
   const gateway: PaymentGateway = config.mercadoPago
     ? new MercadoPagoGateway({
@@ -160,7 +163,16 @@ export function buildApp(config: Config) {
       workshop: WORKSHOP,
     }),
   );
-  events.on("PaymentApproved", (e) => notifications.paymentApproved(String(e.payload.orderId)).then(() => undefined));
+  events.on("PaymentApproved", async (e) => {
+    const orderId = String(e.payload.orderId);
+    if (await notifications.paymentApproved(orderId))
+      await orders.addEvent(orderId, {
+        kind: "mail",
+        title: "Mail de confirmación enviado",
+        detail: `“Recibimos tu pago” a ${String(e.payload.email)}`,
+        auto: true,
+      });
+  });
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
   // TODO(fase 4 · orders): mostrar en el panel los pagos a reembolsar o revisar
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
@@ -191,6 +203,7 @@ export function buildApp(config: Config) {
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
     .route("/admin/content/home", adminHomeRoutes(content))
+    .route("/admin/orders", adminOrderRoutes(adminOrders))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .onError(onError)

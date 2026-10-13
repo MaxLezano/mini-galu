@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentMethod, ShippingMethod } from "@mini-galu/contracts";
+import type { OrderChannel, OrderStatus, PaymentMethod, ShippingMethod } from "@mini-galu/contracts";
 
 /** Dirección tal como la cargó el cliente al comprar. */
 export type ShippingAddress = {
@@ -43,11 +43,16 @@ export type NewOrder = {
   couponId: string | null;
   couponCode: string | null;
   reservedUntil: Date;
+  /** Por dónde entró la venta (la web por defecto; los links de pago dicen WhatsApp o Instagram). */
+  channel?: OrderChannel;
   items: OrderItem[];
 };
 
-export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil"> & {
+export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel"> & {
   id: string;
+  channel: OrderChannel;
+  statusChangedAt: Date;
+  internalNote: string | null;
   number: number;
   status: OrderStatus;
   reservedUntil: Date | null;
@@ -62,7 +67,35 @@ export type ReserveResult =
   | { ok: true; id: string; number: number }
   | { ok: false; productSlug: string; name: string; size: string; available: number };
 
-export interface OrderRepository {
+/** Una línea del historial del pedido. `auto`: lo hizo el sistema (pago, mail…), no alguien del taller. */
+export type OrderEvent = { kind: string; title: string; detail: string | null; auto: boolean; at: Date };
+
+export interface OrderEvents {
+  addEvent(orderId: string, e: Omit<OrderEvent, "at">): Promise<void>;
+}
+
+/** El pago aprobado de un pedido, como lo guardó el módulo de pagos. */
+export type OrderPayment = {
+  provider: string;
+  reference: string;
+  status: string;
+  /** Lo que pagó el cliente (con el interés de las cuotas): null si el proveedor no lo informa. */
+  paidByCustomerCents: number | null;
+};
+
+/** Lo que necesita el panel del taller (tablero, detalle, mover de estado). */
+export interface AdminOrderRepository extends OrderEvents {
+  /** Pedidos del tablero: sin cancelados y sin los checkouts web que todavía esperan el pago. */
+  listForBoard(): Promise<OrderRecord[]>;
+  findByNumber(number: number): Promise<OrderRecord | null>;
+  events(orderId: string): Promise<OrderEvent[]>;
+  approvedPayment(orderId: string): Promise<OrderPayment | null>;
+  /** Cambia de estado solo si sigue en `from` (dos pestañas no pisan el cambio de la otra). */
+  setStatus(id: string, from: OrderStatus, to: OrderStatus, at: Date): Promise<boolean>;
+  setNote(id: string, note: string | null): Promise<void>;
+}
+
+export interface OrderRepository extends OrderEvents {
   /** Crea el pedido y descuenta el stock en la misma transacción. Si un talle no alcanza, no crea nada. */
   createReserving(order: NewOrder): Promise<ReserveResult>;
   findById(id: string): Promise<OrderRecord | null>;

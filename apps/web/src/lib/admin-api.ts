@@ -2,12 +2,15 @@ import type {
   AdminCoupon,
   AdminHome,
   AdminLaunch,
+  AdminOrderDetail,
+  AdminOrderSummary,
   AdminPayments,
   AdminProduct,
   Collection,
   CouponInput,
   HomeHeroInput,
   LaunchInput,
+  OrderStatus,
   PaymentSettings,
   ProductInput,
   ProductStatus,
@@ -81,4 +84,21 @@ export const adminApi = {
   setCouponActive: (id: string, active: boolean) =>
     adminRequest<AdminCoupon>(`/admin/coupons/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
   deleteCoupon: (id: string) => adminRequest<null>(`/admin/coupons/${id}`, { method: "DELETE" }),
+  orders: () => adminRequest<AdminOrderSummary[]>("/admin/orders"),
+  order: (number: string) => adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}`),
+  moveOrder: (number: string, to: OrderStatus) =>
+    adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ to }),
+    }),
+  advanceOrders: (numbers: string[]) =>
+    adminRequest<{ moved: string[]; skipped: { number: string; reason: string }[] }>("/admin/orders/advance", {
+      method: "POST",
+      body: JSON.stringify({ numbers }),
+    }),
+  saveOrderNote: (number: string, note: string) =>
+    adminRequest<null>(`/admin/orders/${encodeURIComponent(number)}/note`, {
+      method: "PUT",
+      body: JSON.stringify({ note }),
+    }),
 };

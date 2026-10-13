@@ -1,7 +1,15 @@
-import type { PaymentMethod } from "@mini-galu/contracts";
-import { and, type Db, eq, gte, lt, schema as s, sql } from "@mini-galu/db";
+import type { OrderStatus, PaymentMethod } from "@mini-galu/contracts";
+import { and, type Db, desc, eq, gte, inArray, lt, not, or, schema as s, sql } from "@mini-galu/db";
 import type { CartReservations } from "../../cart/application/ports";
-import type { NewOrder, OrderRecord, OrderRepository, ReserveResult } from "../application/ports";
+import type {
+  AdminOrderRepository,
+  NewOrder,
+  OrderEvent,
+  OrderPayment,
+  OrderRecord,
+  OrderRepository,
+  ReserveResult,
+} from "../application/ports";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -12,7 +20,7 @@ class OutOfStock extends Error {
 }
 
 /** También le dice a la bolsa cuánto stock tiene reservado en pedidos sin pagar (CartReservations). */
-export class DrizzleOrderRepository implements OrderRepository, CartReservations {
+export class DrizzleOrderRepository implements OrderRepository, AdminOrderRepository, CartReservations {
   constructor(private readonly db: Db) {}
 
   async createReserving({ items, ...o }: NewOrder): Promise<ReserveResult> {
@@ -32,6 +40,80 @@ export class DrizzleOrderRepository implements OrderRepository, CartReservations
 
   async findById(id: string) {
     return this.load(eq(s.orders.id, id));
+  }
+
+  async addEvent(orderId: string, e: Omit<OrderEvent, "at">) {
+    await this.db.insert(s.orderEvents).values({ orderId, ...e });
+  }
+
+  async events(orderId: string): Promise<OrderEvent[]> {
+    const rows = await this.db
+      .select()
+      .from(s.orderEvents)
+      .where(eq(s.orderEvents.orderId, orderId))
+      .orderBy(desc(s.orderEvents.createdAt));
+    return rows.map((r) => ({ kind: r.kind, title: r.title, detail: r.detail, auto: r.auto, at: r.createdAt }));
+  }
+
+  async listForBoard(): Promise<OrderRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(s.orders)
+      .where(
+        and(
+          not(inArray(s.orders.status, ["cancelado", "reembolsado"])),
+          // los checkouts web sin pagar son compras en curso (30 min): no son tarea del taller
+          or(not(eq(s.orders.status, "esperando_pago")), not(eq(s.orders.channel, "web"))),
+        ),
+      )
+      .orderBy(desc(s.orders.statusChangedAt))
+      .limit(500);
+    if (!rows.length) return [];
+    const items = await this.db
+      .select()
+      .from(s.orderItems)
+      .where(
+        inArray(
+          s.orderItems.orderId,
+          rows.map((r) => r.id),
+        ),
+      );
+    return rows.map((o) => ({
+      ...o,
+      items: items.filter((i) => i.orderId === o.id).map(({ id: _id, orderId: _o, ...i }) => i),
+    }));
+  }
+
+  async approvedPayment(orderId: string): Promise<OrderPayment | null> {
+    const [p] = await this.db
+      .select()
+      .from(s.payments)
+      .where(and(eq(s.payments.orderId, orderId), inArray(s.payments.status, ["approved", "processed"])))
+      .orderBy(desc(s.payments.updatedAt))
+      .limit(1);
+    if (!p) return null;
+    // API de Orders: total_paid_amount · API de Payments: transaction_details.total_paid_amount
+    const raw = p.raw as { total_paid_amount?: string | number; transaction_details?: { total_paid_amount?: number } };
+    const paid = Number(raw?.total_paid_amount ?? raw?.transaction_details?.total_paid_amount);
+    return {
+      provider: p.provider,
+      reference: p.providerPaymentId,
+      status: p.status,
+      paidByCustomerCents: Number.isFinite(paid) && paid > 0 ? Math.round(paid * 100) : null,
+    };
+  }
+
+  async setStatus(id: string, from: OrderStatus, to: OrderStatus, at: Date) {
+    const [row] = await this.db
+      .update(s.orders)
+      .set({ status: to, statusChangedAt: at })
+      .where(and(eq(s.orders.id, id), eq(s.orders.status, from)))
+      .returning({ id: s.orders.id });
+    return !!row;
+  }
+
+  async setNote(id: string, note: string | null) {
+    await this.db.update(s.orders).set({ internalNote: note }).where(eq(s.orders.id, id));
   }
 
   async findByNumber(number: number) {
@@ -68,7 +150,7 @@ export class DrizzleOrderRepository implements OrderRepository, CartReservations
     return this.db.transaction(async (tx) => {
       const [row] = await tx
         .update(s.orders)
-        .set({ status: "cancelado", cancelledAt: at, cancelReason: reason, reservedUntil: null })
+        .set({ status: "cancelado", statusChangedAt: at, cancelledAt: at, cancelReason: reason, reservedUntil: null })
         .where(and(eq(s.orders.id, id), eq(s.orders.status, "esperando_pago")))
         .returning({ id: s.orders.id });
       if (!row) return false;
@@ -106,6 +188,7 @@ export class DrizzleOrderRepository implements OrderRepository, CartReservations
         .update(s.orders)
         .set({
           status: "nuevo",
+          statusChangedAt: p.at,
           paidAt: p.at,
           paymentMethod: p.method,
           installments: p.installments,

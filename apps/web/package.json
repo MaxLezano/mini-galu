@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
     "@mercadopago/sdk-react": "^1.0.7",
     "@mini-galu/contracts": "workspace:*",
     "@mini-galu/design-tokens": "workspace:*",

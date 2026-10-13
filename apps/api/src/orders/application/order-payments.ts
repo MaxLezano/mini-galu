@@ -1,4 +1,4 @@
-import type { PaymentMethod } from "@mini-galu/contracts";
+import { PAYMENT_METHODS, type PaymentMethod } from "@mini-galu/contracts";
 import type { CartService } from "../../cart/application/cart-service";
 import type { CouponService } from "../../coupons/application/coupon-service";
 import { ConflictError } from "../../shared/domain/errors";
@@ -48,6 +48,12 @@ export class OrderPayments {
     if (o.status === "cancelado" && !o.paidAt) {
       // la reserva había vencido pero el pago llegó igual: si queda stock, se reserva de nuevo
       if (!(await this.orders.reReserve(o.id))) {
+        await this.orders.addEvent(o.id, {
+          kind: "refund_needed",
+          title: "Pago aprobado sin stock: hay que reembolsar",
+          detail: "La reserva había vencido y las prendas ya no estaban",
+          auto: true,
+        });
         await this.events.publish({
           type: "PaymentNeedsRefund",
           occurredAt: at,
@@ -57,6 +63,18 @@ export class OrderPayments {
       }
     }
     if (!(await this.orders.markPaid(o.id, { ...payment, at }))) return;
+    await this.orders.addEvent(o.id, {
+      kind: "paid",
+      title: "Pago aprobado por Mercado Pago",
+      detail: [
+        payment.method ? PAYMENT_METHODS[payment.method] : null,
+        payment.installments && payment.installments > 1 ? `${payment.installments} cuotas` : null,
+        "stock descontado",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      auto: true,
+    });
     if (o.cartId) await this.cart.empty(o.cartId);
     if (o.couponId) await this.coupons.redeem(o.couponId, o.id, o.email);
     await this.events.publish({
@@ -79,6 +97,12 @@ export class OrderPayments {
     for (const id of await this.orders.expired(now)) {
       if (!(await this.orders.cancelReleasing(id, "No se pagó a tiempo", now))) continue;
       n++;
+      await this.orders.addEvent(id, {
+        kind: "expired",
+        title: "Se venció la reserva sin pagar",
+        detail: "El stock volvió a la tienda",
+        auto: true,
+      });
       await this.events.publish({ type: "OrderExpired", occurredAt: now, payload: { orderId: id } });
     }
     return n;

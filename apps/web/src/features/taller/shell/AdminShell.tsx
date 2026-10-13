@@ -35,7 +35,7 @@ const NAV: [string, NavItem[]][] = [
     "Día a día",
     [
       { href: "/taller", icon: LayoutDashboard, label: "Resumen", phase: "Fase 4" },
-      { href: "/taller/pedidos", icon: Inbox, label: "Pedidos", phase: "Fase 4" },
+      { href: "/taller/pedidos", icon: Inbox, label: "Pedidos" },
       { href: "/taller/lanzamientos", icon: CalendarHeart, label: "Lanzamientos" },
     ],
   ],

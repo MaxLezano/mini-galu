@@ -3,6 +3,7 @@ import type {
   AdminCoupon,
   AdminHome,
   AdminLaunch,
+  AdminOrderSummary,
   AdminPayments,
   AdminProduct,
   AdminSession,
@@ -38,4 +39,5 @@ export const adminServer = {
   home: () => serverRequest<AdminHome>("/admin/content/home"),
   payments: () => serverRequest<AdminPayments>("/admin/payments"),
   coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),
+  orders: () => serverRequest<AdminOrderSummary[]>("/admin/orders"),
 };

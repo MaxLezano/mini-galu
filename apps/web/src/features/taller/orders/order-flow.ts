@@ -1,0 +1,108 @@
+import type { AdminOrderItem, AdminOrderSummary, OrderStatus } from "@mini-galu/contracts";
+
+/** Qué hace el botón principal de un pedido (mismo criterio que nextAction() del mockup admin.js). */
+export type NextAction =
+  | { kind: "move"; label: string; icon: "scissors" | "package-check" | "truck" | "circle-check"; to: OrderStatus }
+  | { kind: "whatsapp"; label: string; icon: "star" | "send"; template: TemplateKey }
+  | null;
+
+export function nextAction(o: Pick<AdminOrderSummary, "status" | "shippingMethod">): NextAction {
+  const pickup = o.shippingMethod === "taller";
+  switch (o.status) {
+    case "nuevo":
+      return { kind: "move", label: "Empezar a preparar", icon: "scissors", to: "preparando" };
+    case "preparando":
+      // TODO(fase 5 · shipping): "Generar etiqueta Andreani" (guarda el seguimiento y pasa a listo)
+      return pickup
+        ? { kind: "move", label: "Marcar listo para retirar", icon: "package-check", to: "listo" }
+        : { kind: "move", label: "Marcar listo para despachar", icon: "package-check", to: "listo" };
+    case "listo":
+      return pickup
+        ? { kind: "move", label: "Marcar como retirado", icon: "circle-check", to: "entregado" }
+        : { kind: "move", label: "Marcar despachado", icon: "truck", to: "en_camino" };
+    case "en_camino":
+      // TODO(fase 5 · shipping): lo marca solo Andreani al entregar
+      return { kind: "move", label: "Marcar entregado", icon: "circle-check", to: "entregado" };
+    case "entregado":
+      return { kind: "whatsapp", label: "Pedir reseña", icon: "star", template: "resena" };
+    default:
+      return null;
+  }
+}
+
+/* ------------------------------------------------------------------ WhatsApp */
+
+export type TemplateKey = "pago" | "despacho" | "retiro" | "resena" | "libre";
+
+export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
+  pago: {
+    title: "Pago recibido",
+    body: "Hola {nombre}! Recibimos el pago de tu pedido #{pedido}. Ya lo estamos preparando en el taller. Te avisamos cuando salga ✿",
+  },
+  despacho: {
+    title: "Pedido despachado",
+    body: "{nombre}, tu pedido #{pedido} ya salió con Andreani. Lo podés seguir acá: {seguimiento}",
+  },
+  retiro: {
+    title: "Listo para retirar",
+    body: "Hola {nombre}! Tu pedido #{pedido} está listo para retirar en el taller ({taller}). {horario}",
+  },
+  resena: {
+    title: "Pedir reseña",
+    body: "Hola {nombre}! ¿Cómo le quedó? Si nos mandás una foto nos alegra el día ♡",
+  },
+  libre: { title: "Mensaje libre", body: "Hola {nombre}! " },
+};
+
+/** La plantilla que corresponde según el estado (como openWA() del mockup). */
+export function defaultTemplate(o: Pick<AdminOrderSummary, "status" | "shippingMethod">): TemplateKey {
+  if (o.status === "listo") return o.shippingMethod === "taller" ? "retiro" : "despacho";
+  if (o.status === "en_camino") return "despacho";
+  if (o.status === "entregado") return "resena";
+  return "pago";
+}
+
+export function fillTemplate(
+  body: string,
+  v: { nombre: string; pedido: string; seguimiento: string; taller: string; horario: string },
+): string {
+  return body
+    .replaceAll("{nombre}", v.nombre)
+    .replaceAll("{pedido}", v.pedido)
+    .replaceAll("{seguimiento}", v.seguimiento)
+    .replaceAll("{taller}", v.taller)
+    .replaceAll("{horario}", v.horario);
+}
+
+/** wa.me con el texto prellenado (el teléfono se guarda en E.164: +5491155551234). */
+export const waLink = (phoneE164: string, text: string) =>
+  `https://wa.me/${phoneE164.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+
+/* ------------------------------------------------------------------ lista de preparación */
+
+export type PickRow = { slug: string; name: string; size: string; qty: number; imageUrl: string; orders: string[] };
+
+/** Prendas a preparar agrupadas por modelo y talle (openPicking() del mockup). */
+export function pickingList(orders: Pick<AdminOrderSummary, "number" | "items">[]): PickRow[] {
+  const rows = new Map<string, PickRow>();
+  for (const o of orders)
+    for (const i of o.items as AdminOrderItem[]) {
+      const key = `${i.slug}|${i.size}`;
+      const row = rows.get(key) ?? {
+        slug: i.slug,
+        name: i.name,
+        size: i.size,
+        qty: 0,
+        imageUrl: i.imageUrl,
+        orders: [],
+      };
+      row.qty += i.qty;
+      if (!row.orders.includes(o.number)) row.orders.push(o.number);
+      rows.set(key, row);
+    }
+  return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name, "es") || a.size.localeCompare(b.size, "es"));
+}
+
+/** Pedidos que hay que preparar (nuevos y en preparación). */
+export const toPrepare = <T extends Pick<AdminOrderSummary, "status">>(orders: T[]) =>
+  orders.filter((o) => o.status === "nuevo" || o.status === "preparando");

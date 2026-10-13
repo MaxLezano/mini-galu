@@ -149,3 +149,72 @@ test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) =>
   await expect(page.locator("#toast")).toContainText(`${code} eliminado`);
   await expect(page.locator("#cp-rows tr", { hasText: code })).toHaveCount(0);
 });
+
+/** Un pedido pagado con el gateway simulado (sin credenciales de Mercado Pago). Devuelve su número. */
+async function paidOrder(request: import("@playwright/test").APIRequestContext): Promise<string | null> {
+  const api = "http://localhost:4000";
+  const config = await (await request.get(`${api}/checkout/config`)).json();
+  if (config.gateway !== "simulado") return null;
+  await request.post(`${api}/cart/items`, { data: { slug: "mono-verde", size: "Único", qty: 1 } });
+  const slot = (await (await request.get(`${api}/checkout/shipping`)).json()).pickupSlots[0].id;
+  const order = await (
+    await request.post(`${api}/checkout/orders`, {
+      data: {
+        contact: {
+          email: `e2e-${Date.now()}@ejemplo.com`,
+          firstName: "Pedido",
+          lastName: "Panel",
+          phone: "11 5555-1234",
+        },
+        shipping: { method: "taller", pickupSlot: slot },
+      },
+    })
+  ).json();
+  await request.post(`${api}/checkout/orders/${order.number}/pay`, {
+    data: {
+      t: order.accessToken,
+      card: {
+        method: "debito",
+        token: `sim-${Date.now()}`,
+        paymentMethodId: "visa",
+        installments: 1,
+        payer: { email: "a@b.co" },
+      },
+    },
+  });
+  return order.number;
+}
+
+test("pedidos: preparar, cerrar la preparación tildando las prendas y anotar", async ({ page, request }) => {
+  const number = await paidOrder(request);
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  // en celular arranca en lista; en escritorio, en tablero
+  const card = page.locator(`[data-order="${number}"]`);
+  await card.getByRole("button", { name: "Empezar a preparar" }).click();
+  await expect(page.locator("#toast")).toContainText(`#${number} · Preparando`);
+
+  await card.getByRole("button", { name: `Abrir pedido #${number}` }).click();
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await expect(drawer).toContainText("Pago aprobado por Mercado Pago");
+  await expect(drawer).toContainText("En preparación");
+  await drawer.getByRole("button", { name: "Marcar listo para retirar" }).click();
+  await expect(page.locator("#toast")).toContainText("Tildá todas las prendas");
+  await drawer.getByLabel("Moño Verde Largo talle Único preparado").check();
+  await drawer.getByRole("button", { name: "Marcar listo para retirar" }).click();
+  await expect(drawer.locator(".pill-status").first()).toHaveText("Listo");
+
+  await drawer.getByLabel("Notas internas").fill("Envolver con papel de seda");
+  await drawer.getByLabel("Notas internas").blur();
+  await expect(page.locator("#toast")).toContainText("Nota guardada");
+  await drawer.getByRole("button", { name: "Cerrar" }).last().click();
+
+  await page.getByRole("button", { name: "Lista", exact: true }).click();
+  await page
+    .locator(".status-chips")
+    .getByRole("button", { name: /Listos para despachar/ })
+    .click();
+  await expect(page.locator(`#list`)).toContainText(`#${number}`);
+});

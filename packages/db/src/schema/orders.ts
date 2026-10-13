@@ -96,6 +96,8 @@ export const orderStatus = pgEnum("order_status", [
 ]);
 export const shippingMethod = pgEnum("shipping_method", ["domicilio", "sucursal", "taller"]);
 export const paymentMethod = pgEnum("payment_method", ["credito", "debito", "dinero_cuenta", "link", "giftcard"]);
+/** Por dónde entró la venta: la web o un link de pago mandado por WhatsApp/Instagram, o una charla con Galú. */
+export const orderChannel = pgEnum("order_channel", ["web", "whatsapp", "instagram", "galu"]);
 
 /** Dirección de entrega tal como la cargó el cliente al comprar (no cambia si después edita su libreta). */
 export type ShippingAddress = {
@@ -117,6 +119,9 @@ export const orders = pgTable(
     /** Para consultar el pedido sin cuenta (pantalla de éxito, vuelta de Mercado Pago). */
     accessToken: text().notNull(),
     status: orderStatus().notNull().default("esperando_pago"),
+    /** Cuándo pasó al estado actual (para ordenar el tablero y medir demoras). */
+    statusChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    channel: orderChannel().notNull().default("web"),
     userId: text().references(() => user.id, { onDelete: "set null" }),
     /** Bolsa desde la que se compró: se vacía al aprobarse el pago y, si se vuelve a pedir, el pedido anterior se cancela. */
     cartId: uuid(),
@@ -145,6 +150,8 @@ export const orders = pgTable(
     paidAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
     cancelReason: text(),
+    /** Nota del taller (no la ve el cliente): "envolver con cuidado", "le prometí el moño a juego"… */
+    internalNote: text(),
     ...stamps,
   },
   (t) => [
@@ -212,4 +219,24 @@ export const couponRedemptions = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index().on(t.couponId, t.email)],
+);
+
+/**
+ * Historial del pedido (detalle en el panel): qué pasó y si lo hizo el sistema solo (`auto`) o alguien del taller.
+ * kind: created · paid · status · mail · expired · cancelled · note…
+ */
+export const orderEvents = pgTable(
+  "order_events",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    kind: text().notNull(),
+    title: text().notNull(),
+    detail: text(),
+    auto: boolean().notNull().default(false),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.orderId, t.createdAt)],
 );

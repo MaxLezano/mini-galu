@@ -131,6 +131,12 @@ export class CheckoutService {
           : `Se acaba de agotar el ${r.name} en talle ${r.size}`,
         { slug: r.productSlug, size: r.size, available: r.available },
       );
+    await this.orders.addEvent(r.id, {
+      kind: "created",
+      title: "Pedido creado desde la web",
+      detail: coupon ? `Con el cupón ${coupon.code}` : null,
+      auto: true,
+    });
     return {
       orderId: r.id,
       number: formatOrderNumber(r.number),

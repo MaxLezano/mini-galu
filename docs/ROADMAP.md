@@ -128,12 +128,22 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
 - ✅ Mail "Recibimos tu pago" (Mailpit en local) · ⏳ WhatsApp → fase 6 · ver pedidos y reembolsos en el panel → fase 4
 
-## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`)
+## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`) · en curso
+- ✅ `admin-pedidos`: tablero por estado arrastrable (dnd-kit, mouse y táctil), lista con chips por estado, búsqueda,
+  filtros por canal y envío, selección múltiple con "Avanzar estado" y "Preparación" en lote
+- ✅ Lista de preparación imprimible agrupada por modelo y talle
+- ✅ Detalle: pasos, prendas para preparar con tilde (no se cierra la preparación sin tildar todo), cliente con
+  WhatsApp/mail/llamar, envío o retiro con horario, pago (operación MP y lo que pagó el cliente con el interés),
+  historial automático (creado, pago aprobado, mail enviado, cambios de estado) y notas internas
+- ✅ Siguiente paso en un clic con las reglas del flujo en la API (no se vuelve a "esperando pago"; un retiro no pasa
+  por "en camino"); cada cambio publica `OrderStatusChanged` (las automatizaciones avisarán en la fase 6)
+- ✅ Plantillas de WhatsApp (pago recibido, despachado, listo para retirar, pedir reseña, libre) que abren wa.me
+- ✅ Canal de cada pedido (web, Instagram, WhatsApp, Galú) en la base; hoy todo entra por la web
+- 🟡 "Generar etiqueta Andreani" y seguimiento → fase 5 (hoy: "Marcar listo para despachar" / "Marcar entregado")
+- 🟡 "Te queda después de la comisión de MP": no se estima (sería un dato inventado)
 - ⏳ Resumen: tareas del día, métricas, ventas por semana, últimos pedidos, lanzamiento, stock, registro automático
-- ⏳ Tablero arrastrable por estado, lista con selección múltiple, lista de preparación imprimible
-- ⏳ Detalle con siguiente paso en un clic, picking con tilde, plantillas de WhatsApp
+- ⏳ Contador de pedidos en el menú, campana de notificaciones y búsqueda global con pedidos
 - ⏳ Links de pago automáticos (reserva 72 h, recordatorio a las 24 h)
-- ⏳ Búsqueda global (`/`) y notificaciones; `taller.css` ya está copiado
 
 ## Fase 5 · Envíos (`seguimiento.html`)
 - ⏳ FakeAndreani (cotiza por CP, etiqueta, eventos) + AndreaniAdapter
