@@ -1,0 +1,23 @@
+/* admin.html (estilos de la página) */
+.recent .r { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; border-radius: 14px; cursor: pointer; }
+.recent .r:hover { background: var(--linen); }
+.recent .r b { font-size: 14px; }
+.recent .r small { display: block; color: var(--cacao-2); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent .r .end { display: grid; justify-items: end; gap: 4px; font-size: 13px; font-weight: 600; }
+.low .it { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.low .it:last-child { border-bottom: 0; }
+.low img { width: 40px; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; }
+.launch { display: grid; grid-template-columns: 180px 1fr auto; gap: 24px; align-items: center; background: var(--cacao); color: var(--linen); border-radius: var(--r-lg); padding: 16px 24px 16px 16px; }
+.launch img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 16px; }
+.launch .display em { color: var(--rosa); }
+.launch .stats { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; opacity: .85; margin-top: 8px; }
+.launch .stats b { font: 400 24px/1 var(--f-display); display: block; color: var(--rosa); }
+@media (max-width: 900px) { .launch { grid-template-columns: 1fr; padding: 16px; } .launch img { aspect-ratio: 21/9; } }
+
+/* agregados: sin lanzamiento programado, portada faltante, filas que son links, tarea que llega más adelante */
+.launch.is-empty { grid-template-columns: 1fr auto; padding: 24px; }
+@media (max-width: 900px) { .launch.is-empty { grid-template-columns: 1fr; } }
+.launch .launch-ph { aspect-ratio: 16/10; border-radius: 16px; background: rgba(244,237,227,.1); }
+.recent .r, .feed .it { color: inherit; text-decoration: none; }
+.todo[aria-disabled="true"] { opacity: .6; }
+.todo[aria-disabled="true"]:hover { transform: none; box-shadow: 0 0 0 1px var(--line); }

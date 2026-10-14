@@ -7,7 +7,7 @@ import { getAdminSession } from "@/lib/admin-server";
 export const metadata: Metadata = { title: "Ingresar al taller", robots: { index: false } };
 
 export default async function Page() {
-  if (await getAdminSession()) redirect("/taller/productos");
+  if (await getAdminSession()) redirect("/taller");
   return (
     <Suspense>
       <AdminLogin />

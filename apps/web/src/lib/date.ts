@@ -70,3 +70,22 @@ export function relativeWhen(iso: string, now = Date.now()): string {
   if (day === yesterday) return "ayer";
   return shortDate(iso);
 }
+
+/** "octubre" */
+export const monthName = (iso: string) =>
+  new Intl.DateTimeFormat("es-AR", { month: "long", timeZone: TZ }).format(new Date(iso));
+
+/** "oct" */
+export const monthShort = (iso: string) =>
+  new Intl.DateTimeFormat("es-AR", { month: "short", timeZone: TZ }).format(new Date(iso)).replace(".", "");
+
+/** "Martes 6 de octubre" */
+export const dayTitle = (iso: string) => {
+  const s = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ })
+    .format(new Date(iso))
+    .replace(",", "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+/** Hora (0–23) en Argentina. */
+export const arHour = (iso: string) => Number(toArInputs(iso).time.slice(0, 2));

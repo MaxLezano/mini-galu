@@ -7,6 +7,7 @@ import type { AdminOrdersService } from "../../application/admin-orders-service"
 export function adminOrderRoutes(orders: AdminOrdersService) {
   return new Hono()
     .get("/", async (c) => c.json(await orders.list()))
+    .get("/summary", async (c) => c.json(await orders.summary()))
     .post("/advance", async (c) =>
       c.json(await orders.advance(parse(BulkAdvanceInputSchema, await c.req.json()).numbers)),
     )

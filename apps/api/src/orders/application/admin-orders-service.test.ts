@@ -119,4 +119,25 @@ describe("AdminOrdersService", () => {
     await admin.saveNote(a.number, "");
     expect((await admin.detail(a.number)).internalNote).toBeNull();
   });
+
+  it("resumen del día: tareas, ventas del mes y lo que se hizo solo", async () => {
+    const a = await place("a");
+    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const b = await place("b", { method: "taller", pickupSlot: slot });
+    await place("c"); // sin pagar: no cuenta ni vende
+    await pay(a.orderId);
+    await pay(b.orderId);
+    await admin.move(b.number, "preparando");
+    await admin.move(b.number, "listo");
+    const s = await admin.summary();
+    expect(s.todo).toEqual({ toPrepare: 1, toShip: 0, toPickup: 1, awaitingPayment: 0 });
+    const total = orders.items.filter((o) => o.paidAt).reduce((t, o) => t + o.totalCents, 0);
+    expect(s.month).toMatchObject({ orders: 2, salesCents: total, returning: 1 }); // la segunda compra de Lucía
+    expect(s.weeks).toHaveLength(8);
+    expect(s.months).toHaveLength(12);
+    expect(s.weeks.at(-1)?.cents).toBe(total);
+    expect(s.recent.map((o) => o.number).sort()).toEqual([a.number, b.number].sort());
+    expect(s.feed.every((e) => e.kind === "paid")).toBe(true);
+    expect(s.feed[0]).toMatchObject({ customer: "Lucía Fernández" });
+  });
 });

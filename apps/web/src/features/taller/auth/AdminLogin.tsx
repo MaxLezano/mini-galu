@@ -16,7 +16,7 @@ export function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const back = params.get("volver");
-  const target = back?.startsWith("/taller") ? back : "/taller/productos";
+  const target = back?.startsWith("/taller") ? back : "/taller";
 
   return (
     <main className="auth">

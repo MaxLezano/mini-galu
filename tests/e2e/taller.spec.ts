@@ -12,6 +12,7 @@ async function login(page: Page) {
   await page.getByLabel("Email").fill(ADMIN.email);
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
+  // vuelve a donde quería entrar
   await expect(page).toHaveURL(/\/taller\/productos/);
   await ready(page);
 }
@@ -31,8 +32,8 @@ test("entrar por /taller lleva al panel y salir vuelve a ingresar", async ({ pag
   await page.getByLabel("Email").fill(ADMIN.email);
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
-  await expect(page).toHaveURL(/\/taller\/productos/);
-  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
+  await expect(page).toHaveURL(/\/taller$/);
+  await expect(page.getByRole("heading", { name: /Gaby/ })).toBeVisible();
   // en celular la salida está en el menú lateral
   const burger = page.getByRole("button", { name: "Abrir menú" });
   if (await burger.isVisible()) await burger.click();
@@ -217,4 +218,26 @@ test("pedidos: preparar, cerrar la preparación tildando las prendas y anotar", 
     .getByRole("button", { name: /Listos para despachar/ })
     .click();
   await expect(page.locator(`#list`)).toContainText(`#${number}`);
+});
+
+test("resumen: el pedido pagado aparece para preparar, en los últimos y en lo que se hizo solo", async ({
+  page,
+  request,
+}) => {
+  const number = await paidOrder(request);
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto("/taller");
+  await ready(page);
+  await expect(page.locator("#todo .todo").first()).toContainText("pedidos para preparar");
+  await expect(page.locator("#recent")).toContainText(`#${number} · Pedido Panel`);
+  await expect(page.locator("#feed")).toContainText(`#${number}`);
+  await page.getByRole("button", { name: "12 meses" }).click();
+  await expect(page.getByRole("heading", { name: "Ventas por mes" })).toBeVisible();
+  // del resumen se abre el detalle del pedido
+  await page
+    .locator("#recent")
+    .getByRole("link", { name: new RegExp(`#${number}`) })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/taller/pedidos\\?pedido=${number}`));
 });

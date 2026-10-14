@@ -70,6 +70,29 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     const o = this.items.find((x) => x.id === id);
     if (o) o.internalNote = note;
   }
+  private paid = (o: OrderRecord) => !!o.paidAt && !["cancelado", "reembolsado"].includes(o.status);
+  async paidSince(since: Date) {
+    return this.items
+      .filter((o) => this.paid(o) && (o.paidAt as Date) >= since)
+      .map((o) => ({ totalCents: o.totalCents, paidAt: o.paidAt as Date, email: o.email }));
+  }
+  async buyersBefore(before: Date, emails: string[]) {
+    return new Set(
+      this.items
+        .filter((o) => this.paid(o) && (o.paidAt as Date) < before && emails.includes(o.email))
+        .map((o) => o.email),
+    );
+  }
+  async recentAutoEvents(limit: number) {
+    return this.items
+      .flatMap((o) =>
+        (this.log.get(o.id) ?? [])
+          .filter((e) => e.auto && !["created", "expired"].includes(e.kind))
+          .map((e) => ({ ...e, orderNumber: o.number, customer: `${o.firstName} ${o.lastName}`.trim() })),
+      )
+      .sort((a, b) => b.at.getTime() - a.at.getTime())
+      .slice(0, limit);
+  }
   async findById(id: string) {
     return this.items.find((o) => o.id === id) ?? null;
   }

@@ -34,7 +34,7 @@ const NAV: [string, NavItem[]][] = [
   [
     "Día a día",
     [
-      { href: "/taller", icon: LayoutDashboard, label: "Resumen", phase: "Fase 4" },
+      { href: "/taller", icon: LayoutDashboard, label: "Resumen" },
       { href: "/taller/pedidos", icon: Inbox, label: "Pedidos" },
       { href: "/taller/lanzamientos", icon: CalendarHeart, label: "Lanzamientos" },
     ],
@@ -173,7 +173,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
     <>
       <div className="adm">
         <aside className={`adm-side ${sideOpen ? "is-open" : ""}`} id="adm-side">
-          <Link className="logo" href="/taller/productos">
+          <Link className="logo" href="/taller">
             <span className="bow">
               <Bow />
             </span>
@@ -223,14 +223,19 @@ export function AdminShell({ session, children }: { session: AdminSession; child
         </div>
       </div>
       <nav className="adm-tabbar" aria-label="Accesos rápidos">
-        <Link href="/taller/productos" aria-current={current("/taller/productos") ? "page" : undefined}>
-          <Shirt />
-          Productos
-        </Link>
-        <a href="/" target="_blank" rel="noopener">
-          <Eye />
-          Tienda
-        </a>
+        {(
+          [
+            ["/taller", LayoutDashboard, "Resumen"],
+            ["/taller/pedidos", Inbox, "Pedidos"],
+            ["/taller/lanzamientos", CalendarHeart, "Lanzar"],
+            ["/taller/productos", Shirt, "Productos"],
+          ] as const
+        ).map(([href, Icon, label]) => (
+          <Link key={href} href={href} aria-current={current(href) ? "page" : undefined}>
+            <Icon />
+            {label}
+          </Link>
+        ))}
         <button type="button" onClick={() => setSideOpen(true)} aria-label="Más secciones">
           <Menu />
           Más

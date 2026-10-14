@@ -10,6 +10,7 @@ import type {
   OrderRepository,
   ReserveResult,
 } from "../application/ports";
+import type { PaidOrder } from "../domain/stats";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -118,6 +119,49 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
 
   async findByNumber(number: number) {
     return this.load(eq(s.orders.number, number));
+  }
+
+  async paidSince(since: Date): Promise<PaidOrder[]> {
+    const rows = await this.db
+      .select({ totalCents: s.orders.totalCents, paidAt: s.orders.paidAt, email: s.orders.email })
+      .from(s.orders)
+      .where(and(gte(s.orders.paidAt, since), not(inArray(s.orders.status, ["cancelado", "reembolsado"]))));
+    return rows.flatMap((r) => (r.paidAt ? [{ ...r, paidAt: r.paidAt }] : []));
+  }
+
+  async buyersBefore(before: Date, emails: string[]) {
+    if (!emails.length) return new Set<string>();
+    const rows = await this.db
+      .selectDistinct({ email: s.orders.email })
+      .from(s.orders)
+      .where(
+        and(
+          inArray(s.orders.email, emails),
+          lt(s.orders.paidAt, before),
+          not(inArray(s.orders.status, ["cancelado", "reembolsado"])),
+        ),
+      );
+    return new Set(rows.map((r) => r.email));
+  }
+
+  async recentAutoEvents(limit: number) {
+    const rows = await this.db
+      .select({
+        kind: s.orderEvents.kind,
+        title: s.orderEvents.title,
+        detail: s.orderEvents.detail,
+        auto: s.orderEvents.auto,
+        at: s.orderEvents.createdAt,
+        orderNumber: s.orders.number,
+        firstName: s.orders.firstName,
+        lastName: s.orders.lastName,
+      })
+      .from(s.orderEvents)
+      .innerJoin(s.orders, eq(s.orders.id, s.orderEvents.orderId))
+      .where(and(eq(s.orderEvents.auto, true), not(inArray(s.orderEvents.kind, ["created", "expired"]))))
+      .orderBy(desc(s.orderEvents.createdAt))
+      .limit(limit);
+    return rows.map(({ firstName, lastName, ...r }) => ({ ...r, customer: `${firstName} ${lastName}`.trim() }));
   }
 
   async pendingForCart(cartId: string) {

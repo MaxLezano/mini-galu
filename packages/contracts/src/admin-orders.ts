@@ -72,3 +72,47 @@ export type AdminOrderDetail = AdminOrderSummary & {
 export const MoveOrderInputSchema = z.object({ to: z.enum(BOARD_STATUSES) });
 export const BulkAdvanceInputSchema = z.object({ numbers: z.array(z.string().min(1)).min(1).max(100) });
 export const OrderNoteInputSchema = z.object({ note: z.string().trim().max(1000) });
+
+/* ------------------------------------------------------------------ resumen del día (admin.html) */
+
+/** Ventas de un período (semana que arranca el lunes o mes), en hora de Argentina. */
+export type SalesPoint = { start: string; cents: Cents };
+
+/** Algo que hizo el sistema solo (pago aprobado, mail enviado…), para "Lo que se hizo solo". */
+export type AutoActivity = {
+  number: string;
+  customer: string;
+  kind: string;
+  title: string;
+  detail: string | null;
+  at: string;
+};
+
+export type AdminDaySummary = {
+  todo: {
+    /** nuevo + preparando */
+    toPrepare: number;
+    /** listos para despachar (envío a domicilio o sucursal) */
+    toShip: number;
+    /** listos para retirar en el taller */
+    toPickup: number;
+    /** links de pago (WhatsApp, Instagram) que todavía no se pagaron */
+    awaitingPayment: number;
+  };
+  month: {
+    salesCents: Cents;
+    prevSalesCents: Cents;
+    orders: number;
+    /** Pedidos del mes de clientes que ya habían comprado. */
+    returning: number;
+    avgTicketCents: Cents;
+    prevAvgTicketCents: Cents;
+    /** Lo que se vendería en el mes al ritmo actual (null el primer día). */
+    projectionCents: Cents | null;
+  };
+  /** Últimas 8 semanas y últimos 12 meses, de la más vieja a la actual. */
+  weeks: SalesPoint[];
+  months: SalesPoint[];
+  recent: AdminOrderSummary[];
+  feed: AutoActivity[];
+};

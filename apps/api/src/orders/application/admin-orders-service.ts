@@ -1,9 +1,10 @@
-import type { AdminOrderDetail, AdminOrderSummary, OrderStatus } from "@mini-galu/contracts";
+import type { AdminDaySummary, AdminOrderDetail, AdminOrderSummary, OrderStatus } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { canMove, nextStatus, statusTitle } from "../domain/flow";
 import { formatOrderNumber, parseOrderNumber } from "../domain/order";
+import { monthKpis, monthlySales, monthStart, weeklySales } from "../domain/stats";
 import type { AdminOrderRepository, OrderRecord } from "./ports";
 
 /** Panel del taller: tablero de pedidos, detalle, mover de estado y notas (admin-pedidos.html). */
@@ -18,14 +19,14 @@ export class AdminOrdersService {
   ) {}
 
   async list(): Promise<AdminOrderSummary[]> {
-    return (await this.orders.listForBoard()).map((o) => this.summary(o));
+    return (await this.orders.listForBoard()).map((o) => this.card(o));
   }
 
   async detail(number: string): Promise<AdminOrderDetail> {
     const o = await this.find(number);
     const [events, payment] = await Promise.all([this.orders.events(o.id), this.orders.approvedPayment(o.id)]);
     return {
-      ...this.summary(o),
+      ...this.card(o),
       email: o.email,
       phone: o.phone,
       whatsappOptIn: o.whatsappOptIn,
@@ -88,6 +89,44 @@ export class AdminOrdersService {
     return { moved, skipped };
   }
 
+  /** Resumen del día (admin.html): qué hay que hacer, cómo vienen las ventas y lo que se hizo solo. */
+  async summary(): Promise<AdminDaySummary> {
+    const now = this.clock();
+    const [board, paid, feed] = await Promise.all([
+      this.orders.listForBoard(),
+      this.orders.paidSince(monthStart(now, -11)),
+      this.orders.recentAutoEvents(6),
+    ]);
+    const thisMonth = paid.filter((o) => o.paidAt >= monthStart(now));
+    const earlier = await this.orders.buyersBefore(monthStart(now), [...new Set(thisMonth.map((o) => o.email))]);
+    const count = (f: (o: OrderRecord) => boolean) => board.filter(f).length;
+    const series = (list: { start: Date; cents: number }[]) =>
+      list.map((p) => ({ start: p.start.toISOString(), cents: p.cents }));
+    return {
+      todo: {
+        toPrepare: count((o) => o.status === "nuevo" || o.status === "preparando"),
+        toShip: count((o) => o.status === "listo" && o.shippingMethod !== "taller"),
+        toPickup: count((o) => o.status === "listo" && o.shippingMethod === "taller"),
+        awaitingPayment: count((o) => o.status === "esperando_pago"),
+      },
+      month: monthKpis(paid, now, earlier),
+      weeks: series(weeklySales(paid, now)),
+      months: series(monthlySales(paid, now)),
+      recent: [...board]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 6)
+        .map((o) => this.card(o)),
+      feed: feed.map((e) => ({
+        number: formatOrderNumber(e.orderNumber),
+        customer: e.customer,
+        kind: e.kind,
+        title: e.title,
+        detail: e.detail,
+        at: e.at.toISOString(),
+      })),
+    };
+  }
+
   async saveNote(number: string, note: string): Promise<void> {
     const o = await this.find(number);
     await this.orders.setNote(o.id, note.trim() || null);
@@ -100,7 +139,7 @@ export class AdminOrdersService {
     return o;
   }
 
-  private summary(o: OrderRecord): AdminOrderSummary {
+  private card(o: OrderRecord): AdminOrderSummary {
     return {
       number: formatOrderNumber(o.number),
       status: o.status,

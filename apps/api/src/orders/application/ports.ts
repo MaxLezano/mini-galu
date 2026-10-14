@@ -1,4 +1,5 @@
 import type { OrderChannel, OrderStatus, PaymentMethod, ShippingMethod } from "@mini-galu/contracts";
+import type { PaidOrder } from "../domain/stats";
 
 /** Dirección tal como la cargó el cliente al comprar. */
 export type ShippingAddress = {
@@ -93,6 +94,12 @@ export interface AdminOrderRepository extends OrderEvents {
   /** Cambia de estado solo si sigue en `from` (dos pestañas no pisan el cambio de la otra). */
   setStatus(id: string, from: OrderStatus, to: OrderStatus, at: Date): Promise<boolean>;
   setNote(id: string, note: string | null): Promise<void>;
+  /** Pedidos pagados desde `since` (sin cancelados ni reembolsados), para el resumen. */
+  paidSince(since: Date): Promise<PaidOrder[]>;
+  /** De esos emails, los que ya habían pagado algún pedido antes de `before`. */
+  buyersBefore(before: Date, emails: string[]): Promise<Set<string>>;
+  /** Últimas líneas del historial que hizo el sistema solo (sin "pedido creado" ni reservas vencidas). */
+  recentAutoEvents(limit: number): Promise<(OrderEvent & { orderNumber: number; customer: string })[]>;
 }
 
 export interface OrderRepository extends OrderEvents {
