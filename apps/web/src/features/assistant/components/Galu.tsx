@@ -65,6 +65,8 @@ export function Galu() {
   // la charla que viaja a la API (solo texto); sin modelo en la API, Galú responde por reglas toda la sesión
   const history = useRef<AssistantMessage[]>([]);
   const offline = useRef(false);
+  // id de la charla (para el panel del taller): uno por apertura de la página
+  const conversationId = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const ctxSlug = pathname.startsWith("/producto/") ? decodeURIComponent(pathname.split("/")[2] ?? "") : null;
   const ctx = products.find((p) => p.slug === ctxSlug) ?? null;
@@ -86,7 +88,10 @@ export function Galu() {
     const chat = [...history.current, { role: "user" as const, text: q }];
     const answerId = ++mid;
     let text = "";
-    await askGalu({ messages: chat, productSlug: ctx?.slug }, (e) => {
+    // randomUUID solo existe en https o localhost: sin él, la charla no se guarda y Galú responde igual
+    conversationId.current ??= typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null;
+    const chatReq = { messages: chat, productSlug: ctx?.slug, conversationId: conversationId.current ?? undefined };
+    await askGalu(chatReq, (e) => {
       if (e.type === "text") {
         text += e.delta;
         setMsgs((l) =>

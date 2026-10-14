@@ -1,9 +1,27 @@
-import type { PublicTracking, ShippingOptions } from "@mini-galu/contracts";
+import type {
+  AssistantFact,
+  AssistantFactInput,
+  AssistantSettings,
+  PublicTracking,
+  ShippingOptions,
+} from "@mini-galu/contracts";
 import { CatalogService } from "../../catalog/application/catalog-service";
 import type { Product } from "../../catalog/domain/product";
 import { InMemoryProductRepository, InMemoryWaitlistRepository } from "../../catalog/testing/in-memory";
 import { LocalDiskImageStorage } from "../../shared/media/image-storage";
-import type { AssistantCatalog, AssistantOrders, AssistantShipping, LlmProvider } from "../application/ports";
+import type {
+  AssistantCatalog,
+  AssistantMemory,
+  AssistantOrders,
+  AssistantSettingsStore,
+  AssistantShipping,
+  ChatOwner,
+  ConversationLog,
+  ConversationRecord,
+  FactStore,
+  LlmProvider,
+  NewChatMessage,
+} from "../application/ports";
 import type { ChatTurn, ToolCall, ToolSpec } from "../domain/conversation";
 
 type Step = { text?: string; toolCalls?: Omit<ToolCall, "id">[] };
@@ -62,4 +80,94 @@ export class FixedShipping implements AssistantShipping {
       branches: [],
     };
   }
+}
+
+type StoredConversation = { id: string; owner: ChatOwner; productSlug: string | null; startedAt: Date; lastAt: Date };
+type StoredMessage = NewChatMessage & { id: string; conversationId: string; at: Date; taughtAt: Date | null };
+
+/** Charlas en memoria. `orders` simula el pedido pagado que vino después de una charla (lo resuelve la base). */
+export class MemoryConversationLog implements ConversationLog {
+  conversations: StoredConversation[] = [];
+  messages: StoredMessage[] = [];
+  orders = new Map<string, { number: number; totalCents: number }>();
+  private seq = 0;
+
+  async append(c: { id: string; owner: ChatOwner; productSlug: string | null }, msgs: NewChatMessage[], at: Date) {
+    const found = this.conversations.find((x) => x.id === c.id);
+    if (found) found.lastAt = at;
+    else this.conversations.push({ ...c, startedAt: at, lastAt: at });
+    for (const m of msgs) this.messages.push({ ...m, id: `m${++this.seq}`, conversationId: c.id, at, taughtAt: null });
+  }
+
+  async recent(since: Date, limit: number): Promise<ConversationRecord[]> {
+    return this.conversations
+      .filter((c) => c.lastAt >= since)
+      .sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime())
+      .slice(0, limit)
+      .map((c) => ({
+        id: c.id,
+        who: null,
+        startedAt: c.startedAt.toISOString(),
+        lastAt: c.lastAt.toISOString(),
+        order: this.orders.get(c.id) ?? null,
+        messages: this.messages
+          .filter((m) => m.conversationId === c.id)
+          .map((m) => ({ role: m.role, text: m.text, unanswered: m.unanswered, taught: !!m.taughtAt })),
+      }));
+  }
+
+  async stats(from: Date, to: Date | null) {
+    const inRange = this.conversations.filter((c) => c.startedAt >= from && (!to || c.startedAt < to));
+    const orders = inRange.flatMap((c) => this.orders.get(c.id) ?? []);
+    return {
+      chats: inRange.length,
+      bought: orders.length,
+      boughtCents: orders.reduce((s, o) => s + o.totalCents, 0),
+    };
+  }
+
+  async unanswered(since: Date) {
+    return this.messages
+      .filter((m) => m.unanswered && !m.taughtAt && m.at >= since)
+      .map((m) => ({ id: m.id, question: m.unanswered ?? "", at: m.at }));
+  }
+
+  async markTaught(ids: string[], at: Date) {
+    for (const m of this.messages) if (ids.includes(m.id)) m.taughtAt = at;
+  }
+}
+
+export class MemoryFacts implements FactStore {
+  facts: AssistantFact[] = [];
+  async list() {
+    return [...this.facts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async add(f: AssistantFactInput, at: Date) {
+    const fact = { ...f, id: `f${this.facts.length + 1}`, createdAt: at.toISOString() };
+    this.facts.push(fact);
+    return fact;
+  }
+  async remove(id: string) {
+    const before = this.facts.length;
+    this.facts = this.facts.filter((f) => f.id !== id);
+    return this.facts.length < before;
+  }
+}
+
+export class MemoryAssistantSettings implements AssistantSettingsStore {
+  value: Partial<AssistantSettings> = {};
+  async get() {
+    return { ...this.value };
+  }
+  async save(s: AssistantSettings) {
+    this.value = { ...s };
+  }
+}
+
+export function memoryAssistant(): AssistantMemory & {
+  log: MemoryConversationLog;
+  facts: MemoryFacts;
+  settings: MemoryAssistantSettings;
+} {
+  return { log: new MemoryConversationLog(), facts: new MemoryFacts(), settings: new MemoryAssistantSettings() };
 }

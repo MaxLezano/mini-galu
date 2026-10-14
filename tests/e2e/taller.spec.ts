@@ -462,3 +462,43 @@ test("clientes: la cuenta con su nena aparece con el cumple cerca y la nota qued
     page.getByRole("complementary", { name: "Ficha del cliente" }).getByLabel("Notas del taller"),
   ).toHaveValue("Prefiere retirar en el taller");
 });
+
+test("galú: ver una charla, enseñarle una respuesta, olvidarla y cambiar un ajuste", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/galu");
+  await ready(page);
+  // charlas demo del seed: la pregunta que no supo (2 veces) espera en "Enseñale"
+  const teach = page.locator("#teach");
+  await expect(teach.locator(".q")).toContainText("comunión a medida");
+  await expect(teach.locator(".q")).toContainText("2 veces");
+  await page.locator("#convs .conv", { hasText: "bautismo" }).click();
+  await expect(page.locator("#transcript")).toContainText("Vestido Rebeca");
+  await page.locator("#convs .conv", { hasText: "envíos al exterior" }).click();
+  await page.getByRole("button", { name: "Enseñarle la respuesta" }).click();
+  await expect(teach.locator(".q")).toContainText("envíos al exterior");
+
+  // una pregunta libre (no toca las demo): se guarda, sigue después de recargar y se olvida
+  const question = `¿Pregunta de prueba ${Date.now()}?`;
+  await teach.getByRole("button", { name: "Otra pregunta" }).click();
+  await teach.getByLabel("Pregunta").fill(question);
+  await teach.getByRole("button", { name: "Guardar respuesta" }).click();
+  await expect(page.locator("#toast")).toContainText("Escribí la respuesta primero");
+  await teach.getByLabel("Tu respuesta").fill("Respuesta de prueba del taller.");
+  await teach.getByRole("button", { name: "Guardar respuesta" }).click();
+  await expect(page.locator("#toast")).toContainText("Galú ya lo sabe");
+  await page.reload();
+  await ready(page);
+  await expect(page.locator("#facts")).toContainText(question);
+  await page.getByRole("button", { name: `Olvidar "${question}"` }).click();
+  await expect(page.locator("#toast")).toContainText("Galú lo olvidó");
+  await expect(page.locator("#facts")).not.toContainText(question);
+
+  const stock = page.getByLabel("Mostrar solo prendas con stock");
+  await stock.uncheck();
+  await expect(page.locator("#toast")).toContainText("Ajustes guardados");
+  await page.reload();
+  await ready(page);
+  await expect(stock).not.toBeChecked();
+  await stock.check();
+  await expect(page.locator("#toast")).toContainText("Ajustes guardados");
+});

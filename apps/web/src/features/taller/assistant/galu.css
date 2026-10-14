@@ -1,0 +1,33 @@
+/* admin-galu.html (estilos de la página) */
+.gl { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.convs { display: grid; gap: 6px; padding: 10px; }
+.conv { display: grid; gap: 4px; text-align: left; padding: 12px 14px; border-radius: 14px; transition: background var(--t-fast); width: 100%; }
+.t-result { margin-top: auto; align-self: stretch; display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: 14px; background: var(--salvia-l); color: var(--salvia-d); font-size: 13.5px; border: 1.5px dashed color-mix(in srgb, var(--salvia-d) 30%, transparent); }
+.t-result b { color: var(--cacao); }
+.conv:hover { background: var(--linen); }
+.conv[aria-current="true"] { background: var(--cacao); color: var(--paper); }
+.conv[aria-current="true"] small { color: rgba(251,248,243,.7); }
+.conv .r { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.conv small { color: var(--cacao-2); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.transcript { display: flex; flex-direction: column; gap: 10px; min-height: 420px; }
+.transcript .msg { animation: none; }
+.transcript .msg.me { align-self: flex-start; background: var(--linen); color: var(--cacao); border-radius: 20px 20px 20px 6px; }
+.transcript .msg.bot { align-self: flex-end; background: var(--cacao); color: var(--paper); border-radius: 20px 20px 6px 20px; }
+.teach { display: grid; gap: 12px; }
+.teach .q { padding: 12px 14px; border-radius: 14px; background: var(--rosa-l); font-size: 13.5px; }
+.teach .q b { display: block; margin-bottom: 4px; }
+.facts { display: grid; gap: 6px; font-size: 13px; }
+.facts div { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--linen); }
+.facts svg { color: var(--salvia-d); flex: none; margin-top: 2px; }
+@media (max-width: 1300px) { .gl { grid-template-columns: 280px minmax(0, 1fr); } .gl > :last-child { grid-column: 1 / -1; } }
+@media (max-width: 800px) { .gl { grid-template-columns: 1fr; } }
+
+/* agregados: lo enseñado (se puede borrar), otras preguntas pendientes, lo que no supo, vacíos */
+.facts .taught { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+.facts .taught p { margin: 2px 0 0; color: var(--cacao-2); }
+.facts .taught .icon-btn { width: 28px; height: 28px; margin: -4px -4px 0 0; }
+.facts .taught .icon-btn svg { color: var(--cacao-2); margin: 0; }
+.teach .more { display: flex; gap: 6px; flex-wrap: wrap; }
+.teach .more .chip { font-size: 12.5px; }
+.transcript .msg.bot.unanswered { box-shadow: 0 0 0 2px var(--rosa); }
+.gl .empty { padding: 18px; margin: 0; color: var(--cacao-2); font-size: 13.5px; }

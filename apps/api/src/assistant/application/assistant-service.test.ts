@@ -2,7 +2,7 @@ import type { AssistantEvent, PublicTracking } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
 import { makeProduct } from "../../catalog/testing/fixtures";
 import { MAX_TOOL_ROUNDS } from "../domain/conversation";
-import { FixedShipping, MemoryOrders, memoryCatalog, ScriptedLlm } from "../testing/in-memory";
+import { FixedShipping, MemoryOrders, memoryAssistant, memoryCatalog, ScriptedLlm } from "../testing/in-memory";
 import { AssistantService } from "./assistant-service";
 import { assistantTools } from "./tools";
 
@@ -48,12 +48,18 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
   const llm = new ScriptedLlm(steps);
   const catalog = memoryCatalog([samanta, cleo, borrador]);
   const tools = assistantTools({ catalog, orders: new MemoryOrders([pedido]), shipping: new FixedShipping() });
-  const svc = new AssistantService(llm, tools, catalog, {
-    workshop: "Villa Crespo",
-    freeShippingFrom: "$90.000",
-    giftcardRange: "$5.000 a $500.000",
-    whatsapp: "https://wa.me/5491100000000",
-  });
+  const svc = new AssistantService(
+    llm,
+    tools,
+    catalog,
+    {
+      workshop: "Villa Crespo",
+      freeShippingFrom: "$90.000",
+      giftcardRange: "$5.000 a $500.000",
+      whatsapp: "https://wa.me/5491100000000",
+    },
+    memoryAssistant(),
+  );
   return { llm, svc };
 }
 
@@ -97,6 +103,7 @@ describe("Galú responde con tools sobre el stock real", () => {
       "talle_para",
       "seguir_pedido",
       "cotizar_envio",
+      "no_lo_se",
     ]);
   });
 

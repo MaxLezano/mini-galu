@@ -1,4 +1,5 @@
 import type {
+  AdminAssistant,
   AdminAutomations,
   AdminCoupon,
   AdminCustomerDetail,
@@ -10,6 +11,8 @@ import type {
   AdminPayments,
   AdminProduct,
   AdminShipping,
+  AssistantFactInput,
+  AssistantSettings,
   AutomationKey,
   Collection,
   CouponInput,
@@ -112,6 +115,12 @@ export const adminApi = {
   testAutomations: (email: string) =>
     adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
   newsletter: () => adminRequest<AdminNewsletter>("/admin/newsletter"),
+  assistantSettings: (s: AssistantSettings) =>
+    adminRequest<AdminAssistant>("/admin/assistant/settings", { method: "PUT", body: JSON.stringify(s) }),
+  teachAssistant: (f: AssistantFactInput) =>
+    adminRequest<AdminAssistant>("/admin/assistant/facts", { method: "POST", body: JSON.stringify(f) }),
+  forgetAssistantFact: (id: string) =>
+    adminRequest<AdminAssistant>(`/admin/assistant/facts/${encodeURIComponent(id)}`, { method: "DELETE" }),
   customer: (email: string) => adminRequest<AdminCustomerDetail>(`/admin/customers/${encodeURIComponent(email)}`),
   saveCustomerNote: (email: string, note: string) =>
     adminRequest<null>(`/admin/customers/${encodeURIComponent(email)}/note`, {

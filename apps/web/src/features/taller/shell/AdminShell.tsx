@@ -48,7 +48,7 @@ const NAV: [string, NavItem[]][] = [
     [
       { href: "/taller/productos", icon: Shirt, label: "Productos", count: "stock" },
       { href: "/taller/clientes", icon: Users, label: "Clientes" },
-      { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú", phase: "Fase 7" },
+      { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú" },
     ],
   ],
   [

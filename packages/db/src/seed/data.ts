@@ -446,3 +446,75 @@ export const demoCoupons = [
     active: false,
   },
 ] as const satisfies typeof import("../schema").coupons.$inferInsert[];
+
+/**
+ * Charlas con Galú (admin-galu.html), **demo**: muestran el panel antes de que haya charlas reales.
+ * `ago` en minutos antes del seed; `unanswered` marca lo que no supo (va a "Enseñale").
+ */
+export const demoConversations: {
+  id: string;
+  ago: number;
+  productSlug?: string;
+  messages: { role: "user" | "assistant"; text: string; unanswered?: string }[];
+}[] = [
+  {
+    id: "00000000-0000-4000-8000-0000000ca001",
+    ago: 32,
+    productSlug: "samanta",
+    messages: [
+      { role: "user", text: "Hola! tenés el Samanta en talle 8?" },
+      { role: "assistant", text: "¡Sí! Del Vestido Samanta quedan unidades en talle 8." },
+      { role: "user", text: "Genial, y cuánto tarda a Córdoba?" },
+      {
+        role: "assistant",
+        text: "Con Andreani a domicilio llega en 3 a 5 días hábiles. Si me pasás el código postal te digo el costo.",
+      },
+    ],
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000ca002",
+    ago: 60,
+    messages: [
+      { role: "user", text: "Hacen vestidos de comunión a medida?" },
+      {
+        role: "assistant",
+        text: "Mmm, eso no lo sé todavía. ¿Querés escribirle a Gaby por WhatsApp?",
+        unanswered: "¿Hacen vestidos de comunión a medida?",
+      },
+    ],
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000ca003",
+    ago: 60 * 24 * 2,
+    messages: [
+      { role: "user", text: "Busco algo para el bautismo de mi bebé de 1 año" },
+      { role: "assistant", text: "Para bautismo te recomiendo el Vestido Rebeca: hay en talle 12 meses." },
+      { role: "user", text: "Y algo para la hermana de 2?" },
+      { role: "assistant", text: "El Vestido Catalina tiene talle 2 y combina en estilo." },
+    ],
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000ca004",
+    ago: 60 * 24 * 3,
+    messages: [
+      { role: "user", text: "hacen vestidos a medida para comunion?" },
+      {
+        role: "assistant",
+        text: "Eso no lo sé todavía. Gaby te puede responder por WhatsApp.",
+        unanswered: "hacen vestidos de comunion a medida",
+      },
+    ],
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000ca005",
+    ago: 60 * 24 * 3 + 90,
+    messages: [
+      { role: "user", text: "Hacen envíos al exterior?" },
+      {
+        role: "assistant",
+        text: "No lo sé todavía: ¿le escribís a Gaby por WhatsApp?",
+        unanswered: "¿Hacen envíos al exterior?",
+      },
+    ],
+  },
+];

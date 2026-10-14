@@ -58,7 +58,11 @@ test("Galú responde con el modelo: texto de a pedazos y tarjetas", async ({ pag
   await expect(page.locator(".galu-body")).toContainText("En talle 2 tengo estos modelos.");
   await expect(page.locator(".galu-body .msg.bot b", { hasText: "estos" })).toBeVisible();
   await expect(page.locator(".galu-body .mini-card")).toHaveCount(Math.min(2, products.length));
-  expect(asked).toEqual({ messages: [{ role: "user", text: "¿qué hay en talle 2?" }] });
+  // la charla lleva su id para quedar guardada en el panel (admin-galu)
+  expect(asked).toEqual({
+    messages: [{ role: "user", text: "¿qué hay en talle 2?" }],
+    conversationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+  });
 });
 
 test("sin modelo en la API, Galú responde por reglas con el stock real", async ({ page }) => {

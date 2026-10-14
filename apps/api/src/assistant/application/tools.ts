@@ -24,8 +24,11 @@ type Tool<S extends z.ZodType> = {
   name: string;
   description: string;
   input: S;
-  run(input: z.output<S>): Promise<ToolOutput>;
+  run(input: z.output<S>, opts: ToolOptions): Promise<ToolOutput>;
 };
+
+/** Ajustes del panel que cambian lo que devuelven las tools. */
+export type ToolOptions = { onlyInStock: boolean };
 
 const tool = <S extends z.ZodType>(t: Tool<S>) => t;
 
@@ -101,7 +104,7 @@ export function assistantTools(deps: {
           .preprocess((v) => (v === "true" ? true : v === null ? undefined : v), z.boolean().optional())
           .describe("true para ver también las que no tienen stock"),
       }),
-      async run(i) {
+      async run(i, opts) {
         const list = await deps.catalog.search(
           CatalogQuerySchema.parse({
             talle: i.talle,
@@ -109,7 +112,7 @@ export function assistantTools(deps: {
             max: i.precio_max ? Math.round(i.precio_max * 100) : undefined,
             q: i.texto,
             sort: i.orden,
-            instock: i.incluir_agotadas ? "0" : undefined,
+            instock: i.incluir_agotadas && !opts.onlyInStock ? "0" : undefined,
           }),
         );
         const color = i.color ? norm(i.color) : null;
@@ -221,7 +224,11 @@ export function assistantTools(deps: {
       }),
     ),
     /** Corre una tool pedida por el modelo; los errores vuelven como texto para que el modelo lo diga. */
-    async run(name: string, input: unknown): Promise<ToolOutput & { isError: boolean }> {
+    async run(
+      name: string,
+      input: unknown,
+      opts: ToolOptions = { onlyInStock: true },
+    ): Promise<ToolOutput & { isError: boolean }> {
       const t = byName.get(name);
       if (!t) return { content: `No existe la tool "${name}"`, isError: true };
       const parsed = t.input.safeParse(input ?? {});
@@ -230,7 +237,7 @@ export function assistantTools(deps: {
           content: `Parámetros inválidos: ${parsed.error.issues.map((x) => `${x.path.join(".")} ${x.message}`).join("; ")}`,
           isError: true,
         };
-      return { ...(await t.run(parsed.data)), isError: false };
+      return { ...(await t.run(parsed.data, opts)), isError: false };
     },
   };
 }

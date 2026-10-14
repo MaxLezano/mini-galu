@@ -69,7 +69,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Moño flotante con pista, panel, sugerencias, saludo contextual en la ficha, tarjetas con "Agregar"
 - ✅ Responde talles, stock, precios, cuotas, envíos, ocasiones, regalos, colores, presupuesto, a medida
 - 🟡 "¿Dónde está mi pedido?": pide el número → con pedidos reales en la fase 5
-- ✅ LLM + tools (fase 7) · ⏳ "enseñale" → fase 7
+- ✅ LLM + tools (fase 7) · ✅ "enseñale" desde el panel (fase 7)
 
 ### Panel del taller (fase 2)
 - ✅ Ingreso del taller (`/taller/ingresar`): Better Auth email + contraseña, sin registro público; la cuenta la crea el seed
@@ -205,7 +205,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   de 30 preguntas cada 10 min por IP y 500 caracteres por mensaje
 - 🟡 pgvector → con 11 prendas alcanzan los filtros del catálogo; se suma si crece el catálogo o para buscar en lo que
   Gaby le enseña (Claude no tiene embeddings: haría falta otro proveedor)
-- ⏳ Conversaciones, "enseñale" (`AssistantFact`), ajustes
+- ✅ Conversaciones (`/taller/galu`): cada charla con modelo se guarda (id del navegador + cuenta o bolsa de
+  invitada); "Compró" si se pagó un pedido de esa cuenta o bolsa hasta 3 días después; KPIs de 7 días contra la
+  semana anterior. Charlas demo en el seed
+- ✅ "Enseñale": la tool `no_lo_se` anota lo que no sabe; las preguntas pendientes se agrupan (mismas palabras sin
+  tildes ni signos); lo que Gaby responde (`AssistantFact`) entra en las instrucciones de Galú y se puede olvidar
+- ✅ Ajustes: derivar a WhatsApp, ofrecer gift card sin talle, solo prendas con stock (búsquedas y tarjetas) y tono
+- 🟡 Las charlas por reglas (sin modelo) no se guardan; "Pidieron aviso de talle" no se mide (el aviso se pide en
+  la ficha, no en la charla) y quedó "Le enseñaste" en su lugar; sin contador de pendientes en el menú
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)
 - ✅ Modelo de datos: `user` (nombre y apellido separados, email verificado, foto, rol, teléfono E.164 + país,

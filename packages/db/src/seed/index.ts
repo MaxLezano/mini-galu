@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { inArray } from "drizzle-orm";
 import { createDb } from "../client";
 import { databaseUrl, repoRoot } from "../env";
 import * as s from "../schema";
@@ -194,6 +195,29 @@ await db.transaction(async (tx) => {
   );
 
   await tx.insert(s.contentBlocks).values({ key: "home", value: data.home });
+
+  // charlas demo con Galú: se vuelven a crear (con sus mensajes) relativas a ahora
+  const seededAt = Date.now();
+  const convIds = data.demoConversations.map((c) => c.id);
+  await tx.delete(s.assistantConversations).where(inArray(s.assistantConversations.id, convIds));
+  for (const c of data.demoConversations) {
+    const at = new Date(seededAt - c.ago * 60_000);
+    await tx.insert(s.assistantConversations).values({
+      id: c.id,
+      productSlug: c.productSlug ?? null,
+      startedAt: at,
+      lastAt: new Date(at.getTime() + (c.messages.length - 1) * 30_000),
+    });
+    await tx.insert(s.assistantMessages).values(
+      c.messages.map((m, i) => ({
+        conversationId: c.id,
+        role: m.role,
+        text: m.text,
+        unanswered: m.unanswered ?? null,
+        createdAt: new Date(at.getTime() + i * 30_000),
+      })),
+    );
+  }
 
   // cupones demo del mockup: si ya existen (los editó el taller) no se pisan
   await tx.insert(s.coupons).values(data.demoCoupons).onConflictDoNothing({ target: s.coupons.code });

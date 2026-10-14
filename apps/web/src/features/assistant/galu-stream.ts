@@ -14,6 +14,8 @@ export async function askGalu(
   const res = await fetch(`${API_URL}/assistant/chat`, {
     method: "POST",
     headers: { "content-type": "application/json" },
+    // la cookie de la bolsa (o la sesión) dice de quién es la charla en el panel
+    credentials: "include",
     body: JSON.stringify(chat),
     signal,
   }).catch(() => null);

@@ -13,10 +13,17 @@ import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { AssistantAdminService } from "./assistant/application/assistant-admin-service";
 import { AssistantService } from "./assistant/application/assistant-service";
 import type { AssistantCatalog, LlmProvider } from "./assistant/application/ports";
 import { assistantTools } from "./assistant/application/tools";
 import { ClaudeProvider } from "./assistant/infrastructure/claude-provider";
+import {
+  DrizzleAssistantSettings,
+  DrizzleConversationLog,
+  DrizzleFacts,
+} from "./assistant/infrastructure/drizzle-assistant";
+import { adminAssistantRoutes } from "./assistant/infrastructure/http/admin-assistant-routes";
 import { assistantRoutes } from "./assistant/infrastructure/http/assistant-routes";
 import { OllamaProvider } from "./assistant/infrastructure/ollama-provider";
 import { createAuth } from "./auth/infrastructure/better-auth";
@@ -449,6 +456,12 @@ export function buildApp(config: Config) {
       return p?.status === "published" ? p : null;
     },
   };
+  // lo que Gaby le enseña, sus ajustes y las charlas (admin-galu.html)
+  const assistantMemory = {
+    log: new DrizzleConversationLog(db),
+    facts: new DrizzleFacts(db),
+    settings: new DrizzleAssistantSettings(db),
+  };
   const assistant = new AssistantService(
     llm,
     assistantTools({
@@ -463,6 +476,7 @@ export function buildApp(config: Config) {
       giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
       whatsapp: "https://wa.me/5491100000000",
     },
+    assistantMemory,
   );
   if (llm && config.env !== "test") console.info(`[galú] responde con ${llm.name}`);
 
@@ -504,7 +518,8 @@ export function buildApp(config: Config) {
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/giftcards", giftcardRoutes(giftcards))
-    .route("/assistant", assistantRoutes(assistant))
+    .use("/assistant/chat", cartOwner(auth, cart, secure))
+    .route("/assistant", assistantRoutes(assistant, { secure }))
     .route("/me", accountRoutes(auth, customers))
     .route("/lists", wishlistRoutes(customers))
     .get("/account/options", (c) => c.json({ google: !!config.google }))
@@ -518,6 +533,10 @@ export function buildApp(config: Config) {
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
+    .route(
+      "/admin/assistant",
+      adminAssistantRoutes(new AssistantAdminService(assistantMemory, () => llm?.name ?? null, formatOrderNumber)),
+    )
     .route(
       "/admin/customers",
       adminCustomerRoutes(new AdminCustomersService(new DrizzleAdminCustomers(db, storage, formatOrderNumber))),
