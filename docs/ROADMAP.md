@@ -82,7 +82,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Volvió un talle: al cargar stock de un talle con anotadas, el editor lo avisa y la API publica `StockReplenished`
   (el envío del aviso es la fase 6)
 - 🟡 Fotos: se guardan como se suben → recorte 3:4 y AVIF/WebP en varios tamaños (sharp) en la fase 9
-- ✅ Resumen del día (fase 4) · ⏳ notificaciones (campana) → fase 4
+- ✅ Resumen del día y notificaciones (campana) → fase 4
 - ✅ `admin-lanzamientos`: crear/editar/programar/borrar borradores, "usar de base", portada (elegir o subir), prendas,
   cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las
   prendas a la hora indicada (scheduler cada 60 s)
@@ -145,7 +145,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   vuelven, ticket promedio, ventas por semana / por mes (barras, tooltip, tabla, mejor período, promedio y
   proyección), últimos pedidos, próximo lanzamiento, stock para revisar y "lo que se hizo solo" (historial real)
 - 🟡 En el resumen: "preguntas que Galú no supo" y "charlas con Galú" → fase 7; link a Automatizaciones → fase 6
-- ⏳ Contador de pedidos en el menú, campana de notificaciones y búsqueda global con pedidos
+- ✅ Contadores en el menú (pedidos para preparar, productos con la última unidad), campana de novedades (pedidos
+  nuevos, links sin pagar, última unidad; "marcar como leídas") y búsqueda global con pedidos y productos ("/")
+- 🟡 Búsqueda de clientes → fase 8; "Galú no supo responder" en la campana → fase 7
 - ⏳ Links de pago automáticos (reserva 72 h, recordatorio a las 24 h)
 
 ## Fase 5 · Envíos (`seguimiento.html`)

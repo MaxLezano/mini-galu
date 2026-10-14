@@ -215,7 +215,7 @@ export const products: SeedProduct[] = [
     occ: ["diario", "fiesta", "regalo"],
     color: ["Verde", "#2F6B5A"],
     photos: ["mono-verde"],
-    sizes: { Único: 15 },
+    sizes: { Único: 40 }, // los e2e del checkout y del panel compran este
     waitlist: {},
     fabric: "Lino",
     desc: "Moño largo de lino para trenzas y semirrecogidos.",

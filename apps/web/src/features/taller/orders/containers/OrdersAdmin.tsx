@@ -17,6 +17,7 @@ import { ApiRequestError } from "@/lib/api";
 import { relativeWhen } from "@/lib/date";
 import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
+import { OPEN_ORDER, panelChanged } from "../../shell/panel-events";
 
 import { OrdersBoard } from "../components/OrdersBoard";
 import { OrdersList } from "../components/OrdersList";
@@ -40,6 +41,16 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openNumber, setOpenNumber] = useState<string | null>(openFirst);
   const [picking, setPicking] = useState<AdminOrderSummary[]>([]);
+  // al mover pedidos el menú y la campana vuelven a contar (no al montar: el armazón ya cargó al navegar)
+  useEffect(() => {
+    if (orders !== initial) panelChanged();
+  }, [orders, initial]);
+  // la búsqueda y la campana del armazón abren pedidos estando ya en esta pantalla
+  useEffect(() => {
+    const open = (e: Event) => setOpenNumber((e as CustomEvent<string>).detail);
+    window.addEventListener(OPEN_ORDER, open);
+    return () => window.removeEventListener(OPEN_ORDER, open);
+  }, []);
   const [wa, setWa] = useState<{ order: AdminOrderDetail; template: TemplateKey } | null>(null);
   const [compact, setCompact] = useState(false);
   const mounted = useMounted();

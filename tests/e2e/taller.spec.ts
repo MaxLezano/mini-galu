@@ -241,3 +241,21 @@ test("resumen: el pedido pagado aparece para preparar, en los últimos y en lo q
     .click();
   await expect(page).toHaveURL(new RegExp(`/taller/pedidos\\?pedido=${number}`));
 });
+
+test("buscar un pedido desde la barra lo abre y la campana avisa el pedido nuevo", async ({ page, request }) => {
+  const number = await paidOrder(request);
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.getByRole("button", { name: /Notificaciones \(\d+ sin leer\)/ }).click();
+  await expect(page.locator("#notif")).toContainText(`Pedido nuevo #${number}`);
+  await page.getByRole("button", { name: "Marcar como leídas" }).click();
+  await expect(page.getByRole("button", { name: "Notificaciones", exact: true })).toBeVisible();
+
+  await page.locator("#gsearch").fill(String(number).replace("MG-", ""));
+  await page
+    .locator("#search-pop")
+    .getByRole("button", { name: new RegExp(`#${number}`) })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/taller/pedidos\\?pedido=${number}`));
+  await expect(page.locator("#od.is-open")).toContainText(`#${number}`);
+});

@@ -4,3 +4,5 @@
 .adm-side .who button { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: rgba(244,237,227,.7); transition: background var(--t-fast), color var(--t-fast); }
 .adm-side .who button:hover { color: var(--linen); background: rgba(244,237,227,.1); }
 .adm-top .store-link svg:last-child { opacity: .5; }
+.notif .it.is-read { opacity: .6; } /* agregados: las ya vistas quedan más suaves y la lista scrollea */
+.notif { max-height: min(70vh, 560px); overflow: auto; }

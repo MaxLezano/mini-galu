@@ -1,7 +1,6 @@
 "use client";
 
-import type { AdminProduct, AdminSession } from "@mini-galu/contracts";
-import { formatARS } from "@mini-galu/contracts";
+import { type AdminSession, formatARS } from "@mini-galu/contracts";
 import {
   CalendarHeart,
   ExternalLink,
@@ -12,7 +11,6 @@ import {
   type LucideIcon,
   Menu,
   MessageCircleHeart,
-  Search,
   Shirt,
   Store,
   Users,
@@ -20,14 +18,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { ToastHost } from "@/features/shell/components/ToastHost";
 import { adminApi } from "@/lib/admin-api";
-import { cover, stripAccents } from "@/lib/product";
+import { relativeWhen } from "@/lib/date";
 import { Bow } from "@/ui/atoms/Bow";
+import { GlobalSearch } from "./GlobalSearch";
+import { NotificationBell } from "./NotificationBell";
+import { OPEN_ORDER } from "./panel-events";
+import { navCounts, notices } from "./shell-view";
+import { usePanelData } from "./use-panel-data";
 import "./shell.css";
 
-type NavItem = { href: string; icon: LucideIcon; label: string; phase?: string };
+type NavItem = { href: string; icon: LucideIcon; label: string; phase?: string; count?: "pedidos" | "stock" };
 
 /** Secciones del panel (mockup admin.js). Las que todavía no existen muestran en qué fase llegan. */
 const NAV: [string, NavItem[]][] = [
@@ -35,14 +38,14 @@ const NAV: [string, NavItem[]][] = [
     "Día a día",
     [
       { href: "/taller", icon: LayoutDashboard, label: "Resumen" },
-      { href: "/taller/pedidos", icon: Inbox, label: "Pedidos" },
+      { href: "/taller/pedidos", icon: Inbox, label: "Pedidos", count: "pedidos" },
       { href: "/taller/lanzamientos", icon: CalendarHeart, label: "Lanzamientos" },
     ],
   ],
   [
     "Tienda",
     [
-      { href: "/taller/productos", icon: Shirt, label: "Productos" },
+      { href: "/taller/productos", icon: Shirt, label: "Productos", count: "stock" },
       { href: "/taller/clientes", icon: Users, label: "Clientes", phase: "Fase 8" },
       { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú", phase: "Fase 7" },
     ],
@@ -56,91 +59,20 @@ const NAV: [string, NavItem[]][] = [
   ],
 ];
 
-function GlobalSearch() {
-  const router = useRouter();
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [products, setProducts] = useState<AdminProduct[] | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const load = () => {
-    if (!products) adminApi.products().then(setProducts, () => setProducts([]));
-  };
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const tag = (document.activeElement?.tagName ?? "").toLowerCase();
-      if (e.key === "/" && !["input", "textarea", "select"].includes(tag)) {
-        e.preventDefault();
-        input.current?.focus();
-      }
-      if (e.key === "Escape") setOpen(false);
-    };
-    const onClick = (e: MouseEvent) => !(e.target as Element).closest(".adm-search") && setOpen(false);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("click", onClick);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("click", onClick);
-    };
-  }, []);
-  const term = stripAccents(q.trim());
-  const hits = term
-    ? (products ?? []).filter((p) => stripAccents(`${p.name} ${p.slug}`).includes(term)).slice(0, 6)
-    : [];
-
-  return (
-    <div className="adm-search">
-      <span>
-        <Search className="i-sm" />
-      </span>
-      <input
-        ref={input}
-        value={q}
-        onFocus={load}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setOpen(true);
-        }}
-        placeholder="Buscar prenda…"
-        autoComplete="off"
-        aria-label="Buscar"
-      />
-      <kbd>/</kbd>
-      <div className={`search-pop ${open && term ? "is-open" : ""}`}>
-        {hits.length ? (
-          <>
-            <h6>Productos</h6>
-            {hits.map((p) => (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  setQ("");
-                  router.push(`/taller/productos?editar=${p.slug}`);
-                }}
-              >
-                {p.images[0] && <img src={cover(p)} alt="" />}
-                {p.name}
-                <span className="muted" style={{ marginLeft: "auto" }}>
-                  {formatARS(p.priceCents)}
-                </span>
-              </button>
-            ))}
-          </>
-        ) : (
-          <p className="muted" style={{ padding: 10, margin: 0, fontSize: 13.5 }}>
-            {products ? `Sin resultados para “${q}”.` : "Buscando…"}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /** Armazón del panel del taller (mockup admin.js): menú lateral, barra superior y barra inferior en celular. */
 export function AdminShell({ session, children }: { session: AdminSession; children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
+  const { orders, products, read, markRead } = usePanelData(pathname);
+  const counts = orders && products ? navCounts(orders, products) : { pedidos: 0, stock: 0 };
+  const items = orders && products ? notices(orders, products, formatARS) : [];
+  // ya en Pedidos se abre el detalle ahí mismo; desde otra pantalla se navega
+  const openOrder = (number: string) =>
+    pathname === "/taller/pedidos"
+      ? window.dispatchEvent(new CustomEvent(OPEN_ORDER, { detail: number }))
+      : router.push(`/taller/pedidos?pedido=${number}`);
+  const badge = (key: NavItem["count"]) => (key && counts[key] ? <span className="n">{counts[key]}</span> : null);
   const current = (href: string) => (href === "/taller" ? pathname === href : pathname.startsWith(href));
 
   useEffect(() => {
@@ -155,7 +87,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
     window.location.assign("/taller/ingresar");
   };
 
-  const link = ({ href, icon: Icon, label, phase }: NavItem) =>
+  const link = ({ href, icon: Icon, label, phase, count }: NavItem) =>
     phase ? (
       <span key={href} className="nav-soon" title={`Llega en: ${phase}`} aria-disabled="true">
         <Icon className="i-sm" />
@@ -166,6 +98,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
       <Link key={href} href={href} aria-current={current(href) ? "page" : undefined}>
         <Icon className="i-sm" />
         {label}
+        {badge(count)}
       </Link>
     );
 
@@ -211,8 +144,20 @@ export function AdminShell({ session, children }: { session: AdminSession; child
             <button type="button" className="icon-btn burger" aria-label="Abrir menú" onClick={() => setSideOpen(true)}>
               <Menu />
             </button>
-            <GlobalSearch />
+            <GlobalSearch
+              orders={orders}
+              products={products}
+              onOrder={openOrder}
+              onProduct={(slug) => router.push(`/taller/productos?editar=${slug}`)}
+            />
             <span className="spacer" />
+            <NotificationBell
+              items={items}
+              read={read}
+              when={(iso) => relativeWhen(iso)}
+              onGo={(n) => (n.order ? openOrder(n.order) : n.href && router.push(n.href))}
+              onReadAll={() => markRead(items.map((n) => n.key))}
+            />
             <a className="btn btn-sm btn-ghost store-link" href="/" target="_blank" rel="noopener">
               <Eye className="i-sm" />
               <span>Ver tienda</span>
@@ -225,15 +170,16 @@ export function AdminShell({ session, children }: { session: AdminSession; child
       <nav className="adm-tabbar" aria-label="Accesos rápidos">
         {(
           [
-            ["/taller", LayoutDashboard, "Resumen"],
-            ["/taller/pedidos", Inbox, "Pedidos"],
-            ["/taller/lanzamientos", CalendarHeart, "Lanzar"],
-            ["/taller/productos", Shirt, "Productos"],
+            ["/taller", LayoutDashboard, "Resumen", undefined],
+            ["/taller/pedidos", Inbox, "Pedidos", "pedidos"],
+            ["/taller/lanzamientos", CalendarHeart, "Lanzar", undefined],
+            ["/taller/productos", Shirt, "Productos", undefined],
           ] as const
-        ).map(([href, Icon, label]) => (
+        ).map(([href, Icon, label, count]) => (
           <Link key={href} href={href} aria-current={current(href) ? "page" : undefined}>
             <Icon />
             {label}
+            {badge(count)}
           </Link>
         ))}
         <button type="button" onClick={() => setSideOpen(true)} aria-label="Más secciones">
