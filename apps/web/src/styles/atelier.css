@@ -666,7 +666,18 @@ html :is(.bg-linen, .bg-rosa, .bg-salvia, .bg-cacao, .site-footer, body.adm-body
 .eyebrow.is-in::before, .static .eyebrow::before { transform: none; }
 
 /* Focos que se encienden y bordados que se bordan pétalo a pétalo */
+/* el foco "se enciende": aparece de abajo hacia arriba y brilla un instante */
+@keyframes encender {
+  0% { clip-path: inset(100% 0 0 0); filter: none; }
+  70% { clip-path: inset(-40%); filter: drop-shadow(0 0 0 currentColor); }
+  85% { filter: drop-shadow(0 0 5px currentColor); }
+  100% { clip-path: inset(-40%); filter: none; }
+}
+.draw svg.foco { clip-path: inset(100% 0 0 0); }
+.draw.is-drawn svg.foco { animation: encender 1.4s var(--ease) forwards; }
+.static .draw svg.foco { clip-path: none; animation: none; }
 .draw svg path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.draw svg.foco path { stroke-dasharray: none; stroke-dashoffset: 0; }
 .draw svg circle { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.2); transition: opacity .3s, transform .5s var(--ease-spring); }
 .draw.is-drawn svg path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s var(--ease); }
 .draw.is-drawn svg path:nth-of-type(2) { transition-delay: .25s; }
@@ -690,6 +701,7 @@ svg.emb.bloom.is-drawn path, svg.emb.bloom.is-drawn circle { opacity: 1; transfo
 
 @media (prefers-reduced-motion: reduce) {
   .tape { display: none; }
+  .draw svg.foco, .done-ov .bowdraw { clip-path: none; animation: none; }
   .draw svg path { stroke-dashoffset: 0; } .draw svg circle, svg.emb.bloom path, svg.emb.bloom circle { opacity: 1; transform: none; }
   .eyebrow::before { transform: none; }
 }

@@ -2,6 +2,7 @@ import { formatARS, type OrderReceipt, PAYMENT_METHODS } from "@mini-galu/contra
 import { CalendarHeart, Clock, Gift, House, Mail, PackageSearch, Scissors, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Foco } from "@/ui/atoms/Foco";
 
 const COLORS = ["#E8C6BF", "#B0643E", "#8B9A7C", "#A3302B", "#EADFD0"];
 
@@ -98,21 +99,7 @@ export function SuccessOverlay({
         ))}
       </div>
       <div style={{ position: "relative", maxWidth: 720 }}>
-        <svg
-          className="bowdraw"
-          viewBox="0 0 40 46"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M15 33c-.6-4.6-7-7.6-7-16C8 10.2 13.3 6.5 20 6.5S32 10.2 32 17c0 8.4-6.4 11.4-7 16" />
-          <path d="M17.4 33c-.6-4.2-3.6-9-3.2-13.6.3-3.6 5.4-4 6 .4 1.2-3.2 6.2-2.6 5.6 1.2-.5 3.8-4.6 7-5.2 12" />
-          <path d="M14.5 34.5h11M15.2 37.2h9.6M16.2 39.9h7.6M18 42.6h4" />
-          <path d="M15.5 1.5 17 5M24.5 1.5 23.5 5M4 11.5l3.2 1.4M35.5 9.5l-3 1.8M33.5 19h3.5" />
-        </svg>
+        <Foco className="bowdraw" />
         <span className="eyebrow is-in">
           {pending ? "Pago en revisión" : "Pago aprobado"}
           {method ? ` · ${method}` : ""} · Pedido #{receipt.number}
