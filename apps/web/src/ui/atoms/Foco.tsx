@@ -12,7 +12,7 @@ export const FOCO_TRAZOS = [
 
 /**
  * El foco: logo, ícono de Galú y firma. Son líneas de grosor parejo (`--foco-trazo`) que se dibujan solas al
- * aparecer y, al final, el corazón titila (atelier.css). Las clases de CSS de los lugares donde va siguen siendo
+ * aparecer y, al final, el corazón y los destellos titilan juntos (atelier.css). Las clases de CSS de los lugares donde va siguen siendo
  * `.bow` (las de los mockups).
  */
 export function Foco({ className = "" }: { className?: string }) {

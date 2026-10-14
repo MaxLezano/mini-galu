@@ -666,14 +666,16 @@ html :is(.bg-linen, .bg-rosa, .bg-salvia, .bg-cacao, .site-footer, body.adm-body
 .eyebrow.is-in::before, .static .eyebrow::before { transform: none; }
 
 /* Focos que se encienden y bordados que se bordan pétalo a pétalo */
-/* El foco se dibuja solo donde aparezca (vidrio, rosca, corazón y al final los destellos) y el corazón titila.
+/* El foco se dibuja solo donde aparezca (vidrio, rosca, corazón y al final los destellos), y el corazón y los
+   destellos titilan juntos.
    Grosor parejo en todas las líneas: --foco-trazo (en unidades del dibujo, 591 de ancho). */
 svg.foco { stroke-width: var(--foco-trazo, 26); overflow: visible; }
 svg.foco path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: dibujar 1s var(--ease) forwards; }
 svg.foco path:nth-of-type(2) { animation-delay: .45s; animation-duration: .35s; }
-svg.foco path:nth-of-type(3) { animation-delay: .55s; animation-name: dibujar, encender; animation-duration: 1s, 1.4s; animation-delay: .55s, 1.6s; animation-timing-function: var(--ease), ease-in-out; animation-fill-mode: forwards, both; }
+svg.foco path:nth-of-type(3) { animation-name: dibujar, encender; animation-duration: 1s, 1.4s; animation-delay: .55s, 1.8s; animation-timing-function: var(--ease), ease-in-out; animation-fill-mode: forwards, both; }
 svg.foco path:nth-of-type(4) { animation-delay: .9s; animation-duration: .6s; }
-svg.foco path:nth-of-type(5) { animation-delay: 1.25s; animation-duration: .5s; }
+/* los destellos se encienden junto con el corazón */
+svg.foco path:nth-of-type(5) { animation-name: dibujar, encender; animation-duration: .5s, 1.4s; animation-delay: 1.25s, 1.8s; animation-timing-function: var(--ease), ease-in-out; animation-fill-mode: forwards, both; }
 @keyframes dibujar { to { stroke-dashoffset: 0; } }
 @keyframes encender {
   0%, 100% { stroke: currentColor; }
