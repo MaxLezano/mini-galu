@@ -37,6 +37,7 @@ import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
 import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
+import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
 import { payPath } from "./orders/domain/order";
 import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
@@ -56,8 +57,12 @@ import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
+import { ShipmentService } from "./shipping/application/shipment-service";
 import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
 import { slotLabel } from "./shipping/domain/pickup";
+import { DrizzleShipmentRepository } from "./shipping/infrastructure/drizzle-shipment-repository";
+import { FakeAndreani } from "./shipping/infrastructure/fake-andreani";
+import { adminShipmentRoutes, trackingRoutes } from "./shipping/infrastructure/http/shipment-routes";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
@@ -110,6 +115,13 @@ export function buildApp(config: Config) {
     (number, token) => config.webOrigin + payPath(number, token),
   );
   const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin);
+  // envíos: FakeAndreani hasta tener las credenciales del contrato con Andreani
+  const shipments = new ShipmentService(
+    new FakeAndreani(undefined, config.fakeAndreaniSpeed),
+    new DrizzleShipmentRepository(db),
+    new OrderShipping(orders, storage, events, `${WORKSHOP}, CABA`),
+    (number, token) => config.webOrigin + payPath(number, token),
+  );
   const webhookUrl = `${config.publicUrl}/payments/webhook`;
   const gateway: PaymentGateway = config.mercadoPago
     ? new MercadoPagoGateway({
@@ -132,6 +144,7 @@ export function buildApp(config: Config) {
     scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
     scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
     scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
+    scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
   }
 
   // TODO(fase 6 · automations): "Volvió un talle" avisa a la lista de espera por WhatsApp/mail
@@ -224,10 +237,12 @@ export function buildApp(config: Config) {
     .route("/checkout", checkoutRoutes(checkout))
     .route("/checkout", checkoutPaymentRoutes(payments))
     .route("/payments", webhookRoutes(payments))
+    .route("/tracking", trackingRoutes(shipments))
     .use("/admin/*", requireAdmin(auth))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
     .route("/admin/content/home", adminHomeRoutes(content))
+    .route("/admin/orders", adminShipmentRoutes(shipments))
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))

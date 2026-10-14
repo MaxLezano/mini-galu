@@ -9,7 +9,18 @@ import {
   type OrderStatus,
   type ShippingMethod,
 } from "@mini-galu/contracts";
-import { ArrowRight, GripVertical, Link2, List, ListChecks, Search, SquareCheck, SquareKanban, X } from "lucide-react";
+import {
+  ArrowRight,
+  GripVertical,
+  Link2,
+  List,
+  ListChecks,
+  Printer,
+  Search,
+  SquareCheck,
+  SquareKanban,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -23,6 +34,7 @@ import { OrdersBoard } from "../components/OrdersBoard";
 import { OrdersList } from "../components/OrdersList";
 import { PICKING_MODAL, PickingModal } from "../components/PickingModal";
 import { WHATSAPP_MODAL, WhatsAppModal } from "../components/WhatsAppModal";
+import { generateLabel } from "../label-action";
 import { defaultTemplate, type NextAction, pickingList, type TemplateKey, toPrepare } from "../order-flow";
 import { OrderDrawer } from "./OrderDrawer";
 import { PAYMENT_LINK_MODAL, PaymentLinkModal } from "./PaymentLinkModal";
@@ -113,8 +125,19 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
     }
   };
 
-  const onNext = (o: AdminOrderSummary, a: NonNullable<NextAction>) =>
-    a.kind === "whatsapp" ? openWhatsApp(o.number, a.template) : move(o.number, a.to);
+  const label = async (number: string) => {
+    const r = await generateLabel(number);
+    if ("error" in r) return toast(r.error);
+    toast(`#${number} · Etiqueta Andreani generada`, { icon: <Printer className="i-sm" /> });
+    adminApi.orders().then(setOrders, () => {});
+  };
+
+  const onNext = (o: AdminOrderSummary, a: NonNullable<NextAction>) => {
+    if (a.kind === "whatsapp") return openWhatsApp(o.number, a.template);
+    if (a.kind === "label") return label(o.number);
+    if (a.kind === "href") return window.open(a.href, "_blank", "noopener");
+    return move(o.number, a.to);
+  };
 
   const select = (number: string, on: boolean) =>
     setSelected((s) => {

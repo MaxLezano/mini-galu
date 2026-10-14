@@ -46,7 +46,7 @@ export class AdminOrdersService {
           ? this.payUrl(formatOrderNumber(o.number), o.accessToken)
           : null,
       payment,
-      events: events.map((e) => ({ ...e, at: e.at.toISOString() })),
+      events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
     };
   }
 
@@ -64,6 +64,7 @@ export class AdminOrdersService {
       title: statusTitle(to, o.shippingMethod),
       detail: null,
       auto: false,
+      toStatus: to,
     });
     // TODO(fase 6 · automations): avisar al cliente (listo para retirar, despachado, entregado…)
     await this.events.publish({
@@ -161,6 +162,7 @@ export class AdminOrdersService {
       shippingMethod: o.shippingMethod,
       paymentMethod: o.paymentMethod,
       installments: o.installments,
+      trackingNumber: o.trackingNumber ?? null,
       items: o.items.map((i) => ({
         slug: i.productSlug,
         name: i.name,

@@ -32,6 +32,7 @@ import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { ActionIcon } from "../components/OrderCard";
+import { generateLabel } from "../label-action";
 import { type NextAction, nextAction, type TemplateKey } from "../order-flow";
 
 const STEP = { nuevo: 1, preparando: 2, listo: 3, en_camino: 4, entregado: 5 } as Record<string, number>;
@@ -108,10 +109,22 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
   const runNext = async (a: NonNullable<NextAction>) => {
     if (!o) return;
     if (a.kind === "whatsapp") return onWhatsApp(o, a.template);
+    if (a.kind === "href") return window.open(a.href, "_blank", "noopener");
     // cerrar la preparación pide tildar todas las prendas (como el mockup)
     if (o.status === "preparando" && picked.size < o.items.length)
       return toast("Tildá todas las prendas antes de cerrar la preparación");
     setBusy(true);
+    if (a.kind === "label") {
+      const r = await generateLabel(o.number);
+      if ("error" in r) toast(r.error);
+      else {
+        const updated = await adminApi.order(o.number);
+        setOrder(updated);
+        onChanged(updated);
+        toast(`#${o.number} · Etiqueta Andreani generada`, { icon: <ActionIcon icon="printer" /> });
+      }
+      return setBusy(false);
+    }
     try {
       const updated = await adminApi.moveOrder(o.number, a.to);
       setOrder(updated);
@@ -314,8 +327,23 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     <>
                       <dt>Sucursal</dt>
                       <dd>
-                        {/* TODO(fase 5 · shipping): sucursal Andreani elegida en el mapa */}
+                        {/* TODO(fase 10 · shipping): sucursal Andreani elegida en el mapa (API real de Andreani) */}
                         La más cercana al CP del cliente (a confirmar)
+                      </dd>
+                    </>
+                  )}
+                  {o.trackingNumber && (
+                    <>
+                      <dt>Andreani</dt>
+                      <dd>
+                        Nº {o.trackingNumber} ·{" "}
+                        <a className="link" href={adminApi.labelUrl(o.number)} target="_blank" rel="noopener">
+                          Imprimir etiqueta
+                        </a>{" "}
+                        ·{" "}
+                        <a className="link" href={`/seguimiento?pedido=${o.number}`} target="_blank" rel="noopener">
+                          Seguimiento
+                        </a>
                       </dd>
                     </>
                   )}

@@ -1,6 +1,8 @@
+import type { CarrierEvent, TrackedOrder } from "../domain/tracking";
+
 /**
  * Puerto de cotización. Hoy: tabla por código postal (`TableShippingRates`).
- * Fase 5: FakeAndreani / Andreani (cotización real, sucursales, etiqueta y seguimiento).
+ * TODO(fase 10 · shipping): cotización real de Andreani cuando haya credenciales.
  */
 export interface ShippingRates {
   /** Precios en centavos y texto de plazo para un CP. */
@@ -8,4 +10,80 @@ export interface ShippingRates {
     domicilio: { cents: number; detail: string };
     sucursal: { cents: number; detail: string };
   }>;
+}
+
+/** Lo que el correo necesita para dar de alta un envío y armar la etiqueta. */
+export type NewShipment = {
+  orderNumber: string;
+  method: "domicilio" | "sucursal";
+  recipient: { name: string; phone: string; email: string };
+  /** "Gurruchaga 1234, 3° B" (null en sucursal). */
+  street: string | null;
+  city: string | null;
+  province: string;
+  postalCode: string;
+  notes: string | null;
+  units: number;
+};
+
+/** Correo (Andreani). Hoy: FakeAndreani. TODO(fase 10 · shipping): AndreaniAdapter con las credenciales del contrato. */
+export interface ShippingGateway {
+  readonly carrier: string;
+  createShipment(s: NewShipment): Promise<{ trackingNumber: string }>;
+  /** Todo lo que informó el correo hasta ahora, en orden. */
+  events(trackingNumber: string): Promise<CarrierEvent[]>;
+  /** Etiqueta PDF 10×15 para imprimir y pegar en el paquete. */
+  label(trackingNumber: string, s: NewShipment): Promise<Uint8Array>;
+  trackingUrl(trackingNumber: string): string | null;
+}
+
+export type Shipment = {
+  id: string;
+  orderId: string;
+  carrier: string;
+  trackingNumber: string;
+  createdAt: Date;
+  deliveredAt: Date | null;
+};
+
+export interface ShipmentRepository {
+  create(s: { orderId: string; carrier: string; trackingNumber: string }): Promise<Shipment>;
+  byOrder(orderId: string): Promise<Shipment | null>;
+  byTracking(trackingNumber: string): Promise<Shipment | null>;
+  /** Envíos que todavía no se entregaron (para consultar al correo). */
+  pending(): Promise<Shipment[]>;
+  events(shipmentId: string): Promise<CarrierEvent[]>;
+  /** Guarda los eventos nuevos (los repetidos se ignoran) y devuelve solo los nuevos. */
+  addEvents(shipmentId: string, events: CarrierEvent[], checkedAt: Date): Promise<CarrierEvent[]>;
+  markDelivered(shipmentId: string, at: Date): Promise<void>;
+}
+
+/** Un pedido visto desde envíos (lo da el módulo de pedidos). */
+export type ShippableOrder = TrackedOrder & {
+  id: string;
+  number: string;
+  accessToken: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  totalCents: number;
+  street: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  notes: string | null;
+  items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
+};
+
+/** Lo que envíos le pide al módulo de pedidos: leerlos y moverlos cuando pasa algo con el paquete. */
+export interface ShippableOrders {
+  find(number: string): Promise<ShippableOrder | null>;
+  findById(id: string): Promise<ShippableOrder | null>;
+  /** Etiqueta generada: preparando → listo, con el número en el historial. */
+  labeled(orderId: string, trackingNumber: string): Promise<void>;
+  /** El correo retiró el paquete: listo → en camino. */
+  shipped(orderId: string, at: Date): Promise<void>;
+  /** El correo lo entregó: → entregado. */
+  delivered(orderId: string, at: Date): Promise<void>;
 }

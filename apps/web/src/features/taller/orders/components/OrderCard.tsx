@@ -2,10 +2,12 @@ import { type AdminOrderSummary, formatARS, ORDER_CHANNELS } from "@mini-galu/co
 import {
   CircleCheck,
   CreditCard,
+  ExternalLink,
   Globe,
   House,
   MessageCircleHeart,
   PackageCheck,
+  Printer,
   Scissors,
   Send,
   Star,
@@ -40,6 +42,8 @@ const ACTION_ICON: Record<NonNullable<NextAction>["icon"], ReactNode> = {
   "circle-check": <CircleCheck className="i-sm" />,
   star: <Star className="i-sm" />,
   send: <Send className="i-sm" />,
+  printer: <Printer className="i-sm" />,
+  "external-link": <ExternalLink className="i-sm" />,
 };
 export const ActionIcon = ({ icon }: { icon: NonNullable<NextAction>["icon"] }) => ACTION_ICON[icon];
 

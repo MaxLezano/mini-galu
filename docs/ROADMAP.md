@@ -155,9 +155,20 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 Recordatorio por WhatsApp → fase 6 · links que crea Galú → fase 7 · reembolsar desde el panel → fase 10 (hoy un
   pago sin stock queda marcado en el historial y en "lo que se hizo solo")
 
-## Fase 5 · Envíos (`seguimiento.html`)
-- ⏳ FakeAndreani (cotiza por CP, etiqueta, eventos) + AndreaniAdapter
-- ⏳ Seguimiento público `/seguimiento?pedido=` (casos del mockup: en camino, retiro, sin pagar, entregado)
+## Fase 5 · Envíos (`seguimiento.html`) · terminada
+- ✅ FakeAndreani: número de seguimiento, etiqueta PDF 10×15 (marcada de prueba) y eventos que avanzan con el reloj
+  (retirado, centro de distribución, en tránsito, a reparto / en sucursal, entregado); `FAKE_ANDREANI_SPEED` acelera
+- ✅ "Generar etiqueta Andreani" en el panel (pasa a listo, guarda el número, abre el PDF); "Imprimir etiqueta" y
+  "Seguimiento" en el detalle; en camino con etiqueta, el siguiente paso es "Ver seguimiento"
+- ✅ Consulta de envíos cada 10 min: retirado por Andreani → en camino, entregado → entregado (historial automático y
+  OrderStatusChanged para las automatizaciones)
+- ✅ Seguimiento público `/seguimiento?pedido=` por número de pedido o de Andreani: recorrido con camión, registro,
+  paquete, entrega; casos en camino, retiro en el taller, sin pagar (con el token, botón "Pagar ahora") y entregado.
+  Sin la calle ni el apellido (página pública)
+- 🟡 Cotización por CP: sigue la tabla por zona (`TableShippingRates`) · AndreaniAdapter (alta, etiqueta y tracking
+  reales) y sucursal elegida en el mapa → fase 10, con las credenciales del contrato
+- 🟡 Interruptor "Avisos por WhatsApp" en el seguimiento y aviso de despacho → fase 6 · "Probá con" del mockup era
+  solo demo
 
 ## Fase 6 · Automatizaciones (`admin-automatizaciones.html`)
 - ⏳ Reglas activables (pago aprobado, etiqueta, despachado, entregado, listo para retirar, volvió un talle, link sin pagar, bolsa abandonada, cumple, stock bajo)

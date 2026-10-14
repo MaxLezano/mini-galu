@@ -22,6 +22,10 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default("Mini Galú <hola@minigalu.com.ar>"),
+  /** Envíos simulados: cuántas horas del correo pasan por hora real (60 = una por minuto, para probar a mano). */
+  FAKE_ANDREANI_SPEED: z.coerce.number().positive().default(1),
+  /** Cada cuántos segundos se consultan los eventos de los envíos sin entregar. */
+  TRACKING_EVERY_SECONDS: z.coerce.number().int().min(30).default(600),
 });
 
 /** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
@@ -42,6 +46,8 @@ export type Config = {
     mode: "prueba" | "produccion";
   } | null;
   smtp: { host: string; port: number; user?: string; pass?: string; from: string };
+  fakeAndreaniSpeed: number;
+  trackingEverySeconds: number;
 };
 
 export function loadConfig(): Config {
@@ -76,5 +82,7 @@ export function loadConfig(): Config {
       pass: env.SMTP_PASS,
       from: env.MAIL_FROM,
     },
+    fakeAndreaniSpeed: env.FAKE_ANDREANI_SPEED,
+    trackingEverySeconds: env.TRACKING_EVERY_SECONDS,
   };
 }

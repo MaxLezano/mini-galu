@@ -17,6 +17,7 @@ import type {
   ProductInput,
   ProductStatus,
   SaveProductResult,
+  ShipmentCreated,
   UploadResult,
 } from "@mini-galu/contracts";
 import { API_URL, ApiRequestError } from "./api";
@@ -87,6 +88,10 @@ export const adminApi = {
     adminRequest<AdminCoupon>(`/admin/coupons/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
   deleteCoupon: (id: string) => adminRequest<null>(`/admin/coupons/${id}`, { method: "DELETE" }),
   orders: () => adminRequest<AdminOrderSummary[]>("/admin/orders"),
+  createLabel: (number: string) =>
+    adminRequest<ShipmentCreated>(`/admin/orders/${encodeURIComponent(number)}/label`, { method: "POST" }),
+  /** PDF de la etiqueta (se abre en otra pestaña con la cookie del panel). */
+  labelUrl: (number: string) => `${API_URL}/admin/orders/${encodeURIComponent(number)}/label`,
   createPaymentLink: (input: PaymentLinkInput) =>
     adminRequest<PaymentLinkCreated>("/admin/orders/links", { method: "POST", body: JSON.stringify(input) }),
   order: (number: string) => adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}`),

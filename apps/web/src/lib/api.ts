@@ -16,6 +16,7 @@ import type {
   PlaceOrderInput,
   ProductDetail,
   ProductSummary,
+  PublicTracking,
   Quote,
   QuoteRequest,
   ShippingOptions,
@@ -98,6 +99,8 @@ export const api = {
   quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
   placeOrder: (body: PlaceOrderInput) =>
     request<PlacedOrder>("/checkout/orders", { method: "POST", body: JSON.stringify(body) }),
+  track: (code: string, t?: string) =>
+    request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),
   receipt: (number: string, t: string) =>
     request<OrderReceipt>(`/checkout/orders/${encodeURIComponent(number)}?t=${encodeURIComponent(t)}`),
   payCard: (number: string, t: string, card: CardPaymentInput) =>

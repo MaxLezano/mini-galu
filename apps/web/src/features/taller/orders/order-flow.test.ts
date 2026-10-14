@@ -16,6 +16,15 @@ describe("order-flow", () => {
     expect(nextAction({ status: "preparando", shippingMethod: "taller" })).toMatchObject({
       label: "Marcar listo para retirar",
     });
+    expect(nextAction({ status: "preparando", shippingMethod: "domicilio" })).toMatchObject({
+      kind: "label",
+      label: "Generar etiqueta Andreani",
+    });
+    // en camino con etiqueta: lo cierra Andreani (se ve el seguimiento); despachado a mano, se cierra a mano
+    expect(
+      nextAction({ status: "en_camino", shippingMethod: "domicilio", number: "MG-1042", trackingNumber: "3600" }),
+    ).toMatchObject({ kind: "href", href: "/seguimiento?pedido=MG-1042" });
+    expect(nextAction({ status: "en_camino", shippingMethod: "domicilio" })).toMatchObject({ to: "entregado" });
     expect(nextAction({ status: "listo", shippingMethod: "taller" })).toMatchObject({ to: "entregado" });
     expect(nextAction({ status: "listo", shippingMethod: "sucursal" })).toMatchObject({ to: "en_camino" });
     expect(nextAction({ status: "entregado", shippingMethod: "domicilio" })).toMatchObject({

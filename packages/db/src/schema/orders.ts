@@ -236,6 +236,8 @@ export const orderEvents = pgTable(
     title: text().notNull(),
     detail: text(),
     auto: boolean().notNull().default(false),
+    /** En los cambios de estado, a cuál pasó (el seguimiento público arma el recorrido con esto). */
+    toStatus: orderStatus(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index().on(t.orderId, t.createdAt)],

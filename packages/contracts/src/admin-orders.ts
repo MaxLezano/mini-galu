@@ -31,6 +31,8 @@ export type AdminOrderSummary = {
   shippingMethod: ShippingMethod;
   paymentMethod: PaymentMethod | null;
   installments: number | null;
+  /** Número de Andreani si ya tiene etiqueta. */
+  trackingNumber: string | null;
   items: AdminOrderItem[];
 };
 

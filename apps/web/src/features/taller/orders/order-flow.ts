@@ -4,25 +4,32 @@ import type { AdminOrderItem, AdminOrderSummary, OrderStatus } from "@mini-galu/
 export type NextAction =
   | { kind: "move"; label: string; icon: "scissors" | "package-check" | "truck" | "circle-check"; to: OrderStatus }
   | { kind: "whatsapp"; label: string; icon: "star" | "send"; template: TemplateKey }
+  | { kind: "label"; label: string; icon: "printer" }
+  | { kind: "href"; label: string; icon: "external-link"; href: string }
   | null;
 
-export function nextAction(o: Pick<AdminOrderSummary, "status" | "shippingMethod">): NextAction {
+export function nextAction(
+  o: Pick<AdminOrderSummary, "status" | "shippingMethod"> &
+    Partial<Pick<AdminOrderSummary, "number" | "trackingNumber">>,
+): NextAction {
   const pickup = o.shippingMethod === "taller";
   switch (o.status) {
     case "nuevo":
       return { kind: "move", label: "Empezar a preparar", icon: "scissors", to: "preparando" };
     case "preparando":
-      // TODO(fase 5 · shipping): "Generar etiqueta Andreani" (guarda el seguimiento y pasa a listo)
+      // la etiqueta guarda el número de Andreani y deja el pedido listo para despachar
       return pickup
         ? { kind: "move", label: "Marcar listo para retirar", icon: "package-check", to: "listo" }
-        : { kind: "move", label: "Marcar listo para despachar", icon: "package-check", to: "listo" };
+        : { kind: "label", label: "Generar etiqueta Andreani", icon: "printer" };
     case "listo":
       return pickup
         ? { kind: "move", label: "Marcar como retirado", icon: "circle-check", to: "entregado" }
         : { kind: "move", label: "Marcar despachado", icon: "truck", to: "en_camino" };
     case "en_camino":
-      // TODO(fase 5 · shipping): lo marca solo Andreani al entregar
-      return { kind: "move", label: "Marcar entregado", icon: "circle-check", to: "entregado" };
+      // con etiqueta, Andreani lo marca entregado solo; despachado a mano, se cierra a mano
+      return o.trackingNumber && o.number
+        ? { kind: "href", label: "Ver seguimiento", icon: "external-link", href: `/seguimiento?pedido=${o.number}` }
+        : { kind: "move", label: "Marcar entregado", icon: "circle-check", to: "entregado" };
     case "entregado":
       return { kind: "whatsapp", label: "Pedir reseña", icon: "star", template: "resena" };
     case "esperando_pago":

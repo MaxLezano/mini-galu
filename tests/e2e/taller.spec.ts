@@ -152,7 +152,10 @@ test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) =>
 });
 
 /** Un pedido pagado con el gateway simulado (sin credenciales de Mercado Pago). Devuelve su número. */
-async function paidOrder(request: import("@playwright/test").APIRequestContext): Promise<string | null> {
+async function paidOrder(
+  request: import("@playwright/test").APIRequestContext,
+  shipping?: Record<string, string>,
+): Promise<string | null> {
   const api = "http://localhost:4000";
   const config = await (await request.get(`${api}/checkout/config`)).json();
   if (config.gateway !== "simulado") return null;
@@ -167,7 +170,7 @@ async function paidOrder(request: import("@playwright/test").APIRequestContext):
           lastName: "Panel",
           phone: "11 5555-1234",
         },
-        shipping: { method: "taller", pickupSlot: slot },
+        shipping: shipping ?? { method: "taller", pickupSlot: slot },
       },
     })
   ).json();
@@ -302,4 +305,51 @@ test("link de pago: se arma en el panel, el cliente paga en la tienda y el pedid
   // el link ya no se puede volver a pagar
   await page.goto(url);
   await expect(page.getByText("Este pedido ya está pagado")).toBeVisible();
+});
+
+test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido", async ({ page, request }) => {
+  const number = await paidOrder(request, {
+    method: "domicilio",
+    postalCode: "1414",
+    province: "CABA",
+    street: "Gurruchaga",
+    number: "1234",
+    city: "Palermo",
+  });
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto(`/taller/pedidos?pedido=${number}`);
+  await ready(page);
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await drawer.getByRole("button", { name: "Empezar a preparar" }).click();
+  await drawer.getByLabel("Moño Verde Largo talle Único preparado").check();
+  // la etiqueta se abre en otra pestaña (PDF)
+  const [pdf] = await Promise.all([
+    page.context().waitForEvent("page"),
+    drawer.getByRole("button", { name: "Generar etiqueta Andreani" }).click(),
+  ]);
+  await expect(page.locator("#toast")).toContainText(`#${number} · Etiqueta Andreani generada`);
+  await pdf.close();
+  await expect(drawer.locator(".pill-status").first()).toHaveText("Listo");
+  await expect(drawer).toContainText(/Nº 3\d{14}/);
+  const label = await page.request.get(`http://localhost:4000/admin/orders/${number}/label`);
+  expect(label.headers()["content-type"]).toBe("application/pdf");
+
+  // seguimiento público (sin sesión): el recorrido y el número de Andreani, sin la calle
+  await page.goto(`/seguimiento?pedido=${number}`);
+  const card = page.locator(".tr-card");
+  await expect(card).toContainText(`Pedido #${number}`);
+  await expect(card).toContainText("Etiqueta generada");
+  await expect(card).toContainText("Pedido P.");
+  await expect(card).toContainText("Palermo, CABA");
+  await expect(card).not.toContainText("Gurruchaga");
+  await expect(card.locator(".stop.is-done")).toHaveCount(2);
+
+  // buscar desde el formulario, como lo escriba el cliente
+  await page.getByLabel("Número de pedido o código Andreani").fill(`mg ${number?.replace("MG-", "")}`);
+  await page.locator(".tr-form").getByRole("button", { name: "Buscar" }).click();
+  await expect(page).toHaveURL(new RegExp(`pedido=${number}`));
+  await page.getByLabel("Número de pedido o código Andreani").fill("MG-999999");
+  await page.locator(".tr-form").getByRole("button", { name: "Buscar" }).click();
+  await expect(page.getByText("No encontramos ese pedido")).toBeVisible();
 });

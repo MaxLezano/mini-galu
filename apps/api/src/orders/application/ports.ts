@@ -54,6 +54,8 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel"> 
   channel: OrderChannel;
   statusChangedAt: Date;
   internalNote: string | null;
+  /** Número de Andreani si ya tiene envío. */
+  trackingNumber?: string | null;
   number: number;
   status: OrderStatus;
   reservedUntil: Date | null;
@@ -69,7 +71,15 @@ export type ReserveResult =
   | { ok: false; productSlug: string; name: string; size: string; available: number };
 
 /** Una línea del historial del pedido. `auto`: lo hizo el sistema (pago, mail…), no alguien del taller. */
-export type OrderEvent = { kind: string; title: string; detail: string | null; auto: boolean; at: Date };
+export type OrderEvent = {
+  kind: string;
+  title: string;
+  detail: string | null;
+  auto: boolean;
+  at: Date;
+  /** En los cambios de estado: a cuál pasó. */
+  toStatus?: OrderStatus | null;
+};
 
 export interface OrderEvents {
   addEvent(orderId: string, e: Omit<OrderEvent, "at">): Promise<void>;

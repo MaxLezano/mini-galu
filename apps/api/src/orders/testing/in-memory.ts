@@ -17,6 +17,8 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
   payments = new Map<string, OrderPayment>();
   unitsSold = new Map<string, number>();
   private seq = 1001;
+  /** Reloj de las fechas que pone la base (creación, historial). */
+  clock: () => Date = () => new Date();
 
   constructor(private readonly variants: MemoryVariants) {}
 
@@ -34,18 +36,18 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       id,
       number,
       channel: o.channel ?? "web",
-      statusChangedAt: new Date(),
+      statusChangedAt: this.clock(),
       internalNote: null,
       status: "esperando_pago",
       paymentMethod: null,
       installments: null,
       paidAt: null,
-      createdAt: new Date(),
+      createdAt: this.clock(),
     });
     return { ok: true as const, id, number };
   }
   async addEvent(orderId: string, e: Omit<OrderEvent, "at">) {
-    this.log.set(orderId, [...(this.log.get(orderId) ?? []), { ...e, at: new Date() }]);
+    this.log.set(orderId, [...(this.log.get(orderId) ?? []), { ...e, at: this.clock() }]);
   }
   async events(orderId: string) {
     return [...(this.log.get(orderId) ?? [])].reverse();

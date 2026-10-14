@@ -74,6 +74,19 @@ MP_MODE=prueba                 # o produccion
 El webhook (`/payments/webhook`) necesita una URL pública https: `cloudflared tunnel --url http://localhost:4000` y
 `PUBLIC_API_URL` con esa URL. Sin túnel igual funciona: al volver de Mercado Pago la web confirma el pago consultándolo.
 
+### Envíos (Andreani)
+
+Mientras no haya credenciales del contrato con Andreani, la API usa **FakeAndreani**: "Generar etiqueta Andreani"
+(panel) da un número de seguimiento y una etiqueta PDF 10×15 marcada como prueba, y el paquete avanza solo (retirado,
+centro de distribución, en tránsito, entregado) en unas 50 h. Cada 10 min la API consulta los envíos y mueve el pedido
+a "en camino" y "entregado". Para verlo avanzar a mano:
+
+```bash
+FAKE_ANDREANI_SPEED=3600 TRACKING_EVERY_SECONDS=30 pnpm --filter @mini-galu/api dev   # una hora del correo por segundo
+```
+
+El cliente lo sigue en `/seguimiento?pedido=MG-1042` (o con el número de Andreani), sin cuenta y sin ver la calle.
+
 ## Scripts
 
 | Comando | Qué hace |
@@ -118,6 +131,8 @@ El webhook (`/payments/webhook`) necesita una URL pública https: `cloudflared t
 | PATCH/PUT | `/admin/orders/:numero/status` · `/note` | panel: mover de estado · nota interna |
 | POST | `/admin/orders/advance` | panel: avanzar varios pedidos a su siguiente paso |
 | POST | `/admin/orders/links` | panel: link de pago (venta por Instagram/WhatsApp, reserva 72 h) |
+| POST/GET | `/admin/orders/:numero/label` | panel: generar la etiqueta Andreani · descargarla (PDF 10×15) |
+| GET | `/tracking/:codigo?t=` | seguimiento público por número de pedido o de Andreani |
 
 ## Estado
 

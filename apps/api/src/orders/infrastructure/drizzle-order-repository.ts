@@ -53,7 +53,14 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       .from(s.orderEvents)
       .where(eq(s.orderEvents.orderId, orderId))
       .orderBy(desc(s.orderEvents.createdAt));
-    return rows.map((r) => ({ kind: r.kind, title: r.title, detail: r.detail, auto: r.auto, at: r.createdAt }));
+    return rows.map((r) => ({
+      kind: r.kind,
+      title: r.title,
+      detail: r.detail,
+      auto: r.auto,
+      at: r.createdAt,
+      toStatus: r.toStatus,
+    }));
   }
 
   async listForBoard(): Promise<OrderRecord[]> {
@@ -79,8 +86,10 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
           rows.map((r) => r.id),
         ),
       );
+    const tracking = await this.trackingOf(rows.map((r) => r.id));
     return rows.map((o) => ({
       ...o,
+      trackingNumber: tracking.get(o.id) ?? null,
       items: items.filter((i) => i.orderId === o.id).map(({ id: _id, orderId: _o, ...i }) => i),
     }));
   }
@@ -319,7 +328,18 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     const items = await this.itemsOf(this.db, o.id);
     return {
       ...o,
+      trackingNumber: (await this.trackingOf([o.id])).get(o.id) ?? null,
       items: items.map(({ id: _id, orderId: _o, ...i }) => i),
     };
+  }
+
+  /** Número de seguimiento de cada pedido que ya tiene envío. */
+  private async trackingOf(orderIds: string[]): Promise<Map<string, string>> {
+    if (!orderIds.length) return new Map();
+    const rows = await this.db
+      .select({ orderId: s.shipments.orderId, trackingNumber: s.shipments.trackingNumber })
+      .from(s.shipments)
+      .where(inArray(s.shipments.orderId, orderIds));
+    return new Map(rows.map((r) => [r.orderId, r.trackingNumber]));
   }
 }
