@@ -132,6 +132,7 @@ function toNewShipment(
     method: o.shippingMethod,
     recipient: { name: `${o.firstName} ${o.lastName}`.trim(), phone: o.phone, email: o.email },
     street: o.street,
+    address: o.address,
     city: o.city,
     province: o.province ?? "",
     postalCode: o.postalCode ?? "",

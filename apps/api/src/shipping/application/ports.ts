@@ -21,6 +21,8 @@ export type NewShipment = {
   recipient: { name: string; phone: string; email: string };
   /** "Gurruchaga 1234, 3° B" (null en sucursal). */
   street: string | null;
+  /** La misma dirección por partes, como la pide el correo (null en sucursal). */
+  address: { street: string; number: string; unit: string | null } | null;
   city: string | null;
   province: string;
   postalCode: string;
@@ -77,6 +79,7 @@ export type ShippableOrder = TrackedOrder & {
   phone: string;
   totalCents: number;
   street: string | null;
+  address: { street: string; number: string; unit: string | null } | null;
   city: string | null;
   province: string | null;
   postalCode: string | null;

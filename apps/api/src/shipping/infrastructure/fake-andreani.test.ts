@@ -7,6 +7,7 @@ const shipment = (method: "domicilio" | "sucursal"): NewShipment => ({
   method,
   recipient: { name: "Lucía Fernández", phone: "+5491155551234", email: "lucia@gmail.com" },
   street: method === "domicilio" ? "Gurruchaga 1234, 3° B" : null,
+  address: method === "domicilio" ? { street: "Gurruchaga", number: "1234", unit: "3° B" } : null,
   city: method === "domicilio" ? "CABA" : null,
   province: "CABA",
   postalCode: "1414",

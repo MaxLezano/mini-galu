@@ -21,6 +21,7 @@
     "db:seed": "pnpm --filter @mini-galu/db seed",
     "db:reset": "pnpm --filter @mini-galu/db reset",
     "db:studio": "pnpm --filter @mini-galu/db studio",
+    "andreani:check": "pnpm --filter @mini-galu/api andreani:check",
     "mockups": "node scripts/serve-mockups.mjs",
     "prepare": "husky",
     "test:e2e": "playwright test",

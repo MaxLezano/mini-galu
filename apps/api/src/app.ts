@@ -60,6 +60,8 @@ import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
 import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
 import { slotLabel } from "./shipping/domain/pickup";
+import { AndreaniClient } from "./shipping/infrastructure/andreani/andreani-client";
+import { AndreaniGateway, AndreaniRates } from "./shipping/infrastructure/andreani/andreani-gateway";
 import { AndreaniBranches, FakeBranches } from "./shipping/infrastructure/andreani-branches";
 import { DrizzleShipmentRepository } from "./shipping/infrastructure/drizzle-shipment-repository";
 import { DrizzleShippingSettings } from "./shipping/infrastructure/drizzle-shipping-settings";
@@ -108,8 +110,13 @@ export function buildApp(config: Config) {
   // checkout: bolsa → pedido (reserva stock) → pago
   const orders = new DrizzleOrderRepository(db);
   const variants = new DrizzleVariantCatalog(db);
+  // Andreani de verdad si están las credenciales en el .env; si no, envíos simulados y tabla por zona
+  const shippingSettings = new DrizzleShippingSettings(db);
+  const andreani = config.andreani ? new AndreaniClient(config.andreani) : null;
   const shipping = new ShippingService(
-    new TableShippingRates(),
+    andreani && config.andreani
+      ? new AndreaniRates(andreani, config.andreani, shippingSettings, new TableShippingRates())
+      : new TableShippingRates(),
     undefined,
     config.branches === "andreani" ? new AndreaniBranches() : new FakeBranches(),
   );
@@ -125,13 +132,14 @@ export function buildApp(config: Config) {
     (number, token) => config.webOrigin + payPath(number, token),
   );
   const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin);
-  // envíos: FakeAndreani hasta tener las credenciales del contrato con Andreani
   const shipments = new ShipmentService(
-    new FakeAndreani(undefined, config.fakeAndreaniSpeed),
+    andreani && config.andreani
+      ? new AndreaniGateway(andreani, config.andreani)
+      : new FakeAndreani(undefined, config.fakeAndreaniSpeed),
     new DrizzleShipmentRepository(db),
     new OrderShipping(orders, storage, events, `${WORKSHOP}, CABA`),
     (number, token) => config.webOrigin + payPath(number, token),
-    new DrizzleShippingSettings(db),
+    shippingSettings,
     config.branches,
   );
   const webhookUrl = `${config.publicUrl}/payments/webhook`;

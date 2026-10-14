@@ -165,8 +165,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Seguimiento público `/seguimiento?pedido=` por número de pedido o de Andreani: recorrido con camión, registro,
   paquete, entrega; casos en camino, retiro en el taller, sin pagar (con el token, botón "Pagar ahora") y entregado.
   Sin la calle ni el apellido (página pública)
-- 🟡 Cotización por CP: sigue la tabla por zona (`TableShippingRates`) · AndreaniAdapter (alta, etiqueta y tracking
-  reales) y sucursal elegida en el mapa → fase 10, con las credenciales del contrato
+- ✅ Retiro en sucursal Andreani con las sucursales reales del CP (API pública): la opción muestra la sucursal que
+  atiende el CP (como el mockup) y se puede elegir otra; queda en el pedido, el panel, el mail y el seguimiento
+- ✅ "Tienda y pagos → Envíos": estado de Andreani, paquete por defecto, origen y remitente
+- ✅ AndreaniGateway + AndreaniRates (API REST: login, alta de orden v2, etiqueta PDF, trazas v3 y tarifas) con tests;
+  se activan con `ANDREANI_*` en el `.env` · `pnpm andreani:check` · ⏳ probarlo contra QA cuando Andreani dé las
+  credenciales
+- 🟡 Envío gratis desde un monto, formas de entrega y horarios de retiro editables → fase 10 · sucursal en un mapa →
+  más adelante
 - 🟡 Interruptor "Avisos por WhatsApp" en el seguimiento y aviso de despacho → fase 6 · "Probá con" del mockup era
   solo demo
 

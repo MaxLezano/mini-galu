@@ -67,8 +67,10 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 - Secretos solo en `.env` (nunca commitear). `.env.example` documenta cada variable.
 - **Pagos**: sin `MP_ACCESS_TOKEN` la API usa `SimulatedGateway` (local y CI); el titular de la tarjeta decide el
   resultado (APRO aprueba, OTHE rechaza, CONT pendiente). Nunca se aprueba un pedido sin consultar el pago al gateway.
-- **Envíos**: `FakeAndreani` (sin credenciales de Andreani) da número, etiqueta y eventos que avanzan con el reloj;
-  `FAKE_ANDREANI_SPEED` los acelera. El seguimiento es público: nunca mostrar la calle ni el apellido completo.
+- **Envíos**: sin `ANDREANI_*` en el `.env`, `FakeAndreani` da número, etiqueta y eventos que avanzan con el reloj
+  (`FAKE_ANDREANI_SPEED` los acelera) y se cotiza con la tabla por zona; con credenciales, `AndreaniGateway` y
+  `AndreaniRates` (API REST; docs de Andreani en `andreani/`, fuera del repo). El seguimiento es público: nunca
+  mostrar la calle ni el apellido completo.
 - **Stock**: se descuenta al crear el pedido (reserva de 30 min; links de pago, 72 h) dentro de una transacción; se devuelve al vencer o
   cancelar. Los e2e del checkout compran `mono-verde` (el de más stock del seed): si se agota, `pnpm db:reset`.
 

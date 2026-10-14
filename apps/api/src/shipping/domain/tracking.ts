@@ -1,7 +1,8 @@
 import type { OrderStatus, ShippingMethod, TrackingLogEntry, TrackingStop } from "@mini-galu/contracts";
 
 /** Lo que informa el correo. `delivered` cierra el envío; `picked_up` lo pone en camino. */
-export type CarrierCode = "picked_up" | "hub" | "in_transit" | "out_for_delivery" | "at_branch" | "delivered";
+/** issue: algo para avisar que no cambia el paso (visita sin éxito, no entregado, vuelve al remitente). */
+export type CarrierCode = "picked_up" | "hub" | "in_transit" | "out_for_delivery" | "at_branch" | "delivered" | "issue";
 export type CarrierEvent = { code: CarrierCode; title: string; location: string | null; at: Date };
 
 /** Lo que el seguimiento necesita del pedido. */

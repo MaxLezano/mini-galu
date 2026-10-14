@@ -104,6 +104,7 @@ export class OrderShipping implements ShippableOrders {
       phone: o.phone,
       totalCents: o.totalCents,
       street: a ? `${a.street} ${a.number}${a.unit ? `, ${a.unit}` : ""}` : null,
+      address: a ? { street: a.street, number: a.number, unit: a.unit } : null,
       city: a?.city ?? null,
       province: a?.province ?? o.province,
       postalCode: a?.postalCode ?? o.postalCode,

@@ -87,6 +87,24 @@ FAKE_ANDREANI_SPEED=3600 TRACKING_EVERY_SECONDS=30 pnpm --filter @mini-galu/api 
 
 El cliente lo sigue en `/seguimiento?pedido=MG-1042` (o con el número de Andreani), sin cuenta y sin ver la calle.
 
+Las **sucursales** para "retiro en sucursal" salen de la API pública de Andreani (sin credenciales, caché de 12 h);
+en CI se usan unas fijas (`ANDREANI_BRANCHES=fake`).
+
+**Andreani de verdad** (API REST): con estas variables en el `.env` la API da de alta los envíos, baja la etiqueta,
+consulta las trazas y cotiza con el contrato de la cuenta (las credenciales las da Andreani a sus clientes):
+
+```bash
+ANDREANI_ENV=qa                       # qa (pruebas) o produccion
+ANDREANI_USER=…
+ANDREANI_PASSWORD=…
+ANDREANI_CLIENT=…                     # código de cliente
+ANDREANI_CONTRACT_DOMICILIO=…         # contrato B2C a domicilio
+ANDREANI_CONTRACT_SUCURSAL=…          # contrato B2C a sucursal
+```
+
+`pnpm andreani:check [cp]` prueba el login y cotiza a ese CP sin mostrar las credenciales. Antes de generar etiquetas
+hay que completar en el panel **Tienda y pagos → Envíos** el paquete por defecto, el origen y el remitente.
+
 ## Scripts
 
 | Comando | Qué hace |
@@ -97,6 +115,7 @@ El cliente lo sigue en `/seguimiento?pedido=MG-1042` (o con el número de Andrea
 | `pnpm typecheck` | TypeScript en todos los paquetes |
 | `pnpm test` | Vitest (dominio, contratos, lógica de la web) |
 | `pnpm test:e2e` | Playwright en celular y escritorio |
+| `pnpm andreani:check [cp]` | prueba las credenciales de Andreani del `.env` (login y tarifa) |
 | `pnpm shots <url> <nombre> [anchos]` | capturas 375/820/1440/2560 para comparar con los mockups |
 | `pnpm db:generate` | nueva migración desde el schema |
 | `pnpm db:migrate` / `db:seed` / `db:reset` / `db:studio` | base de datos |
@@ -133,6 +152,7 @@ El cliente lo sigue en `/seguimiento?pedido=MG-1042` (o con el número de Andrea
 | POST | `/admin/orders/links` | panel: link de pago (venta por Instagram/WhatsApp, reserva 72 h) |
 | POST/GET | `/admin/orders/:numero/label` | panel: generar la etiqueta Andreani · descargarla (PDF 10×15) |
 | GET | `/tracking/:codigo?t=` | seguimiento público por número de pedido o de Andreani |
+| GET/PUT | `/admin/shipping` | panel: paquete por defecto, origen, remitente y estado de Andreani |
 
 ## Estado
 

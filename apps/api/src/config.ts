@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
+import type { AndreaniConfig } from "./shipping/infrastructure/andreani/andreani-client";
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -28,6 +29,13 @@ const EnvSchema = z.object({
   TRACKING_EVERY_SECONDS: z.coerce.number().int().min(30).default(600),
   /** Sucursales para retirar: las reales de Andreani (API pública) o unas fijas (tests y CI, sin internet). */
   ANDREANI_BRANCHES: z.enum(["andreani", "fake"]).optional(),
+  /** API REST de Andreani. Sin todas estas variables, envíos simulados (FakeAndreani) y tabla por zona. */
+  ANDREANI_ENV: z.enum(["qa", "produccion"]).default("qa"),
+  ANDREANI_USER: z.string().optional(),
+  ANDREANI_PASSWORD: z.string().optional(),
+  ANDREANI_CLIENT: z.string().optional(),
+  ANDREANI_CONTRACT_DOMICILIO: z.string().optional(),
+  ANDREANI_CONTRACT_SUCURSAL: z.string().optional(),
 });
 
 /** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
@@ -51,6 +59,7 @@ export type Config = {
   fakeAndreaniSpeed: number;
   trackingEverySeconds: number;
   branches: "andreani" | "fake";
+  andreani: AndreaniConfig | null;
 };
 
 export function loadConfig(): Config {
@@ -88,5 +97,19 @@ export function loadConfig(): Config {
     fakeAndreaniSpeed: env.FAKE_ANDREANI_SPEED,
     trackingEverySeconds: env.TRACKING_EVERY_SECONDS,
     branches: env.ANDREANI_BRANCHES ?? (env.NODE_ENV === "test" ? "fake" : "andreani"),
+    andreani:
+      env.ANDREANI_USER &&
+      env.ANDREANI_PASSWORD &&
+      env.ANDREANI_CLIENT &&
+      env.ANDREANI_CONTRACT_DOMICILIO &&
+      env.ANDREANI_CONTRACT_SUCURSAL
+        ? {
+            env: env.ANDREANI_ENV,
+            user: env.ANDREANI_USER,
+            password: env.ANDREANI_PASSWORD,
+            client: env.ANDREANI_CLIENT,
+            contracts: { domicilio: env.ANDREANI_CONTRACT_DOMICILIO, sucursal: env.ANDREANI_CONTRACT_SUCURSAL },
+          }
+        : null,
   };
 }
