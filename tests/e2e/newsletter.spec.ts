@@ -10,7 +10,7 @@ test("cartas del taller: sumarse desde el pie y darse de baja con el link del ma
   await footer.getByRole("button", { name: "Sumarme" }).click();
   await expect(footer).toContainText("¡Gracias! Te escribimos pronto.");
 
-  // el link de baja viene en el mail de bienvenida (Mailpit en local; en CI no hay servidor de mails)
+  // el link de baja viene en el mail de bienvenida (Mailpit, en local y en el CI)
   const search = await request.get(`${MAILPIT}/search?query=${encodeURIComponent(`to:${email}`)}`).catch(() => null);
   test.skip(!search?.ok(), "Sin Mailpit no se puede leer el mail de bienvenida");
   let id: string | undefined;

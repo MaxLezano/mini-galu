@@ -36,7 +36,7 @@ test("comprar una gift card, recibir el código y pagar un pedido con ella", asy
   const done = page.getByRole("dialog", { name: "Pago aprobado" });
   await expect(done).toContainText("La gift card para Olivia ya está activa");
 
-  // el código llega por mail (en CI no hay Mailpit)
+  // el código llega por mail (Mailpit, en local y en el CI)
   const search = await request
     .get(`${MAILPIT}/search?query=${encodeURIComponent(`to:${recipient}`)}`)
     .catch(() => null);

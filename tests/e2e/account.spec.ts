@@ -4,7 +4,7 @@ import { expect, test } from "./fixtures";
 const MAILPIT = "http://localhost:8025/api/v1";
 const PASSWORD = "Clave.Segura1";
 
-/** Último mail que le llegó a esa dirección en Mailpit (o null si no hay Mailpit, como en CI). */
+/** Último mail que le llegó a esa dirección en Mailpit (o null si no hay Mailpit corriendo). */
 async function lastMail(request: APIRequestContext, to: string, subject: string) {
   const ok = await request.get(`${MAILPIT}/messages?limit=1`).catch(() => null);
   if (!ok?.ok()) return null;
@@ -26,6 +26,8 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
   page,
   request,
 }) => {
+  // flujo largo (y con el mail de recuperación por Mailpit): en el CI pasa los 30 s por defecto
+  test.setTimeout(60_000);
   const email = `cuenta-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
   await page.goto("/ingresar?crear");
   const auth = page.locator("main.auth");
