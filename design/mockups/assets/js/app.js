@@ -40,7 +40,7 @@
   const BOW = '<svg class="foco" viewBox="-14 -14 619 682" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M199 528c-12-30-56-80-82-126-26-46-28-110-4-163 28-62 94-110 176-110 94 0 168 56 180 134 10 66-28 120-70 165-28 30-46 64-52 100"/><path pathLength="1" d="M199 530c50-3 100-4 150-6"/><path pathLength="1" class="filamento" d="M266 524c-6-50-28-94-50-140-18-38-20-86 6-94 28-8 50 28 60 62 10-36 34-74 60-68 28 7 28 56 2 86-20 22-40 28-44 62-4 32-4 64-6 96"/><path pathLength="1" d="M202 566c50-3 100-4 152 1M206 598c46-3 92-2 140 1M214 606c40 6 80 14 116 24-30 4-62 6-96 11 22 4 44 8 66 14"/><path pathLength="1" d="M303 6c1 16 2 32 3 48M116 52c11 15 22 30 32 45M484 70c-11 12-22 24-32 35M7 211c16 3 32 7 47 12M535 236c16-4 32-9 48-14"/></svg>';
   // flor bordada (puntadas) para estados vacíos
   const EMB = `<svg class="emb" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-    <g stroke-dasharray="3 4">${[0, 60, 120, 180, 240, 300].map((r) => `<path transform="rotate(${r} 60 46)" d="M60 44c-7-8-8-22 0-28 8 6 7 20 0 28Z"/>`).join("")}</g>
+    <g stroke-dasharray="3 4">${[0, 60, 120, 180, 240, 300].map((r) => `<g transform="rotate(${r} 60 46)"><path d="M60 44c-7-8-8-22 0-28 8 6 7 20 0 28Z"/></g>`).join("")}</g>
     <circle cx="60" cy="46" r="5" fill="currentColor" stroke="none" opacity=".8"/>
     <path stroke-dasharray="3 4" d="M60 56c0 18 2 34 0 56M60 84c-8-8-18-10-24-6 6 8 16 10 24 6Z"/>
     <path stroke-dasharray="3 4" d="M60 96c8-8 18-9 24-5-6 8-16 9-24 5Z"/></svg>`;

@@ -1,4 +1,7 @@
-/** Flor bordada (puntadas) para estados vacíos. Florece pétalo a pétalo con .bloom.is-drawn. */
+/**
+ * Flor bordada (puntadas) para estados vacíos. Florece pétalo a pétalo con .bloom.is-drawn. Cada pétalo va girado
+ * en un <g>: la animación le pone `transform` por CSS al path, y eso pisaría el giro si estuviera en el path.
+ */
 const PETALS = [0, 60, 120, 180, 240, 300];
 
 export function Embroidery({ className = "emb" }: { className?: string }) {
@@ -15,12 +18,9 @@ export function Embroidery({ className = "emb" }: { className?: string }) {
     >
       <g strokeDasharray="3 4">
         {PETALS.map((r) => (
-          <path
-            key={r}
-            style={{ "--k": k++ } as React.CSSProperties}
-            transform={`rotate(${r} 60 46)`}
-            d="M60 44c-7-8-8-22 0-28 8 6 7 20 0 28Z"
-          />
+          <g key={r} transform={`rotate(${r} 60 46)`}>
+            <path style={{ "--k": k++ } as React.CSSProperties} d="M60 44c-7-8-8-22 0-28 8 6 7 20 0 28Z" />
+          </g>
         ))}
       </g>
       <circle
