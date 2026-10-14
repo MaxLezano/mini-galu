@@ -16,21 +16,33 @@ export function parseOrderNumber(s: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-export type Totals = { subtotalCents: number; discountCents: number; shippingCents: number; totalCents: number };
+export type Totals = {
+  subtotalCents: number;
+  discountCents: number;
+  shippingCents: number;
+  /** Lo que paga la gift card (hasta su saldo y hasta lo que queda por pagar). */
+  giftcardCents: number;
+  totalCents: number;
+};
 
-/** El descuento nunca supera el subtotal; el envío gratis de un cupón pone el envío en 0. */
+/** El descuento nunca supera el subtotal; el envío gratis de un cupón pone el envío en 0; la gift card paga último. */
 export function computeTotals(input: {
   subtotalCents: number;
   shippingCents: number;
   discountCents: number;
   freeShipping: boolean;
+  /** Saldo de la gift card aplicada (0 sin gift card). */
+  giftcardBalanceCents?: number;
 }): Totals {
   const discountCents = Math.min(Math.max(0, input.discountCents), input.subtotalCents);
   const shippingCents = input.freeShipping ? 0 : input.shippingCents;
+  const due = input.subtotalCents - discountCents + shippingCents;
+  const giftcardCents = Math.min(Math.max(0, input.giftcardBalanceCents ?? 0), due);
   return {
     subtotalCents: input.subtotalCents,
     discountCents,
     shippingCents,
-    totalCents: input.subtotalCents - discountCents + shippingCents,
+    giftcardCents,
+    totalCents: due - giftcardCents,
   };
 }

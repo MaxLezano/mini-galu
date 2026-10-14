@@ -4,6 +4,7 @@ import { type CheckoutConfig, formatARS, type OrderReceipt, type PayResult } fro
 import { ChevronDown, Info, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { GiftcardCard } from "@/features/giftcards/components/GiftcardCard";
 import { isStill } from "@/features/shell/craft";
 import { toast } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
@@ -89,12 +90,15 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
   };
 
   const waiting = receipt.status === "esperando_pago";
+  const gift = receipt.kind === "giftcard" ? receipt.giftcard : null;
   const shippingLabel = receipt.shippingMethod === "taller" ? "Retiro en el taller" : "Envío";
 
   return (
     <main className="wrap co">
       <div>
-        <span className="eyebrow is-in">Pedido #{receipt.number}</span>
+        <span className="eyebrow is-in">
+          {gift ? "Gift card" : "Pedido"} #{receipt.number}
+        </span>
         <h1 className="display h2" style={{ marginTop: 12 }}>
           {waiting ? (
             <>
@@ -109,11 +113,20 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
 
         {waiting ? (
           <section className="box" style={{ marginTop: 24, display: "grid", gap: 16 }} aria-label="Pago">
-            <p className="muted" style={{ margin: 0 }}>
-              Gaby te reservó estas prendas
-              {receipt.reservedUntil ? ` hasta el ${launchWhen(receipt.reservedUntil)}` : ""}. Pagás acá mismo, con
-              tarjeta o con dinero en cuenta de Mercado Pago.
-            </p>
+            {gift ? (
+              <p className="muted" style={{ margin: 0 }}>
+                Tu gift card para {gift.toName} está lista.{" "}
+                {gift.via === "mail"
+                  ? `Apenas se apruebe el pago le llega por mail${gift.deliverOn ? " el día elegido, a las 9" : ""}.`
+                  : "Apenas se apruebe el pago te mandamos el código y el botón para mandársela por WhatsApp."}
+              </p>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                Gaby te reservó estas prendas
+                {receipt.reservedUntil ? ` hasta el ${launchWhen(receipt.reservedUntil)}` : ""}. Pagás acá mismo, con
+                tarjeta o con dinero en cuenta de Mercado Pago.
+              </p>
+            )}
             {config.gateway === "mercadopago" ? (
               <MercadoPagoBrick config={config} order={order} email={receipt.email} onResult={onPayResult} />
             ) : (
@@ -136,21 +149,40 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
                 <div className="hand" style={{ fontSize: 30 }}>
                   Este link ya venció
                 </div>
-                <p className="muted" style={{ margin: 0 }}>
-                  Las prendas volvieron a la tienda. Escribinos y te armamos uno nuevo.
-                </p>
-                <a className="btn" href={SITE.whatsapp} target="_blank" rel="noopener">
-                  Escribir por WhatsApp
-                </a>
+                {gift ? (
+                  <>
+                    <p className="muted" style={{ margin: 0 }}>
+                      La gift card no se llegó a pagar. Podés armarla de nuevo en un minuto.
+                    </p>
+                    <Link className="btn" href="/giftcards#armala">
+                      Armar otra gift card
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="muted" style={{ margin: 0 }}>
+                      Las prendas volvieron a la tienda. Escribinos y te armamos uno nuevo.
+                    </p>
+                    <a className="btn" href={SITE.whatsapp} target="_blank" rel="noopener">
+                      Escribir por WhatsApp
+                    </a>
+                  </>
+                )}
               </>
             ) : (
               <>
                 <div className="hand" style={{ fontSize: 30 }}>
-                  Este pedido ya está pagado ♡
+                  {gift ? "Esta gift card ya está pagada ♡" : "Este pedido ya está pagado ♡"}
                 </div>
-                <Link className="btn" href={`/seguimiento?pedido=${receipt.number}`}>
-                  Seguir mi pedido
-                </Link>
+                {gift ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    Te mandamos el código a {receipt.email}.
+                  </p>
+                ) : (
+                  <Link className="btn" href={`/seguimiento?pedido=${receipt.number}`}>
+                    Seguir mi pedido
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -169,8 +201,14 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
         </button>
         <div className="sum-inner">
           <div className="row">
-            <h3>Tu pedido</h3>
+            <h3>{gift ? "Tu gift card" : "Tu pedido"}</h3>
           </div>
+          {gift && (
+            <div style={{ display: "grid", gap: 10 }}>
+              <GiftcardCard design={gift.design} amountCents={gift.amountCents} toName={gift.toName} logoSize={20} />
+              <span className="muted">De parte de {gift.fromName}</span>
+            </div>
+          )}
           <div style={{ display: "grid", gap: 16 }}>
             {receipt.items.map((i) => (
               <div className="s-item" key={`${i.name}-${i.size}`}>
@@ -198,7 +236,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
                 <span>-{formatARS(receipt.discountCents)}</span>
               </div>
             )}
-            <div className="row">
+            <div className="row" hidden={!!gift}>
               <span className="muted">{shippingLabel}</span>
               <span>
                 {receipt.shippingCents > 0

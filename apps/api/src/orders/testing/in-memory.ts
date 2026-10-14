@@ -36,6 +36,8 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       id,
       number,
       channel: o.channel ?? "web",
+      kind: o.kind ?? "prendas",
+      giftcardCents: o.giftcardCents ?? 0,
       statusChangedAt: this.clock(),
       internalNote: null,
       status: "esperando_pago",
@@ -55,7 +57,9 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
   async listForBoard() {
     return this.items.filter(
       (o) =>
-        !["cancelado", "reembolsado"].includes(o.status) && !(o.status === "esperando_pago" && o.channel === "web"),
+        !["cancelado", "reembolsado"].includes(o.status) &&
+        !(o.status === "esperando_pago" && o.channel === "web") &&
+        o.kind !== "giftcard",
     );
   }
   async approvedPayment(orderId: string) {
@@ -137,6 +141,7 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     t: {
       discountCents: number;
       shippingCents: number;
+      giftcardCents: number;
       totalCents: number;
       couponId: string | null;
       couponCode: string | null;

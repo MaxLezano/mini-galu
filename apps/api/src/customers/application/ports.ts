@@ -1,5 +1,6 @@
 import type {
   AccountAddress,
+  AccountGiftcard,
   AccountOrder,
   AccountProfile,
   AddressInputSchema,
@@ -69,6 +70,11 @@ export interface CustomerOrders {
 }
 
 /** Cartas del taller: el tilde de "Mis datos" suscribe o da de baja. */
+/** Las gift cards que compró o recibió el mail de la cuenta (las arma el módulo de gift cards). */
+export interface GiftcardsPort {
+  forEmail(email: string): Promise<AccountGiftcard[]>;
+}
+
 export interface NewsletterPort {
   subscribe(email: string, source: string): Promise<void>;
   unsubscribeEmail(email: string): Promise<void>;

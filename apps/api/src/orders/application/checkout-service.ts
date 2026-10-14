@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import {
   FREE_SHIPPING_FROM_CENTS,
+  type GiftcardSummary,
   type OrderReceipt,
   type PlacedOrder,
   type PlaceOrderInputSchema,
@@ -21,6 +22,25 @@ import type { OrderRecord, OrderRepository } from "./ports";
 
 type PlaceOrder = z.output<typeof PlaceOrderInputSchema>;
 
+export type GiftcardCheck = { id: string; code: string; balanceCents: number } | { error: string };
+
+/** Lo que el checkout necesita de las gift cards: validar un código y el resumen de una compra de gift card. */
+export interface CheckoutGiftcards {
+  check(code: string): Promise<GiftcardCheck>;
+  /** La misma validación por id (un pedido guarda la gift card con la que se pagó). */
+  checkById(id: string): Promise<GiftcardCheck>;
+  summary(orderId: string): Promise<GiftcardSummary | null>;
+}
+
+export const NO_GIFTCARDS: CheckoutGiftcards = {
+  check: async () => ({ error: "Las gift cards no están disponibles" }),
+  checkById: async () => ({ error: "Las gift cards no están disponibles" }),
+  summary: async () => null,
+};
+
+/** Pago aprobado sin pasar por Mercado Pago (cuando la gift card cubre todo el pedido). */
+export type SettleWithGiftcard = (orderId: string) => Promise<void>;
+
 /** Checkout: cotizar (envío + cupón) y cerrar el pedido reservando el stock. */
 export class CheckoutService {
   constructor(
@@ -29,6 +49,10 @@ export class CheckoutService {
     private readonly coupons: CouponService,
     private readonly orders: OrderRepository,
     private readonly storage: ImageStorage,
+    private readonly giftcards: CheckoutGiftcards = NO_GIFTCARDS,
+    private readonly settle: SettleWithGiftcard = async () => {
+      throw new ValidationError("Este pedido no se puede pagar solo con gift card");
+    },
     private readonly clock: () => Date = () => new Date(),
     private readonly newToken: () => string = () => randomBytes(18).toString("base64url"),
   ) {}
@@ -54,8 +78,37 @@ export class CheckoutService {
         coupon = { code: r.coupon.code, label: r.label, discountCents, freeShipping };
       }
     }
-    const totals = computeTotals({ subtotalCents: view.subtotalCents, shippingCents, discountCents, freeShipping });
-    return { lines: view.lines, ...totals, coupon, couponError, freeShippingFromCents: FREE_SHIPPING_FROM_CENTS };
+    let giftcardBalanceCents = 0;
+    let giftcardError: string | null = null;
+    let giftcardCode: string | null = null;
+    if (req.giftcardCode) {
+      const g = await this.giftcards.check(req.giftcardCode);
+      if ("error" in g) giftcardError = g.error;
+      else ({ balanceCents: giftcardBalanceCents, code: giftcardCode } = g);
+    }
+    const totals = computeTotals({
+      subtotalCents: view.subtotalCents,
+      shippingCents,
+      discountCents,
+      freeShipping,
+      giftcardBalanceCents,
+    });
+    const giftcard = giftcardCode
+      ? {
+          code: giftcardCode,
+          appliedCents: totals.giftcardCents,
+          balanceAfterCents: giftcardBalanceCents - totals.giftcardCents,
+        }
+      : null;
+    return {
+      lines: view.lines,
+      ...totals,
+      coupon,
+      couponError,
+      giftcard,
+      giftcardError,
+      freeShippingFromCents: FREE_SHIPPING_FROM_CENTS,
+    };
   }
 
   async place(owner: CartOwner | null, userId: string | null, input: PlaceOrder): Promise<PlacedOrder> {
@@ -79,7 +132,19 @@ export class CheckoutService {
       coupon = { id: r.coupon.id, code: r.coupon.code };
       ({ discountCents, freeShipping } = r.result);
     }
-    const totals = computeTotals({ subtotalCents, shippingCents, discountCents, freeShipping });
+    let giftcard: { id: string; balanceCents: number } | null = null;
+    if (input.giftcardCode) {
+      const g = await this.giftcards.check(input.giftcardCode);
+      if ("error" in g) throw new ValidationError(g.error);
+      giftcard = g;
+    }
+    const totals = computeTotals({
+      subtotalCents,
+      shippingCents,
+      discountCents,
+      freeShipping,
+      giftcardBalanceCents: giftcard?.balanceCents,
+    });
 
     // si ya había un pedido sin pagar desde esta bolsa (volvió a cambiar algo), se cancela y libera el stock
     const now = this.clock();
@@ -98,6 +163,7 @@ export class CheckoutService {
       ...totals,
       couponId: coupon?.id ?? null,
       couponCode: coupon?.code ?? null,
+      giftcardId: giftcard?.id ?? null,
       reservedUntil,
       wishItemIds: input.wishItemIds.length ? input.wishItemIds : undefined,
       items: snap.lines.map((l) => ({
@@ -121,16 +187,58 @@ export class CheckoutService {
     await this.orders.addEvent(r.id, {
       kind: "created",
       title: "Pedido creado desde la web",
-      detail: coupon ? `Con el cupón ${coupon.code}` : null,
+      detail:
+        [coupon ? `Con el cupón ${coupon.code}` : null, giftcard ? "Con gift card" : null]
+          .filter(Boolean)
+          .join(" · ") || null,
       auto: true,
     });
+    // la gift card cubre todo: no hay nada que cobrar con Mercado Pago
+    const paid = totals.totalCents === 0;
+    if (paid) await this.settle(r.id);
     return {
       orderId: r.id,
       number: formatOrderNumber(r.number),
       accessToken,
       totalCents: totals.totalCents,
       reservedUntil: reservedUntil.toISOString(),
+      paid,
     };
+  }
+
+  /** La compra de una gift card: un pedido sin prendas ni envío que se paga con el mismo link de pago. */
+  async placeGiftcard(
+    buyer: { email: string; firstName: string; lastName: string; phone: string; whatsappOptIn: boolean },
+    amountCents: number,
+  ): Promise<{ orderId: string; number: string; accessToken: string }> {
+    const now = this.clock();
+    const accessToken = this.newToken();
+    const r = await this.orders.createReserving({
+      cartId: null,
+      userId: null,
+      accessToken,
+      ...buyer,
+      kind: "giftcard",
+      shippingMethod: "taller",
+      shippingAddress: null,
+      shippingBranch: null,
+      postalCode: null,
+      province: null,
+      pickupSlot: null,
+      ...computeTotals({ subtotalCents: amountCents, shippingCents: 0, discountCents: 0, freeShipping: true }),
+      couponId: null,
+      couponCode: null,
+      reservedUntil: new Date(now.getTime() + CHECKOUT_RESERVATION_MINUTES * 60_000),
+      items: [],
+    });
+    if (!r.ok) throw new ConflictError("No pudimos crear la gift card, probá de nuevo");
+    await this.orders.addEvent(r.id, {
+      kind: "created",
+      title: "Compra de gift card desde la web",
+      detail: null,
+      auto: true,
+    });
+    return { orderId: r.id, number: formatOrderNumber(r.number), accessToken };
   }
 
   /**
@@ -152,10 +260,22 @@ export class CheckoutService {
       coupon = { id: r.coupon.id, code: r.coupon.code };
       ({ discountCents, freeShipping } = r.result);
     }
-    const totals = computeTotals({ subtotalCents: o.subtotalCents, shippingCents, discountCents, freeShipping });
+    let giftcardBalanceCents = 0;
+    if (o.giftcardId && o.giftcardCents > 0) {
+      const g = await this.giftcards.checkById(o.giftcardId);
+      giftcardBalanceCents = "error" in g ? 0 : g.balanceCents;
+    }
+    const totals = computeTotals({
+      subtotalCents: o.subtotalCents,
+      shippingCents,
+      discountCents,
+      freeShipping,
+      giftcardBalanceCents,
+    });
     const ok = await this.orders.updateTotals(o.id, {
       discountCents: totals.discountCents,
       shippingCents: totals.shippingCents,
+      giftcardCents: totals.giftcardCents,
       totalCents: totals.totalCents,
       couponId: coupon?.id ?? null,
       couponCode: coupon?.code ?? null,
@@ -167,17 +287,22 @@ export class CheckoutService {
       accessToken: token,
       totalCents: totals.totalCents,
       reservedUntil: (o.reservedUntil ?? new Date()).toISOString(),
+      paid: false,
     };
   }
 
   /** Comprobante para la pantalla de éxito (sin cuenta: número + token). */
   async receipt(number: string, token: string): Promise<OrderReceipt> {
-    return this.toReceipt(await findOwned(this.orders, number, token));
+    const o = await findOwned(this.orders, number, token);
+    return this.toReceipt(o, o.kind === "giftcard" ? await this.giftcards.summary(o.id) : null);
   }
 
-  toReceipt(o: OrderRecord): OrderReceipt {
+  toReceipt(o: OrderRecord, giftcard: GiftcardSummary | null = null): OrderReceipt {
     return {
       number: formatOrderNumber(o.number),
+      kind: o.kind,
+      giftcard,
+      giftcardCents: o.giftcardCents,
       status: o.status,
       firstName: o.firstName,
       email: o.email,

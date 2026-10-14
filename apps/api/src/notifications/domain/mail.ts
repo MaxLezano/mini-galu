@@ -267,6 +267,104 @@ export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "wha
   return { to: m.to, subject: m.subject, html, text };
 }
 
+/** Lo que necesitan los mails de una gift card. */
+export type GiftcardMailData = {
+  code: string;
+  amountCents: number;
+  toName: string;
+  fromName: string;
+  message: string | null;
+  /** "14 de abril de 2027" */
+  expiresLabel: string;
+  /** cacao · rosa · salvia · lino */
+  design: string;
+};
+
+const CARD_BG: Record<string, [string, string]> = {
+  cacao: [C.cacao, C.linen],
+  rosa: ["#E8C6BF", C.cacao],
+  salvia: ["#5F6E52", C.linen],
+  lino: ["#EADFD0", C.cacao],
+};
+
+function giftcardBlock(g: GiftcardMailData): string {
+  const e = escapeHtml;
+  const [bg, fg] = CARD_BG[g.design] ?? CARD_BG.cacao ?? [C.cacao, C.linen];
+  return `
+          <div style="background:${bg};color:${fg};border-radius:18px;padding:22px 24px;margin:18px 0">
+            <div style="font-family:Georgia,serif;font-style:italic;font-size:20px">Mini Galú</div>
+            <div style="font-family:Georgia,serif;font-size:40px;margin:18px 0 10px">${money(g.amountCents)}</div>
+            <div style="font-size:15px">Para ${e(g.toName)} ♡</div>
+          </div>
+          ${g.message ? `<p style="margin:0 0 6px;font-size:15px;line-height:1.55;color:${C.cacao2};white-space:pre-line">“${e(g.message)}”</p>` : ""}
+          <p style="margin:0 0 18px;font-size:14px;color:${C.canela};font-family:Georgia,serif;font-style:italic">— ${e(g.fromName)}</p>
+          <div style="text-align:center;background:${C.linen};border-radius:14px;padding:14px">
+            <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.cacao2}">Código</div>
+            <div style="font:700 22px/1.4 ui-monospace,monospace;letter-spacing:.08em;color:${C.cacao}">${e(g.code)}</div>
+            <div style="font-size:12.5px;color:${C.cacao2}">Vale hasta el ${e(g.expiresLabel)} · se usa en el checkout, en una o varias compras</div>
+          </div>`;
+}
+
+/** La gift card que le llega a quien la recibe. */
+export function giftcardMail(to: string, g: GiftcardMailData, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+  const e = escapeHtml;
+  const html = frame(
+    `Una gift card de Mini Galú para ${e(g.toName)}`,
+    links,
+    "",
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Gift card</div>
+          <h1 style="font-family:Georgia,serif;font-weight:400;font-size:28px;margin:12px 0 0">${e(g.fromName)} te regaló <em style="color:${C.canela}">a elección</em></h1>
+          ${giftcardBlock(g)}
+          <div style="text-align:center;margin-top:20px">
+            <a href="${e(links.site)}/catalogo" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Elegir lo que le queda</a>
+          </div>`,
+  );
+  const text = [
+    `${g.fromName} te regaló una gift card de Mini Galú por ${money(g.amountCents)} para ${g.toName}.`,
+    g.message ? `“${g.message}”` : "",
+    "",
+    `Código: ${g.code} (vale hasta el ${g.expiresLabel})`,
+    `Se usa en el checkout: ${links.site}/catalogo`,
+  ].join("\n");
+  return { to, subject: `Una gift card de Mini Galú para ${g.toName} ♡`, html, text };
+}
+
+/** Para quien la compró: el código y, si va por WhatsApp, el botón para mandarla (WhatsApp todavía es a mano). */
+export function giftcardBuyerMail(
+  to: string,
+  g: GiftcardMailData,
+  delivery: { via: "mail" | "whatsapp"; recipient: string; when: string | null; whatsappUrl: string | null },
+  links: Pick<MailLinks, "site" | "whatsapp">,
+): Mail {
+  const e = escapeHtml;
+  const how =
+    delivery.via === "mail"
+      ? `Le llega a ${delivery.recipient} ${delivery.when ? `el ${delivery.when} a las 9` : "ahora mismo"}.`
+      : "Mandásela por WhatsApp con el botón: el mensaje ya lleva el código.";
+  const html = frame(
+    "Tu gift card está lista",
+    links,
+    "",
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Gift card · pago aprobado</div>
+          <h1 style="font-family:Georgia,serif;font-weight:400;font-size:28px;margin:12px 0 8px">¡Lista para <em style="color:${C.canela}">${e(g.toName)}</em>!</h1>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:${C.cacao2}">${e(how)}</p>
+          ${giftcardBlock(g)}
+          ${
+            delivery.whatsappUrl
+              ? `<div style="text-align:center;margin-top:20px"><a href="${e(delivery.whatsappUrl)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Mandarla por WhatsApp</a></div>`
+              : ""
+          }`,
+  );
+  const text = [
+    `Tu gift card para ${g.toName} está lista. ${how}`,
+    `Código: ${g.code} · ${money(g.amountCents)} · vale hasta el ${g.expiresLabel}`,
+    delivery.whatsappUrl ? `Mandarla por WhatsApp: ${delivery.whatsappUrl}` : "",
+  ].join("\n");
+  return { to, subject: `Tu gift card para ${g.toName} está lista`, html, text };
+}
+
 /** Una carta del taller (newsletter): el texto de Gaby y, al pie, el link para darse de baja. */
 export function letterMail(
   m: { to: string; subject: string; body: string; unsubscribeUrl: string },

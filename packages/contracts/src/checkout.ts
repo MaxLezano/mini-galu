@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SizeSchema } from "./catalog";
+import type { GiftcardSummary } from "./giftcards";
 import { type Cents, installment } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
 
@@ -152,6 +153,7 @@ export const QuoteRequestSchema = z.object({
   method: z.enum(["domicilio", "sucursal", "taller"]),
   postalCode: PostalCodeSchema.optional(),
   couponCode: z.string().trim().max(30).optional(),
+  giftcardCode: z.string().trim().max(40).optional(),
   email: z.email().optional(),
 });
 export type QuoteRequest = z.infer<typeof QuoteRequestSchema>;
@@ -163,10 +165,15 @@ export type Quote = {
   subtotalCents: Cents;
   discountCents: Cents;
   shippingCents: Cents;
+  /** Lo que cubre la gift card (se resta del total). */
+  giftcardCents: Cents;
   totalCents: Cents;
   coupon: AppliedCoupon | null;
   /** Si el código no aplica, por qué (sin cortar la compra). */
   couponError: string | null;
+  /** Lo que paga la gift card y el saldo que le queda después. */
+  giftcard: { code: string; appliedCents: Cents; balanceAfterCents: Cents } | null;
+  giftcardError: string | null;
   freeShippingFromCents: Cents;
 };
 
@@ -174,6 +181,7 @@ export const PlaceOrderInputSchema = z.object({
   contact: CheckoutContactSchema,
   shipping: ShippingInputSchema,
   couponCode: z.string().trim().max(30).nullable().default(null),
+  giftcardCode: z.string().trim().max(40).nullable().default(null),
   /** Prendas de una lista de cumple que se regalan con este pedido. */
   wishItemIds: z.array(z.uuid()).max(20).default([]),
 });
@@ -185,6 +193,8 @@ export type PlacedOrder = {
   accessToken: string;
   totalCents: Cents;
   reservedUntil: string;
+  /** La gift card pagó todo: el pedido ya está pagado (no pasa por Mercado Pago). */
+  paid: boolean;
 };
 
 /* ------------------------------------------------------------------ pago */
@@ -229,6 +239,10 @@ export type CheckoutConfig = {
 
 export type OrderReceipt = {
   number: string;
+  /** prendas · giftcard (la compra de una gift card). */
+  kind: "prendas" | "giftcard";
+  giftcard: GiftcardSummary | null;
+  giftcardCents: Cents;
   status: OrderStatus;
   firstName: string;
   email: string;

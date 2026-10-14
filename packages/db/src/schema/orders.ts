@@ -98,6 +98,8 @@ export const shippingMethod = pgEnum("shipping_method", ["domicilio", "sucursal"
 export const paymentMethod = pgEnum("payment_method", ["credito", "debito", "dinero_cuenta", "link", "giftcard"]);
 /** Por dónde entró la venta: la web o un link de pago mandado por WhatsApp/Instagram, o una charla con Galú. */
 export const orderChannel = pgEnum("order_channel", ["web", "whatsapp", "instagram", "galu"]);
+/** prendas: un pedido común · giftcard: la compra de una gift card (sin prendas ni envío). */
+export const orderKind = pgEnum("order_kind", ["prendas", "giftcard"]);
 
 /** Dirección de entrega tal como la cargó el cliente al comprar (no cambia si después edita su libreta). */
 export type ShippingAddress = {
@@ -125,6 +127,10 @@ export const orders = pgTable(
     /** Cuándo pasó al estado actual (para ordenar el tablero y medir demoras). */
     statusChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     channel: orderChannel().notNull().default("web"),
+    kind: orderKind().notNull().default("prendas"),
+    /** Gift card usada para pagar este pedido (todo o parte) y cuánto se descontó de su saldo. */
+    giftcardId: uuid(),
+    giftcardCents: integer().notNull().default(0),
     userId: text().references(() => user.id, { onDelete: "set null" }),
     /** Bolsa desde la que se compró: se vacía al aprobarse el pago y, si se vuelve a pedir, el pedido anterior se cancela. */
     cartId: uuid(),

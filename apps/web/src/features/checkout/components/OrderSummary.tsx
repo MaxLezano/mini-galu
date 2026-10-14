@@ -1,5 +1,5 @@
 import { type CardPlans, type CartLine, formatARS, type Quote } from "@mini-galu/contracts";
-import { ChevronDown, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
+import { ChevronDown, Gift, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { SITE } from "@/lib/site";
@@ -22,6 +22,11 @@ type Props = {
   onCouponInput: () => void;
   onApplyCoupon: (code: string) => void;
   onRemoveCoupon: () => void;
+  giftcardBusy: boolean;
+  giftcardError: string | null;
+  onGiftcardInput: () => void;
+  onApplyGiftcard: (code: string) => void;
+  onRemoveGiftcard: () => void;
   onEditBag: () => void;
 };
 
@@ -38,10 +43,14 @@ export function OrderSummary({
   onCouponInput,
   onApplyCoupon,
   onRemoveCoupon,
+  giftcardBusy,
+  giftcardError,
+  onGiftcardInput,
+  onApplyGiftcard,
+  onRemoveGiftcard,
   onEditBag,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [code, setCode] = useState("");
   const subtotal = quote?.subtotalCents ?? lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
   const total = quote?.totalCents ?? subtotal;
   const chosen = (chosenInstallments && cardPlans?.plans.find((p) => p.installments === chosenInstallments)) || null;
@@ -89,51 +98,29 @@ export function OrderSummary({
           )}
         </div>
         <hr className="seam" />
-        <div>
-          {quote?.coupon ? (
-            <div className="applied">
-              <TicketPercent className="i-sm" /> Cupón {quote.coupon.label}
-              <button
-                type="button"
-                className="icon-btn"
-                style={{ width: 28, height: 28, marginLeft: "auto" }}
-                aria-label="Quitar cupón"
-                onClick={onRemoveCoupon}
-              >
-                <X className="i-sm" />
-              </button>
-            </div>
-          ) : (
-            <form
-              className="coupon"
-              onSubmit={(e) => {
-                e.preventDefault();
-                onApplyCoupon(code);
-              }}
-            >
-              <input
-                className="input"
-                placeholder="Cupón de descuento"
-                aria-label="Cupón de descuento"
-                value={code}
-                onChange={(e) => {
-                  setCode(e.target.value);
-                  onCouponInput();
-                }}
-                aria-invalid={!!couponError}
-                aria-describedby={couponError ? "coupon-error" : undefined}
-                style={{ textTransform: "uppercase" }}
-              />
-              <button type="submit" className="btn btn-sm btn-ghost" disabled={couponBusy}>
-                {couponBusy ? "Revisando…" : "Aplicar"}
-              </button>
-            </form>
-          )}
-          {couponError && !quote?.coupon && (
-            <span className="field-error" id="coupon-error" role="alert" style={{ display: "block", marginTop: 8 }}>
-              {couponError}
-            </span>
-          )}
+        <div style={{ display: "grid", gap: 10 }}>
+          <CodeField
+            kind="coupon"
+            applied={quote?.coupon ? `Cupón ${quote.coupon.label}` : null}
+            busy={couponBusy}
+            error={couponError}
+            onInput={onCouponInput}
+            onApply={onApplyCoupon}
+            onRemove={onRemoveCoupon}
+          />
+          <CodeField
+            kind="giftcard"
+            applied={
+              quote?.giftcard
+                ? `Gift card ${quote.giftcard.code} · le quedan ${formatARS(quote.giftcard.balanceAfterCents)}`
+                : null
+            }
+            busy={giftcardBusy}
+            error={giftcardError}
+            onInput={onGiftcardInput}
+            onApply={onApplyGiftcard}
+            onRemove={onRemoveGiftcard}
+          />
         </div>
         <div className="totals">
           <div className="row">
@@ -144,6 +131,12 @@ export function OrderSummary({
             <div className="row">
               <span className="muted">Cupón {quote.coupon.code}</span>
               <span style={{ color: "var(--salvia-d)" }}>-{formatARS(quote.discountCents)}</span>
+            </div>
+          )}
+          {quote?.giftcard && quote.giftcardCents > 0 && (
+            <div className="row">
+              <span className="muted">Gift card</span>
+              <span style={{ color: "var(--salvia-d)" }}>-{formatARS(quote.giftcardCents)}</span>
             </div>
           )}
           <div className="row">
@@ -250,5 +243,76 @@ export function OrderSummary({
         <span className="hand promise-note">gracias por elegir algo hecho a mano ♡</span>
       </div>
     </aside>
+  );
+}
+
+/** Cupón o gift card: campo para cargar el código o, si ya está aplicado, la etiqueta para quitarlo. */
+function CodeField({
+  kind,
+  applied,
+  busy,
+  error,
+  onInput,
+  onApply,
+  onRemove,
+}: {
+  kind: "coupon" | "giftcard";
+  applied: string | null;
+  busy: boolean;
+  error: string | null;
+  onInput: () => void;
+  onApply: (code: string) => void;
+  onRemove: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const label = kind === "coupon" ? "Cupón de descuento" : "Código de gift card";
+  const errorId = `${kind}-error`;
+  return (
+    <>
+      {applied ? (
+        <div className="applied">
+          {kind === "coupon" ? <TicketPercent className="i-sm" /> : <Gift className="i-sm" />} {applied}
+          <button
+            type="button"
+            className="icon-btn"
+            style={{ width: 28, height: 28, marginLeft: "auto" }}
+            aria-label={kind === "coupon" ? "Quitar cupón" : "Quitar gift card"}
+            onClick={onRemove}
+          >
+            <X className="i-sm" />
+          </button>
+        </div>
+      ) : (
+        <form
+          className="coupon"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onApply(code);
+          }}
+        >
+          <input
+            className="input"
+            placeholder={label}
+            aria-label={label}
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              onInput();
+            }}
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
+            style={{ textTransform: "uppercase" }}
+          />
+          <button type="submit" className="btn btn-sm btn-ghost" disabled={busy}>
+            {busy ? "Revisando…" : "Aplicar"}
+          </button>
+        </form>
+      )}
+      {error && !applied && (
+        <span className="field-error" id={errorId} role="alert" style={{ display: "block" }}>
+          {error}
+        </span>
+      )}
+    </>
   );
 }

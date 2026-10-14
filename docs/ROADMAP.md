@@ -200,8 +200,13 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   para la entrega) y `children` ("Mis nenas": nombre, cumple, talle, altura)
 - ✅ Regla de contraseña (8+, mayúscula, minúscula, número y especial) en contracts, en la API (alta, cambio y
   recuperación) y en el seed
-- ⏳ Better Auth (email + Google), "Mis nenas", pedidos, favoritos sincronizados, lista de cumple compartible
-- ⏳ Gift cards con diseño elegible y vista previa, consulta de saldo
+- ✅ Better Auth (email + Google opcional), "Mis nenas", pedidos, favoritos sincronizados, lista de cumple compartible
+- ✅ Gift cards (`giftcards.html` y la pestaña de Mi cuenta): diseño, monto, mensaje y vista previa en vivo; se pagan
+  como un pedido de tipo gift card en el link de pago; al aprobarse se activan con un código `GALU-XXXX-XXXX` (6 meses)
+  y le llegan por mail a quien la recibe (ahora o ese día a las 9) o, por WhatsApp, quien compra la manda con el botón
+  de su mail. Consulta de saldo, campo "Gift card" en el checkout (descuenta del total; si cubre todo, el pedido queda
+  pagado sin Mercado Pago) y el saldo se descuenta una sola vez al pagarse el pedido
+- ⏳ Usar una gift card en el taller (cobro presencial / link de pago desde el panel)
 - ⏳ Clientes en el panel: nenas, cumples próximos, ficha con pedidos
 
 ## Seguridad del panel — obligatorio antes del deploy (fase 10) · hecho

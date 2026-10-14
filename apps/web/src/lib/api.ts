@@ -8,6 +8,9 @@ import type {
   CheckoutConfig,
   ContactChannel,
   Facets,
+  GiftcardBalance,
+  GiftcardCreated,
+  GiftcardPurchase,
   HomeContent,
   InstallmentPlan,
   OrderReceipt,
@@ -100,6 +103,9 @@ export const api = {
   quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
   placeOrder: (body: PlaceOrderInput) =>
     request<PlacedOrder>("/checkout/orders", { method: "POST", body: JSON.stringify(body) }),
+  buyGiftcard: (body: GiftcardPurchase) =>
+    request<GiftcardCreated>("/giftcards", { method: "POST", body: JSON.stringify(body) }),
+  giftcardBalance: (code: string) => request<GiftcardBalance>(`/giftcards/${encodeURIComponent(code)}`),
   wishlist: (slug: string) => request<PublicWishlist>(`/lists/${encodeURIComponent(slug)}`),
   subscribe: (email: string, source: "footer" | "cuenta" | "registro" = "footer") =>
     request<null>("/newsletter", { method: "POST", body: JSON.stringify({ email, source }) }),

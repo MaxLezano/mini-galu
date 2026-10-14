@@ -94,6 +94,7 @@ export class OrderPayments {
         email: o.email,
         totalCents: o.totalCents,
         method: payment.method,
+        kind: o.kind,
       },
     });
   }
@@ -125,9 +126,12 @@ function toPayable(o: OrderRecord): Payable {
     number: formatOrderNumber(o.number),
     email: o.email,
     totalCents: o.totalCents,
-    title: `Mini Galú · Pedido ${number} (${units} ${units === 1 ? "prenda" : "prendas"})`,
+    title:
+      o.kind === "giftcard"
+        ? `Mini Galú · Gift card (${number})`
+        : `Mini Galú · Pedido ${number} (${units} ${units === 1 ? "prenda" : "prendas"})`,
     returnPath:
-      o.channel === "web"
+      o.channel === "web" && o.kind === "prendas"
         ? `/checkout?pedido=${encodeURIComponent(number)}&t=${encodeURIComponent(o.accessToken)}`
         : payPath(number, o.accessToken),
   };

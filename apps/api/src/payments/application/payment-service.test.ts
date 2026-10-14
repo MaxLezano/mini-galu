@@ -59,6 +59,8 @@ beforeEach(async () => {
     orders,
     storage,
     undefined,
+    undefined,
+    undefined,
     () => "tok",
   );
   gateway = new SimulatedGateway();

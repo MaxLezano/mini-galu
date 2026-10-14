@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SizeSchema } from "./catalog";
+import type { AccountGiftcard } from "./giftcards";
 
 /* ------------------------------------------------------------------ contraseña */
 export const PASSWORD_RULES = [
@@ -186,6 +187,8 @@ export type AccountOverview = {
   orders: AccountOrder[];
   /** Slugs de los favoritos. */
   favorites: string[];
+  /** Las que compró o le regalaron (por el mail de la cuenta). */
+  giftcards: AccountGiftcard[];
 };
 
 export const FavoritesMergeSchema = z.object({ slugs: z.array(z.string().min(1).max(120)).max(200) });

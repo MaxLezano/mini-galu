@@ -10,7 +10,7 @@ import type {
 import type { z } from "zod";
 import { NotFoundError } from "../../shared/domain/errors";
 import { revealGiver, wishSlug } from "../domain/wishlist";
-import type { ChildRecord, CustomerOrders, CustomerRepository, NewsletterPort } from "./ports";
+import type { ChildRecord, CustomerOrders, CustomerRepository, GiftcardsPort, NewsletterPort } from "./ports";
 
 type AddressData = z.output<typeof AddressInputSchema>;
 
@@ -20,6 +20,7 @@ export class CustomerService {
     private readonly repo: CustomerRepository,
     private readonly orders: CustomerOrders,
     private readonly newsletter: NewsletterPort,
+    private readonly giftcards: GiftcardsPort = { forEmail: async () => [] },
     private readonly clock: () => Date = () => new Date(),
     private readonly random: () => string = () => randomBytes(3).toString("hex").slice(0, 4),
   ) {}
@@ -27,13 +28,14 @@ export class CustomerService {
   async overview(userId: string): Promise<AccountOverview> {
     const profile = await this.repo.profile(userId);
     if (!profile) throw new NotFoundError("No encontramos tu cuenta");
-    const [children, addresses, orders, favorites] = await Promise.all([
+    const [children, addresses, orders, favorites, giftcards] = await Promise.all([
       this.childrenOf(userId),
       this.repo.addresses(userId),
       this.orders.ofCustomer(userId, profile.email),
       this.repo.favorites(userId),
+      this.giftcards.forEmail(profile.email.toLowerCase()),
     ]);
-    return { profile, children, addresses, orders, favorites };
+    return { profile, children, addresses, orders, favorites, giftcards };
   }
 
   async updateProfile(userId: string, p: ProfileUpdate) {

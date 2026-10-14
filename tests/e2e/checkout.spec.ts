@@ -73,10 +73,10 @@ test("cupón de primera compra y pago con dinero en cuenta", async ({ page, requ
   await openSummary(page);
   const coupon = page.getByLabel("Cupón de descuento");
   await coupon.fill("NOEXISTE");
-  await page.getByRole("button", { name: "Aplicar" }).click();
+  await page.locator("form.coupon").first().getByRole("button", { name: "Aplicar" }).click();
   await expect(page.locator("#coupon-error")).toContainText("no existe");
   await coupon.fill("bienvenida10");
-  await page.getByRole("button", { name: "Aplicar" }).click();
+  await page.locator("form.coupon").first().getByRole("button", { name: "Aplicar" }).click();
   await expect(page.locator(".applied")).toContainText("BIENVENIDA10 · 10%");
 
   const ship = page.getByRole("region", { name: "Envío" });
@@ -124,7 +124,7 @@ test("aplicar un cupón en el paso de pago no borra lo que se cargó de la tarje
   const before = await page.locator(".totals .total").textContent();
   await openSummary(page);
   await page.getByLabel("Cupón de descuento").fill("CUMPLE15");
-  await page.getByRole("button", { name: "Aplicar" }).click();
+  await page.locator("form.coupon").first().getByRole("button", { name: "Aplicar" }).click();
   await expect(page.locator(".applied")).toContainText("CUMPLE15");
   await expect(page.locator(".totals .total")).not.toHaveText(before ?? "");
   await expect(holder).toHaveValue("Lucía Fernández");

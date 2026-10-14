@@ -9,6 +9,12 @@ export const dayMonth = (iso: string) =>
 export const longDate = (iso: string) =>
   new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: TZ }).format(new Date(iso));
 
+/** "14 de abril de 2027" */
+export const longDateYear = (iso: string) =>
+  new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", year: "numeric", timeZone: TZ }).format(
+    new Date(iso),
+  );
+
 /** "domingo, 18 de octubre · 10 h" */
 export const launchWhen = (iso: string) => {
   const d = new Date(iso);

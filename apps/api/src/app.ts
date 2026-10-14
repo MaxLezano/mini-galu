@@ -44,6 +44,10 @@ import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-ro
 import { CustomerService } from "./customers/application/customer-service";
 import { DrizzleCustomerOrders, DrizzleCustomers } from "./customers/infrastructure/drizzle-customers";
 import { accountRoutes, wishlistRoutes } from "./customers/infrastructure/http/account-routes";
+import { GiftcardService } from "./giftcards/application/giftcard-service";
+import type { GiftcardRecord } from "./giftcards/application/ports";
+import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
+import { giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
 import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
@@ -182,7 +186,20 @@ export function buildApp(config: Config) {
   );
   const cart = new CartService(new DrizzleCartRepository(db), variants, storage, orders);
   const coupons = new CouponService(new DrizzleCouponRepository(db));
-  const checkout = new CheckoutService(cart, shipping, coupons, orders, storage);
+  // las gift cards se arman más abajo (necesitan los mails); el checkout las usa recién al cotizar o comprar
+  const checkout: CheckoutService = new CheckoutService(
+    cart,
+    shipping,
+    coupons,
+    orders,
+    storage,
+    {
+      check: (code) => giftcards.check(code),
+      checkById: (id) => giftcards.checkById(id),
+      summary: (orderId) => giftcards.summary(orderId),
+    },
+    (orderId) => orderPayments.approved(orderId, { method: "giftcard", installments: 1 }),
+  );
   const orderPayments = new OrderPayments(orders, cart, coupons, events);
   const adminOrders = new AdminOrdersService(
     orders,
@@ -229,6 +246,7 @@ export function buildApp(config: Config) {
     scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
     scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
     scheduler.every(600, "stock bajo", () => automations.checkLowStock());
+    scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
   }
 
   // TODO(fase 6 · automations): avisar a los anotados que ya salió (y 1 hora antes si notifyBefore)
@@ -276,10 +294,55 @@ export function buildApp(config: Config) {
     notifications,
     (t) => `${config.webOrigin}/cartas/baja?t=${encodeURIComponent(t)}`,
   );
+  const giftcards: GiftcardService = new GiftcardService(
+    new DrizzleGiftcards(db),
+    {
+      create: (o) => checkout.placeGiftcard(o.buyer, o.amountCents),
+      async close(orderId) {
+        if (await orders.setStatus(orderId, "nuevo", "entregado", new Date()))
+          await orders.addEvent(orderId, {
+            kind: "status",
+            title: "Gift card activada",
+            detail: "No hay prendas que preparar",
+            auto: true,
+            toStatus: "entregado",
+          });
+      },
+      log: (orderId, title, detail) => orders.addEvent(orderId, { kind: "giftcard", title, detail, auto: true }),
+      async find(orderId) {
+        const o = await orders.findById(orderId);
+        return o
+          ? {
+              kind: o.kind,
+              email: o.email,
+              firstName: o.firstName,
+              giftcardId: o.giftcardId ?? null,
+              giftcardCents: o.giftcardCents,
+            }
+          : null;
+      },
+    },
+    {
+      toRecipient: (to, c) => notifications.giftcard(to, giftcardMailData(c)),
+      toBuyer: (to, c) =>
+        notifications.giftcardBuyer(to, giftcardMailData(c), {
+          via: c.via,
+          recipient: c.recipient,
+          when: c.deliverAt && c.deliverAt > new Date() ? longDay(c.deliverAt) : null,
+          whatsappUrl:
+            c.via === "whatsapp"
+              ? `https://wa.me/${c.recipient.replace(/\D/g, "")}?text=${encodeURIComponent(
+                  `¡Hola! ${c.fromName} te regaló una gift card de Mini Galú para ${c.toName} ♡ Código: ${c.code} · se usa en ${config.webOrigin}/catalogo`,
+                )}`
+              : null,
+        }),
+    },
+  );
   const customers = new CustomerService(
     new DrizzleCustomers(db, storage),
     new DrizzleCustomerOrders(db, storage, formatOrderNumber),
     newsletter,
+    giftcards,
   );
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
@@ -296,9 +359,17 @@ export function buildApp(config: Config) {
       workshop: `${WORKSHOP}, CABA`,
     },
   );
-  events.on("PaymentApproved", (e) => automations.paymentApproved(String(e.payload.orderId)));
+  // la compra de una gift card no lleva los avisos de un pedido de prendas: le llega su código
+  const prendas = (e: { payload: Record<string, unknown> }) => e.payload.kind !== "giftcard";
+  events.on("PaymentApproved", (e) =>
+    prendas(e) ? automations.paymentApproved(String(e.payload.orderId)) : undefined,
+  );
   // lista de cumple: lo que se regaló con este pedido queda marcado
-  events.on("PaymentApproved", (e) => customers.wishGifted(String(e.payload.orderId)).then(() => {}));
+  events.on("PaymentApproved", (e) =>
+    prendas(e) ? customers.wishGifted(String(e.payload.orderId)).then(() => {}) : undefined,
+  );
+  // gift cards: se activa la que se compró o se descuenta la que se usó
+  events.on("PaymentApproved", (e) => giftcards.paymentApproved(String(e.payload.orderId)));
   events.on("OrderStatusChanged", (e) =>
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
@@ -345,6 +416,7 @@ export function buildApp(config: Config) {
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
+    .route("/giftcards", giftcardRoutes(giftcards))
     .route("/me", accountRoutes(auth, customers))
     .route("/lists", wishlistRoutes(customers))
     .get("/account/options", (c) => c.json({ google: !!config.google }))
@@ -374,3 +446,28 @@ export function buildApp(config: Config) {
 }
 
 export type AppType = ReturnType<typeof buildApp>["app"];
+
+const AR_DAY = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+const AR_DATE = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+const longDay = (d: Date) => AR_DAY.format(d);
+
+function giftcardMailData(c: GiftcardRecord & { code: string; expiresAt: Date }) {
+  return {
+    code: c.code,
+    amountCents: c.amountCents,
+    toName: c.toName,
+    fromName: c.fromName,
+    message: c.message,
+    expiresLabel: AR_DATE.format(c.expiresAt),
+    design: c.design,
+  };
+}

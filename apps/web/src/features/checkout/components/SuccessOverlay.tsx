@@ -1,5 +1,5 @@
 import { formatARS, type OrderReceipt, PAYMENT_METHODS } from "@mini-galu/contracts";
-import { Clock, House, PackageSearch, Scissors, Store, Truck } from "lucide-react";
+import { CalendarHeart, Clock, Gift, House, Mail, PackageSearch, Scissors, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -46,8 +46,23 @@ export function SuccessOverlay({
   }, [still, pending]);
 
   const method = receipt.paymentMethod ? PAYMENT_METHODS[receipt.paymentMethod] : null;
-  const steps =
-    receipt.shippingMethod === "taller"
+  const gift = receipt.kind === "giftcard" ? receipt.giftcard : null;
+  const steps = gift
+    ? [
+        { icon: <Mail />, title: "Ahora", text: `Te mandamos el código a ${receipt.email}` },
+        gift.via === "mail"
+          ? {
+              icon: gift.deliverOn ? <CalendarHeart /> : <Gift />,
+              title: gift.deliverOn ? "El día elegido" : "Ya mismo",
+              text: `Le llega a ${gift.toName} por mail${gift.deliverOn ? ", a las 9" : ""}`,
+            }
+          : {
+              icon: <Gift />,
+              title: "Cuando quieras",
+              text: `Se la mandás a ${gift.toName} por WhatsApp desde el mail`,
+            },
+      ]
+    : receipt.shippingMethod === "taller"
       ? [
           { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },
           { icon: <Store />, title: pickupLabel ?? "El día elegido", text: "Lo retirás en el taller de Villa Crespo" },
@@ -110,6 +125,11 @@ export function SuccessOverlay({
               Mercado Pago está revisando el pago de {formatARS(receipt.totalCents)}. Apenas se apruebe, el pedido pasa
               al taller. Guardá el número <b>#{receipt.number}</b>.
             </>
+          ) : gift ? (
+            <>
+              La gift card para {gift.toName} ya está activa. Guardá el número <b>#{receipt.number}</b> por cualquier
+              consulta.
+            </>
           ) : (
             <>
               Gaby ya recibió tu pedido. Guardá el número <b>#{receipt.number}</b>: con él seguís cada paso.
@@ -135,9 +155,15 @@ export function SuccessOverlay({
           </div>
         )}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link className="btn" href={`/seguimiento?pedido=${encodeURIComponent(receipt.number)}`}>
-            Seguir mi pedido <PackageSearch />
-          </Link>
+          {gift ? (
+            <Link className="btn" href="/catalogo">
+              Ver la tienda
+            </Link>
+          ) : (
+            <Link className="btn" href={`/seguimiento?pedido=${encodeURIComponent(receipt.number)}`}>
+              Seguir mi pedido <PackageSearch />
+            </Link>
+          )}
           <Link className="btn btn-ghost" href="/">
             Volver al inicio
           </Link>

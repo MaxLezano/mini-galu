@@ -50,11 +50,18 @@ export type NewOrder = {
   channel?: OrderChannel;
   /** Prendas de una lista de cumple que se regalan con este pedido. */
   wishItemIds?: string[] | null;
+  /** prendas (por defecto) · giftcard: la compra de una gift card, sin prendas ni envío. */
+  kind?: "prendas" | "giftcard";
+  /** Gift card con la que se paga parte (o todo) del pedido y cuánto se usa de su saldo. */
+  giftcardId?: string | null;
+  giftcardCents?: number;
   items: OrderItem[];
 };
 
-export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel"> & {
+export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" | "kind" | "giftcardCents"> & {
   id: string;
+  kind: "prendas" | "giftcard";
+  giftcardCents: number;
   channel: OrderChannel;
   statusChangedAt: Date;
   internalNote: string | null;
@@ -136,6 +143,7 @@ export interface OrderRepository extends OrderEvents {
     t: {
       discountCents: number;
       shippingCents: number;
+      giftcardCents: number;
       totalCents: number;
       couponId: string | null;
       couponCode: string | null;

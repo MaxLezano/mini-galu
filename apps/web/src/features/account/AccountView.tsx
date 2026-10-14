@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { ProductCardContainer } from "@/features/catalog/containers/ProductCardContainer";
 import { useFavorites } from "@/features/favorites/favorites-store";
+import { AccountGiftcards } from "@/features/giftcards/containers/AccountGiftcards";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
@@ -55,7 +56,7 @@ const TABS: [Tab, string, ReactNode][] = [
 ];
 
 /** Mi cuenta — design/mockups/cuenta.html */
-export function AccountView({ extra }: { extra?: Partial<Record<Tab, ReactNode>> }) {
+export function AccountView() {
   const router = useRouter();
   const mounted = useMounted();
   const status = useAccount((s) => s.status);
@@ -271,7 +272,7 @@ export function AccountView({ extra }: { extra?: Partial<Record<Tab, ReactNode>>
             onCopy={(url) => navigator.clipboard?.writeText(url).then(() => toast("Link copiado"))}
           />,
         )}
-        {panel("giftcards", extra?.giftcards ?? null)}
+        {panel("giftcards", <AccountGiftcards profile={data.profile} cards={data.giftcards} />)}
 
         {panel(
           "datos",

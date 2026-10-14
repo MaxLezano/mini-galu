@@ -97,6 +97,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const [coupon, setCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+  const [giftcard, setGiftcard] = useState<string | null>(null);
+  const [giftcardError, setGiftcardError] = useState<string | null>(null);
+  const [giftcardBusy, setGiftcardBusy] = useState(false);
   const [cardBin, setCardBin] = useState<string | null>(null);
   const [chosenInstallments, setChosenInstallments] = useState<number | null>(null);
   const [cardPlans, setCardPlans] = useState<CardPlans | null>(null);
@@ -114,7 +117,8 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
    * El pedido se crea al pasar al pago; si cambia algo de esto, se vuelve a crear (y el anterior se cancela).
    * El cupón no: se aplica sobre el mismo pedido para no rearmar el formulario de pago (y no borrar la tarjeta).
    */
-  const orderKey = JSON.stringify([cartKey, contact, toShippingInput(ship)]);
+  // la gift card cambia lo que se cobra con Mercado Pago: si cambia, el pedido se rehace
+  const orderKey = JSON.stringify([cartKey, contact, toShippingInput(ship), giftcard]);
   const currentOrder = order?.key === orderKey ? order : null;
 
   // al entrar: bolsa fresca del servidor
@@ -174,7 +178,13 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     if (!cartKey) return setQuote(null);
     let alive = true;
     api
-      .quote({ method: ship.method, postalCode: cp, couponCode: coupon ?? undefined, email })
+      .quote({
+        method: ship.method,
+        postalCode: cp,
+        couponCode: coupon ?? undefined,
+        giftcardCode: giftcard ?? undefined,
+        email,
+      })
       .then((q) => {
         if (!alive) return;
         setQuote(q);
@@ -187,12 +197,16 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
           setCouponError(q.couponError);
           void couponOnOrder.current(null);
         }
+        if (giftcard && q.giftcardError) {
+          setGiftcardError(q.giftcardError);
+          setGiftcard(null);
+        }
       })
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [cartKey, ship.method, cp, coupon, email]);
+  }, [cartKey, ship.method, cp, coupon, giftcard, email]);
 
   const go = (n: number) => {
     setStep(n);
@@ -225,9 +239,17 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         contact,
         shipping: toShippingInput(ship),
         couponCode: coupon,
+        giftcardCode: giftcard,
         wishItemIds,
       });
       setOrder({ ...placed, key: orderKey });
+      // la gift card cubrió todo: ya está pagado, no hay paso de pago
+      if (placed.paid) {
+        setDone(await api.receipt(placed.number, placed.accessToken));
+        useGifts.getState().clear();
+        void refreshCart();
+        return false;
+      }
       return true;
     } catch (e) {
       const msg = e instanceof ApiRequestError ? e.message : "No pudimos crear el pedido. Probá de nuevo.";
@@ -237,7 +259,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     } finally {
       setBusy(false);
     }
-  }, [contact, ship, coupon, orderKey, refreshCart]);
+  }, [contact, ship, coupon, giftcard, orderKey, refreshCart]);
 
   const nextFromShipping = async () => {
     const e = shippingError(ship);
@@ -322,6 +344,29 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       setCouponError("No pudimos revisar el cupón. Probá de nuevo.");
     } finally {
       setCouponBusy(false);
+    }
+  };
+
+  /** Igual que el cupón: se valida antes y, si sirve, el pedido se rehace con la gift card. */
+  const applyGiftcard = async (code: string) => {
+    const c = code.trim().toUpperCase();
+    if (!c) return setGiftcardError("Escribí el código de la gift card");
+    setGiftcardBusy(true);
+    setGiftcardError(null);
+    try {
+      const q = await api.quote({
+        method: ship.method,
+        postalCode: cp,
+        couponCode: coupon ?? undefined,
+        giftcardCode: c,
+        email,
+      });
+      if (q.giftcardError) setGiftcardError(q.giftcardError);
+      else setGiftcard(c);
+    } catch (e) {
+      setGiftcardError(e instanceof ApiRequestError ? e.message : "No pudimos revisar la gift card. Probá de nuevo.");
+    } finally {
+      setGiftcardBusy(false);
     }
   };
 
@@ -672,6 +717,14 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         onRemoveCoupon={() => {
           setCouponError(null);
           setCouponOnOrder(null).catch(() => setCouponError("No pudimos quitar el cupón. Probá de nuevo."));
+        }}
+        giftcardBusy={giftcardBusy}
+        giftcardError={giftcardError}
+        onGiftcardInput={() => setGiftcardError(null)}
+        onApplyGiftcard={applyGiftcard}
+        onRemoveGiftcard={() => {
+          setGiftcardError(null);
+          setGiftcard(null);
         }}
         onEditBag={() => setDrawer(true)}
       />

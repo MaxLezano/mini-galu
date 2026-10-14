@@ -6,6 +6,7 @@ export * from "./automations";
 export * from "./catalog";
 export * from "./checkout";
 export * from "./content";
+export * from "./giftcards";
 export * from "./money";
 export * from "./newsletter";
 export * from "./orders";

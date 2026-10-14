@@ -1,4 +1,7 @@
 import {
+  type GiftcardMailData,
+  giftcardBuyerMail,
+  giftcardMail,
   letterMail,
   type MailLinks,
   type MessageMail,
@@ -34,6 +37,16 @@ export class OrderNotifications {
 
   async message(m: MessageMail): Promise<void> {
     await this.mailer.send(messageMail(m, this.links(m.number ?? "")));
+  }
+
+  /* ---- Gift cards ---- */
+
+  async giftcard(to: string, g: GiftcardMailData): Promise<void> {
+    await this.mailer.send(giftcardMail(to, g, this.links("")));
+  }
+
+  async giftcardBuyer(to: string, g: GiftcardMailData, delivery: Parameters<typeof giftcardBuyerMail>[2]) {
+    await this.mailer.send(giftcardBuyerMail(to, g, delivery, this.links("")));
   }
 
   /* ---- Cartas del taller ---- */

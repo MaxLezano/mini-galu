@@ -30,7 +30,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
         await this.take(tx, items);
         const [row] = await tx.insert(s.orders).values(o).returning({ id: s.orders.id, number: s.orders.number });
         const created = row as { id: string; number: number };
-        await tx.insert(s.orderItems).values(items.map((i) => ({ ...i, orderId: created.id })));
+        if (items.length) await tx.insert(s.orderItems).values(items.map((i) => ({ ...i, orderId: created.id })));
         return { ok: true as const, ...created };
       });
     } catch (e) {
@@ -72,6 +72,8 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
           not(inArray(s.orders.status, ["cancelado", "reembolsado"])),
           // los checkouts web sin pagar son compras en curso (30 min): no son tarea del taller
           or(not(eq(s.orders.status, "esperando_pago")), not(eq(s.orders.channel, "web"))),
+          // la compra de una gift card no se prepara ni se envía
+          eq(s.orders.kind, "prendas"),
         ),
       )
       .orderBy(desc(s.orders.statusChangedAt))
@@ -238,6 +240,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     t: {
       discountCents: number;
       shippingCents: number;
+      giftcardCents: number;
       totalCents: number;
       couponId: string | null;
       couponCode: string | null;

@@ -81,6 +81,7 @@ describe("lista de cumple", () => {
       repo,
       orders,
       newsletter,
+      undefined,
       () => now,
       () => "7k2q",
     );
