@@ -51,11 +51,16 @@ export function AutomationsAdmin({ initial, email }: { initial: AdminAutomations
 
   const update = async (key: AutomationKey, upd: { on?: boolean; message?: string }, ok: string) => {
     setBusy(true);
+    // el interruptor cambia al instante; si no se pudo guardar, vuelve a como estaba
+    const before = data;
+    const { on } = upd;
+    if (on !== undefined) setData((d) => ({ ...d, rules: d.rules.map((r) => (r.key === key ? { ...r, on } : r)) }));
     try {
       setData(await adminApi.updateAutomation(key, upd));
       toast(ok, { icon: <Check className="i-sm" /> });
       return true;
     } catch (e) {
+      setData(before);
       toast(e instanceof ApiRequestError ? e.message : "No se pudo guardar");
       return false;
     } finally {

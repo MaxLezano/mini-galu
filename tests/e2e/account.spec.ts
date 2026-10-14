@@ -101,6 +101,8 @@ test("lista de cumple: se arma desde la prenda, la familia la abre sin cuenta y 
   browser,
   request,
 }) => {
+  // flujo largo (cuenta, lista, compra con otra sesión): en el CI pasa los 30 s por defecto
+  test.setTimeout(60_000);
   const config = await (await request.get("http://localhost:4000/checkout/config")).json();
   test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
   const email = `lista-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;

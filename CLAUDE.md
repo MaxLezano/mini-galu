@@ -87,3 +87,19 @@ Conventional commits (commitlint lo valida): `feat(catalog): …`, `fix(web): �
 
 - `develop`: desarrollo diario; todo lo nuevo entra acá (ramas `feat/…`, `fix/…` con PR y CI en verde).
 - `main`: producción y deploy; solo recibe merges de `develop` ya probados. No se commitea directo en `main`.
+
+## Cómo se trabaja cada tarea (una tarea por chat)
+
+Una tarea del ROADMAP recién está **terminada** cuando se cumple todo esto, en orden:
+
+1. Desarrollada siguiendo el mockup, con tests (unitarios del caso de uso / lógica pura y e2e del flujo).
+2. En local pasan `pnpm lint`, `pnpm typecheck`, `pnpm test` y los e2e que toca; se comparó con el mockup
+   (`pnpm shots`, 375 y 1440).
+3. `docs/ROADMAP.md` actualizado.
+4. Commit y push a `develop`.
+5. **CI de GitHub en verde** (`gh run list --branch develop` / `gh run watch <id> --exit-status`). Si falla, se
+   arregla antes de seguir (no se avisa con el CI en rojo).
+
+Recién entonces se le avisa al usuario con un resumen corto y **"listo para /clear"**. El usuario limpia el chat y
+dice "seguí": se retoma desde `docs/ROADMAP.md` (lo ⏳) y el último commit de `develop`. No se encadenan varias
+tareas grandes en el mismo chat.
