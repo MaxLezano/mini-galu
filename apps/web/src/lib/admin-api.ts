@@ -1,6 +1,7 @@
 import type {
   AdminAutomations,
   AdminCoupon,
+  AdminCustomerDetail,
   AdminHome,
   AdminLaunch,
   AdminNewsletter,
@@ -111,6 +112,13 @@ export const adminApi = {
   testAutomations: (email: string) =>
     adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
   newsletter: () => adminRequest<AdminNewsletter>("/admin/newsletter"),
+  customer: (email: string) => adminRequest<AdminCustomerDetail>(`/admin/customers/${encodeURIComponent(email)}`),
+  saveCustomerNote: (email: string, note: string) =>
+    adminRequest<null>(`/admin/customers/${encodeURIComponent(email)}/note`, {
+      method: "PUT",
+      body: JSON.stringify({ note }),
+    }),
+  customersCsvUrl: () => `${API_URL}/admin/customers/clientes.csv`,
   subscribersCsvUrl: () => `${API_URL}/admin/newsletter/suscriptos.csv`,
   testLetter: (input: { subject: string; body: string; email: string }) =>
     adminRequest<null>("/admin/newsletter/test", { method: "POST", body: JSON.stringify(input) }),

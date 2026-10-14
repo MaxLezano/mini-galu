@@ -1,12 +1,20 @@
-import type { AccountAddress, AccountOrder, AccountProfile, ChildInput } from "@mini-galu/contracts";
+import type {
+  AccountAddress,
+  AccountOrder,
+  AccountProfile,
+  AdminCustomerOrder,
+  ChildInput,
+} from "@mini-galu/contracts";
 import type {
   AddressData,
+  AdminCustomerRepository,
   ChildRecord,
   CustomerOrders,
   CustomerRepository,
   NewsletterPort,
   WishItemRecord,
 } from "../application/ports";
+import type { CustomerAccountFact, CustomerOrderFact } from "../domain/customer-list";
 
 export class MemoryCustomers implements CustomerRepository {
   profiles = new Map<string, AccountProfile>();
@@ -161,5 +169,32 @@ export class MemoryNewsletterPort implements NewsletterPort {
   }
   async unsubscribeEmail(email: string) {
     this.subscribed.delete(email);
+  }
+}
+
+/** Clientes del panel en memoria: los hechos se cargan a mano en cada test. */
+export class MemoryAdminCustomers implements AdminCustomerRepository {
+  orders: CustomerOrderFact[] = [];
+  accounts: CustomerAccountFact[] = [];
+  orderLists = new Map<string, AdminCustomerOrder[]>();
+  collections = new Map<string, string[]>();
+  notes = new Map<string, string>();
+  async orderFacts() {
+    return this.orders;
+  }
+  async accountFacts() {
+    return this.accounts;
+  }
+  async ordersOf(email: string) {
+    return this.orderLists.get(email) ?? [];
+  }
+  async collectionsOf(email: string) {
+    return this.collections.get(email) ?? [];
+  }
+  async note(email: string) {
+    return this.notes.get(email) ?? "";
+  }
+  async setNote(email: string, note: string) {
+    this.notes.set(email, note);
   }
 }

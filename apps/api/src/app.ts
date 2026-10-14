@@ -41,9 +41,12 @@ import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
+import { AdminCustomersService } from "./customers/application/admin-customers-service";
 import { CustomerService } from "./customers/application/customer-service";
+import { DrizzleAdminCustomers } from "./customers/infrastructure/drizzle-admin-customers";
 import { DrizzleCustomerOrders, DrizzleCustomers } from "./customers/infrastructure/drizzle-customers";
 import { accountRoutes, wishlistRoutes } from "./customers/infrastructure/http/account-routes";
+import { adminCustomerRoutes } from "./customers/infrastructure/http/admin-customer-routes";
 import { GiftcardService } from "./giftcards/application/giftcard-service";
 import type { GiftcardRecord } from "./giftcards/application/ports";
 import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
@@ -430,6 +433,10 @@ export function buildApp(config: Config) {
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
+    .route(
+      "/admin/customers",
+      adminCustomerRoutes(new AdminCustomersService(new DrizzleAdminCustomers(db, storage, formatOrderNumber))),
+    )
     .route(
       "/admin/automations",
       adminAutomationRoutes(automations, () => ({

@@ -1,5 +1,6 @@
 export * from "./account";
 export * from "./admin";
+export * from "./admin-customers";
 export * from "./admin-orders";
 export * from "./api";
 export * from "./automations";

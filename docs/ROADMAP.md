@@ -207,7 +207,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   de su mail. Consulta de saldo, campo "Gift card" en el checkout (descuenta del total; si cubre todo, el pedido queda
   pagado sin Mercado Pago) y el saldo se descuenta una sola vez al pagarse el pedido
 - ⏳ Usar una gift card en el taller (cobro presencial / link de pago desde el panel)
-- ⏳ Clientes en el panel: nenas, cumples próximos, ficha con pedidos
+- ✅ Clientes en el panel: todo el que compró (con o sin cuenta, por mail) y las cuentas, con nenas, próximo cumple,
+  pedidos y gastado; filtros (cumple en 30 días, volvieron a comprar, nuevas del mes), búsqueda, ficha con
+  contacto, resumen ("le gustan" por colección), pedidos y nota del taller; exportar CSV
 
 ## Seguridad del panel — obligatorio antes del deploy (fase 10) · hecho
 - ✅ **Verificación en dos pasos** (plugin `twoFactor` de Better Auth): "Seguridad" en el panel activa la app

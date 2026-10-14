@@ -414,3 +414,49 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
     .click();
   await expect(page.locator("#toast")).toContainText("mensajes de prueba");
 });
+
+test("clientes: la cuenta con su nena aparece con el cumple cerca y la nota queda guardada", async ({
+  page,
+  request,
+}) => {
+  // una clienta se registra y carga a su nena (cumple en 10 días)
+  const email = `clienta-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  const api = "http://localhost:4000";
+  const headers = { origin: "http://localhost:3000" };
+  const signUp = await request.post(`${api}/auth/sign-up/email`, {
+    headers,
+    data: { email, password: "Clave.Prueba1", name: "Ana Prueba", firstName: "Ana", lastName: "Prueba" },
+  });
+  expect(signUp.ok()).toBe(true);
+  const soon = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(5, 10);
+  const child = await request.post(`${api}/me/children`, {
+    headers,
+    data: { name: "Olivia", birthday: `2021-${soon}`, size: "6", heightCm: null },
+  });
+  expect(child.ok()).toBe(true);
+
+  await login(page);
+  await page.goto("/taller/clientes");
+  await ready(page);
+  await page.getByLabel("Buscar cliente").fill(email);
+  const row = page.locator("table.t tbody tr", { hasText: "Ana Prueba" });
+  await expect(row).toContainText("Olivia · T6");
+  await expect(row.locator(".bd.soon")).toContainText(/en (9|10|11) días/);
+  await page.getByRole("button", { name: "Cumple en 30 días" }).click();
+  await expect(row).toBeVisible();
+
+  await row.click();
+  const ficha = page.getByRole("complementary", { name: "Ficha del cliente" });
+  await expect(ficha).toContainText("con cuenta");
+  await ficha.getByLabel("Notas del taller").fill("Prefiere retirar en el taller");
+  await ficha.getByLabel("Notas del taller").blur();
+  await expect(page.getByText("Nota guardada")).toBeVisible();
+
+  await page.reload();
+  await ready(page);
+  await page.getByLabel("Buscar cliente").fill(email);
+  await page.locator("table.t tbody tr", { hasText: "Ana Prueba" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "Ficha del cliente" }).getByLabel("Notas del taller"),
+  ).toHaveValue("Prefiere retirar en el taller");
+});

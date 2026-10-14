@@ -47,7 +47,7 @@ const NAV: [string, NavItem[]][] = [
     "Tienda",
     [
       { href: "/taller/productos", icon: Shirt, label: "Productos", count: "stock" },
-      { href: "/taller/clientes", icon: Users, label: "Clientes", phase: "Fase 8" },
+      { href: "/taller/clientes", icon: Users, label: "Clientes" },
       { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú", phase: "Fase 7" },
     ],
   ],

@@ -106,3 +106,16 @@ export const favorites = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.productId] })],
 );
+
+/**
+ * Notas del taller sobre cada cliente (panel → Clientes). Van por mail porque también se anotan clientes que
+ * compraron sin cuenta.
+ */
+export const customerNotes = pgTable("customer_notes", {
+  email: text().primaryKey(),
+  note: text().notNull(),
+  updatedAt: timestamp({ withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});

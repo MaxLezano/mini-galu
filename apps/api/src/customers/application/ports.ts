@@ -4,10 +4,12 @@ import type {
   AccountOrder,
   AccountProfile,
   AddressInputSchema,
+  AdminCustomerOrder,
   ChildInput,
   ProfileUpdate,
 } from "@mini-galu/contracts";
 import type { z } from "zod";
+import type { CustomerAccountFact, CustomerOrderFact } from "../domain/customer-list";
 
 export type AddressData = z.output<typeof AddressInputSchema>;
 
@@ -78,4 +80,18 @@ export interface GiftcardsPort {
 export interface NewsletterPort {
   subscribe(email: string, source: string): Promise<void>;
   unsubscribeEmail(email: string): Promise<void>;
+}
+
+/** Lo que necesita Clientes en el panel del taller. */
+export interface AdminCustomerRepository {
+  /** Pedidos que cuentan (sin los checkouts web sin pagar). */
+  orderFacts(): Promise<CustomerOrderFact[]>;
+  /** Cuentas de clientes (no del taller) con sus nenas. */
+  accountFacts(): Promise<CustomerAccountFact[]>;
+  /** Pedidos de ese mail, del más nuevo al más viejo. */
+  ordersOf(email: string): Promise<AdminCustomerOrder[]>;
+  /** Colecciones de lo que compró, de la que más a la que menos. */
+  collectionsOf(email: string): Promise<string[]>;
+  note(email: string): Promise<string>;
+  setNote(email: string, note: string): Promise<void>;
 }
