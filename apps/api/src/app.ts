@@ -12,6 +12,7 @@ import {
   DrizzleAutomationOrders,
   DrizzleAutomationSettings,
   DrizzleBirthdays,
+  DrizzleIdleCarts,
   DrizzleLowStock,
   DrizzleRunLog,
   DrizzleWaitlist,
@@ -362,10 +363,17 @@ export function buildApp(config: Config) {
             url: `${config.webOrigin}/producto/${p.slug}`,
           })),
     },
+    new DrizzleIdleCarts(
+      db,
+      (path) => storage.url(path),
+      (slug) => `${config.webOrigin}/producto/${slug}`,
+    ),
     {
       tracking: (n) => `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(n)}`,
       product: (slug) => `${config.webOrigin}/producto/${slug}`,
       catalog: (size) => `${config.webOrigin}/catalogo?talle=${encodeURIComponent(size)}`,
+      // con sesión, ingresar pasa directo al checkout con la bolsa de la cuenta
+      bag: `${config.webOrigin}/ingresar?volver=%2Fcheckout`,
       site: config.webOrigin,
       workshop: `${WORKSHOP}, CABA`,
     },
@@ -416,6 +424,7 @@ export function buildApp(config: Config) {
     scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
     scheduler.every(600, "stock bajo", () => automations.checkLowStock());
     scheduler.every(3600, "cumples que se acercan", () => automations.birthdays());
+    scheduler.every(1800, "bolsas abandonadas", () => automations.idleCarts());
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
   }
 

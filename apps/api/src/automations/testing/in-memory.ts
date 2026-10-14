@@ -4,6 +4,8 @@ import type {
   AutomationSettingsStore,
   Birthdays,
   ChildBirthday,
+  IdleCart,
+  IdleCarts,
   LowStock,
   Messenger,
   NewRun,
@@ -151,5 +153,12 @@ export class MemorySuggestions implements Suggestions {
   bySize = new Map<string, Suggestion[]>();
   async inSize(size: string, limit: number) {
     return (this.bySize.get(size) ?? []).slice(0, limit);
+  }
+}
+
+export class MemoryIdleCarts implements IdleCarts {
+  list: IdleCart[] = [];
+  async between(from: Date, to: Date) {
+    return this.list.filter((c) => c.updatedAt >= from && c.updatedAt <= to);
   }
 }

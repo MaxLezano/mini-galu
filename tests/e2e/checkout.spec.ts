@@ -147,3 +147,29 @@ test("retiro en sucursal Andreani: se elige la sucursal del código postal", asy
   await page.locator("#pay").click();
   await expect(page.getByRole("dialog", { name: "Pago aprobado" })).toContainText("Lo retirás en la sucursal Palermo");
 });
+
+test("bolsa abandonada: el link del recordatorio lleva a ingresar y de ahí al checkout con la bolsa de la cuenta", async ({
+  page,
+  context,
+}) => {
+  const email = `bolsa-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  await page.goto("/ingresar?crear");
+  const auth = page.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Lucía");
+  await auth.getByLabel("Apellido").fill("Prueba");
+  await auth.getByLabel("Email").fill(email);
+  await auth.getByLabel("Contraseña", { exact: true }).fill("Clave.Segura1");
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/cuenta/);
+  await page.goto("/producto/mono-verde");
+  const saved = page.waitForResponse((r) => r.url().includes("/cart/items") && r.ok());
+  await page.getByRole("button", { name: "Agregar a la bolsa" }).first().click();
+  await saved;
+  await page.evaluate(() => localStorage.clear());
+
+  // el link del mail (con sesión pasa directo)
+  await page.goto("/ingresar?volver=%2Fcheckout");
+  await expect(page).toHaveURL(/\/checkout/);
+  await expect(page.locator(".s-item")).toContainText("Moño Verde Largo");
+  await context.clearCookies();
+});

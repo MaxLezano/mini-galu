@@ -189,7 +189,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Se acerca un cumple: 15 días antes del cumple de cada nena de "Mis nenas" (con talle), mail con 3 prendas
   con stock en su talle, link al catálogo filtrado y el cupón "Mail de cumpleaños" vigente; una vez por cumple, desde
   las 9 (al cargar la nena, en el momento). El cupón de cumple solo vale con el email que recibió el aviso (45 días)
-- 🟡 Bolsa abandonada → fase 8 (necesita la bolsa guardada en la cuenta)
+- ✅ Bolsa abandonada: si alguien con cuenta deja la bolsa 24 h sin tocar (hasta 7 días), mail de 9 a 21 con
+  las fotos de lo que sigue con stock (hasta 3) y el link a su bolsa (ingresar → checkout); una vez por cada vez que
+  la deja. No sale si tiene un pedido esperando el pago (de eso se ocupa el recordatorio del link)
 - ✅ Newsletter "Cartas del taller": suscripción desde el pie (mail de bienvenida), baja en un clic con el link de
   cada carta, y en Tienda y pagos: suscriptos, CSV, escribir una carta, mandarse una prueba y enviarla a todos
 
@@ -229,6 +231,6 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)
-Cupones automáticos, bolsa abandonada, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
+Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
 Club Mini Galú, "talles que crecen", PWA del panel con push, etiquetas en lote, reporte mensual, costos por prenda,
 stock de materiales, varias usuarias con permisos, Umami, backups.

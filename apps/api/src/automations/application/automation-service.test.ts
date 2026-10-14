@@ -4,6 +4,7 @@ import {
   MemoryAutomationOrders,
   MemoryAutomationSettings,
   MemoryBirthdays,
+  MemoryIdleCarts,
   MemoryLowStock,
   MemoryMessenger,
   MemoryRunLog,
@@ -11,6 +12,7 @@ import {
   MemoryWaitlist,
 } from "../testing/in-memory";
 import { AutomationService } from "./automation-service";
+import type { IdleCart } from "./ports";
 
 const DAY = 86_400_000;
 const channels = {
@@ -29,6 +31,7 @@ let waitlist: MemoryWaitlist;
 let lowStock: MemoryLowStock;
 let kids: MemoryBirthdays;
 let suggestions: MemorySuggestions;
+let carts: MemoryIdleCarts;
 let auto: AutomationService;
 
 beforeEach(() => {
@@ -59,6 +62,7 @@ beforeEach(() => {
   lowStock = new MemoryLowStock();
   kids = new MemoryBirthdays();
   suggestions = new MemorySuggestions();
+  carts = new MemoryIdleCarts();
   auto = new AutomationService(
     settings,
     runs,
@@ -68,10 +72,12 @@ beforeEach(() => {
     lowStock,
     kids,
     suggestions,
+    carts,
     {
       tracking: (n) => `http://web/seguimiento?pedido=${n}`,
       product: (s) => `http://web/producto/${s}`,
       catalog: (size) => `http://web/catalogo?talle=${size}`,
+      bag: "http://web/ingresar?volver=%2Fcheckout",
       site: "http://web",
       workshop: "Villa Crespo, CABA",
     },
@@ -159,19 +165,18 @@ describe("automatizaciones", () => {
     runs.paid.set("o1", new Date(now.getTime() + 1000));
     const a = await auto.admin(channels);
     expect(a.rules.find((r) => r.key === "pago_aprobado")).toMatchObject({ on: true, runs: 1 });
-    expect(a.rules.find((r) => r.key === "bolsa_abandonada")).toMatchObject({ on: false });
+    expect(a.rules.find((r) => r.key === "bolsa_abandonada")).toMatchObject({ on: true });
     expect(a.rules.find((r) => r.key === "cumple")).toMatchObject({ on: true });
     expect(a.rules.find((r) => r.key === "etiqueta")).toMatchObject({ on: true, message: null });
     expect(a.stats).toMatchObject({ sent: { mail: 2, whatsapp: 0 }, remindedLinks: 1, recoveredLinks: 1 });
     await expect(auto.update("etiqueta", { on: false })).rejects.toBeInstanceOf(ConflictError);
-    await expect(auto.update("bolsa_abandonada", { on: true })).rejects.toThrow("fase 8");
     await expect(auto.update("stock_bajo", { message: "x" })).rejects.toThrow("no manda mensajes");
   });
 
   it("enviarme una prueba: todos los mensajes activos con datos de ejemplo", async () => {
     await auto.update("despachado", { on: false });
     const n = await auto.test("gaby@minigalu.com.ar");
-    expect(n).toBe(6); // pago, entregado, listo para retirar, volvió un talle, link y cumple (despachado pausado)
+    expect(n).toBe(7); // pago, entregado, listo para retirar, volvió un talle, link, bolsa y cumple (despachado pausado)
     expect(messenger.sent.every((m) => m.to === "gaby@minigalu.com.ar" && m.subject?.startsWith("[Prueba]"))).toBe(
       true,
     );
@@ -249,6 +254,79 @@ describe("automatizaciones", () => {
       now = new Date("2026-10-14T12:00:00-03:00");
       await auto.update("cumple", { on: false });
       expect(await auto.birthdays()).toBe(0);
+    });
+  });
+
+  describe("bolsa abandonada", () => {
+    const item = (name: string, size: string) => ({
+      name,
+      size,
+      priceCents: 3_200_000,
+      imageUrl: "http://api/media/x.webp",
+      url: "http://web/producto/x",
+    });
+    const bag = (over: Partial<IdleCart> = {}) => ({
+      cartId: "k1",
+      updatedAt: new Date(now.getTime() - 25 * 3_600_000),
+      firstName: "Lucía",
+      lastName: "Fernández",
+      email: "Lucia@Gmail.com",
+      items: [
+        item("Vestido Samanta", "6"),
+        item("Set Maddie", "12m"),
+        item("Moño", "Único"),
+        item("Vestido Elsa", "6"),
+      ],
+      ...over,
+    });
+
+    it("a las 24 h sin tocarla: mail con las fotos (hasta 3) y el link a la bolsa, una vez", async () => {
+      carts.list = [bag()];
+      expect(await auto.idleCarts()).toBe(1);
+      expect(await auto.idleCarts()).toBe(0);
+      expect(messenger.sent).toEqual([
+        {
+          kind: "mensaje",
+          to: "Lucia@Gmail.com",
+          subject: "Te quedaron prendas en la bolsa ♡",
+          eyebrow: "Tu bolsa te espera",
+          body: "Hola Lucía! Te quedaron prendas en la bolsa. Todavía hay stock en tu talle: http://web/ingresar?volver=%2Fcheckout",
+          products: expect.any(Array),
+        },
+      ]);
+      expect(messenger.sent[0]?.products?.map((p) => p.name)).toEqual([
+        "Vestido Samanta · talle 6",
+        "Set Maddie · talle 12 m",
+        "Moño",
+      ]);
+      expect(runs.list[0]).toMatchObject({
+        rule: "bolsa_abandonada",
+        subject: "Lucía Fernández",
+        detail: "Recordatorio de 4 prendas por mail a Lucia@Gmail.com",
+        contact: "lucia@gmail.com",
+      });
+      // si la vuelve a tocar y la deja otra vez, sale otro recordatorio
+      carts.list = [bag({ updatedAt: new Date(now.getTime() - 30 * 3_600_000) })];
+      expect(await auto.idleCarts()).toBe(1);
+    });
+
+    it("no antes de las 24 h, ni después de 7 días, ni vacía, ni de noche, ni con la regla pausada", async () => {
+      carts.list = [
+        bag({ cartId: "reciente", updatedAt: new Date(now.getTime() - 23 * 3_600_000) }),
+        bag({ cartId: "vieja", updatedAt: new Date(now.getTime() - 8 * DAY) }),
+        bag({ cartId: "agotada", items: [] }),
+      ];
+      expect(await auto.idleCarts()).toBe(0);
+      carts.list = [bag()];
+      now = new Date("2026-10-14T22:00:00-03:00");
+      expect(await auto.idleCarts()).toBe(0);
+      now = new Date("2026-10-14T08:00:00-03:00");
+      carts.list = [bag()];
+      expect(await auto.idleCarts()).toBe(0);
+      now = new Date("2026-10-14T12:00:00-03:00");
+      await auto.update("bolsa_abandonada", { on: false });
+      expect(await auto.idleCarts()).toBe(0);
+      expect(messenger.sent).toEqual([]);
     });
   });
 });

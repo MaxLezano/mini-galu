@@ -16,6 +16,7 @@ import type {
   AutomationOrders,
   AutomationSettingsStore,
   Birthdays,
+  IdleCarts,
   LowStock,
   Messenger,
   OrderFacts,
@@ -27,12 +28,17 @@ import type {
 const DAY = 86_400_000;
 /** "Se acerca un cumple": cuántos días antes sale el mail. */
 export const BIRTHDAY_NOTICE_DAYS = 15;
+/** "Bolsa abandonada": horas sin tocar la bolsa antes del recordatorio, y hasta cuándo vale la pena mandarlo. */
+export const IDLE_CART_HOURS = 24;
+const IDLE_CART_MAX_DAYS = 7;
 
 export type AutomationLinks = {
   tracking: (orderNumber: string) => string;
   product: (slug: string) => string;
   /** Catálogo filtrado por talle. */
   catalog: (size: string) => string;
+  /** La bolsa de la cuenta (pasa por ingresar si no hay sesión). */
+  bag: string;
   site: string;
   /** "Villa Crespo, CABA" */
   workshop: string;
@@ -53,6 +59,7 @@ export class AutomationService {
     private readonly lowStock: LowStock,
     private readonly kids: Birthdays,
     private readonly suggestions: Suggestions,
+    private readonly carts: IdleCarts,
     private readonly links: AutomationLinks,
     private readonly clock: () => Date = () => new Date(),
   ) {}
@@ -96,7 +103,8 @@ export class AutomationService {
     const rule = AUTOMATION_RULES[key];
     if ("locked" in rule && rule.locked)
       throw new ConflictError("Esta regla es parte del flujo del pedido: no se pausa");
-    if (rule.phase) throw new ConflictError(`Esta regla llega en la ${rule.phase.toLowerCase()}`);
+    const phase = rule.phase as string | null;
+    if (phase) throw new ConflictError(`Esta regla llega en la ${phase.toLowerCase()}`);
     if (upd.message !== undefined && rule.message === null) throw new ConflictError("Esta regla no manda mensajes");
     const all = await this.settings.get();
     all[key] = { ...all[key], ...upd };
@@ -336,6 +344,56 @@ Regalo del taller: con el código ${coupon.code} tenés ${coupon.label}.`
           rule: "cumple",
           subject: `Cumple de ${c.name} · ${c.parentFirstName}`.trim(),
           detail: `Ideas en talle ${talle} por mail a ${c.email}`,
+          channel: "mail",
+          status: "ok",
+          subjectKey: key,
+          contact: c.email.toLowerCase(),
+        },
+        now,
+      );
+      n++;
+    }
+    return n;
+  }
+
+  /**
+   * Alguien con cuenta dejó prendas en la bolsa 24 h: un recordatorio con las fotos de lo que todavía tiene stock,
+   * una vez por cada vez que la deja. Bolsas de más de 7 días no (ya no es un recordatorio). Lo corre el programador,
+   * de 9 a 21 de Argentina.
+   */
+  async idleCarts(): Promise<number> {
+    if (!(await this.isOn("bolsa_abandonada"))) return 0;
+    const now = this.clock();
+    const { hour } = argentinaNow(now);
+    if (hour < 9 || hour >= 21) return 0;
+    const t = now.getTime();
+    let n = 0;
+    for (const c of await this.carts.between(
+      new Date(t - IDLE_CART_MAX_DAYS * DAY),
+      new Date(t - IDLE_CART_HOURS * 3_600_000),
+    )) {
+      if (!c.items.length) continue;
+      const key = `bolsa:${c.cartId}:${c.updatedAt.toISOString()}`;
+      if (await this.runs.exists("bolsa_abandonada", key)) continue;
+      await this.messenger.message({
+        to: c.email,
+        subject: "Te quedaron prendas en la bolsa ♡",
+        eyebrow: "Tu bolsa te espera",
+        name: null,
+        body: await this.text("bolsa_abandonada", { nombre: c.firstName, link_bolsa: this.links.bag }),
+        cta: { label: "Volver a mi bolsa", url: this.links.bag },
+        number: null,
+        products: c.items.slice(0, 3).map(({ size, ...p }) => ({
+          ...p,
+          name: size === "Único" ? p.name : `${p.name} · talle ${sizeLabel(size as Size)}`,
+        })),
+      });
+      const count = c.items.length;
+      await this.runs.add(
+        {
+          rule: "bolsa_abandonada",
+          subject: `${c.firstName} ${c.lastName}`.trim(),
+          detail: `Recordatorio de ${count} ${count === 1 ? "prenda" : "prendas"} por mail a ${c.email}`,
           channel: "mail",
           status: "ok",
           subjectKey: key,

@@ -119,3 +119,23 @@ export type Suggestion = { name: string; priceCents: number; imageUrl: string; u
 export interface Suggestions {
   inSize(size: string, limit: number): Promise<Suggestion[]>;
 }
+
+/** Bolsa de una cuenta que quedó sin tocar, con lo que todavía tiene stock. */
+export type IdleCart = {
+  cartId: string;
+  /** Último cambio de la bolsa: la clave del aviso (si la vuelve a tocar y la deja, se avisa de nuevo). */
+  updatedAt: Date;
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** Prendas publicadas con stock en el talle elegido, en el orden en que se sumaron. */
+  items: (Suggestion & { size: string })[];
+};
+
+export interface IdleCarts {
+  /**
+   * Bolsas de clientes con cuenta cuyo último cambio fue entre esas fechas. Sin las que tienen un pedido esperando
+   * el pago (de esas se ocupa el recordatorio del link).
+   */
+  between(from: Date, to: Date): Promise<IdleCart[]>;
+}

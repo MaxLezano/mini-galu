@@ -92,7 +92,7 @@ export const AUTOMATION_RULES = {
     channels: ["mail"],
     message: "Hola {nombre}! Te quedaron prendas en la bolsa. Todavía hay stock en tu talle: {link_bolsa}",
     vars: ["nombre", "link_bolsa"],
-    phase: "Fase 8",
+    phase: null,
   },
   cumple: {
     title: "Se acerca un cumple",

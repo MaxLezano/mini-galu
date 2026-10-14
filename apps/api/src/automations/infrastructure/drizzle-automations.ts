@@ -1,9 +1,26 @@
 import type { AutomationKey, AutomationRun } from "@mini-galu/contracts";
-import { and, type Db, desc, eq, gte, inArray, isNotNull, isNull, lte, schema as s, sql } from "@mini-galu/db";
+import {
+  and,
+  asc,
+  type Db,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  notExists,
+  schema as s,
+  sql,
+} from "@mini-galu/db";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
   Birthdays,
+  IdleCart,
+  IdleCarts,
   LowStock,
   NewRun,
   RuleOverrides,
@@ -213,5 +230,80 @@ export class DrizzleBirthdays implements Birthdays {
       .innerJoin(s.user, eq(s.user.id, s.children.userId))
       .where(and(isNotNull(s.children.birthday), eq(s.user.role, "customer")));
     return rows.map((r) => ({ ...r, birthday: r.birthday ?? "" }));
+  }
+}
+
+/** Bolsas de cuentas de clientes sin tocar, con lo que sigue publicado y con stock. */
+export class DrizzleIdleCarts implements IdleCarts {
+  constructor(
+    private readonly db: Db,
+    private readonly imageUrl: (path: string) => string,
+    private readonly productUrl: (slug: string) => string,
+  ) {}
+
+  async between(from: Date, to: Date): Promise<IdleCart[]> {
+    const carts = await this.db
+      .select({
+        cartId: s.carts.id,
+        updatedAt: s.carts.updatedAt,
+        firstName: s.user.firstName,
+        lastName: s.user.lastName,
+        email: s.user.email,
+      })
+      .from(s.carts)
+      .innerJoin(s.user, eq(s.user.id, s.carts.userId))
+      .where(
+        and(
+          eq(s.user.role, "customer"),
+          gte(s.carts.updatedAt, from),
+          lte(s.carts.updatedAt, to),
+          notExists(
+            this.db
+              .select({ id: s.orders.id })
+              .from(s.orders)
+              .where(and(eq(s.orders.cartId, s.carts.id), eq(s.orders.status, "esperando_pago"))),
+          ),
+        ),
+      );
+    if (!carts.length) return [];
+    const cover = sql<string | null>`(
+      select ${s.productImages.path} from ${s.productImages}
+      where ${s.productImages.productId} = ${s.products.id}
+      order by ${s.productImages.position} limit 1)`;
+    const items = await this.db
+      .select({
+        cartId: s.cartItems.cartId,
+        slug: s.products.slug,
+        name: s.products.name,
+        priceCents: s.products.priceCents,
+        size: s.variants.size,
+        imagePath: cover,
+      })
+      .from(s.cartItems)
+      .innerJoin(s.variants, eq(s.variants.id, s.cartItems.variantId))
+      .innerJoin(s.products, eq(s.products.id, s.variants.productId))
+      .where(
+        and(
+          inArray(
+            s.cartItems.cartId,
+            carts.map((c) => c.cartId),
+          ),
+          gt(s.variants.stock, 0),
+          eq(s.products.status, "published"),
+        ),
+      )
+      .orderBy(asc(s.cartItems.addedAt));
+    return carts.map((c) => ({
+      ...c,
+      items: items
+        .filter((i) => i.cartId === c.cartId)
+        .map((i) => ({
+          name: i.name,
+          size: i.size,
+          priceCents: i.priceCents,
+          imageUrl: i.imagePath ? this.imageUrl(i.imagePath) : "",
+          url: this.productUrl(i.slug),
+        })),
+    }));
   }
 }

@@ -390,6 +390,8 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
   await page.goto("/taller/automatizaciones");
   await ready(page);
   await expect(page.locator("#log")).toContainText(`#${number}`);
+  // la bolsa abandonada ya funciona (la bolsa de la cuenta está en el servidor)
+  await expect(page.locator('[data-rule="bolsa_abandonada"]').getByLabel("Activar Bolsa abandonada")).toBeEnabled();
 
   const rule = page.locator('[data-rule="despachado"]');
   await rule.getByLabel("Activar Despachado").uncheck();
