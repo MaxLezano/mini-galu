@@ -1,4 +1,4 @@
-import { boolean, index, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Tablas de Better Auth (user, session, account, verification) con los campos que exige la v1.7,
@@ -38,6 +38,8 @@ export const user = pgTable("user", {
   newsletterOptIn: boolean().notNull().default(false),
   /** Cuándo aceptó términos y privacidad (Ley 25.326 de datos personales). */
   termsAcceptedAt: timestamp({ withTimezone: true }),
+  /** Verificación en dos pasos (plugin twoFactor de Better Auth). Obligatoria para el panel en producción. */
+  twoFactorEnabled: boolean().notNull().default(false),
   ...stamps,
 });
 
@@ -85,3 +87,20 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   ...stamps,
 });
+
+/** Secreto TOTP y códigos de respaldo de la verificación en dos pasos (plugin twoFactor de Better Auth). */
+export const twoFactor = pgTable(
+  "two_factor",
+  {
+    id: text().primaryKey(),
+    secret: text().notNull(),
+    backupCodes: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verified: boolean().notNull().default(true),
+    failedVerificationCount: integer().notNull().default(0),
+    lockedUntil: timestamp({ withTimezone: true }),
+  },
+  (t) => [index().on(t.userId), index().on(t.secret)],
+);

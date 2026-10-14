@@ -1,7 +1,7 @@
 import { relative } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import type { OrderStatus } from "@mini-galu/contracts";
-import { createDb } from "@mini-galu/db";
+import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -96,6 +96,24 @@ export function buildApp(config: Config) {
     webOrigin: config.webOrigin,
     secret: config.authSecret,
     secureCookies: config.env === "production",
+    rateLimit: config.env === "production",
+    // se bloqueó una cuenta por intentos fallidos: si existe, se le avisa (la respuesta al navegador es la misma)
+    onLoginLocked: async (email) => {
+      const [u] = await db
+        .select({ email: schema.user.email, firstName: schema.user.firstName })
+        .from(schema.user)
+        .where(eq(schema.user.email, email.trim().toLowerCase()));
+      if (!u) return;
+      await notifications.message({
+        to: u.email,
+        subject: "Bloqueamos el ingreso a tu cuenta por 15 minutos",
+        eyebrow: "Seguridad de tu cuenta",
+        name: u.firstName || null,
+        body: "Hubo varios intentos fallidos de ingresar con tu email, así que pausamos el ingreso por 15 minutos. Si fuiste vos, esperá y probá de nuevo. Si no fuiste vos, cambiá la contraseña y activá la verificación en dos pasos.",
+        cta: null,
+        number: null,
+      });
+    },
   });
 
   const catalog = new CatalogService(new DrizzleProductRepository(db), new DrizzleWaitlistRepository(db), storage);
@@ -291,7 +309,7 @@ export function buildApp(config: Config) {
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
-    .use("/admin/*", requireAdmin(auth))
+    .use("/admin/*", requireAdmin(auth, config.requireAdmin2fa))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
     .route("/admin/content/home", adminHomeRoutes(content))

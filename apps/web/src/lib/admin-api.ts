@@ -40,11 +40,15 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {
+    // falta la verificación en dos pasos (producción): se manda a activarla
+    if (body?.error?.code === "two_factor_required" && typeof window !== "undefined")
+      window.location.assign("/taller/seguridad");
     const issue = body?.error?.details?.[0]?.message as string | undefined;
     throw new ApiRequestError(
       res.status,
-      body?.error?.code ?? "http_error",
-      issue ?? body?.error?.message ?? res.statusText,
+      body?.error?.code ?? body?.code ?? "http_error",
+      // la API responde { error: { message } }; Better Auth (/auth/*), { message }
+      issue ?? body?.error?.message ?? body?.message ?? res.statusText,
     );
   }
   return (res.status === 204 ? null : body) as T;
@@ -52,10 +56,29 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const adminApi = {
   signIn: (email: string, password: string) =>
-    adminRequest<{ user: { name: string } }>("/auth/sign-in/email", {
+    adminRequest<{ user?: { name: string }; twoFactorRedirect?: boolean }>("/auth/sign-in/email", {
       method: "POST",
       body: JSON.stringify({ email, password, rememberMe: true }),
     }),
+  /** Segundo paso del ingreso: código de la app (6 números) o uno de respaldo. */
+  verifySecondStep: (code: string, backup: boolean, trustDevice: boolean) =>
+    adminRequest<unknown>(backup ? "/auth/two-factor/verify-backup-code" : "/auth/two-factor/verify-totp", {
+      method: "POST",
+      body: JSON.stringify({ code: code.trim(), trustDevice }),
+    }),
+  enableTwoFactor: (password: string) =>
+    adminRequest<{ totpURI: string; backupCodes: string[] }>("/auth/two-factor/enable", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+  /** Confirma la activación con el primer código de la app. */
+  confirmTwoFactor: (code: string) =>
+    adminRequest<unknown>("/auth/two-factor/verify-totp", {
+      method: "POST",
+      body: JSON.stringify({ code: code.trim() }),
+    }),
+  disableTwoFactor: (password: string) =>
+    adminRequest<unknown>("/auth/two-factor/disable", { method: "POST", body: JSON.stringify({ password }) }),
   signOut: () => adminRequest<unknown>("/auth/sign-out", { method: "POST", body: "{}" }),
   products: () => adminRequest<AdminProduct[]>("/admin/catalog/products"),
   collections: () => adminRequest<Collection[]>("/admin/catalog/collections"),

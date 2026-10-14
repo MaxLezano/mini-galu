@@ -74,7 +74,13 @@ export const ACCEPTED_IMAGE_TYPES = ["image/webp", "image/jpeg", "image/png", "i
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 /* ------------------------------------------------------------------ sesión */
-export const AdminSessionSchema = z.object({ id: z.string(), name: z.string(), email: z.string() });
+export const AdminSessionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  /** Verificación en dos pasos activada (obligatoria para el panel en producción). */
+  twoFactorEnabled: z.boolean(),
+});
 export type AdminSession = z.infer<typeof AdminSessionSchema>;
 
 /* ------------------------------------------------------------------ lanzamientos (panel) */

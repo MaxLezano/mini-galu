@@ -31,6 +31,8 @@ const EnvSchema = z.object({
   ANDREANI_BRANCHES: z.enum(["andreani", "fake"]).optional(),
   /** API REST de Andreani. Sin todas estas variables, envíos simulados (FakeAndreani) y tabla por zona. */
   ANDREANI_ENV: z.enum(["qa", "produccion"]).default("qa"),
+  /** El panel exige verificación en dos pasos (por defecto, solo en producción). */
+  REQUIRE_ADMIN_2FA: z.enum(["true", "false"]).optional(),
   ANDREANI_USER: z.string().optional(),
   ANDREANI_PASSWORD: z.string().optional(),
   ANDREANI_CLIENT: z.string().optional(),
@@ -60,6 +62,7 @@ export type Config = {
   trackingEverySeconds: number;
   branches: "andreani" | "fake";
   andreani: AndreaniConfig | null;
+  requireAdmin2fa: boolean;
 };
 
 export function loadConfig(): Config {
@@ -97,6 +100,7 @@ export function loadConfig(): Config {
     fakeAndreaniSpeed: env.FAKE_ANDREANI_SPEED,
     trackingEverySeconds: env.TRACKING_EVERY_SECONDS,
     branches: env.ANDREANI_BRANCHES ?? (env.NODE_ENV === "test" ? "fake" : "andreani"),
+    requireAdmin2fa: env.REQUIRE_ADMIN_2FA ? env.REQUIRE_ADMIN_2FA === "true" : env.NODE_ENV === "production",
     andreani:
       env.ANDREANI_USER &&
       env.ANDREANI_PASSWORD &&

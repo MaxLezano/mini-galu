@@ -11,6 +11,7 @@ import {
   type LucideIcon,
   Menu,
   MessageCircleHeart,
+  ShieldCheck,
   Shirt,
   Store,
   Users,
@@ -55,6 +56,7 @@ const NAV: [string, NavItem[]][] = [
     [
       { href: "/taller/automatizaciones", icon: Workflow, label: "Automatizaciones" },
       { href: "/taller/tienda", icon: Store, label: "Tienda y pagos" },
+      { href: "/taller/seguridad", icon: ShieldCheck, label: "Seguridad" },
     ],
   ],
 ];

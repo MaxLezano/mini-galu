@@ -204,11 +204,13 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ⏳ Gift cards con diseño elegible y vista previa, consulta de saldo
 - ⏳ Clientes en el panel: nenas, cumples próximos, ficha con pedidos
 
-## Seguridad del panel — obligatorio antes del deploy (fase 10)
-- ⏳ **Verificación en dos pasos** para las cuentas admin (TOTP con app autenticadora + códigos de respaldo;
-  plugin `twoFactor` de Better Auth). Sin 2FA activado, el panel no se habilita en producción.
-- ⏳ **Límite de intentos de login**: bloqueo temporal por IP y por cuenta tras varios intentos fallidos (rate limit de
-  Better Auth en `/sign-in/email` + aviso por mail a la cuenta), mensajes que no revelan si el email existe.
+## Seguridad del panel — obligatorio antes del deploy (fase 10) · hecho
+- ✅ **Verificación en dos pasos** (plugin `twoFactor` de Better Auth): "Seguridad" en el panel activa la app
+  autenticadora con QR (o clave a mano), confirma con el primer código y muestra 8 códigos de respaldo; el ingreso pide
+  el código (o uno de respaldo) y puede recordar el dispositivo 30 días. Con `REQUIRE_ADMIN_2FA` (por defecto en
+  producción) la API no deja usar el panel sin 2FA y la web manda a activarla.
+- ✅ **Límite de intentos**: rate limit por IP de Better Auth en producción (10 ingresos por minuto) y bloqueo por cuenta
+  tras 8 fallos en 15 min, con aviso por mail a la cuenta; la respuesta es igual exista o no el email.
 - ✅ El panel vive en `/taller` del mismo dominio (sin subdominio), sin links desde la tienda y con `noindex`;
   la API exige sesión con rol admin en todo `/admin/*`.
 

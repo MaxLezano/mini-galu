@@ -21,6 +21,11 @@ import { API_URL } from "./api";
 async function serverRequest<T>(path: string): Promise<T> {
   const cookie = (await cookies()).toString();
   const res = await fetch(`${API_URL}${path}`, { headers: { cookie }, cache: "no-store" });
+  if (res.status === 403) {
+    const body = (await res.json().catch(() => null)) as { error?: { code?: string } } | null;
+    // la cuenta entra pero le falta la verificación en dos pasos (obligatoria en producción)
+    if (body?.error?.code === "two_factor_required") redirect("/taller/seguridad");
+  }
   if (res.status === 401 || res.status === 403) redirect("/taller/ingresar");
   if (!res.ok) throw new Error(`API ${path}: ${res.status}`);
   return res.json() as Promise<T>;
@@ -33,7 +38,12 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   const res = await fetch(`${API_URL}/auth/get-session`, { headers: { cookie }, cache: "no-store" }).catch(() => null);
   const data = (await res?.json().catch(() => null)) as { user?: AdminSession & { role?: string } } | null;
   if (data?.user?.role !== "admin") return null;
-  return { id: data.user.id, name: data.user.name, email: data.user.email };
+  return {
+    id: data.user.id,
+    name: data.user.name,
+    email: data.user.email,
+    twoFactorEnabled: !!data.user.twoFactorEnabled,
+  };
 }
 
 export const adminServer = {
