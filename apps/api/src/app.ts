@@ -43,7 +43,7 @@ import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
 import { CustomerService } from "./customers/application/customer-service";
 import { DrizzleCustomerOrders, DrizzleCustomers } from "./customers/infrastructure/drizzle-customers";
-import { accountRoutes } from "./customers/infrastructure/http/account-routes";
+import { accountRoutes, wishlistRoutes } from "./customers/infrastructure/http/account-routes";
 import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
@@ -277,7 +277,7 @@ export function buildApp(config: Config) {
     (t) => `${config.webOrigin}/cartas/baja?t=${encodeURIComponent(t)}`,
   );
   const customers = new CustomerService(
-    new DrizzleCustomers(db),
+    new DrizzleCustomers(db, storage),
     new DrizzleCustomerOrders(db, storage, formatOrderNumber),
     newsletter,
   );
@@ -297,6 +297,8 @@ export function buildApp(config: Config) {
     },
   );
   events.on("PaymentApproved", (e) => automations.paymentApproved(String(e.payload.orderId)));
+  // lista de cumple: lo que se regaló con este pedido queda marcado
+  events.on("PaymentApproved", (e) => customers.wishGifted(String(e.payload.orderId)).then(() => {}));
   events.on("OrderStatusChanged", (e) =>
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
@@ -344,6 +346,7 @@ export function buildApp(config: Config) {
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/me", accountRoutes(auth, customers))
+    .route("/lists", wishlistRoutes(customers))
     .get("/account/options", (c) => c.json({ google: !!config.google }))
     .use("/admin/*", requireAdmin(auth, config.requireAdmin2fa))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))

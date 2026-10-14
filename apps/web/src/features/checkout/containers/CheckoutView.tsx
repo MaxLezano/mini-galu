@@ -20,6 +20,7 @@ import { useCart } from "@/features/cart/cart-store";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
 import { toast, useUi } from "@/features/shell/ui-store";
+import { useGifts } from "@/features/wishlist/gift-store";
 import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
 import { Embroidery } from "@/ui/atoms/Embroidery";
@@ -218,7 +219,14 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const placeOrder = useCallback(async () => {
     setBusy(true);
     try {
-      const placed = await api.placeOrder({ contact, shipping: toShippingInput(ship), couponCode: coupon });
+      // prendas de una lista de cumple que siguen en la bolsa: se marcan como regaladas al pagarse
+      const wishItemIds = useGifts.getState().forCart(useCart.getState().lines);
+      const placed = await api.placeOrder({
+        contact,
+        shipping: toShippingInput(ship),
+        couponCode: coupon,
+        wishItemIds,
+      });
       setOrder({ ...placed, key: orderKey });
       return true;
     } catch (e) {
@@ -250,6 +258,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     if (r.outcome === "rejected") return setPayError(r.message);
     const receipt = await api.receipt(currentOrder.number, currentOrder.accessToken);
     setDone(receipt);
+    useGifts.getState().clear();
     void refreshCart();
   };
 

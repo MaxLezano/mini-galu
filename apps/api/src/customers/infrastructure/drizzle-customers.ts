@@ -1,7 +1,15 @@
+import { randomBytes } from "node:crypto";
 import type { AccountAddress, AccountOrder, ChildInput, ProfileUpdate } from "@mini-galu/contracts";
-import { and, type Db, desc, eq, inArray, or, schema as s } from "@mini-galu/db";
+import { and, type Db, desc, eq, inArray, isNull, or, schema as s } from "@mini-galu/db";
 import type { ImageStorage } from "../../shared/media/image-storage";
-import type { AddressData, CustomerOrders, CustomerRepository } from "../application/ports";
+import type {
+  AddressData,
+  ChildRecord,
+  CustomerOrders,
+  CustomerRepository,
+  WishItemRecord,
+} from "../application/ports";
+import { wishSlug } from "../domain/wishlist";
 
 const toAddress = (r: typeof s.addresses.$inferSelect): AccountAddress => ({
   id: r.id,
@@ -16,16 +24,20 @@ const toAddress = (r: typeof s.addresses.$inferSelect): AccountAddress => ({
   isDefault: r.isDefault,
 });
 
-const toChild = (r: typeof s.children.$inferSelect) => ({
+const toChild = (r: typeof s.children.$inferSelect): ChildRecord => ({
   id: r.id,
   name: r.name,
   birthday: r.birthday,
   size: r.size,
   heightCm: r.heightCm,
+  wishSlug: r.wishSlug ?? "",
 });
 
 export class DrizzleCustomers implements CustomerRepository {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly storage: ImageStorage,
+  ) {}
 
   async profile(userId: string) {
     const [u] = await this.db.select().from(s.user).where(eq(s.user.id, userId));
@@ -57,15 +69,31 @@ export class DrizzleCustomers implements CustomerRepository {
   }
 
   async children(userId: string) {
-    return (
-      await this.db.select().from(s.children).where(eq(s.children.userId, userId)).orderBy(s.children.createdAt)
-    ).map(toChild);
+    const rows = await this.db
+      .select()
+      .from(s.children)
+      .where(eq(s.children.userId, userId))
+      .orderBy(s.children.createdAt);
+    // las nenas cargadas antes de las listas de cumple no tenían link: se les arma uno
+    for (const r of rows.filter((x) => !x.wishSlug)) {
+      r.wishSlug = wishSlug(r.name, randomBytes(3).toString("hex").slice(0, 4));
+      await this.db.update(s.children).set({ wishSlug: r.wishSlug }).where(eq(s.children.id, r.id));
+    }
+    return rows.map(toChild);
   }
 
-  async addChild(userId: string, c: ChildInput) {
+  async child(userId: string, id: string) {
+    const [r] = await this.db
+      .select()
+      .from(s.children)
+      .where(and(eq(s.children.id, id), eq(s.children.userId, userId)));
+    return r ? toChild(r) : null;
+  }
+
+  async addChild(userId: string, c: ChildInput, slug: string) {
     const [r] = await this.db
       .insert(s.children)
-      .values({ ...c, userId })
+      .values({ ...c, userId, wishSlug: slug })
       .returning();
     if (!r) throw new Error("No se pudo guardar");
     return toChild(r);
@@ -86,6 +114,80 @@ export class DrizzleCustomers implements CustomerRepository {
       .where(and(eq(s.children.id, id), eq(s.children.userId, userId)))
       .returning({ id: s.children.id });
     return rows.length > 0;
+  }
+
+  async wishItems(childIds: string[]): Promise<WishItemRecord[]> {
+    if (!childIds.length) return [];
+    const rows = await this.db
+      .select({
+        id: s.wishItems.id,
+        childId: s.wishItems.childId,
+        productId: s.products.id,
+        slug: s.products.slug,
+        name: s.products.name,
+        size: s.wishItems.size,
+        priceCents: s.products.priceCents,
+        giftedBy: s.wishItems.giftedBy,
+        giftedAt: s.wishItems.giftedAt,
+      })
+      .from(s.wishItems)
+      .innerJoin(s.products, eq(s.products.id, s.wishItems.productId))
+      .where(inArray(s.wishItems.childId, childIds))
+      .orderBy(s.wishItems.createdAt);
+    if (!rows.length) return [];
+    const productIds = [...new Set(rows.map((r) => r.productId))];
+    const [images, stock] = await Promise.all([
+      this.db
+        .select({
+          productId: s.productImages.productId,
+          path: s.productImages.path,
+          position: s.productImages.position,
+        })
+        .from(s.productImages)
+        .where(inArray(s.productImages.productId, productIds)),
+      this.db
+        .select({ productId: s.variants.productId, size: s.variants.size, stock: s.variants.stock })
+        .from(s.variants)
+        .where(inArray(s.variants.productId, productIds)),
+    ]);
+    return rows.map(({ productId, ...r }) => {
+      const img = images.filter((i) => i.productId === productId).sort((a, b) => a.position - b.position)[0];
+      return {
+        ...r,
+        imageUrl: img ? this.storage.url(img.path) : "",
+        inStock: stock.some((v) => v.productId === productId && v.size === r.size && v.stock > 0),
+      };
+    });
+  }
+
+  async addWish(childId: string, slug: string, size: string) {
+    const [p] = await this.db.select({ id: s.products.id }).from(s.products).where(eq(s.products.slug, slug));
+    if (!p) return false;
+    await this.db.insert(s.wishItems).values({ childId, productId: p.id, size }).onConflictDoNothing();
+    return true;
+  }
+
+  async removeWish(childId: string, itemId: string) {
+    const rows = await this.db
+      .delete(s.wishItems)
+      .where(and(eq(s.wishItems.id, itemId), eq(s.wishItems.childId, childId)))
+      .returning({ id: s.wishItems.id });
+    return rows.length > 0;
+  }
+
+  async childBySlug(slug: string) {
+    const [r] = await this.db.select().from(s.children).where(eq(s.children.wishSlug, slug));
+    return r ? toChild(r) : null;
+  }
+
+  async markGifted(itemIds: string[], by: string, at: Date) {
+    if (!itemIds.length) return 0;
+    const rows = await this.db
+      .update(s.wishItems)
+      .set({ giftedBy: by, giftedAt: at })
+      .where(and(inArray(s.wishItems.id, itemIds), isNull(s.wishItems.giftedAt)))
+      .returning({ id: s.wishItems.id });
+    return rows.length;
   }
 
   async addresses(userId: string) {
@@ -156,6 +258,14 @@ export class DrizzleCustomerOrders implements CustomerOrders {
     private readonly storage: ImageStorage,
     private readonly formatNumber: (n: number) => string,
   ) {}
+
+  async wishGift(orderId: string) {
+    const [o] = await this.db
+      .select({ ids: s.orders.wishItemIds, firstName: s.orders.firstName })
+      .from(s.orders)
+      .where(eq(s.orders.id, orderId));
+    return o ? { itemIds: o.ids ?? [], firstName: o.firstName } : null;
+  }
 
   async ofCustomer(userId: string, email: string): Promise<AccountOrder[]> {
     const rows = await this.db

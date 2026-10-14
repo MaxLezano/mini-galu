@@ -73,6 +73,10 @@ export const accountApi = {
   addChild: (c: ChildInput) => call<AccountChild>("/me/children", json("POST", c)),
   updateChild: (id: string, c: ChildInput) => call<AccountChild>(`/me/children/${id}`, json("PUT", c)),
   deleteChild: (id: string) => call<null>(`/me/children/${id}`, { method: "DELETE" }),
+  addWish: (childId: string, slug: string, size: string) =>
+    call<AccountChild>(`/me/children/${childId}/wishlist`, json("POST", { slug, size })),
+  removeWish: (childId: string, itemId: string) =>
+    call<AccountChild>(`/me/children/${childId}/wishlist/${itemId}`, { method: "DELETE" }),
   addAddress: (a: AddressInput) => call<AccountAddress>("/me/addresses", json("POST", a)),
   updateAddress: (id: string, a: AddressInput) => call<AccountAddress>(`/me/addresses/${id}`, json("PUT", a)),
   deleteAddress: (id: string) => call<null>(`/me/addresses/${id}`, { method: "DELETE" }),

@@ -26,12 +26,14 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useAccount } from "@/features/account/account-store";
 import { contextSuggestions } from "@/features/assistant/galu-engine";
 import { cartTotal, useCart } from "@/features/cart/cart-store";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
 import { toast, useUi } from "@/features/shell/ui-store";
+import { WISH_PICK_MODAL, WishPickModal } from "@/features/wishlist/WishPickModal";
 import { ApiRequestError, api } from "@/lib/api";
 import { longDate } from "@/lib/date";
 import { sizesIn, splitLastWord, stockOf } from "@/lib/product";
@@ -252,11 +254,15 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
               <Heart />
             </button>
           </div>
-          {/* la lista de cumple necesita cuenta (fase 8): sin sesión, a ingresar y vuelve */}
+          {/* la lista de cumple necesita cuenta: sin sesión, a ingresar y vuelve */}
           <button
             type="button"
             className="link wish-link"
-            onClick={() => router.push(`/ingresar?volver=${encodeURIComponent(`/producto/${p.slug}`)}`)}
+            onClick={async () =>
+              (await useAccount.getState().signedIn())
+                ? openModal(WISH_PICK_MODAL)
+                : router.push(`/ingresar?volver=${encodeURIComponent(`/producto/${p.slug}`)}`)
+            }
           >
             <ListChecks className="i-sm" /> Sumar a una lista de cumple
           </button>
@@ -413,6 +419,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
         </div>
       )}
 
+      <WishPickModal product={p} size={size} />
       <Modal
         id="m-calc"
         label="¿Qué talle elijo?"

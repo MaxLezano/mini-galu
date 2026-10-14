@@ -1,4 +1,10 @@
-import { AddressInputSchema, ChildInputSchema, FavoritesMergeSchema, ProfileUpdateSchema } from "@mini-galu/contracts";
+import {
+  AddressInputSchema,
+  ChildInputSchema,
+  FavoritesMergeSchema,
+  ProfileUpdateSchema,
+  WishAddSchema,
+} from "@mini-galu/contracts";
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
@@ -40,6 +46,13 @@ export function accountRoutes(auth: Auth, customers: CustomerService) {
       await customers.deleteChild(c.get("userId"), c.req.param("id"));
       return c.body(null, 204);
     })
+    .post("/children/:id/wishlist", async (c) => {
+      const w = parse(WishAddSchema, await c.req.json());
+      return c.json(await customers.addWish(c.get("userId"), c.req.param("id"), w.slug, w.size), 201);
+    })
+    .delete("/children/:id/wishlist/:item", async (c) =>
+      c.json(await customers.removeWish(c.get("userId"), c.req.param("id"), c.req.param("item"))),
+    )
     .post("/addresses", async (c) =>
       c.json(await customers.addAddress(c.get("userId"), parse(AddressInputSchema, await c.req.json())), 201),
     )
@@ -64,4 +77,9 @@ export function accountRoutes(auth: Auth, customers: CustomerService) {
     .post("/favorites/merge", async (c) =>
       c.json(await customers.mergeFavorites(c.get("userId"), parse(FavoritesMergeSchema, await c.req.json()).slugs)),
     );
+}
+
+/** /lists/:slug — la lista de cumple que ve la familia (pública, sin quién regaló qué). */
+export function wishlistRoutes(customers: CustomerService) {
+  return new Hono().get("/:slug", async (c) => c.json(await customers.publicList(c.req.param("slug"))));
 }

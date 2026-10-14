@@ -125,12 +125,37 @@ export type AccountProfile = {
   createdAt: string;
 };
 
+export type AccountWishItem = {
+  id: string;
+  slug: string;
+  name: string;
+  size: string;
+  priceCents: number;
+  imageUrl: string;
+  gifted: boolean;
+  /** Quién la regaló: se muestra recién después del cumple. */
+  giftedBy: string | null;
+};
+
 export type AccountChild = {
   id: string;
   name: string;
   birthday: string | null;
   size: string | null;
   heightCm: number | null;
+  /** Link público de la lista de cumple (/lista/{wishSlug}). */
+  wishSlug: string;
+  wishlist: AccountWishItem[];
+};
+
+export const WishAddSchema = z.object({ slug: z.string().min(1).max(120), size: z.string().min(1).max(10) });
+
+/** La lista de cumple que ve la familia (sin cuenta): sin quién regaló qué. */
+export type PublicWishlist = {
+  name: string;
+  /** "2021-11-14" */
+  birthday: string | null;
+  items: (Omit<AccountWishItem, "giftedBy"> & { inStock: boolean })[];
 };
 
 export type AccountAddress = {

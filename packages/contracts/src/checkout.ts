@@ -174,6 +174,8 @@ export const PlaceOrderInputSchema = z.object({
   contact: CheckoutContactSchema,
   shipping: ShippingInputSchema,
   couponCode: z.string().trim().max(30).nullable().default(null),
+  /** Prendas de una lista de cumple que se regalan con este pedido. */
+  wishItemIds: z.array(z.uuid()).max(20).default([]),
 });
 export type PlaceOrderInput = z.input<typeof PlaceOrderInputSchema>;
 

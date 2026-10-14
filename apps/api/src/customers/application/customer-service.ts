@@ -1,23 +1,34 @@
-import type { AccountOverview, AddressInputSchema, ChildInput, ProfileUpdate } from "@mini-galu/contracts";
+import { randomBytes } from "node:crypto";
+import type {
+  AccountChild,
+  AccountOverview,
+  AddressInputSchema,
+  ChildInput,
+  ProfileUpdate,
+  PublicWishlist,
+} from "@mini-galu/contracts";
 import type { z } from "zod";
 import { NotFoundError } from "../../shared/domain/errors";
-import type { CustomerOrders, CustomerRepository, NewsletterPort } from "./ports";
+import { revealGiver, wishSlug } from "../domain/wishlist";
+import type { ChildRecord, CustomerOrders, CustomerRepository, NewsletterPort } from "./ports";
 
 type AddressData = z.output<typeof AddressInputSchema>;
 
-/** "Mi cuenta" (cuenta.html): datos, nenas, direcciones, pedidos y favoritos de quien ingresó. */
+/** "Mi cuenta" (cuenta.html): datos, nenas y su lista de cumple, direcciones, pedidos y favoritos. */
 export class CustomerService {
   constructor(
     private readonly repo: CustomerRepository,
     private readonly orders: CustomerOrders,
     private readonly newsletter: NewsletterPort,
+    private readonly clock: () => Date = () => new Date(),
+    private readonly random: () => string = () => randomBytes(3).toString("hex").slice(0, 4),
   ) {}
 
   async overview(userId: string): Promise<AccountOverview> {
     const profile = await this.repo.profile(userId);
     if (!profile) throw new NotFoundError("No encontramos tu cuenta");
     const [children, addresses, orders, favorites] = await Promise.all([
-      this.repo.children(userId),
+      this.childrenOf(userId),
       this.repo.addresses(userId),
       this.orders.ofCustomer(userId, profile.email),
       this.repo.favorites(userId),
@@ -36,19 +47,57 @@ export class CustomerService {
     return this.repo.profile(userId);
   }
 
-  addChild(userId: string, c: ChildInput) {
-    return this.repo.addChild(userId, c);
+  /* ---------------------------------------------------------------- mis nenas */
+
+  async addChild(userId: string, c: ChildInput) {
+    const r = await this.repo.addChild(userId, c, wishSlug(c.name, this.random()));
+    return this.one(r);
   }
 
   async updateChild(userId: string, id: string, c: ChildInput) {
     const r = await this.repo.updateChild(userId, id, c);
     if (!r) throw new NotFoundError("No encontramos a esa nena");
-    return r;
+    return this.one(r);
   }
 
   async deleteChild(userId: string, id: string) {
     if (!(await this.repo.deleteChild(userId, id))) throw new NotFoundError("No encontramos a esa nena");
   }
+
+  /* ---------------------------------------------------------------- lista de cumple */
+
+  async addWish(userId: string, childId: string, slug: string, size: string) {
+    const child = await this.ownChild(userId, childId);
+    if (!(await this.repo.addWish(child.id, slug, size))) throw new NotFoundError("No existe esa prenda");
+    return this.one(child);
+  }
+
+  async removeWish(userId: string, childId: string, itemId: string) {
+    const child = await this.ownChild(userId, childId);
+    if (!(await this.repo.removeWish(child.id, itemId))) throw new NotFoundError("Esa prenda ya no está en la lista");
+    return this.one(child);
+  }
+
+  /** La lista que ve la familia desde el link (sin quién regaló qué). */
+  async publicList(slug: string): Promise<PublicWishlist> {
+    const child = await this.repo.childBySlug(slug);
+    if (!child) throw new NotFoundError("No encontramos esa lista de cumple");
+    const items = await this.repo.wishItems([child.id]);
+    return {
+      name: child.name,
+      birthday: child.birthday,
+      items: items.map(({ childId: _c, giftedBy: _b, giftedAt, ...i }) => ({ ...i, gifted: !!giftedAt })),
+    };
+  }
+
+  /** Pago aprobado: las prendas de lista que venían en el pedido quedan regaladas (con el nombre de quien compró). */
+  async wishGifted(orderId: string): Promise<number> {
+    const g = await this.orders.wishGift(orderId);
+    if (!g?.itemIds.length) return 0;
+    return this.repo.markGifted(g.itemIds, g.firstName, this.clock());
+  }
+
+  /* ---------------------------------------------------------------- direcciones y favoritos */
 
   async addAddress(userId: string, a: AddressData) {
     // la primera dirección queda como predeterminada
@@ -75,5 +124,38 @@ export class CustomerService {
   async mergeFavorites(userId: string, slugs: string[]) {
     for (const s of slugs) await this.repo.setFavorite(userId, s, true);
     return this.repo.favorites(userId);
+  }
+
+  /* ---------------------------------------------------------------- ayudas */
+
+  private async ownChild(userId: string, id: string): Promise<ChildRecord> {
+    const c = await this.repo.child(userId, id);
+    if (!c) throw new NotFoundError("No encontramos a esa nena");
+    return c;
+  }
+
+  private async one(c: ChildRecord): Promise<AccountChild> {
+    const [v] = await this.view([c]);
+    if (!v) throw new NotFoundError("No encontramos a esa nena");
+    return v;
+  }
+
+  private async childrenOf(userId: string) {
+    return this.view(await this.repo.children(userId));
+  }
+
+  private async view(list: ChildRecord[]): Promise<AccountChild[]> {
+    const items = await this.repo.wishItems(list.map((c) => c.id));
+    const now = this.clock();
+    return list.map((c) => ({
+      ...c,
+      wishlist: items
+        .filter((i) => i.childId === c.id)
+        .map(({ childId: _c, inStock: _s, giftedAt, giftedBy, ...i }) => ({
+          ...i,
+          gifted: !!giftedAt,
+          giftedBy: giftedAt && revealGiver(c.birthday, giftedAt, now) ? giftedBy : null,
+        })),
+    }));
   }
 }

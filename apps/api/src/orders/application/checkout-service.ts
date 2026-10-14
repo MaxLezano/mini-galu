@@ -99,6 +99,7 @@ export class CheckoutService {
       couponId: coupon?.id ?? null,
       couponCode: coupon?.code ?? null,
       reservedUntil,
+      wishItemIds: input.wishItemIds.length ? input.wishItemIds : undefined,
       items: snap.lines.map((l) => ({
         variantId: l.variantId,
         productSlug: l.slug,

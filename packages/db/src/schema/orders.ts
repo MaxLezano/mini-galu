@@ -137,6 +137,8 @@ export const orders = pgTable(
     shippingMethod: shippingMethod().notNull(),
     shippingAddress: jsonb().$type<ShippingAddress>(),
     shippingBranch: jsonb().$type<ShippingBranch>(),
+    /** Prendas de una lista de cumple que se regalan con este pedido (se marcan al pagarse). */
+    wishItemIds: jsonb().$type<string[]>(),
     postalCode: varchar({ length: 8 }),
     province: text(),
     /** Retiro en el taller: franja elegida ("2026-10-08T10:00/13:00"). */

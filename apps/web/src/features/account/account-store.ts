@@ -10,6 +10,8 @@ type AccountState = {
   /** Consulta la sesión (al montar la tienda y después de ingresar o salir). */
   load: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** ¿Hay sesión? Si todavía se está consultando, espera la respuesta. */
+  signedIn: () => Promise<boolean>;
 };
 
 /**
@@ -27,6 +29,12 @@ export const useAccount = create<AccountState>()((set, get) => ({
       const slugs = await accountApi.mergeFavorites(local).catch(() => null);
       if (slugs) useFavorites.setState({ slugs });
     }
+  },
+  async signedIn() {
+    if (get().status === "loading") set({ user: await accountApi.session() });
+    const user = get().user;
+    if (get().status === "loading") set({ status: user ? "in" : "guest" });
+    return !!user;
   },
   async signOut() {
     await accountApi.signOut().catch(() => {});

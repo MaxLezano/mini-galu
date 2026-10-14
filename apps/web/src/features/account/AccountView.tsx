@@ -40,6 +40,7 @@ import { AddressForm } from "./components/AddressForm";
 import { CHILD_MODAL, ChildModal } from "./components/ChildModal";
 import { NenasGrid } from "./components/NenasGrid";
 import { PasswordInput } from "./components/PasswordInput";
+import { WishlistPanel } from "./components/WishlistPanel";
 import "./account.css";
 
 type Tab = "nenas" | "pedidos" | "favoritos" | "lista" | "giftcards" | "datos";
@@ -67,6 +68,7 @@ export function AccountView({ extra }: { extra?: Partial<Record<Tab, ReactNode>>
   const [editingChild, setEditingChild] = useState<AccountChild | null>(null);
   const [editingAddr, setEditingAddr] = useState<AccountAddress | "nueva" | null>(null);
   const [busy, setBusy] = useState(false);
+  const [wishFor, setWishFor] = useState<string | null>(null);
 
   const reload = useCallback(() => accountApi.overview().then(setData), []);
 
@@ -251,7 +253,24 @@ export function AccountView({ extra }: { extra?: Partial<Record<Tab, ReactNode>>
           </>,
         )}
 
-        {panel("lista", extra?.lista ?? null)}
+        {panel(
+          "lista",
+          <WishlistPanel
+            nenas={data.children}
+            selected={data.children.find((c) => c.id === wishFor) ?? data.children[0] ?? null}
+            origin={mounted ? location.origin : ""}
+            onSelect={setWishFor}
+            onRemove={(itemId) => {
+              const c = data.children.find((x) => x.id === wishFor) ?? data.children[0];
+              if (c) run(() => accountApi.removeWish(c.id, itemId).then(reload), "Quitado de la lista");
+            }}
+            onAddNena={() => {
+              setEditingChild(null);
+              openModal(CHILD_MODAL);
+            }}
+            onCopy={(url) => navigator.clipboard?.writeText(url).then(() => toast("Link copiado"))}
+          />,
+        )}
         {panel("giftcards", extra?.giftcards ?? null)}
 
         {panel(

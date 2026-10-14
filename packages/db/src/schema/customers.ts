@@ -63,9 +63,33 @@ export const children = pgTable(
     birthday: date(),
     size: text(),
     heightCm: smallint(),
+    /** Link público de su lista de cumple (/lista/olivia-7k2q). */
+    wishSlug: text().unique(),
     ...stamps,
   },
   (t) => [index().on(t.userId)],
+);
+
+/**
+ * Lista de cumple de una nena: prendas (en un talle) que la familia puede regalar. Quien compra desde el link la
+ * marca como regalada al pagarse; la dueña ve quién regaló qué recién después del cumple.
+ */
+export const wishItems = pgTable(
+  "wish_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    childId: uuid()
+      .notNull()
+      .references(() => children.id, { onDelete: "cascade" }),
+    productId: uuid()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    size: text().notNull(),
+    giftedBy: text(),
+    giftedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex().on(t.childId, t.productId, t.size), index().on(t.childId)],
 );
 
 /** Favoritos de la cuenta (la web los guarda en el navegador y los sube al ingresar). */

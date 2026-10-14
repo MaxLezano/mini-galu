@@ -95,3 +95,66 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
   await page.goto("/cuenta#favoritos");
   await expect(page.locator("#favs")).toContainText("Moño Verde Largo");
 });
+
+test("lista de cumple: se arma desde la prenda, la familia la abre sin cuenta y lo regalado queda marcado", async ({
+  page,
+  browser,
+  request,
+}) => {
+  const config = await (await request.get("http://localhost:4000/checkout/config")).json();
+  test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  const email = `lista-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  await page.goto("/ingresar?crear");
+  const auth = page.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Lucía");
+  await auth.getByLabel("Apellido").fill("Lista");
+  await auth.getByLabel("Email").fill(email);
+  await auth.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/cuenta/);
+  await page.getByRole("button", { name: /Agregar nena/ }).click();
+  const modal = page.getByRole("dialog", { name: "Agregar nena" });
+  await modal.getByLabel("Nombre").fill("Olivia");
+  await modal.getByLabel("Cumpleaños").fill("2021-11-14");
+  await modal.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.locator('[data-nena="Olivia"]')).toBeVisible();
+
+  await page.goto("/producto/mono-verde");
+  await page.getByRole("button", { name: "Sumar a una lista de cumple" }).click();
+  await page
+    .getByRole("dialog", { name: "Sumar a una lista de cumple" })
+    .getByRole("button", { name: /Olivia/ })
+    .click();
+  await expect(page.locator("#toast")).toContainText("sumado a la lista de Olivia");
+
+  await page.goto("/cuenta#lista");
+  await expect(page.locator("#wish")).toContainText("Moño Verde Largo");
+  const link = (await page.locator(".share-link span").textContent()) ?? "";
+  const path = link.slice(link.indexOf("/lista/"));
+  expect(path).toMatch(/^\/lista\/olivia-[a-f0-9]{4}$/);
+
+  // la familia (otro navegador, sin cuenta) lo regala
+  const fam = await (await browser.newContext()).newPage();
+  await fam.goto(path);
+  await expect(fam.getByRole("heading", { level: 1 })).toContainText("Olivia");
+  await fam.locator('[data-wish="mono-verde"]').getByRole("button", { name: "Lo regalo yo" }).click();
+  await fam.goto("/checkout");
+  const step = fam.getByRole("region", { name: "Tus datos" });
+  await step.getByLabel("Email").fill(`familia-${Date.now()}@ejemplo.com`);
+  await step.getByLabel("Nombre", { exact: true }).fill("Marta");
+  await step.getByLabel("Apellido").fill("Abuela");
+  await step.getByLabel("Celular").fill("11 5555-1234");
+  await step.getByRole("button", { name: /Continuar al envío/ }).click();
+  await fam.getByRole("radio", { name: /Retiro en el taller/ }).check();
+  await fam.locator(".slots .chip").first().click();
+  await fam.getByRole("button", { name: /Continuar al pago/ }).click();
+  await fam.locator("#pay").click();
+  await expect(fam.getByRole("dialog", { name: "Pago aprobado" })).toContainText("¡Gracias, Marta!");
+
+  await fam.goto(path);
+  await expect(fam.locator('[data-wish="mono-verde"]')).toContainText("Ya se lo regalaron");
+  // la dueña lo ve regalado, pero no quién (hasta el cumple)
+  await page.reload();
+  await expect(page.locator("#wish")).toContainText("Regalado");
+  await expect(page.locator("#wish")).not.toContainText("Marta");
+});

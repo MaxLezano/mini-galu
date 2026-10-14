@@ -73,3 +73,32 @@ describe("mi cuenta", () => {
     await expect(svc.setFavorite("u1", "no-existe", true)).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("lista de cumple", () => {
+  it("se arma por nena, se comparte por link y lo regalado se marca al pagar (quién, después del cumple)", async () => {
+    let now = new Date(2026, 9, 14);
+    const svc2 = new CustomerService(
+      repo,
+      orders,
+      newsletter,
+      () => now,
+      () => "7k2q",
+    );
+    const k = await svc2.addChild("u1", { name: "Olivia", birthday: "2021-11-14", size: "6", heightCm: null });
+    expect(k?.wishSlug).toBe("olivia-7k2q");
+    await svc2.addWish("u1", k?.id ?? "", "maddie", "6");
+    await svc2.addWish("u1", k?.id ?? "", "maddie", "6"); // no se repite
+    await expect(svc2.addWish("u2", k?.id ?? "", "elsa", "6")).rejects.toBeInstanceOf(NotFoundError); // otra cuenta
+    const list = await svc2.publicList("olivia-7k2q");
+    expect(list).toMatchObject({ name: "Olivia", items: [{ slug: "maddie", size: "6", gifted: false }] });
+
+    orders.gifts.set("o1", { itemIds: [list.items[0]?.id ?? ""], firstName: "Marta" });
+    expect(await svc2.wishGifted("o1")).toBe(1);
+    expect(await svc2.wishGifted("o1")).toBe(0); // idempotente
+    expect((await svc2.publicList("olivia-7k2q")).items[0]).toMatchObject({ gifted: true });
+    expect((await svc2.overview("u1")).children[0]?.wishlist[0]).toMatchObject({ gifted: true, giftedBy: null });
+    now = new Date(2026, 10, 15); // pasó el cumple
+    expect((await svc2.overview("u1")).children[0]?.wishlist[0]?.giftedBy).toBe("Marta");
+    await expect(svc2.publicList("no-existe")).rejects.toBeInstanceOf(NotFoundError);
+  });
+});

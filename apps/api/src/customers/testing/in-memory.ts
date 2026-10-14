@@ -1,9 +1,17 @@
-import type { AccountAddress, AccountChild, AccountOrder, AccountProfile, ChildInput } from "@mini-galu/contracts";
-import type { AddressData, CustomerOrders, CustomerRepository, NewsletterPort } from "../application/ports";
+import type { AccountAddress, AccountOrder, AccountProfile, ChildInput } from "@mini-galu/contracts";
+import type {
+  AddressData,
+  ChildRecord,
+  CustomerOrders,
+  CustomerRepository,
+  NewsletterPort,
+  WishItemRecord,
+} from "../application/ports";
 
 export class MemoryCustomers implements CustomerRepository {
   profiles = new Map<string, AccountProfile>();
-  kids: (AccountChild & { userId: string })[] = [];
+  kids: (ChildRecord & { userId: string })[] = [];
+  wishes: WishItemRecord[] = [];
   addrs: (AccountAddress & { userId: string })[] = [];
   favs = new Map<string, Set<string>>();
   /** Prendas que existen (para los favoritos). */
@@ -20,8 +28,14 @@ export class MemoryCustomers implements CustomerRepository {
   async children(userId: string) {
     return this.kids.filter((k) => k.userId === userId).map(({ userId: _u, ...k }) => k);
   }
-  async addChild(userId: string, c: ChildInput) {
-    const k = { ...c, id: `c${++this.seq}`, userId };
+  async child(userId: string, id: string) {
+    const k = this.kids.find((x) => x.id === id && x.userId === userId);
+    if (!k) return null;
+    const { userId: _u, ...out } = k;
+    return out;
+  }
+  async addChild(userId: string, c: ChildInput, wishSlug: string) {
+    const k = { ...c, id: `c${++this.seq}`, userId, wishSlug };
     this.kids.push(k);
     const { userId: _u, ...out } = k;
     return out;
@@ -37,6 +51,47 @@ export class MemoryCustomers implements CustomerRepository {
     const before = this.kids.length;
     this.kids = this.kids.filter((x) => !(x.id === id && x.userId === userId));
     return this.kids.length < before;
+  }
+  async wishItems(childIds: string[]) {
+    return this.wishes.filter((w) => childIds.includes(w.childId));
+  }
+  async addWish(childId: string, slug: string, size: string) {
+    if (!this.products.has(slug)) return false;
+    if (this.wishes.some((w) => w.childId === childId && w.slug === slug && w.size === size)) return true;
+    this.wishes.push({
+      id: `w${++this.seq}`,
+      childId,
+      slug,
+      name: slug,
+      size,
+      priceCents: 1000,
+      imageUrl: "",
+      inStock: true,
+      giftedBy: null,
+      giftedAt: null,
+    });
+    return true;
+  }
+  async removeWish(childId: string, itemId: string) {
+    const before = this.wishes.length;
+    this.wishes = this.wishes.filter((w) => !(w.childId === childId && w.id === itemId));
+    return this.wishes.length < before;
+  }
+  async childBySlug(slug: string) {
+    const k = this.kids.find((x) => x.wishSlug === slug);
+    if (!k) return null;
+    const { userId: _u, ...out } = k;
+    return out;
+  }
+  async markGifted(itemIds: string[], by: string, at: Date) {
+    let n = 0;
+    for (const w of this.wishes)
+      if (itemIds.includes(w.id) && !w.giftedAt) {
+        w.giftedAt = at;
+        w.giftedBy = by;
+        n++;
+      }
+    return n;
   }
   async addresses(userId: string) {
     return this.addrs.filter((a) => a.userId === userId).map(({ userId: _u, ...a }) => a);
@@ -88,6 +143,10 @@ export class MemoryCustomers implements CustomerRepository {
 
 export class MemoryCustomerOrders implements CustomerOrders {
   list: (AccountOrder & { userId: string | null; email: string })[] = [];
+  gifts = new Map<string, { itemIds: string[]; firstName: string }>();
+  async wishGift(orderId: string) {
+    return this.gifts.get(orderId) ?? null;
+  }
   async ofCustomer(userId: string, email: string) {
     return this.list
       .filter((o) => o.userId === userId || o.email === email)

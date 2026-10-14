@@ -48,6 +48,8 @@ export type NewOrder = {
   reservedUntil: Date;
   /** Por dónde entró la venta (la web por defecto; los links de pago dicen WhatsApp o Instagram). */
   channel?: OrderChannel;
+  /** Prendas de una lista de cumple que se regalan con este pedido. */
+  wishItemIds?: string[] | null;
   items: OrderItem[];
 };
 

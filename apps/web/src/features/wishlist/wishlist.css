@@ -1,0 +1,12 @@
+/* agregado (no hay mockup de la página pública): usa las piezas de cuenta.html → lista de cumple */
+.wl { padding-block: 44px 100px; max-width: 860px; }
+.wl-head { margin-bottom: 28px; }
+.wl-head h1 { margin: 12px 0 6px; }
+.wl-date { font-size: 28px; display: inline-block; transform: rotate(-2deg); margin: 0 0 12px; }
+.wl-items { display: grid; gap: 12px; }
+.wl-item { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 12px; border-radius: var(--r-md); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }
+.wl-item img { width: 64px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; display: block; }
+.wl-item b { font: 400 17px/1.15 var(--f-display); display: block; }
+.wl-item .muted { font-size: 13px; }
+.wl-item.is-gifted { opacity: .7; }
+@media (max-width: 620px) { .wl-item { grid-template-columns: 56px 1fr; } .wl-item > :last-child { grid-column: 1 / -1; justify-self: start; } }
