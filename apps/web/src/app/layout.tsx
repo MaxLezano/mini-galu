@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Fraunces, Manrope } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { SITE } from "@/lib/site";
 import "swiper/css";
@@ -7,20 +7,28 @@ import "swiper/css/pagination";
 import "swiper/css/thumbs";
 import "@/styles/globals.css";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  axes: ["SOFT", "WONK", "opsz"],
+// fuentes servidas desde el proyecto (app/fonts): no dependen de Google al compilar ni en el CI
+const fraunces = localFont({
+  src: [
+    { path: "./fonts/fraunces-latin-full-normal.woff2", style: "normal" },
+    { path: "./fonts/fraunces-latin-full-italic.woff2", style: "italic" },
+  ],
+  weight: "100 900",
   variable: "--font-fraunces",
   display: "swap",
 });
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const manrope = localFont({
+  src: "./fonts/manrope-latin-wght-normal.woff2",
+  weight: "200 800",
   variable: "--font-manrope",
   display: "swap",
 });
-const caveat = Caveat({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-caveat", display: "swap" });
+const caveat = localFont({
+  src: "./fonts/caveat-latin-wght-normal.woff2",
+  weight: "400 700",
+  variable: "--font-caveat",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: `${SITE.name} — Prendas de diseño para niñas`, template: `%s — ${SITE.name}` },
