@@ -1,3 +1,4 @@
+import type { ShippingSettings } from "@mini-galu/contracts";
 import type { Branch } from "../domain/branches";
 import type { CarrierEvent, TrackedOrder } from "../domain/tracking";
 
@@ -27,11 +28,15 @@ export type NewShipment = {
   /** Envío a sucursal: dónde retira el cliente. */
   branch: { id: string; name: string; address: string } | null;
   units: number;
+  /** Paquete, origen y remitente del panel (null si todavía no se cargaron). */
+  from: ShippingSettings | null;
 };
 
 /** Correo (Andreani). Hoy: FakeAndreani. TODO(fase 10 · shipping): AndreaniAdapter con las credenciales del contrato. */
 export interface ShippingGateway {
   readonly carrier: string;
+  /** simulado (FakeAndreani) · qa (pruebas de Andreani) · produccion */
+  readonly mode: "simulado" | "qa" | "produccion";
   createShipment(s: NewShipment): Promise<{ trackingNumber: string }>;
   /** Todo lo que informó el correo hasta ahora, en orden. */
   events(trackingNumber: string): Promise<CarrierEvent[]>;
@@ -95,4 +100,10 @@ export interface ShippableOrders {
 /** Listado de sucursales del correo (Andreani publica el suyo sin credenciales). */
 export interface BranchDirectory {
   all(): Promise<Branch[]>;
+}
+
+/** Ajustes de envío del panel (paquete, origen y remitente). */
+export interface ShippingSettingsStore {
+  get(): Promise<ShippingSettings | null>;
+  save(s: ShippingSettings): Promise<void>;
 }

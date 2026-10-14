@@ -1,4 +1,6 @@
+import { ShippingSettingsSchema } from "@mini-galu/contracts";
 import { Hono } from "hono";
+import { parse } from "../../../shared/http/errors";
 import type { ShipmentService } from "../../application/shipment-service";
 
 /** /tracking/:codigo — seguimiento público (número de pedido o de Andreani; `t` = token del pedido). */
@@ -20,4 +22,11 @@ export function adminShipmentRoutes(shipments: ShipmentService) {
         "Cache-Control": "no-store",
       });
     });
+}
+
+/** /admin/shipping — "Tienda y pagos → Envíos": paquete, origen, remitente y estado de Andreani. */
+export function adminShippingRoutes(shipments: ShipmentService) {
+  return new Hono()
+    .get("/", async (c) => c.json(await shipments.admin()))
+    .put("/", async (c) => c.json(await shipments.saveSettings(parse(ShippingSettingsSchema, await c.req.json()))));
 }

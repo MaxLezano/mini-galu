@@ -353,3 +353,29 @@ test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido
   await page.locator(".tr-form").getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByText("No encontramos ese pedido")).toBeVisible();
 });
+
+test("tienda y pagos: datos de envío para Andreani (paquete, origen y remitente)", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/tienda");
+  await ready(page);
+  const box = page.locator("#envios");
+  await expect(box).toContainText(/Andreani/);
+  await box.getByLabel("Calle").fill("");
+  await box.getByRole("button", { name: "Guardar datos de envío" }).click();
+  await expect(box.locator(".field-error")).toContainText("Poné la calle");
+
+  await box.getByLabel("Paquete por defecto").selectOption("caja_chica");
+  await box.getByLabel("Calle").fill("Gurruchaga");
+  await box.getByLabel("Altura").fill("1234");
+  await box.getByLabel("Código postal").fill("1414");
+  await box.getByLabel("Localidad").fill("CABA");
+  await box.getByLabel("Teléfono").fill("1155551234");
+  await box.getByLabel("Email").fill("hola@minigalu.com.ar");
+  await box.getByRole("button", { name: "Guardar datos de envío" }).click();
+  await expect(page.locator("#toast")).toContainText("Datos de envío guardados");
+
+  await page.reload();
+  await ready(page);
+  await expect(page.locator("#envios").getByLabel("Calle")).toHaveValue("Gurruchaga");
+  await expect(page.locator("#envios").getByLabel("Paquete por defecto")).toHaveValue("caja_chica");
+});

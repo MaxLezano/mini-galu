@@ -16,6 +16,7 @@ const shipment = (method: "domicilio" | "sucursal"): NewShipment => ({
       ? { id: "10010", name: "Palermo (Av Scalabrini Ortiz)", address: "Raúl Scalabrini Ortiz 615" }
       : null,
   units: 2,
+  from: null,
 });
 
 describe("FakeAndreani", () => {

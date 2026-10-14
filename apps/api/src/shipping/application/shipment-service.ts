@@ -1,7 +1,14 @@
-import type { PublicTracking, ShipmentCreated } from "@mini-galu/contracts";
+import type { AdminShipping, PublicTracking, ShipmentCreated, ShippingSettings } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { recipientLabel, trackingLog, trackingStops } from "../domain/tracking";
-import type { NewShipment, ShipmentRepository, ShippableOrder, ShippableOrders, ShippingGateway } from "./ports";
+import type {
+  NewShipment,
+  ShipmentRepository,
+  ShippableOrder,
+  ShippableOrders,
+  ShippingGateway,
+  ShippingSettingsStore,
+} from "./ports";
 
 /**
  * Envíos con el correo (PLAN §6): etiqueta desde el panel, consulta periódica de los eventos (que mueven el pedido a
@@ -14,8 +21,24 @@ export class ShipmentService {
     private readonly orders: ShippableOrders,
     /** Página para pagar un pedido que espera el pago (número + token). */
     private readonly payUrl: (number: string, token: string) => string,
+    private readonly settings: ShippingSettingsStore,
+    /** De dónde salen las sucursales (para mostrarlo en el panel). */
+    private readonly branchesSource: "andreani" | "fake",
     private readonly clock: () => Date = () => new Date(),
   ) {}
+
+  /** "Tienda y pagos → Envíos". */
+  async admin(): Promise<AdminShipping> {
+    return {
+      settings: await this.settings.get(),
+      andreani: { mode: this.gateway.mode, branches: this.branchesSource },
+    };
+  }
+
+  async saveSettings(s: ShippingSettings): Promise<AdminShipping> {
+    await this.settings.save(s);
+    return this.admin();
+  }
 
   /** "Generar etiqueta Andreani": da de alta el envío y deja el pedido listo para despachar. */
   async createLabel(number: string): Promise<ShipmentCreated> {
@@ -24,7 +47,11 @@ export class ShipmentService {
       throw new ConflictError("La etiqueta se genera cuando el pedido está en preparación");
     const existing = await this.shipments.byOrder(o.id);
     if (existing) return { carrier: existing.carrier, trackingNumber: existing.trackingNumber };
-    const { trackingNumber } = await this.gateway.createShipment(toNewShipment(o));
+    const from = await this.settings.get();
+    // el correo real necesita saber desde dónde sale y con qué paquete; el simulado no
+    if (!from && this.gateway.mode !== "simulado")
+      throw new ConflictError("Completá los datos de envío (origen, remitente y paquete) en Tienda y pagos");
+    const { trackingNumber } = await this.gateway.createShipment(toNewShipment(o, from));
     await this.shipments.create({ orderId: o.id, carrier: this.gateway.carrier, trackingNumber });
     await this.orders.labeled(o.id, trackingNumber);
     return { carrier: this.gateway.carrier, trackingNumber };
@@ -34,7 +61,8 @@ export class ShipmentService {
     const o = await this.shippable(number);
     const s = await this.shipments.byOrder(o.id);
     if (!s) throw new NotFoundError("Este pedido todavía no tiene etiqueta");
-    return { filename: `etiqueta-${o.number}.pdf`, pdf: await this.gateway.label(s.trackingNumber, toNewShipment(o)) };
+    const pdf = await this.gateway.label(s.trackingNumber, toNewShipment(o, await this.settings.get()));
+    return { filename: `etiqueta-${o.number}.pdf`, pdf };
   }
 
   /** Consulta al correo los envíos sin entregar. Lo corre el scheduler. */
@@ -95,7 +123,10 @@ export class ShipmentService {
   }
 }
 
-function toNewShipment(o: ShippableOrder & { shippingMethod: "domicilio" | "sucursal" }): NewShipment {
+function toNewShipment(
+  o: ShippableOrder & { shippingMethod: "domicilio" | "sucursal" },
+  from: ShippingSettings | null,
+): NewShipment {
   return {
     orderNumber: o.number,
     method: o.shippingMethod,
@@ -107,5 +138,6 @@ function toNewShipment(o: ShippableOrder & { shippingMethod: "domicilio" | "sucu
     notes: o.notes,
     branch: o.branch,
     units: o.items.reduce((a, i) => a + i.qty, 0),
+    from,
   };
 }

@@ -14,7 +14,7 @@ import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { FakeAndreani } from "../infrastructure/fake-andreani";
 import { TableShippingRates } from "../infrastructure/table-shipping-rates";
-import { MemoryShipments } from "../testing/in-memory";
+import { MemoryShipments, MemoryShippingSettings } from "../testing/in-memory";
 import { ShipmentService } from "./shipment-service";
 import { ShippingService } from "./shipping-service";
 
@@ -54,6 +54,8 @@ beforeEach(() => {
     new MemoryShipments(clock),
     new OrderShipping(orders, storage, bus, "Villa Crespo, CABA"),
     (n, t) => `http://web/pagar/${n}?t=${t}`,
+    new MemoryShippingSettings(),
+    "fake",
     clock,
   );
   let k = 0;

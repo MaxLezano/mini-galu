@@ -6,6 +6,7 @@ import type {
   AdminOrderSummary,
   AdminPayments,
   AdminProduct,
+  AdminShipping,
   Collection,
   CouponInput,
   HomeHeroInput,
@@ -18,6 +19,7 @@ import type {
   ProductStatus,
   SaveProductResult,
   ShipmentCreated,
+  ShippingSettings,
   UploadResult,
 } from "@mini-galu/contracts";
 import { API_URL, ApiRequestError } from "./api";
@@ -78,6 +80,8 @@ export const adminApi = {
     adminRequest<AdminLaunch>(`/admin/content/launches/${id}`, { method: "PUT", body: JSON.stringify(input) }),
   deleteLaunch: (id: string) => adminRequest<null>(`/admin/content/launches/${id}`, { method: "DELETE" }),
   payments: () => adminRequest<AdminPayments>("/admin/payments"),
+  saveShipping: (input: ShippingSettings) =>
+    adminRequest<AdminShipping>("/admin/shipping", { method: "PUT", body: JSON.stringify(input) }),
   savePayments: (s: PaymentSettings) =>
     adminRequest<AdminPayments>("/admin/payments", { method: "PUT", body: JSON.stringify(s) }),
   createCoupon: (input: CouponInput) =>

@@ -5,10 +5,11 @@ import { adminServer } from "@/lib/admin-server";
 export const metadata: Metadata = { title: "Tienda y pagos" };
 
 export default async function Page() {
-  const [home, launches, payments, coupons] = await Promise.all([
+  const [home, launches, payments, shipping, coupons] = await Promise.all([
     adminServer.home(),
     adminServer.launches(),
     adminServer.payments(),
+    adminServer.shipping(),
     adminServer.coupons(),
   ]);
   return (
@@ -16,6 +17,7 @@ export default async function Page() {
       home={home}
       next={launches.find((l) => l.state === "scheduled") ?? null}
       payments={payments}
+      shipping={shipping}
       coupons={coupons}
     />
   );

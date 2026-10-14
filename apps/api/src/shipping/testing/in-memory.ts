@@ -1,4 +1,5 @@
-import type { Shipment, ShipmentRepository } from "../application/ports";
+import type { ShippingSettings } from "@mini-galu/contracts";
+import type { Shipment, ShipmentRepository, ShippingSettingsStore } from "../application/ports";
 import type { CarrierEvent } from "../domain/tracking";
 
 export class MemoryShipments implements ShipmentRepository {
@@ -33,5 +34,15 @@ export class MemoryShipments implements ShipmentRepository {
   async markDelivered(shipmentId: string, at: Date) {
     const s = this.list.find((x) => x.id === shipmentId);
     if (s) s.deliveredAt = at;
+  }
+}
+
+export class MemoryShippingSettings implements ShippingSettingsStore {
+  value: ShippingSettings | null = null;
+  async get() {
+    return this.value;
+  }
+  async save(s: ShippingSettings) {
+    this.value = s;
   }
 }

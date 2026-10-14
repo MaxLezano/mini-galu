@@ -8,6 +8,7 @@ import type {
   AdminPayments,
   AdminProduct,
   AdminSession,
+  AdminShipping,
   Collection,
 } from "@mini-galu/contracts";
 import { cookies } from "next/headers";
@@ -39,6 +40,7 @@ export const adminServer = {
   launches: () => serverRequest<AdminLaunch[]>("/admin/content/launches"),
   home: () => serverRequest<AdminHome>("/admin/content/home"),
   payments: () => serverRequest<AdminPayments>("/admin/payments"),
+  shipping: () => serverRequest<AdminShipping>("/admin/shipping"),
   coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),
   orders: () => serverRequest<AdminOrderSummary[]>("/admin/orders"),
   summary: () => serverRequest<AdminDaySummary>("/admin/orders/summary"),

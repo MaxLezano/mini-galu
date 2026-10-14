@@ -29,6 +29,7 @@ const TIMELINE: Record<"domicilio" | "sucursal", [number, CarrierCode, string, s
  */
 export class FakeAndreani implements ShippingGateway {
   readonly carrier = "andreani";
+  readonly mode = "simulado" as const;
 
   constructor(
     private readonly clock: () => Date = () => new Date(),

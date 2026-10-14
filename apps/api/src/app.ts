@@ -62,8 +62,13 @@ import { ShippingService, WORKSHOP } from "./shipping/application/shipping-servi
 import { slotLabel } from "./shipping/domain/pickup";
 import { AndreaniBranches, FakeBranches } from "./shipping/infrastructure/andreani-branches";
 import { DrizzleShipmentRepository } from "./shipping/infrastructure/drizzle-shipment-repository";
+import { DrizzleShippingSettings } from "./shipping/infrastructure/drizzle-shipping-settings";
 import { FakeAndreani } from "./shipping/infrastructure/fake-andreani";
-import { adminShipmentRoutes, trackingRoutes } from "./shipping/infrastructure/http/shipment-routes";
+import {
+  adminShipmentRoutes,
+  adminShippingRoutes,
+  trackingRoutes,
+} from "./shipping/infrastructure/http/shipment-routes";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
@@ -126,6 +131,8 @@ export function buildApp(config: Config) {
     new DrizzleShipmentRepository(db),
     new OrderShipping(orders, storage, events, `${WORKSHOP}, CABA`),
     (number, token) => config.webOrigin + payPath(number, token),
+    new DrizzleShippingSettings(db),
+    config.branches,
   );
   const webhookUrl = `${config.publicUrl}/payments/webhook`;
   const gateway: PaymentGateway = config.mercadoPago
@@ -252,6 +259,7 @@ export function buildApp(config: Config) {
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))
+    .route("/admin/shipping", adminShippingRoutes(shipments))
     .onError(onError)
     .notFound((c) => c.json({ error: { code: "not_found", message: "Ruta inexistente" } }, 404));
 

@@ -43,3 +43,5 @@
 .soon-box b { color: var(--cacao); }
 .hp-title em { font-style: italic; color: var(--rosa); }
 .st-error { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--rosa-l); color: var(--rojo); font-size: 13px; font-weight: 600; }
+/* agregado: subtítulos dentro de Envíos (origen y remitente) */
+.sh-sub { margin: 4px 0 -4px; font: 600 12px var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-2); }
