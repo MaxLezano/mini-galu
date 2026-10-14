@@ -379,3 +379,38 @@ test("tienda y pagos: datos de envío para Andreani (paquete, origen y remitente
   await expect(page.locator("#envios").getByLabel("Calle")).toHaveValue("Gurruchaga");
   await expect(page.locator("#envios").getByLabel("Paquete por defecto")).toHaveValue("caja_chica");
 });
+
+test("automatizaciones: el pago queda en el registro, se pausa una regla y se edita un mensaje", async ({
+  page,
+  request,
+}) => {
+  const number = await paidOrder(request);
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto("/taller/automatizaciones");
+  await ready(page);
+  await expect(page.locator("#log")).toContainText(`#${number}`);
+
+  const rule = page.locator('[data-rule="despachado"]');
+  await rule.getByLabel("Activar Despachado").uncheck();
+  await expect(page.locator("#toast")).toContainText("Pausada");
+  await page.reload();
+  await ready(page);
+  await expect(page.locator('[data-rule="despachado"]').getByLabel("Activar Despachado")).not.toBeChecked();
+  await page.locator('[data-rule="despachado"]').getByLabel("Activar Despachado").check();
+  await expect(page.locator("#toast")).toContainText("Activada");
+
+  await page.locator('[data-rule="listo_retirar"]').getByRole("button", { name: "Editar mensaje" }).click();
+  const modal = page.getByRole("dialog", { name: "Editar mensaje" });
+  await modal.getByLabel("Mensaje").fill("Hola ! Ya podés pasar.");
+  await expect(modal.getByLabel("Vista previa")).toContainText("Hola ! Ya podés pasar.");
+  await modal.getByRole("button", { name: "Guardar mensaje" }).click();
+  await expect(page.locator("#toast")).toContainText("Mensaje guardado");
+
+  await page.getByRole("button", { name: "Enviarme una prueba" }).click();
+  await page
+    .getByRole("dialog", { name: "Enviarme una prueba" })
+    .getByRole("button", { name: "Enviar prueba" })
+    .click();
+  await expect(page.locator("#toast")).toContainText("mensajes de prueba");
+});

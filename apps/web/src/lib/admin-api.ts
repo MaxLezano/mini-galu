@@ -1,4 +1,5 @@
 import type {
+  AdminAutomations,
   AdminCoupon,
   AdminHome,
   AdminLaunch,
@@ -7,6 +8,7 @@ import type {
   AdminPayments,
   AdminProduct,
   AdminShipping,
+  AutomationKey,
   Collection,
   CouponInput,
   HomeHeroInput,
@@ -80,6 +82,10 @@ export const adminApi = {
     adminRequest<AdminLaunch>(`/admin/content/launches/${id}`, { method: "PUT", body: JSON.stringify(input) }),
   deleteLaunch: (id: string) => adminRequest<null>(`/admin/content/launches/${id}`, { method: "DELETE" }),
   payments: () => adminRequest<AdminPayments>("/admin/payments"),
+  updateAutomation: (key: AutomationKey, upd: { on?: boolean; message?: string }) =>
+    adminRequest<AdminAutomations>(`/admin/automations/${key}`, { method: "PATCH", body: JSON.stringify(upd) }),
+  testAutomations: (email: string) =>
+    adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
   saveShipping: (input: ShippingSettings) =>
     adminRequest<AdminShipping>("/admin/shipping", { method: "PUT", body: JSON.stringify(input) }),
   savePayments: (s: PaymentSettings) =>

@@ -87,7 +87,12 @@ function deliveryLine(o: MailOrder, links: MailLinks): string {
 }
 
 /** "Recibimos tu pago": sale una sola vez, cuando Mercado Pago aprueba el pago del pedido. */
-export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
+export function paymentApprovedMail(
+  o: MailOrder,
+  links: MailLinks,
+  /** Texto de la regla "Pago aprobado" (editable en Automatizaciones). */
+  intro = "Gaby ya recibió tu pedido y lo prepara en el taller.",
+): Mail {
   const e = escapeHtml;
   const paid = o.paymentMethod
     ? `${METHOD[o.paymentMethod]}${o.installments && o.installments > 1 ? ` en ${o.installments} cuotas` : ""}`
@@ -130,7 +135,7 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
           <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Pago aprobado · Pedido #${e(o.number)}</div>
           <h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">¡Gracias, <em style="color:${C.canela}">${e(o.firstName)}</em>!</h1>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2}">
-            Gaby ya recibió tu pedido y lo prepara en el taller. ${e(delivery)}
+            ${e(intro)} ${e(delivery)}
           </p>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top:1px dashed ${C.line};border-bottom:1px dashed ${C.line}">
             ${items}
@@ -150,7 +155,7 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
     `¡Gracias, ${o.firstName}!`,
     `Pago aprobado · Pedido #${o.number}`,
     "",
-    `Gaby ya recibió tu pedido y lo prepara en el taller. ${delivery}`,
+    `${intro} ${delivery}`,
     "",
     ...o.items.map((i) => `- ${i.name} · talle ${i.size} × ${i.qty}: ${money(i.unitPriceCents * i.qty)}`),
     "",
@@ -176,9 +181,17 @@ export type ReminderOrder = {
 };
 
 /** Recordatorio a las 24 h de un link de pago sin pagar (sale una sola vez). */
-export function paymentReminderMail(o: ReminderOrder, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+export function paymentReminderMail(
+  o: ReminderOrder,
+  links: Pick<MailLinks, "site" | "whatsapp">,
+  /** Texto de la regla "Link de pago sin pagar" (editable en Automatizaciones). */
+  intro?: string,
+): Mail {
   const e = escapeHtml;
   const until = o.reservedUntilLabel ? ` Te las guardamos hasta el ${o.reservedUntilLabel}.` : "";
+  const lead =
+    intro ??
+    `Te dejamos de nuevo el link para pagar tu pedido de ${money(o.totalCents)}. Podés pagar con tarjeta de crédito, débito o dinero en cuenta de Mercado Pago.`;
   const html = frame(
     `Tu pedido #${e(o.number)} te espera`,
     links,
@@ -187,8 +200,7 @@ export function paymentReminderMail(o: ReminderOrder, links: Pick<MailLinks, "si
           <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Pedido #${e(o.number)} · falta el pago</div>
           <h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">Hola, <em style="color:${C.canela}">${e(o.firstName)}</em></h1>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2}">
-            Te dejamos de nuevo el link para pagar tu pedido de ${money(o.totalCents)}. Podés pagar con tarjeta de
-            crédito, débito o dinero en cuenta de Mercado Pago.${e(until)}
+            ${e(lead)}${e(until)}
           </p>
           <div style="text-align:center;margin-top:10px">
             <a href="${e(o.payUrl)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Pagar mi pedido</a>
@@ -196,7 +208,7 @@ export function paymentReminderMail(o: ReminderOrder, links: Pick<MailLinks, "si
   );
   const text = [
     `Hola, ${o.firstName}`,
-    `Te dejamos de nuevo el link para pagar tu pedido #${o.number} de ${money(o.totalCents)}.${until}`,
+    `${lead}${until}`,
     "",
     `Pagar: ${o.payUrl}`,
     `¿Dudas? WhatsApp: ${links.whatsapp}`,
@@ -212,4 +224,45 @@ export function untilLabel(d: Date): string {
     .replace(",", "");
   const hour = new Intl.DateTimeFormat("es-AR", { hour: "numeric", hour12: false, timeZone: tz }).format(d);
   return `${day}, ${Number(hour)} h`;
+}
+
+/** Aviso simple de una automatización (despachado, listo para retirar, reseña, volvió un talle…). */
+export type MessageMail = {
+  to: string;
+  subject: string;
+  /** "Pedido #MG-1042 · en camino" */
+  eyebrow: string;
+  /** Para el saludo ("Hola, Lucía"); null: sin nombre. */
+  name: string | null;
+  /** El mensaje de la regla, ya completado. */
+  body: string;
+  cta: { label: string; url: string } | null;
+  /** Número de pedido para el pie (o null). */
+  number: string | null;
+};
+
+export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+  const e = escapeHtml;
+  const html = frame(
+    e(m.subject),
+    links,
+    m.number ?? "",
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">${e(m.eyebrow)}</div>
+          ${m.name ? `<h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">Hola, <em style="color:${C.canela}">${e(m.name)}</em></h1>` : ""}
+          <p style="margin:12px 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2};white-space:pre-line">${e(m.body)}</p>
+          ${
+            m.cta
+              ? `<div style="text-align:center;margin-top:10px"><a href="${e(m.cta.url)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">${e(m.cta.label)}</a></div>`
+              : ""
+          }`,
+  );
+  const text = [
+    ...(m.name ? [`Hola, ${m.name}`] : []),
+    m.body,
+    "",
+    ...(m.cta ? [`${m.cta.label}: ${m.cta.url}`] : []),
+    `¿Dudas? WhatsApp: ${links.whatsapp}`,
+  ].join("\n");
+  return { to: m.to, subject: m.subject, html, text };
 }

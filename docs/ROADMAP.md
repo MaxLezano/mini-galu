@@ -177,10 +177,16 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   solo demo
 
 ## Fase 6 · Automatizaciones (`admin-automatizaciones.html`)
-- ⏳ Reglas activables (pago aprobado, etiqueta, despachado, entregado, listo para retirar, volvió un talle, link sin pagar, bolsa abandonada, cumple, stock bajo)
-- ✅ Adelantado: módulo `notifications` con puerto `Mailer` (SMTP → Mailpit en local) y el mail "Recibimos tu pago"
-  (evento `PaymentApproved`, una vez por pedido) con prendas, totales, cupón, envío o retiro y link de seguimiento
-- ⏳ Editor de mensajes con vista previa, registro; resto de los mails + WhatsApp en modo prueba; Resend en producción
+- ✅ Módulo `automations`: reglas activables con mensaje editable (vista previa e "insertar dato"), registro de lo
+  que se hizo solo, métricas del mes (mensajes, tiempo ahorrado, ventas por avisos de talle, links recuperados),
+  canales y "Enviarme una prueba"
+- ✅ Pago aprobado (mail con el texto de la regla) · despachado con link de seguimiento · listo para retirar con el
+  horario · pedido de reseña a los 3 días de entregado · volvió un talle (mail a los anotados, en orden) · link de
+  pago sin pagar (24 h) · stock bajo (aviso en el panel)
+- ✅ Mails con el marco del taller (Mailpit en local); cada aviso queda en el historial del pedido
+- 🟡 WhatsApp Business: "sin conectar" hasta tener las credenciales de Meta (los anotados solo por WhatsApp quedan
+  esperando) · Resend en producción → fase 10
+- 🟡 Bolsa abandonada y cumpleaños → fase 8 (necesitan cuentas de clientes)
 - ⏳ Newsletter "Cartas del taller"
 
 ## Fase 7 · Galú (`admin-galu.html`)

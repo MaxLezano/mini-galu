@@ -1,10 +1,16 @@
-import { type MailLinks, paymentApprovedMail, paymentReminderMail, type ReminderOrder } from "../domain/mail";
+import {
+  type MailLinks,
+  type MessageMail,
+  messageMail,
+  paymentApprovedMail,
+  paymentReminderMail,
+  type ReminderOrder,
+} from "../domain/mail";
 import type { Mailer, MailOrders } from "./ports";
 
 /**
- * Avisos al cliente por mail: "Recibimos tu pago" (PaymentApproved) y el recordatorio de un link de pago sin pagar
- * (PaymentLinkReminder). Cada evento sale una sola vez por pedido.
- * TODO(fase 6 · automations): resto de los avisos, WhatsApp, registro y reglas activables desde el panel.
+ * Mails al cliente. Cuándo sale cada uno y con qué texto lo deciden las automatizaciones (reglas del panel).
+ * TODO(fase 6 · automations): WhatsApp Business cuando estén las credenciales de Meta.
  */
 export class OrderNotifications {
   constructor(
@@ -13,14 +19,19 @@ export class OrderNotifications {
     private readonly links: (orderNumber: string) => MailLinks,
   ) {}
 
-  async paymentApproved(orderId: string): Promise<boolean> {
+  /** "Recibimos tu pago" con el detalle del pedido. Devuelve a quién se mandó (null si no existe el pedido). */
+  async paymentApproved(orderId: string, intro?: string): Promise<string | null> {
     const o = await this.orders.find(orderId);
-    if (!o) return false;
-    await this.mailer.send(paymentApprovedMail(o, this.links(o.number)));
-    return true;
+    if (!o) return null;
+    await this.mailer.send(paymentApprovedMail(o, this.links(o.number), intro));
+    return o.email;
   }
 
-  async paymentReminder(o: ReminderOrder): Promise<void> {
-    await this.mailer.send(paymentReminderMail(o, this.links(o.number)));
+  async paymentReminder(o: ReminderOrder, intro?: string): Promise<void> {
+    await this.mailer.send(paymentReminderMail(o, this.links(o.number), intro));
+  }
+
+  async message(m: MessageMail): Promise<void> {
+    await this.mailer.send(messageMail(m, this.links(m.number ?? "")));
   }
 }

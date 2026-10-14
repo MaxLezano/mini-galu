@@ -1,11 +1,21 @@
 import { relative } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
+import type { OrderStatus } from "@mini-galu/contracts";
 import { createDb } from "@mini-galu/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { createAuth } from "./auth/infrastructure/better-auth";
 import { authRoutes, requireAdmin } from "./auth/infrastructure/http/auth-routes";
+import { AutomationService } from "./automations/application/automation-service";
+import {
+  DrizzleAutomationOrders,
+  DrizzleAutomationSettings,
+  DrizzleLowStock,
+  DrizzleRunLog,
+  DrizzleWaitlist,
+} from "./automations/infrastructure/drizzle-automations";
+import { adminAutomationRoutes } from "./automations/infrastructure/http/automation-routes";
 import { CartService } from "./cart/application/cart-service";
 import { DrizzleCartRepository, DrizzleVariantCatalog } from "./cart/infrastructure/drizzle-cart-repository";
 import { cartOwner } from "./cart/infrastructure/http/cart-owner";
@@ -39,7 +49,7 @@ import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
-import { payPath } from "./orders/domain/order";
+import { formatOrderNumber, payPath } from "./orders/domain/order";
 import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
@@ -131,7 +141,9 @@ export function buildApp(config: Config) {
     slotLabel,
     (number, token) => config.webOrigin + payPath(number, token),
   );
-  const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin);
+  const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin, () =>
+    automations.isOn("link_sin_pagar"),
+  );
   const shipments = new ShipmentService(
     andreani && config.andreani
       ? new AndreaniGateway(andreani, config.andreani)
@@ -165,14 +177,12 @@ export function buildApp(config: Config) {
     scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
     scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
     scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
+    scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
+    scheduler.every(600, "stock bajo", () => automations.checkLowStock());
   }
 
-  // TODO(fase 6 · automations): "Volvió un talle" avisa a la lista de espera por WhatsApp/mail
-  events.on("StockReplenished", (e) => console.info("[eventos] Volvió un talle:", JSON.stringify(e.payload)));
   // TODO(fase 6 · automations): avisar a los anotados que ya salió (y 1 hora antes si notifyBefore)
   events.on("LaunchPublished", (e) => console.info("[eventos] Lanzamiento publicado:", JSON.stringify(e.payload)));
-  // TODO(fase 6 · automations): mail + WhatsApp de "pago aprobado" al cliente y aviso al taller
-  events.on("PaymentApproved", (e) => console.info("[eventos] Pago aprobado:", JSON.stringify(e.payload)));
   // "Recibimos tu pago" por mail (el resto de los avisos y WhatsApp llegan con las automatizaciones, fase 6)
   const notifications = new OrderNotifications(
     {
@@ -210,20 +220,32 @@ export function buildApp(config: Config) {
       workshop: WORKSHOP,
     }),
   );
-  events.on("PaymentApproved", async (e) => {
-    const orderId = String(e.payload.orderId);
-    if (await notifications.paymentApproved(orderId))
-      await orders.addEvent(orderId, {
-        kind: "mail",
-        title: "Mail de confirmación enviado",
-        detail: `“Recibimos tu pago” a ${String(e.payload.email)}`,
-        auto: true,
-      });
-  });
-  // TODO(fase 6 · automations): el recordatorio también por WhatsApp
-  events.on("PaymentLinkReminder", async (e) => {
+  // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
+  const automations = new AutomationService(
+    new DrizzleAutomationSettings(db),
+    new DrizzleRunLog(db),
+    notifications,
+    new DrizzleAutomationOrders(db, slotLabel, formatOrderNumber),
+    new DrizzleWaitlist(db),
+    new DrizzleLowStock(db),
+    {
+      tracking: (n) => `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(n)}`,
+      product: (slug) => `${config.webOrigin}/producto/${slug}`,
+      site: config.webOrigin,
+      workshop: `${WORKSHOP}, CABA`,
+    },
+  );
+  events.on("PaymentApproved", (e) => automations.paymentApproved(String(e.payload.orderId)));
+  events.on("OrderStatusChanged", (e) =>
+    automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
+  );
+  events.on("StockReplenished", (e) =>
+    automations.replenished(e.payload as { productId: string; slug: string; name: string; sizes: { size: string }[] }),
+  );
+  events.on("PaymentLinkReminder", (e) => {
     const p = e.payload;
-    await notifications.paymentReminder({
+    return automations.linkReminder({
+      orderId: String(p.orderId),
       number: String(p.number),
       firstName: String(p.firstName),
       email: String(p.email),
@@ -268,6 +290,15 @@ export function buildApp(config: Config) {
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
+    .route(
+      "/admin/automations",
+      adminAutomationRoutes(automations, () => ({
+        mail: "conectado",
+        whatsapp: "sin_conectar",
+        mercadopago: gateway.mode,
+        andreani: config.andreani?.env ?? "simulado",
+      })),
+    )
     .onError(onError)
     .notFound((c) => c.json({ error: { code: "not_found", message: "Ruta inexistente" } }, 404));
 

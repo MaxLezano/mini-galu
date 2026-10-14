@@ -49,7 +49,16 @@ beforeEach(() => {
   reminders = [];
   bus.on("PaymentLinkReminder", (e) => void reminders.push(e));
   const shipping = new ShippingService(new TableShippingRates());
-  links = new PaymentLinks(variants, shipping, orders, bus, "http://web", clock, () => "tok");
+  links = new PaymentLinks(
+    variants,
+    shipping,
+    orders,
+    bus,
+    "http://web",
+    async () => true,
+    clock,
+    () => "tok",
+  );
   const cart = new CartService(new MemoryCarts(), variants, storage, orders);
   payments = new OrderPayments(orders, cart, new CouponService(new MemoryCoupons()), bus, clock);
   admin = new AdminOrdersService(

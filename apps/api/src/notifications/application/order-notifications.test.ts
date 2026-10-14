@@ -29,8 +29,8 @@ describe("OrderNotifications", () => {
       site: "s",
       workshop: "Villa Crespo",
     }));
-    expect(await n.paymentApproved("o1")).toBe(true);
-    expect(await n.paymentApproved("no-existe")).toBe(false);
+    expect(await n.paymentApproved("o1")).toBe("lucia@gmail.com");
+    expect(await n.paymentApproved("no-existe")).toBeNull();
     expect(mailer.sent).toHaveLength(1);
     expect(mailer.sent[0]).toMatchObject({ to: "lucia@gmail.com", subject: "Recibimos tu pago · Pedido #MG-1001" });
     expect(mailer.sent[0]?.html).toContain("http://web/seguimiento?pedido=MG-1001");

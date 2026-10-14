@@ -1,5 +1,6 @@
 import "server-only";
 import type {
+  AdminAutomations,
   AdminCoupon,
   AdminDaySummary,
   AdminHome,
@@ -41,6 +42,7 @@ export const adminServer = {
   home: () => serverRequest<AdminHome>("/admin/content/home"),
   payments: () => serverRequest<AdminPayments>("/admin/payments"),
   shipping: () => serverRequest<AdminShipping>("/admin/shipping"),
+  automations: () => serverRequest<AdminAutomations>("/admin/automations"),
   coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),
   orders: () => serverRequest<AdminOrderSummary[]>("/admin/orders"),
   summary: () => serverRequest<AdminDaySummary>("/admin/orders/summary"),

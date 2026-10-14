@@ -53,7 +53,7 @@ const NAV: [string, NavItem[]][] = [
   [
     "Ajustes",
     [
-      { href: "/taller/automatizaciones", icon: Workflow, label: "Automatizaciones", phase: "Fase 6" },
+      { href: "/taller/automatizaciones", icon: Workflow, label: "Automatizaciones" },
       { href: "/taller/tienda", icon: Store, label: "Tienda y pagos" },
     ],
   ],

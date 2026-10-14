@@ -30,6 +30,8 @@ export class PaymentLinks {
     private readonly orders: OrderRepository,
     private readonly events: EventBus,
     private readonly webOrigin: string,
+    /** Regla "Link de pago sin pagar" (Automatizaciones): si está pausada no se manda el recordatorio. */
+    private readonly remindersOn: () => Promise<boolean> = async () => true,
     private readonly clock: () => Date = () => new Date(),
     private readonly newToken: () => string = () => randomBytes(18).toString("base64url"),
   ) {}
@@ -98,6 +100,7 @@ export class PaymentLinks {
 
   /** Recordatorio a las 24 h de los links sin pagar (una sola vez por pedido). */
   async remindUnpaid(): Promise<number> {
+    if (!(await this.remindersOn())) return 0;
     const now = this.clock();
     const due = await this.orders.linksToRemind(new Date(now.getTime() - PAYMENT_LINK_REMINDER_HOURS * HOUR));
     for (const o of due) {
