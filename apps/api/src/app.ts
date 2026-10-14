@@ -241,17 +241,6 @@ export function buildApp(config: Config) {
   );
   const secure = config.env === "production";
 
-  const scheduler = new IntervalScheduler();
-  if (config.env !== "test") {
-    scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
-    scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
-    scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
-    scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
-    scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
-    scheduler.every(600, "stock bajo", () => automations.checkLowStock());
-    scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
-  }
-
   // TODO(fase 6 · automations): avisar a los anotados que ya salió (y 1 hora antes si notifyBefore)
   events.on("LaunchPublished", (e) => console.info("[eventos] Lanzamiento publicado:", JSON.stringify(e.payload)));
   // "Recibimos tu pago" por mail (el resto de los avisos y WhatsApp llegan con las automatizaciones, fase 6)
@@ -395,6 +384,18 @@ export function buildApp(config: Config) {
   // TODO(fase 10 · payments): reembolsar desde el panel (hoy se ve en el historial del pedido y en el resumen)
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
+
+  // el programador arranca cuando ya existen todos los servicios (corre la primera vuelta al registrarse)
+  const scheduler = new IntervalScheduler();
+  if (config.env !== "test") {
+    scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
+    scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
+    scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
+    scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
+    scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
+    scheduler.every(600, "stock bajo", () => automations.checkLowStock());
+    scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
+  }
 
   const app = new Hono()
     .use(logger())

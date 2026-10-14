@@ -23,6 +23,10 @@ jobs:
         ports: ["5433:5432"]
         options: >-
           --health-cmd "pg_isready -U minigalu" --health-interval 5s --health-timeout 3s --health-retries 10
+      # los mails (pago aprobado, gift cards, recuperar contraseña) se mandan y los e2e los leen como en local
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ["1025:1025", "8025:8025"]
     env:
       DATABASE_URL: postgres://minigalu:minigalu@localhost:5433/minigalu
       NEXT_PUBLIC_API_URL: http://localhost:4000
