@@ -72,6 +72,16 @@ describe("mi cuenta", () => {
     expect(await svc.setFavorite("u1", "elsa", true)).toEqual(["maddie", "elsa"]);
     await expect(svc.setFavorite("u1", "no-existe", true)).rejects.toBeInstanceOf(NotFoundError);
   });
+
+  it("al cargar o cambiar el cumple de una nena avisa a las automatizaciones", async () => {
+    const published: string[] = [];
+    const events = { publish: async (e: { type: string }) => void published.push(e.type) };
+    const svc3 = new CustomerService(repo, orders, newsletter, undefined, undefined, undefined, events);
+    const k = await svc3.addChild("u1", { name: "Emma", birthday: null, size: "4", heightCm: null });
+    expect(published).toEqual([]); // sin cumple no hay nada que avisar
+    await svc3.updateChild("u1", k?.id ?? "", { name: "Emma", birthday: "2022-03-02", size: "4", heightCm: null });
+    expect(published).toEqual(["ChildSaved"]);
+  });
 });
 
 describe("lista de cumple", () => {

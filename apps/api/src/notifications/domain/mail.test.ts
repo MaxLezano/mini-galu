@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type MailOrder, paymentApprovedMail, paymentReminderMail } from "./mail";
+import { type MailOrder, messageMail, paymentApprovedMail, paymentReminderMail } from "./mail";
 
 const links = {
   tracking: "http://web/seguimiento?pedido=MG-1001",
@@ -82,5 +82,32 @@ describe("recordatorio de link de pago", () => {
     expect(m.html).toContain('href="http://web/pagar/MG-1046?t=abc&amp;x=1"');
     expect(m.text).toContain("$36.900");
     expect(m.text).toContain("hasta el jueves 16 de octubre, 22 h");
+  });
+
+  it("aviso con prendas sugeridas (cumple): fotos, precio y link, también en texto plano; sin número de pedido", () => {
+    const m = messageMail(
+      {
+        to: "lucia@gmail.com",
+        subject: "Se viene el cumple de Olivia ♡",
+        eyebrow: "Faltan 15 días · cumple de Olivia",
+        name: null,
+        body: "Hola Lucía! Se viene el cumple de Olivia.",
+        cta: { label: "Ver todo en talle 6", url: "http://web/catalogo?talle=6" },
+        number: null,
+        products: [
+          {
+            name: "Vestido Elsa",
+            priceCents: 28_000_00,
+            imageUrl: "http://api/media/e.webp",
+            url: "http://web/producto/elsa",
+          },
+        ],
+      },
+      links,
+    );
+    expect(m.html).toContain('src="http://api/media/e.webp"');
+    expect(m.html).toContain('href="http://web/producto/elsa"');
+    expect(m.html).not.toContain("con el número");
+    expect(m.text).toContain("- Vestido Elsa · $28.000: http://web/producto/elsa");
   });
 });

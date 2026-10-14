@@ -6,6 +6,7 @@ export class MemoryCoupons implements CouponRepository {
   redemptions: { couponId: string; orderId: string; email: string }[] = [];
   paidEmails = new Set<string>();
   signups = new Set<string>();
+  birthdayMails = new Set<string>();
 
   async all() {
     return this.items;
@@ -44,6 +45,7 @@ export class MemoryCoupons implements CouponRepository {
       usedByEmail: this.redemptions.some((r) => r.couponId === couponId && r.email === email),
       hasPaidOrder: this.paidEmails.has(email),
       isLaunchSignup: this.signups.has(email),
+      gotBirthdayMail: this.birthdayMails.has(email),
     };
   }
   private toCoupon(id: string, c: CouponWrite, timesUsed: number): Coupon {

@@ -3,9 +3,11 @@ import { ConflictError } from "../../shared/domain/errors";
 import {
   MemoryAutomationOrders,
   MemoryAutomationSettings,
+  MemoryBirthdays,
   MemoryLowStock,
   MemoryMessenger,
   MemoryRunLog,
+  MemorySuggestions,
   MemoryWaitlist,
 } from "../testing/in-memory";
 import { AutomationService } from "./automation-service";
@@ -25,6 +27,8 @@ let messenger: MemoryMessenger;
 let orders: MemoryAutomationOrders;
 let waitlist: MemoryWaitlist;
 let lowStock: MemoryLowStock;
+let kids: MemoryBirthdays;
+let suggestions: MemorySuggestions;
 let auto: AutomationService;
 
 beforeEach(() => {
@@ -53,6 +57,8 @@ beforeEach(() => {
   });
   waitlist = new MemoryWaitlist();
   lowStock = new MemoryLowStock();
+  kids = new MemoryBirthdays();
+  suggestions = new MemorySuggestions();
   auto = new AutomationService(
     settings,
     runs,
@@ -60,9 +66,12 @@ beforeEach(() => {
     orders,
     waitlist,
     lowStock,
+    kids,
+    suggestions,
     {
       tracking: (n) => `http://web/seguimiento?pedido=${n}`,
       product: (s) => `http://web/producto/${s}`,
+      catalog: (size) => `http://web/catalogo?talle=${size}`,
       site: "http://web",
       workshop: "Villa Crespo, CABA",
     },
@@ -150,21 +159,96 @@ describe("automatizaciones", () => {
     runs.paid.set("o1", new Date(now.getTime() + 1000));
     const a = await auto.admin(channels);
     expect(a.rules.find((r) => r.key === "pago_aprobado")).toMatchObject({ on: true, runs: 1 });
-    expect(a.rules.find((r) => r.key === "cumple")).toMatchObject({ on: false });
+    expect(a.rules.find((r) => r.key === "bolsa_abandonada")).toMatchObject({ on: false });
+    expect(a.rules.find((r) => r.key === "cumple")).toMatchObject({ on: true });
     expect(a.rules.find((r) => r.key === "etiqueta")).toMatchObject({ on: true, message: null });
     expect(a.stats).toMatchObject({ sent: { mail: 2, whatsapp: 0 }, remindedLinks: 1, recoveredLinks: 1 });
     await expect(auto.update("etiqueta", { on: false })).rejects.toBeInstanceOf(ConflictError);
-    await expect(auto.update("cumple", { on: true })).rejects.toThrow("fase 8");
+    await expect(auto.update("bolsa_abandonada", { on: true })).rejects.toThrow("fase 8");
     await expect(auto.update("stock_bajo", { message: "x" })).rejects.toThrow("no manda mensajes");
   });
 
   it("enviarme una prueba: todos los mensajes activos con datos de ejemplo", async () => {
     await auto.update("despachado", { on: false });
     const n = await auto.test("gaby@minigalu.com.ar");
-    expect(n).toBe(5); // pago, entregado, listo para retirar, volvió un talle y link (despachado está pausado)
+    expect(n).toBe(6); // pago, entregado, listo para retirar, volvió un talle, link y cumple (despachado pausado)
     expect(messenger.sent.every((m) => m.to === "gaby@minigalu.com.ar" && m.subject?.startsWith("[Prueba]"))).toBe(
       true,
     );
     expect(messenger.sent[0]?.body).toContain("Lucía");
+  });
+
+  describe("se acerca un cumple", () => {
+    const olivia = {
+      childId: "c1",
+      name: "Olivia",
+      birthday: "2021-10-29", // faltan 15 días
+      size: "6",
+      parentFirstName: "Lucía",
+      email: "Lucia@Gmail.com",
+    };
+    beforeEach(() => {
+      suggestions.bySize.set(
+        "6",
+        ["Vestido Samanta", "Set Maddie", "Vestido Elsa", "Vestido Rebeca"].map((name) => ({
+          name,
+          priceCents: 3_200_000,
+          imageUrl: "http://api/media/x.webp",
+          url: "http://web/producto/x",
+        })),
+      );
+    });
+
+    it("a 15 días manda ideas en su talle con 3 prendas, una sola vez por cumple", async () => {
+      kids.children = [olivia];
+      expect(await auto.birthdays()).toBe(1);
+      expect(await auto.birthdays()).toBe(0);
+      expect(messenger.sent).toEqual([
+        {
+          kind: "mensaje",
+          to: "Lucia@Gmail.com",
+          subject: "Se viene el cumple de Olivia ♡",
+          eyebrow: "Faltan 15 días · cumple de Olivia",
+          body: "Hola Lucía! Se viene el cumple de Olivia. Te dejamos ideas en talle 6: http://web/catalogo?talle=6",
+          products: expect.any(Array),
+        },
+      ]);
+      expect(messenger.sent[0]?.products).toHaveLength(3);
+      expect(runs.list[0]).toMatchObject({
+        rule: "cumple",
+        subject: "Cumple de Olivia · Lucía",
+        subjectKey: "cumple:c1:2026",
+        contact: "lucia@gmail.com",
+      });
+      // con un cupón "Mail de cumpleaños" vigente, va en el mail
+      kids.currentCoupon = { code: "CUMPLE15", label: "15% de descuento" };
+      kids.children = [{ ...olivia, childId: "c2", name: "Emma" }];
+      expect(await auto.birthdays()).toBe(1);
+      expect(messenger.sent[1]?.body).toContain("con el código CUMPLE15 tenés 15% de descuento");
+      kids.children = [olivia];
+      // al año siguiente vuelve a salir
+      now = new Date("2027-10-14T12:00:00-03:00");
+      expect(await auto.birthdays()).toBe(1);
+    });
+
+    it("solo dentro de los 15 días, con talle, desde las 9 y con la regla activa", async () => {
+      kids.children = [
+        { ...olivia, childId: "lejos", birthday: "2021-10-30" }, // 16 días
+        { ...olivia, childId: "hoy", birthday: "2021-10-14" }, // ya es el cumple
+        { ...olivia, childId: "sin-talle", birthday: "2021-10-20", size: null },
+        { ...olivia, childId: "tarde", name: "Emma", birthday: "2021-10-15", size: "12m" }, // se cargó tarde
+      ];
+      expect(await auto.birthdays()).toBe(1);
+      expect(messenger.sent[0]).toMatchObject({ eyebrow: "Mañana cumple Emma" });
+      expect(messenger.sent[0]?.body).toContain("talle 12 m");
+
+      kids.children = [olivia];
+      now = new Date("2026-10-14T08:00:00-03:00");
+      expect(await auto.birthdays()).toBe(0); // de madrugada no
+      expect(await auto.birthdays({ anyHour: true })).toBe(1); // recién cargada en "Mis nenas": en el momento
+      now = new Date("2026-10-14T12:00:00-03:00");
+      await auto.update("cumple", { on: false });
+      expect(await auto.birthdays()).toBe(0);
+    });
   });
 });

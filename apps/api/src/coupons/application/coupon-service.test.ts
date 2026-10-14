@@ -72,6 +72,20 @@ describe("CouponService", () => {
     expect(await ok("ANOTADAS", 1, "nueva@gmail.com")).toMatchObject({ ok: false });
   });
 
+  it("mail de cumpleaños: solo con el email que recibió el aviso; el vigente más nuevo va en el mail", async () => {
+    expect(await coupons.birthdayCoupon()).toBeNull();
+    await coupons.create(input({ code: "CUMPLE10", audience: "cumple", value: 10 }));
+    await coupons.create(input({ code: "CUMPLE15", audience: "cumple" }));
+    await coupons.create(input({ code: "VIEJO", audience: "cumple", endsAt: "2026-01-01T00:00:00-03:00" }));
+    for (const c of repo.items) if (c.code === "CUMPLE10") c.createdAt = new Date("2026-01-01");
+    expect(await coupons.birthdayCoupon()).toEqual({ code: "CUMPLE15", label: "15% de descuento" });
+
+    repo.birthdayMails.add("lucia@gmail.com");
+    expect(await ok("CUMPLE15", 1)).toMatchObject({ ok: true });
+    expect(await ok("CUMPLE15", 1, "otra@gmail.com")).toMatchObject({ ok: false });
+    expect(await ok("CUMPLE15", 1, null)).toMatchObject({ ok: false });
+  });
+
   it("no repite códigos", async () => {
     await coupons.create(input());
     await expect(coupons.create(input())).rejects.toBeInstanceOf(ConflictError);

@@ -1,6 +1,6 @@
 import { relative } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
-import type { OrderStatus } from "@mini-galu/contracts";
+import { CatalogQuerySchema, type OrderStatus } from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -11,6 +11,7 @@ import { AutomationService } from "./automations/application/automation-service"
 import {
   DrizzleAutomationOrders,
   DrizzleAutomationSettings,
+  DrizzleBirthdays,
   DrizzleLowStock,
   DrizzleRunLog,
   DrizzleWaitlist,
@@ -335,6 +336,9 @@ export function buildApp(config: Config) {
     new DrizzleCustomerOrders(db, storage, formatOrderNumber),
     newsletter,
     giftcards,
+    undefined,
+    undefined,
+    events,
   );
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
@@ -344,9 +348,24 @@ export function buildApp(config: Config) {
     new DrizzleAutomationOrders(db, slotLabel, formatOrderNumber),
     new DrizzleWaitlist(db),
     new DrizzleLowStock(db),
+    new DrizzleBirthdays(db, () => coupons.birthdayCoupon()),
+    // ideas para el cumple: las prendas (sin accesorios) más vendidas con stock en el talle
+    {
+      inSize: async (size, limit) =>
+        (await catalog.list(CatalogQuerySchema.parse({ talle: size, sort: "pop" })))
+          .filter((p) => !p.isAccessory)
+          .slice(0, limit)
+          .map((p) => ({
+            name: p.name,
+            priceCents: p.priceCents,
+            imageUrl: p.images[0]?.url ?? "",
+            url: `${config.webOrigin}/producto/${p.slug}`,
+          })),
+    },
     {
       tracking: (n) => `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(n)}`,
       product: (slug) => `${config.webOrigin}/producto/${slug}`,
+      catalog: (size) => `${config.webOrigin}/catalogo?talle=${encodeURIComponent(size)}`,
       site: config.webOrigin,
       workshop: `${WORKSHOP}, CABA`,
     },
@@ -365,6 +384,8 @@ export function buildApp(config: Config) {
   events.on("OrderStatusChanged", (e) =>
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
+  // "Mis nenas": una nena cargada con el cumple cerca recibe el aviso sin esperar al programador
+  events.on("ChildSaved", () => automations.birthdays({ anyHour: true }).then(() => {}));
   events.on("StockReplenished", (e) =>
     automations.replenished(e.payload as { productId: string; slug: string; name: string; sizes: { size: string }[] }),
   );
@@ -394,6 +415,7 @@ export function buildApp(config: Config) {
     scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
     scheduler.every(3600, "pedir reseñas", () => automations.askReviews());
     scheduler.every(600, "stock bajo", () => automations.checkLowStock());
+    scheduler.every(3600, "cumples que se acercan", () => automations.birthdays());
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
   }
 

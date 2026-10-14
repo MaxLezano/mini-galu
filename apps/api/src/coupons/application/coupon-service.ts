@@ -1,6 +1,6 @@
 import { type AdminCoupon, couponLabel, formatARS } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
-import { type Coupon, type CouponResult, evaluateCoupon, normalizeCode } from "../domain/coupon";
+import { type Coupon, type CouponResult, evaluateCoupon, NO_FACTS, normalizeCode } from "../domain/coupon";
 import type { CouponRepository, CouponWrite } from "./ports";
 
 export type CouponCheck = { coupon: Coupon; label: string; result: CouponResult } | { coupon: null; reason: string };
@@ -16,13 +16,30 @@ export class CouponService {
   async check(code: string, subtotalCents: number, email: string | null): Promise<CouponCheck> {
     const coupon = await this.repo.findByCode(normalizeCode(code));
     if (!coupon) return { coupon: null, reason: "Ese código no existe" };
-    const facts = email
-      ? await this.repo.facts(coupon.id, email)
-      : { usedByEmail: false, hasPaidOrder: false, isLaunchSignup: false };
+    const facts = email ? await this.repo.facts(coupon.id, email) : NO_FACTS;
     return {
       coupon,
       label: `${coupon.code} · ${couponLabel(coupon, formatARS)}`,
       result: evaluateCoupon(coupon, { subtotalCents, now: this.clock(), email, facts }),
+    };
+  }
+
+  /** El cupón "Mail de cumpleaños" vigente (el más nuevo), para sumarlo al aviso del cumple. */
+  async birthdayCoupon(): Promise<{ code: string; label: string } | null> {
+    const now = this.clock().getTime();
+    const c = (await this.repo.all())
+      .filter(
+        (c) =>
+          c.audience === "cumple" &&
+          c.active &&
+          (!c.endsAt || c.endsAt.getTime() > now) &&
+          (c.maxUses === null || c.timesUsed < c.maxUses),
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    if (!c) return null;
+    return {
+      code: c.code,
+      label: c.kind === "free_shipping" ? "envío gratis" : `${couponLabel(c, formatARS)} de descuento`,
     };
   }
 

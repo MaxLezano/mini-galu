@@ -2,12 +2,16 @@ import type { AutomationKey, AutomationRun } from "@mini-galu/contracts";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
+  Birthdays,
+  ChildBirthday,
   LowStock,
   Messenger,
   NewRun,
   OrderFacts,
   RuleOverrides,
   RunLog,
+  Suggestion,
+  Suggestions,
   WaitingContact,
   Waitlist,
 } from "../application/ports";
@@ -72,7 +76,14 @@ export class MemoryRunLog implements RunLog {
 }
 
 export class MemoryMessenger implements Messenger {
-  sent: { kind: "pago" | "recordatorio" | "mensaje"; to: string; subject?: string; body: string }[] = [];
+  sent: {
+    kind: "pago" | "recordatorio" | "mensaje";
+    to: string;
+    subject?: string;
+    eyebrow?: string;
+    body: string;
+    products?: Suggestion[];
+  }[] = [];
   constructor(private readonly emails: Map<string, string> = new Map()) {}
   async paymentApproved(orderId: string, intro: string) {
     const to = this.emails.get(orderId) ?? null;
@@ -82,8 +93,14 @@ export class MemoryMessenger implements Messenger {
   async paymentReminder(o: { email: string }, intro: string) {
     this.sent.push({ kind: "recordatorio", to: o.email, body: intro });
   }
-  async message(m: { to: string; subject: string; body: string }) {
-    this.sent.push({ kind: "mensaje", to: m.to, subject: m.subject, body: m.body });
+  async message(m: { to: string; subject: string; eyebrow: string; body: string; products?: Suggestion[] }) {
+    this.sent.push({
+      kind: "mensaje",
+      to: m.to,
+      subject: m.subject,
+      body: m.body,
+      ...(m.products ? { eyebrow: m.eyebrow, products: m.products } : {}),
+    });
   }
 }
 
@@ -116,5 +133,23 @@ export class MemoryLowStock implements LowStock {
   items: { key: string; label: string }[] = [];
   async list() {
     return this.items;
+  }
+}
+
+export class MemoryBirthdays implements Birthdays {
+  children: ChildBirthday[] = [];
+  currentCoupon: { code: string; label: string } | null = null;
+  async list() {
+    return this.children;
+  }
+  async coupon() {
+    return this.currentCoupon;
+  }
+}
+
+export class MemorySuggestions implements Suggestions {
+  bySize = new Map<string, Suggestion[]>();
+  async inSize(size: string, limit: number) {
+    return (this.bySize.get(size) ?? []).slice(0, limit);
   }
 }

@@ -1,8 +1,9 @@
 import type { AutomationKey, AutomationRun } from "@mini-galu/contracts";
-import { and, type Db, desc, eq, gte, inArray, isNull, lte, schema as s, sql } from "@mini-galu/db";
+import { and, type Db, desc, eq, gte, inArray, isNotNull, isNull, lte, schema as s, sql } from "@mini-galu/db";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
+  Birthdays,
   LowStock,
   NewRun,
   RuleOverrides,
@@ -188,5 +189,29 @@ export class DrizzleAutomationOrders implements AutomationOrders {
 
   async log(orderId: string, title: string, detail: string | null) {
     await this.db.insert(s.orderEvents).values({ orderId, kind: "mail", title, detail, auto: true });
+  }
+}
+
+/** Nenas con cumple cargado ("Mis nenas") y la cuenta que las registró. */
+export class DrizzleBirthdays implements Birthdays {
+  constructor(
+    private readonly db: Db,
+    readonly coupon: Birthdays["coupon"],
+  ) {}
+
+  async list() {
+    const rows = await this.db
+      .select({
+        childId: s.children.id,
+        name: s.children.name,
+        birthday: s.children.birthday,
+        size: s.children.size,
+        parentFirstName: s.user.firstName,
+        email: s.user.email,
+      })
+      .from(s.children)
+      .innerJoin(s.user, eq(s.user.id, s.children.userId))
+      .where(and(isNotNull(s.children.birthday), eq(s.user.role, "customer")));
+    return rows.map((r) => ({ ...r, birthday: r.birthday ?? "" }));
   }
 }

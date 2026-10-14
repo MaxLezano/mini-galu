@@ -123,9 +123,9 @@ test("aplicar un cupón en el paso de pago no borra lo que se cargó de la tarje
   await holder.fill("Lucía Fernández");
   const before = await page.locator(".totals .total").textContent();
   await openSummary(page);
-  await page.getByLabel("Cupón de descuento").fill("CUMPLE15");
+  await page.getByLabel("Cupón de descuento").fill("BIENVENIDA10");
   await page.locator("form.coupon").first().getByRole("button", { name: "Aplicar" }).click();
-  await expect(page.locator(".applied")).toContainText("CUMPLE15");
+  await expect(page.locator(".applied")).toContainText("BIENVENIDA10");
   await expect(page.locator(".totals .total")).not.toHaveText(before ?? "");
   await expect(holder).toHaveValue("Lucía Fernández");
 });

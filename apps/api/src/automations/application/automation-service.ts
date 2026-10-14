@@ -7,23 +7,32 @@ import {
   fillMessage,
   type OrderStatus,
   type RuleUpdate,
+  type Size,
+  sizeLabel,
 } from "@mini-galu/contracts";
 import { ConflictError } from "../../shared/domain/errors";
+import { argentinaNow, nextBirthday } from "../domain/birthday";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
+  Birthdays,
   LowStock,
   Messenger,
   OrderFacts,
   RunLog,
+  Suggestions,
   Waitlist,
 } from "./ports";
 
 const DAY = 86_400_000;
+/** "Se acerca un cumple": cuántos días antes sale el mail. */
+export const BIRTHDAY_NOTICE_DAYS = 15;
 
 export type AutomationLinks = {
   tracking: (orderNumber: string) => string;
   product: (slug: string) => string;
+  /** Catálogo filtrado por talle. */
+  catalog: (size: string) => string;
   site: string;
   /** "Villa Crespo, CABA" */
   workshop: string;
@@ -42,6 +51,8 @@ export class AutomationService {
     private readonly orders: AutomationOrders,
     private readonly waitlist: Waitlist,
     private readonly lowStock: LowStock,
+    private readonly kids: Birthdays,
+    private readonly suggestions: Suggestions,
     private readonly links: AutomationLinks,
     private readonly clock: () => Date = () => new Date(),
   ) {}
@@ -278,6 +289,59 @@ export class AutomationService {
           subjectKey: item.key,
         },
         this.clock(),
+      );
+      n++;
+    }
+    return n;
+  }
+
+  /**
+   * Faltan 15 días (o menos, si la nena se cargó tarde) para un cumple: mail con ideas en su talle, una vez por
+   * cumple. El programador lo corre desde las 9 de Argentina; al cargar una nena (`anyHour`), en el momento.
+   * Sin talle cargado no hay ideas que mandar.
+   */
+  async birthdays(opts: { anyHour?: boolean } = {}): Promise<number> {
+    if (!(await this.isOn("cumple"))) return 0;
+    const now = this.clock();
+    if (!opts.anyHour && argentinaNow(now).hour < 9) return 0;
+    const kids = await this.kids.list();
+    const coupon = kids.length ? await this.kids.coupon() : null;
+    const gift = coupon
+      ? `
+
+Regalo del taller: con el código ${coupon.code} tenés ${coupon.label}.`
+      : "";
+    let n = 0;
+    for (const c of kids) {
+      if (!c.size) continue;
+      const { days, year } = nextBirthday(c.birthday, now);
+      if (days < 1 || days > BIRTHDAY_NOTICE_DAYS) continue;
+      const key = `cumple:${c.childId}:${year}`;
+      if (await this.runs.exists("cumple", key)) continue;
+      const talle = sizeLabel(c.size as Size);
+      const link = this.links.catalog(c.size);
+      await this.messenger.message({
+        to: c.email,
+        subject: `Se viene el cumple de ${c.name} ♡`,
+        eyebrow: days === 1 ? `Mañana cumple ${c.name}` : `Faltan ${days} días · cumple de ${c.name}`,
+        name: null,
+        body:
+          (await this.text("cumple", { nombre: c.parentFirstName, nena: c.name, talle, link_catalogo: link })) + gift,
+        cta: { label: `Ver todo en talle ${talle}`, url: link },
+        number: null,
+        products: await this.suggestions.inSize(c.size, 3),
+      });
+      await this.runs.add(
+        {
+          rule: "cumple",
+          subject: `Cumple de ${c.name} · ${c.parentFirstName}`.trim(),
+          detail: `Ideas en talle ${talle} por mail a ${c.email}`,
+          channel: "mail",
+          status: "ok",
+          subjectKey: key,
+          contact: c.email.toLowerCase(),
+        },
+        now,
       );
       n++;
     }

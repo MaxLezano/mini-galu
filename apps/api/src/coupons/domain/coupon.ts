@@ -17,7 +17,20 @@ export type Coupon = {
 };
 
 /** Lo que hace falta saber del cliente para algunos cupones. */
-export type CouponFacts = { usedByEmail: boolean; hasPaidOrder: boolean; isLaunchSignup: boolean };
+export type CouponFacts = {
+  usedByEmail: boolean;
+  hasPaidOrder: boolean;
+  isLaunchSignup: boolean;
+  /** Le llegó el mail "Se acerca un cumple" en los últimos 45 días (15 antes del cumple + 30 después). */
+  gotBirthdayMail: boolean;
+};
+
+export const NO_FACTS: CouponFacts = {
+  usedByEmail: false,
+  hasPaidOrder: false,
+  isLaunchSignup: false,
+  gotBirthdayMail: false,
+};
 
 export type CouponContext = { subtotalCents: number; now: Date; email: string | null; facts: CouponFacts };
 
@@ -33,14 +46,17 @@ export function evaluateCoupon(c: Coupon, ctx: CouponContext): CouponResult {
     return { ok: false, reason: "Ese cupón ya se usó todas las veces" };
   if (c.minSubtotalCents !== null && ctx.subtotalCents < c.minSubtotalCents)
     return { ok: false, reason: `Ese cupón es para compras desde ${money(c.minSubtotalCents)}` };
-  const needsEmail = c.oncePerCustomer || c.audience === "primera_compra" || c.audience === "anotados";
+  const needsEmail =
+    c.oncePerCustomer || c.audience === "primera_compra" || c.audience === "anotados" || c.audience === "cumple";
   if (needsEmail && !ctx.email) return { ok: false, reason: "Completá tu email para usar este cupón" };
   if (c.oncePerCustomer && ctx.facts.usedByEmail) return { ok: false, reason: "Ya usaste este cupón" };
   if (c.audience === "primera_compra" && ctx.facts.hasPaidOrder)
     return { ok: false, reason: "Ese cupón es para la primera compra" };
   if (c.audience === "anotados" && !ctx.facts.isLaunchSignup)
     return { ok: false, reason: "Ese cupón es para quienes se anotaron al lanzamiento con este email" };
-  // TODO(fase 6 · automations): "resena" y "cumple" se mandan como códigos personales desde las automatizaciones
+  if (c.audience === "cumple" && !ctx.facts.gotBirthdayMail)
+    return { ok: false, reason: "Ese cupón llega con el mail de cumpleaños, con el email de la cuenta" };
+  // TODO(fase 6 · automations): "resena" se manda desde las automatizaciones
   if (c.kind === "free_shipping") return { ok: true, discountCents: 0, freeShipping: true };
   const discountCents =
     c.kind === "percent" ? Math.round((ctx.subtotalCents * c.value) / 100) : Math.min(c.value, ctx.subtotalCents);

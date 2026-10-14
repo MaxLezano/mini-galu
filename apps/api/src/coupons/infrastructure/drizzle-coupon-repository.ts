@@ -70,7 +70,20 @@ export class DrizzleCouponRepository implements CouponRepository {
       .from(s.launchSignups)
       .where(and(eq(s.launchSignups.channel, "email"), sql`lower(${s.launchSignups.contact}) = ${email}`))
       .limit(1);
-    return { usedByEmail: !!used, hasPaidOrder: !!paid, isLaunchSignup: !!signup };
+    // el cupón de cumple vale si le llegó el aviso "Se acerca un cumple" (15 días antes + 30 después)
+    const [birthday] = await this.db
+      .select({ id: s.automationRuns.id })
+      .from(s.automationRuns)
+      .where(
+        and(
+          eq(s.automationRuns.rule, "cumple"),
+          eq(s.automationRuns.status, "ok"),
+          sql`${s.automationRuns.contact} = lower(${email})`,
+          sql`${s.automationRuns.createdAt} > now() - interval '45 days'`,
+        ),
+      )
+      .limit(1);
+    return { usedByEmail: !!used, hasPaidOrder: !!paid, isLaunchSignup: !!signup, gotBirthdayMail: !!birthday };
   }
 
   private columns(c: CouponWrite) {

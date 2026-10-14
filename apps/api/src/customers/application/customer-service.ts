@@ -9,6 +9,7 @@ import type {
 } from "@mini-galu/contracts";
 import type { z } from "zod";
 import { NotFoundError } from "../../shared/domain/errors";
+import type { EventBus } from "../../shared/events/event-bus";
 import { revealGiver, wishSlug } from "../domain/wishlist";
 import type { ChildRecord, CustomerOrders, CustomerRepository, GiftcardsPort, NewsletterPort } from "./ports";
 
@@ -23,6 +24,7 @@ export class CustomerService {
     private readonly giftcards: GiftcardsPort = { forEmail: async () => [] },
     private readonly clock: () => Date = () => new Date(),
     private readonly random: () => string = () => randomBytes(3).toString("hex").slice(0, 4),
+    private readonly events?: Pick<EventBus, "publish">,
   ) {}
 
   async overview(userId: string): Promise<AccountOverview> {
@@ -53,13 +55,21 @@ export class CustomerService {
 
   async addChild(userId: string, c: ChildInput) {
     const r = await this.repo.addChild(userId, c, wishSlug(c.name, this.random()));
+    await this.childSaved(r.id, c);
     return this.one(r);
   }
 
   async updateChild(userId: string, id: string, c: ChildInput) {
     const r = await this.repo.updateChild(userId, id, c);
     if (!r) throw new NotFoundError("No encontramos a esa nena");
+    await this.childSaved(r.id, c);
     return this.one(r);
+  }
+
+  /** Con el cumple cargado, las automatizaciones ven si ya hay que mandar el aviso (sin esperar al programador). */
+  private async childSaved(childId: string, c: ChildInput) {
+    if (!c.birthday) return;
+    await this.events?.publish({ type: "ChildSaved", occurredAt: this.clock(), payload: { childId } });
   }
 
   async deleteChild(userId: string, id: string) {

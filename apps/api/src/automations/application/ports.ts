@@ -58,6 +58,8 @@ export interface Messenger {
     body: string;
     cta: { label: string; url: string } | null;
     number: string | null;
+    /** Prendas sugeridas con foto (ej. ideas para el cumple). */
+    products?: Suggestion[];
   }): Promise<void>;
 }
 
@@ -92,4 +94,28 @@ export interface Waitlist {
 /** Talles publicados con una sola unidad. */
 export interface LowStock {
   list(): Promise<{ key: string; label: string }[]>;
+}
+
+/** Una nena de "Mis nenas" con cumple cargado y la cuenta que la registró. */
+export type ChildBirthday = {
+  childId: string;
+  name: string;
+  /** "AAAA-MM-DD" */
+  birthday: string;
+  size: string | null;
+  parentFirstName: string;
+  email: string;
+};
+
+export interface Birthdays {
+  list(): Promise<ChildBirthday[]>;
+  /** El cupón "Mail de cumpleaños" vigente (lo resuelven los cupones): label "15% de descuento". */
+  coupon(): Promise<{ code: string; label: string } | null>;
+}
+
+export type Suggestion = { name: string; priceCents: number; imageUrl: string; url: string };
+
+/** Prendas publicadas con stock en un talle (lo resuelve el catálogo). */
+export interface Suggestions {
+  inSize(size: string, limit: number): Promise<Suggestion[]>;
 }

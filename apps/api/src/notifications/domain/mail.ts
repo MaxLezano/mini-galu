@@ -58,7 +58,7 @@ function frame(title: string, links: Pick<MailLinks, "site" | "whatsapp">, numbe
         </td></tr>
         <tr><td style="background:#fff;border-radius:20px;padding:28px;border:1px solid ${C.line}">${card}</td></tr>
         <tr><td style="text-align:center;padding:22px 8px;font-size:12.5px;line-height:1.6;color:${C.cacao2}">
-          ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a> con el número <b>#${e(number)}</b>.<br>
+          ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a>${number ? ` con el número <b>#${e(number)}</b>` : ""}.<br>
           30 días para cambiar el talle, sin uso y con la etiqueta.<br>
           <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>
         </td></tr>
@@ -239,7 +239,26 @@ export type MessageMail = {
   cta: { label: string; url: string } | null;
   /** Número de pedido para el pie (o null). */
   number: string | null;
+  /** Prendas sugeridas con foto, antes del botón (ej. ideas para el cumple). */
+  products?: { name: string; priceCents: number; imageUrl: string; url: string }[];
 };
+
+function productsGrid(products: NonNullable<MessageMail["products"]>): string {
+  const e = escapeHtml;
+  if (!products.length) return "";
+  const cells = products
+    .map(
+      (p) => `<td valign="top" width="${Math.floor(100 / products.length)}%" style="padding:0 6px">
+            <a href="${e(p.url)}" style="text-decoration:none;color:${C.cacao}">
+              ${p.imageUrl ? `<img src="${e(p.imageUrl)}" width="150" alt="${e(p.name)}" style="display:block;width:100%;max-width:150px;height:auto;border-radius:12px;background:${C.linen}">` : ""}
+              <div style="font-size:13px;line-height:1.35;margin-top:8px">${e(p.name)}</div>
+              <div style="font-size:13px;font-weight:600;margin-top:2px">${money(p.priceCents)}</div>
+            </a>
+          </td>`,
+    )
+    .join("");
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:4px 0 22px"><tr>${cells}</tr></table>`;
+}
 
 export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
   const e = escapeHtml;
@@ -251,6 +270,7 @@ export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "wha
           <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">${e(m.eyebrow)}</div>
           ${m.name ? `<h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">Hola, <em style="color:${C.canela}">${e(m.name)}</em></h1>` : ""}
           <p style="margin:12px 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2};white-space:pre-line">${e(m.body)}</p>
+          ${m.products ? productsGrid(m.products) : ""}
           ${
             m.cta
               ? `<div style="text-align:center;margin-top:10px"><a href="${e(m.cta.url)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">${e(m.cta.label)}</a></div>`
@@ -261,6 +281,8 @@ export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "wha
     ...(m.name ? [`Hola, ${m.name}`] : []),
     m.body,
     "",
+    ...(m.products ?? []).map((p) => `- ${p.name} · ${money(p.priceCents)}: ${p.url}`),
+    ...(m.products?.length ? [""] : []),
     ...(m.cta ? [`${m.cta.label}: ${m.cta.url}`] : []),
     `¿Dudas? WhatsApp: ${links.whatsapp}`,
   ].join("\n");

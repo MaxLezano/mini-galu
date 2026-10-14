@@ -162,3 +162,26 @@ test("lista de cumple: se arma desde la prenda, la familia la abre sin cuenta y 
   await expect(page.locator("#wish")).toContainText("Regalado");
   await expect(page.locator("#wish")).not.toContainText("Marta");
 });
+
+test("cumple: al cargar una nena con el cumple cerca le llega el mail con ideas en su talle", async ({ request }) => {
+  const email = `cumple-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  const api = "http://localhost:4000";
+  const headers = { origin: "http://localhost:3000" };
+  const signUp = await request.post(`${api}/auth/sign-up/email`, {
+    headers,
+    data: { email, password: PASSWORD, name: "Ana Prueba", firstName: "Ana", lastName: "Prueba" },
+  });
+  expect(signUp.ok()).toBe(true);
+  const soon = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(5, 10);
+  const child = await request.post(`${api}/me/children`, {
+    headers,
+    data: { name: "Olivia", birthday: `2021-${soon}`, size: "6", heightCm: null },
+  });
+  expect(child.ok()).toBe(true);
+
+  const mail = await lastMail(request, email, "Se viene el cumple de Olivia");
+  test.skip(!mail, "Sin Mailpit corriendo");
+  expect(mail?.Text).toContain("Hola Ana! Se viene el cumple de Olivia. Te dejamos ideas en talle 6");
+  expect(mail?.Text).toContain("/catalogo?talle=6");
+  expect(mail?.Text).toMatch(/- .+ · \$[\d.]+: http:\/\/localhost:3000\/producto\//);
+});

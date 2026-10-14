@@ -186,7 +186,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Mails con el marco del taller (Mailpit en local); cada aviso queda en el historial del pedido
 - 🟡 WhatsApp Business: "sin conectar" hasta tener las credenciales de Meta (los anotados solo por WhatsApp quedan
   esperando) · Resend en producción → fase 10
-- 🟡 Bolsa abandonada y cumpleaños → fase 8 (necesitan cuentas de clientes)
+- ✅ Se acerca un cumple: 15 días antes del cumple de cada nena de "Mis nenas" (con talle), mail con 3 prendas
+  con stock en su talle, link al catálogo filtrado y el cupón "Mail de cumpleaños" vigente; una vez por cumple, desde
+  las 9 (al cargar la nena, en el momento). El cupón de cumple solo vale con el email que recibió el aviso (45 días)
+- 🟡 Bolsa abandonada → fase 8 (necesita la bolsa guardada en la cuenta)
 - ✅ Newsletter "Cartas del taller": suscripción desde el pie (mail de bienvenida), baja en un clic con el link de
   cada carta, y en Tienda y pagos: suscriptos, CSV, escribir una carta, mandarse una prueba y enviarla a todos
 

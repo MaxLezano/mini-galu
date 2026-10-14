@@ -101,7 +101,7 @@ export const AUTOMATION_RULES = {
     channels: ["mail"],
     message: "Hola {nombre}! Se viene el cumple de {nena}. Te dejamos ideas en talle {talle}: {link_catalogo}",
     vars: ["nombre", "nena", "talle", "link_catalogo"],
-    phase: "Fase 8",
+    phase: null,
   },
   stock_bajo: {
     title: "Stock bajo",
