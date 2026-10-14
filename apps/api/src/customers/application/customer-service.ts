@@ -84,6 +84,14 @@ export class CustomerService {
     return this.one(child);
   }
 
+  /** Modo lista del catálogo: suma todas las elegidas (las que ya estaban no se repiten). */
+  async addWishes(userId: string, childId: string, items: { slug: string; size: string }[]) {
+    const child = await this.ownChild(userId, childId);
+    for (const w of items)
+      if (!(await this.repo.addWish(child.id, w.slug, w.size))) throw new NotFoundError("No existe esa prenda");
+    return this.one(child);
+  }
+
   async removeWish(userId: string, childId: string, itemId: string) {
     const child = await this.ownChild(userId, childId);
     if (!(await this.repo.removeWish(child.id, itemId))) throw new NotFoundError("Esa prenda ya no está en la lista");

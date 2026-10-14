@@ -1,26 +1,41 @@
 "use client";
 
-import { type Collection, formatARS, OCCASIONS, type ProductSummary } from "@mini-galu/contracts";
+import {
+  type AccountChild,
+  type Collection,
+  formatARS,
+  GARMENT_SIZES,
+  OCCASIONS,
+  type ProductSummary,
+  type Size,
+} from "@mini-galu/contracts";
 import {
   BellRing,
   Image as ImageIcon,
   LayoutGrid,
+  ListChecks,
   MessageCircleHeart,
+  Plus,
   Search,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { useAccount } from "@/features/account/account-store";
+import { ageOf, birthdayLabel } from "@/features/account/account-view";
 import { OpenGaluButton } from "@/features/assistant/components/OpenGaluButton";
 import { isStill } from "@/features/shell/craft";
 import { toast } from "@/features/shell/ui-store";
-import { api } from "@/lib/api";
+import { accountApi } from "@/lib/account-api";
+import { ApiRequestError, api } from "@/lib/api";
+import { cover } from "@/lib/product";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { Foco } from "@/ui/atoms/Foco";
-import { activeFilterCount, type CatalogState, toQuery, toUrl } from "../catalog-state";
-import { CatalogFilters } from "../components/CatalogFilters";
+import { activeFilterCount, type CatalogState, defaultPickSize, toQuery, toUrl } from "../catalog-state";
+import { CatalogFilters, type FilterNena } from "../components/CatalogFilters";
 import { ProductCardContainer } from "./ProductCardContainer";
 
 type Props = {
@@ -52,6 +67,13 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
   const [state, setState] = useState(initial);
   const [products, setProducts] = useState(initialProducts);
   const [sheet, setSheet] = useState(false);
+  const router = useRouter();
+  const status = useAccount((s) => s.status);
+  // nenas de la cuenta (solo con sesión): "Para mis nenas" y el modo lista de cumple
+  const [children, setChildren] = useState<AccountChild[]>([]);
+  const [nena, setNena] = useState<string | null>(null);
+  const [picked, setPicked] = useState(new Map<string, { size: string; product: ProductSummary }>());
+  const [saving, setSaving] = useState(false);
   const tabs = useRef<HTMLDivElement>(null);
   const ink = useRef<HTMLElement>(null);
   const seg = useRef<HTMLDivElement>(null);
@@ -91,6 +113,51 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
     }, 180);
     return () => clearTimeout(t);
   }, [queryKey]);
+
+  useEffect(() => {
+    if (status === "in")
+      accountApi.overview().then(
+        (o) => setChildren(o.children),
+        () => {},
+      );
+  }, [status]);
+  const nenas: FilterNena[] = children.flatMap((c) =>
+    (GARMENT_SIZES as readonly string[]).includes(c.size ?? "")
+      ? [{ id: c.id, name: c.name, size: c.size as Size, age: c.birthday ? ageOf(c.birthday, new Date()) : null }]
+      : [],
+  );
+  const listFor = state.lista ? children.find((c) => c.wishSlug === state.lista) : undefined;
+  const inList = new Set(listFor?.wishlist.map((w) => w.slug));
+  const picking = !!listFor;
+  useEffect(() => {
+    document.body.classList.toggle("pick-mode", picking);
+    return () => document.body.classList.remove("pick-mode");
+  }, [picking]);
+  const backToList = listFor ? `/cuenta?nena=${listFor.id}#lista` : "/cuenta#lista";
+
+  const togglePick = (p: ProductSummary, size: string) =>
+    setPicked((m) => {
+      const next = new Map(m);
+      if (next.has(p.slug)) next.delete(p.slug);
+      else next.set(p.slug, { size, product: p });
+      return next;
+    });
+  const addPicked = async () => {
+    if (!listFor || !picked.size) return;
+    setSaving(true);
+    try {
+      const items = [...picked].map(([slug, { size }]) => ({ slug, size }));
+      const after = await accountApi.addWishes(listFor.id, items);
+      const n = after.wishlist.length - listFor.wishlist.length;
+      toast(`Sumamos ${n} ${n === 1 ? "prenda" : "prendas"} a la lista de ${listFor.name}`, {
+        icon: <ListChecks className="i-sm" />,
+      });
+      router.push(backToList);
+    } catch (e) {
+      toast(e instanceof ApiRequestError ? e.message : "No se pudo sumar, probá de nuevo");
+      setSaving(false);
+    }
+  };
 
   const update = (patch: Partial<CatalogState>) => setState((s) => ({ ...s, ...patch }));
   const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -146,7 +213,10 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
   const chips: [string, () => void][] = [
     ...state.sizes.map((s): [string, () => void] => [
       `Talle ${s}`,
-      () => update({ sizes: state.sizes.filter((x) => x !== s) }),
+      () => {
+        setNena(null);
+        update({ sizes: state.sizes.filter((x) => x !== s) });
+      },
     ]),
     ...state.occ.map((o): [string, () => void] => [
       OCCASIONS[o],
@@ -159,7 +229,21 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
     ...(state.max ? [[`Hasta ${formatARS(state.max)}`, () => update({ max: null })] as [string, () => void]] : []),
     ...(state.q ? [[`“${state.q}”`, () => update({ q: "" })] as [string, () => void]] : []),
   ];
-  const clear = () => update(EMPTY);
+  const clear = () => {
+    setNena(null);
+    update(EMPTY);
+  };
+  const cardPick = (p: ProductSummary) => {
+    const sizes = p.variants.map((v) => v.size);
+    const size = picked.get(p.slug)?.size ?? defaultPickSize(sizes, listFor?.size ?? null);
+    return {
+      inList: inList.has(p.slug),
+      picked: picked.has(p.slug),
+      size,
+      onToggle: () => togglePick(p, size),
+      onSize: (s: string) => setPicked((m) => (m.has(p.slug) ? new Map(m).set(p.slug, { size: s, product: p }) : m)),
+    };
+  };
   const fc = activeFilterCount(state);
 
   const cards = products.map((p, i) => (
@@ -169,9 +253,10 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
       index={i}
       reveal={firstLoad.current.has(p.slug)}
       style={{ viewTransitionName: `c-${p.slug}` } as CSSProperties}
+      pick={listFor ? cardPick(p) : undefined}
     />
   ));
-  if (cards.length > 4)
+  if (cards.length > 4 && !listFor)
     cards.splice(
       4,
       0,
@@ -233,6 +318,32 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
         </div>
       </div>
 
+      {listFor && (
+        <div className="pick-head">
+          <div className="wrap">
+            <span className="pick-ic">
+              <ListChecks />
+            </span>
+            <div>
+              <b>
+                Armando la lista de cumple de <em>{listFor.name}</em>
+              </b>
+              <small>
+                {[
+                  listFor.size && `Talle ${listFor.size}`,
+                  listFor.birthday && `cumple el ${birthdayLabel(listFor.birthday)}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </small>
+            </div>
+            <Link className="link" href={backToList}>
+              Volver a la lista
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="toolbar" id="buscar">
         <div className="wrap">
           <button type="button" className="btn btn-sm btn-ghost filters-btn" onClick={() => setSheet(true)}>
@@ -291,12 +402,22 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
       <div className="wrap layout">
         <CatalogFilters
           state={state}
+          nenas={nenas}
+          nena={nena}
           colors={colors}
           minPrice={priceRange.minCents}
           maxPrice={priceRange.maxCents}
           open={sheet}
           resultCount={n}
-          onToggleSize={(s) => update({ sizes: toggle(state.sizes, s) })}
+          onNena={(n) => {
+            const on = nena !== n.id;
+            setNena(on ? n.id : null);
+            update({ sizes: on ? [n.size] : [] });
+          }}
+          onToggleSize={(s) => {
+            setNena(null);
+            update({ sizes: toggle(state.sizes, s) });
+          }}
           onToggleOcc={(o) => update({ occ: toggle(state.occ, o) })}
           onToggleColor={(c) => update({ colors: toggle(state.colors, c) })}
           onMax={(v) => update({ max: v >= priceRange.maxCents ? null : v })}
@@ -312,6 +433,24 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
           style={{ zIndex: 91 }}
           onClick={() => setSheet(false)}
         />
+
+        {listFor && (
+          <div className="pick-bar">
+            <div className="pick-thumbs">
+              {[...picked.values()].slice(0, 5).map(({ product }) => (
+                <img key={product.slug} src={cover(product)} alt="" />
+              ))}
+            </div>
+            <span id="pick-n">
+              {picked.size
+                ? `${picked.size} ${picked.size === 1 ? "prenda elegida" : "prendas elegidas"}`
+                : "Tocá las prendas que le gustan"}
+            </span>
+            <button type="button" className="btn btn-rose" disabled={!picked.size || saving} onClick={addPicked}>
+              <Plus className="i-sm" /> <span>Agregar a la lista de {listFor.name}</span>
+            </button>
+          </div>
+        )}
 
         <section aria-live="polite">
           <div className="active-row">

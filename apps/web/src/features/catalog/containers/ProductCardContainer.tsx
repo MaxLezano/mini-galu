@@ -5,7 +5,7 @@ import { type CSSProperties, useState } from "react";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
-import { ProductCard } from "../components/ProductCard";
+import { type CardPick, ProductCard } from "../components/ProductCard";
 
 type Props = {
   product: ProductSummary;
@@ -14,6 +14,7 @@ type Props = {
   reveal?: boolean;
   className?: string;
   style?: CSSProperties;
+  pick?: CardPick;
 };
 
 /** Conecta la tarjeta con la bolsa y favoritos. */

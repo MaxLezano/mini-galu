@@ -115,9 +115,15 @@ export function WishlistPanel({ nenas, selected, origin, onSelect, onRemove, onA
                 </div>
               )}
               <div className="wish-actions">
-                <Link className="btn" href={`/catalogo${selected.size ? `?talle=${selected.size}` : ""}`}>
+                {/* modo lista del catálogo: se eligen varias y se suman juntas */}
+                <Link className="btn" href={`/catalogo?lista=${selected.wishSlug}`}>
                   <Plus className="i-sm" /> Agregar prendas
                 </Link>
+                {selected.size && (
+                  <Link className="link" href={`/catalogo?talle=${selected.size}&lista=${selected.wishSlug}`}>
+                    Ver todo en talle {selected.size}
+                  </Link>
+                )}
               </div>
             </div>
             <div className="wish-share">

@@ -3,13 +3,20 @@ import { Ruler, X } from "lucide-react";
 import Link from "next/link";
 import type { CatalogState } from "../catalog-state";
 
+/** Nena de la cuenta con su talle, para filtrar con un toque. */
+export type FilterNena = { id: string; name: string; age: number | null; size: Size };
+
 type Props = {
   state: CatalogState;
+  nenas: FilterNena[];
+  /** La nena elegida (su talle es el filtro). */
+  nena: string | null;
   colors: { name: string; hex: string }[];
   minPrice: number;
   maxPrice: number;
   open: boolean;
   resultCount: number;
+  onNena: (n: FilterNena) => void;
   onToggleSize: (s: Size) => void;
   onToggleOcc: (o: Occasion) => void;
   onToggleColor: (c: string) => void;
@@ -20,7 +27,7 @@ type Props = {
 };
 
 /** Barra lateral en escritorio; hoja que sube desde abajo en celular. */
-export function CatalogFilters({ state, colors, minPrice, maxPrice, open, resultCount, ...on }: Props) {
+export function CatalogFilters({ state, nenas, nena, colors, minPrice, maxPrice, open, resultCount, ...on }: Props) {
   const max = state.max ?? maxPrice;
   return (
     <aside className={`filters ${open ? "is-open" : ""}`} id="filters" aria-label="Filtros">
@@ -32,7 +39,30 @@ export function CatalogFilters({ state, colors, minPrice, maxPrice, open, result
           <X />
         </button>
       </div>
-      {/* "Para mis nenas" aparece con la cuenta (fase 8) */}
+      {nenas.length > 0 && (
+        <div>
+          <h4>Para mis nenas</h4>
+          <div style={{ display: "grid", gap: 8 }}>
+            {nenas.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                className="nena"
+                aria-pressed={nena === n.id}
+                onClick={() => on.onNena(n)}
+              >
+                <span className="av">{n.name[0]}</span>
+                <span>
+                  <b>{n.name}</b>
+                  <small>
+                    {n.age !== null && `${n.age} ${n.age === 1 ? "año" : "años"} · `}talle {n.size}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div>
         <h4>Talle</h4>
         <div className="chips">

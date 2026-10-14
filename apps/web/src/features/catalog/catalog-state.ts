@@ -1,6 +1,9 @@
 import type { CatalogQueryInput, Occasion, Size, Sort } from "@mini-galu/contracts";
 
-/** Estado de filtros del catálogo ↔ query string (?col=fiestas&talle=6,8&ocasion=bautismo&q=…&view=lookbook). */
+/**
+ * Estado de filtros del catálogo ↔ query string (?col=fiestas&talle=6,8&ocasion=bautismo&q=…&view=lookbook).
+ * `?lista=olivia-7k2q` (link de la lista de una nena) abre el modo lista de cumple.
+ */
 export type CatalogState = {
   col: string;
   sizes: Size[];
@@ -11,6 +14,7 @@ export type CatalogState = {
   q: string;
   sort: Sort;
   view: "shop" | "lookbook";
+  lista: string;
 };
 
 type Params = Record<string, string | string[] | undefined>;
@@ -39,6 +43,7 @@ export function stateFromParams(p: Params): CatalogState {
     q,
     sort: ["new", "asc", "desc", "pop"].includes(sort) ? sort : "new",
     view: one(p.view) === "lookbook" ? "lookbook" : "shop",
+    lista: one(p.lista),
   };
 }
 
@@ -59,8 +64,13 @@ export function toUrl(s: CatalogState): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(toQuery(s))) if (v !== undefined) sp.set(k, String(v));
   if (s.view === "lookbook") sp.set("view", "lookbook");
+  if (s.lista) sp.set("lista", s.lista);
   const str = sp.toString();
   return `/catalogo${str ? `?${str}` : ""}`;
 }
 
 export const activeFilterCount = (s: CatalogState) => s.sizes.length + s.occ.length + s.colors.length + (s.max ? 1 : 0);
+
+/** Modo lista: el talle que viene elegido en cada prenda es el de la nena, si el modelo lo tiene. */
+export const defaultPickSize = (sizes: string[], nenaSize: string | null) =>
+  nenaSize && sizes.includes(nenaSize) ? nenaSize : (sizes[0] ?? "Único");

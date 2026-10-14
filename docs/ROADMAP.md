@@ -51,8 +51,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Orden: nuevos, precio, más vendidos (`units_sold`)
 - ✅ Vista Tienda / Lookbook, hoja de filtros en celular, tarjeta promo de Galú, cierre de grilla que completa la fila, vacío
 - ✅ Tarjeta: segunda foto al hover, etiquetas (−%, Últimas, Nuevo…), favorito, agregar rápido por talle
-- ⏳ "Para mis nenas" (filtro por el talle de cada nena) → fase 8
-- ⏳ Modo lista de cumple (`?lista=Emma`: elegir prendas y sumarlas) → fase 8
+- ✅ "Para mis nenas" (con sesión): un toque filtra por el talle de cada nena
+- ✅ Modo lista de cumple (`?lista=<link de la nena>`, desde "Agregar prendas" de la lista): se tocan las prendas
+  con su talle, "Ya está en la lista" en las que estaban, y se suman todas juntas
 
 ### Ficha (`producto.html`)
 - ✅ Galería con miniaturas, contador, zoom que sigue al mouse, paginación en celular
@@ -63,7 +64,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Detalles, tela y cuidados, envíos; "Cómo se hizo"; reseñas con distribución y % de "talle justo"; completá el look
 - ✅ Barra fija en celular (Galú y contacto suben para no taparla)
 - 🟡 Calculá tu envío: estimación local como el mockup → cotización Andreani real en la fase 5
-- ⏳ Sumar a lista de cumple (hoy lleva a ingresar) → fase 8
+- ✅ Sumar a una lista de cumple (elegir la nena; sin sesión, a ingresar y vuelve)
 
 ### Galú (demo con reglas sobre el stock real)
 - ✅ Moño flotante con pista, panel, sugerencias, saludo contextual en la ficha, tarjetas con "Agregar"

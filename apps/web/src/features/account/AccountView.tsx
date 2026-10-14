@@ -87,6 +87,9 @@ export function AccountView() {
       setTab(TABS.some(([k]) => k === t) ? t : "nenas");
     };
     read();
+    // al volver del modo lista del catálogo (/cuenta?nena=…#lista) queda elegida esa nena
+    const nena = new URLSearchParams(location.search).get("nena");
+    if (nena) setWishFor(nena);
     addEventListener("hashchange", read);
     return () => removeEventListener("hashchange", read);
   }, []);

@@ -3,6 +3,7 @@ import {
   ChildInputSchema,
   FavoritesMergeSchema,
   ProfileUpdateSchema,
+  WishAddManySchema,
   WishAddSchema,
 } from "@mini-galu/contracts";
 import { Hono } from "hono";
@@ -49,6 +50,10 @@ export function accountRoutes(auth: Auth, customers: CustomerService) {
     .post("/children/:id/wishlist", async (c) => {
       const w = parse(WishAddSchema, await c.req.json());
       return c.json(await customers.addWish(c.get("userId"), c.req.param("id"), w.slug, w.size), 201);
+    })
+    .post("/children/:id/wishlist/many", async (c) => {
+      const w = parse(WishAddManySchema, await c.req.json());
+      return c.json(await customers.addWishes(c.get("userId"), c.req.param("id"), w.items), 201);
     })
     .delete("/children/:id/wishlist/:item", async (c) =>
       c.json(await customers.removeWish(c.get("userId"), c.req.param("id"), c.req.param("item"))),

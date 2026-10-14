@@ -1,8 +1,18 @@
 import { discountPercent, formatARS, installment, type ProductSummary, type Size } from "@mini-galu/contracts";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Check, Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { cover, totalStock } from "@/lib/product";
+
+/** Modo lista de cumple (catalogo.html?lista=…): la tarjeta se elige con un toque, con su talle. */
+export type CardPick = {
+  /** Ya está en la lista de la nena: no se puede volver a elegir. */
+  inList: boolean;
+  picked: boolean;
+  size: string;
+  onToggle: () => void;
+  onSize: (size: string) => void;
+};
 
 export type ProductCardProps = {
   product: ProductSummary;
@@ -17,6 +27,7 @@ export type ProductCardProps = {
   quickOpen?: boolean;
   className?: string;
   style?: CSSProperties;
+  pick?: CardPick;
   onToggleFavorite: (button: HTMLButtonElement) => void;
   onQuickToggle: () => void;
   onAdd: (size: Size, image: HTMLImageElement | null) => void;
@@ -33,6 +44,7 @@ export function ProductCard({
   quickOpen,
   className = "",
   style,
+  pick,
   onToggleFavorite,
   onQuickToggle,
   onAdd,
@@ -48,12 +60,25 @@ export function ProductCard({
   ) : null;
   const href = `/producto/${p.slug}`;
   const second = p.images[1];
+  const pickState = pick ? `pickable ${pick.picked ? "is-picked" : ""} ${pick.inList ? "in-list" : ""}` : "";
 
   return (
     <article
-      className={`p-card ${arch ? "arch" : ""} ${quickOpen ? "is-quick" : ""} ${className}`.trim()}
+      className={`p-card ${arch ? "arch" : ""} ${quickOpen ? "is-quick" : ""} ${pickState} ${className}`
+        .replace(/\s+/g, " ")
+        .trim()}
       data-reveal={reveal ? "" : undefined}
       style={{ "--d": `${(index % 4) * 0.07}s`, ...style } as CSSProperties}
+      // en captura: el toque elige la prenda en vez de abrir la ficha (Link no navega si ya se hizo preventDefault)
+      onClickCapture={
+        pick && !pick.inList
+          ? (e) => {
+              if ((e.target as HTMLElement).closest(".pick-size, .fav")) return;
+              e.preventDefault();
+              pick.onToggle();
+            }
+          : undefined
+      }
     >
       <div className="p-frame">
         <Link className="p-media" href={href} aria-label={p.name}>
@@ -88,6 +113,26 @@ export function ProductCard({
             </button>
           ))}
         </div>
+        {pick &&
+          (pick.inList ? (
+            <span className="pick-in">
+              <Check className="i-sm" /> Ya está en la lista
+            </span>
+          ) : (
+            <>
+              <button type="button" className="pick-btn" aria-pressed={pick.picked} aria-label={`Elegir ${p.name}`}>
+                <Check className="i-sm" />
+              </button>
+              <label className="pick-size">
+                Talle{" "}
+                <select value={pick.size} onChange={(e) => pick.onSize(e.target.value)}>
+                  {p.variants.map((v) => (
+                    <option key={v.size}>{v.size}</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ))}
       </div>
       <div className="p-info">
         <div>

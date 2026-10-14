@@ -112,4 +112,17 @@ describe("lista de cumple", () => {
     expect((await svc2.overview("u1")).children[0]?.wishlist[0]?.giftedBy).toBe("Marta");
     await expect(svc2.publicList("no-existe")).rejects.toBeInstanceOf(NotFoundError);
   });
+
+  it("desde el catálogo se suman varias de una vez, sin repetir las que ya estaban", async () => {
+    const k = await svc.addChild("u1", { name: "Emma", birthday: null, size: "4", heightCm: null });
+    const id = k?.id ?? "";
+    await svc.addWish("u1", id, "maddie", "4");
+    const after = await svc.addWishes("u1", id, [
+      { slug: "maddie", size: "4" },
+      { slug: "elsa", size: "4" },
+    ]);
+    expect(after?.wishlist.map((w) => w.slug)).toEqual(["maddie", "elsa"]);
+    await expect(svc.addWishes("u2", id, [{ slug: "elsa", size: "4" }])).rejects.toBeInstanceOf(NotFoundError);
+    await expect(svc.addWishes("u1", id, [{ slug: "no-existe", size: "4" }])).rejects.toBeInstanceOf(NotFoundError);
+  });
 });

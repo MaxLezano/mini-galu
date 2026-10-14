@@ -163,6 +163,54 @@ test("lista de cumple: se arma desde la prenda, la familia la abre sin cuenta y 
   await expect(page.locator("#wish")).not.toContainText("Marta");
 });
 
+test("catálogo con cuenta: filtrar por el talle de la nena y armar su lista eligiendo varias prendas", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const email = `elegir-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  await page.goto("/ingresar?crear");
+  const auth = page.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Paula");
+  await auth.getByLabel("Apellido").fill("Elige");
+  await auth.getByLabel("Email").fill(email);
+  await auth.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/cuenta/);
+  await page.getByRole("button", { name: /Agregar nena/ }).click();
+  const modal = page.getByRole("dialog", { name: "Agregar nena" });
+  await modal.getByLabel("Nombre").fill("Emma");
+  await modal.getByLabel("Talle actual").selectOption("6");
+  await modal.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.locator('[data-nena="Emma"]')).toBeVisible();
+
+  // "Para mis nenas": un toque filtra por su talle
+  await page.goto("/catalogo");
+  const filters = page.getByRole("complementary", { name: "Filtros" });
+  await expect(page.locator(".filters .nena", { hasText: "Emma" })).toHaveCount(1); // las nenas llegan después de montar
+  if (await page.locator(".filters-btn").isVisible()) await page.locator(".filters-btn").click(); // celular: hoja
+  await filters.getByRole("button", { name: /Emma/ }).click();
+  await expect(page).toHaveURL(/talle=6/);
+  await expect(filters.getByRole("button", { name: /Emma/ })).toHaveAttribute("aria-pressed", "true");
+  await page.goto("/cuenta#lista");
+  await page.getByRole("link", { name: "Agregar prendas" }).click();
+
+  // modo lista: se tocan las prendas y se suman juntas
+  await expect(page).toHaveURL(/lista=emma-/);
+  await expect(page.locator(".pick-head")).toContainText("Armando la lista de cumple de Emma");
+  await page.locator(".p-card", { hasText: "Vestido Cleo" }).locator(".p-media").click();
+  await page.getByRole("button", { name: "Elegir Set Maddie Bordado" }).click();
+  await expect(page.locator(".pick-bar")).toContainText("2 prendas elegidas");
+  await expect(page).toHaveURL(/\/catalogo/); // tocar la foto elige, no abre la ficha
+  await page.getByRole("button", { name: "Agregar a la lista de Emma" }).click();
+  await expect(page).toHaveURL(/\/cuenta\?nena=.+#lista/);
+  await expect(page.locator("#toast")).toContainText("Sumamos 2 prendas a la lista de Emma");
+  await expect(page.locator("#wish")).toContainText("Vestido Cleo");
+  await expect(page.locator("#wish")).toContainText("Set Maddie Bordado");
+
+  await page.getByRole("link", { name: "Agregar prendas" }).click();
+  await expect(page.locator(".p-card", { hasText: "Vestido Cleo" })).toContainText("Ya está en la lista");
+});
+
 test("cumple: al cargar una nena con el cumple cerca le llega el mail con ideas en su talle", async ({ request }) => {
   const email = `cumple-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
   const api = "http://localhost:4000";

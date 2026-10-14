@@ -150,6 +150,8 @@ export type AccountChild = {
 };
 
 export const WishAddSchema = z.object({ slug: z.string().min(1).max(120), size: z.string().min(1).max(10) });
+/** Modo lista del catálogo: varias prendas elegidas de una vez. */
+export const WishAddManySchema = z.object({ items: z.array(WishAddSchema).min(1).max(40) });
 
 /** La lista de cumple que ve la familia (sin cuenta): sin quién regaló qué. */
 export type PublicWishlist = {
