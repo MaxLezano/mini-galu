@@ -15,10 +15,12 @@ import {
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
 import { toast, useUi } from "@/features/shell/ui-store";
+import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import {
@@ -50,6 +52,46 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const [step, setStep] = useState(1);
   const [contact, setContact] = useState<ContactForm>(EMPTY_CONTACT);
   const [ship, setShip] = useState<ShippingForm>(EMPTY_SHIPPING);
+  const accountStatus = useAccount((s) => s.status);
+
+  // con cuenta: se completan los datos y la dirección por defecto (lo que ya escribió no se pisa)
+  useEffect(() => {
+    if (accountStatus !== "in") return;
+    accountApi
+      .overview()
+      .then(({ profile: p, addresses }) => {
+        setContact((c) =>
+          c.email
+            ? c
+            : {
+                ...c,
+                email: p.email,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                phone: p.phone?.replace(/^\+549/, "") ?? c.phone,
+              },
+        );
+        const a = addresses.find((x) => x.isDefault) ?? addresses[0];
+        if (a)
+          setShip((x) =>
+            x.street
+              ? x
+              : {
+                  ...x,
+                  street: a.street,
+                  number: a.number,
+                  unit: a.unit ?? "",
+                  city: a.city,
+                  postalCode: a.postalCode,
+                  province: (PROVINCES as readonly string[]).includes(a.province)
+                    ? (a.province as ShippingForm["province"])
+                    : x.province,
+                  notes: a.notes ?? "",
+                },
+          );
+      })
+      .catch(() => {});
+  }, [accountStatus]);
   const [options, setOptions] = useState<ShippingOptions | null>(null);
   const [coupon, setCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);

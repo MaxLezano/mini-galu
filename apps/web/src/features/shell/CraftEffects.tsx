@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useFavorites } from "@/features/favorites/favorites-store";
 import { autoReveal, drawCraft, measuringTape, observeReveal, sewSeams } from "./craft";
@@ -16,7 +17,8 @@ export function CraftEffects() {
   useEffect(() => {
     if (new URLSearchParams(location.search).has("static")) document.documentElement.classList.add("static");
     void Promise.resolve(useCart.persist.rehydrate()).then(() => useCart.getState().refresh());
-    void useFavorites.persist.rehydrate();
+    // favoritos del navegador y, si hay sesión, los de la cuenta (se suman al ingresar)
+    void Promise.resolve(useFavorites.persist.rehydrate()).then(() => useAccount.getState().load());
     const stopTape = measuringTape();
     const measureQuick = (e: Event) => {
       const c = (e.target as Element | null)?.closest?.(".p-card.arch") as HTMLElement | null;

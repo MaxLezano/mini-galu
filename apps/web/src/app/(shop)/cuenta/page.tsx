@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { InTheWorks } from "@/ui/organisms/InTheWorks";
+import { AccountView } from "@/features/account/AccountView";
 
-export const metadata: Metadata = { title: "Mi cuenta" };
+export const metadata: Metadata = { title: "Mi cuenta", robots: { index: false } };
 
 /** Mockup: design/mockups/cuenta.html */
 export default function Page() {
-  return <InTheWorks title="Mi cuenta" phase="Fase 8 · Cuenta" />;
+  return <AccountView />;
 }

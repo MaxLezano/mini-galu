@@ -4,6 +4,7 @@ import { ChevronDown, Menu, Search, ShoppingBag, Truck, UserRound, X } from "luc
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useAccount } from "@/features/account/account-store";
 import { cartCount, useCart } from "@/features/cart/cart-store";
 import { useMounted } from "@/lib/use-mounted";
 import { launchCountLabel, useShellData } from "../shell-context";
@@ -13,6 +14,7 @@ import { MegaMenu } from "./MegaMenu";
 
 export function Header() {
   const pathname = usePathname();
+  const account = useAccount();
   const router = useRouter();
   const over = pathname === "/";
   const { launch } = useShellData();
@@ -182,9 +184,15 @@ export function Header() {
               </form>
             </div>
           </div>
-          <Link className="nav-login hide-m" href="/ingresar">
-            <UserRound className="i-sm" /> Ingresar
-          </Link>
+          {account.status === "in" ? (
+            <Link className="nav-login hide-m" href="/cuenta">
+              <UserRound className="i-sm" /> {account.user?.firstName || "Mi cuenta"}
+            </Link>
+          ) : (
+            <Link className="nav-login hide-m" href="/ingresar">
+              <UserRound className="i-sm" /> Ingresar
+            </Link>
+          )}
           <button
             type="button"
             className="icon-btn"

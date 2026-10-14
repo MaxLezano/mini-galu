@@ -18,7 +18,8 @@ const $$ = <T extends Element = HTMLElement>(s: string, root: ParentNode = docum
 /** Títulos y encabezados entran suave al aparecer. */
 export function autoReveal(root: ParentNode = document) {
   const skip =
-    "[data-reveal], .split, .hero, .modal, .drawer, .galu, .mega, .search-ov, .mnav, .nav-pop, .adm-side, .adm-top, .msg";
+    // .auth: el ingreso hidrata dentro de un Suspense (después de este efecto): tocarlo antes rompe la hidratación
+    "[data-reveal], .split, .hero, .modal, .drawer, .galu, .mega, .search-ov, .mnav, .nav-pop, .adm-side, .adm-top, .msg, .auth";
   for (const el of $$(".panel-head, .section-head > div, .cat-hero > div, .page-head, h1.display, h2.display", root)) {
     if (el.closest(skip) || el.querySelector("[data-reveal]")) continue;
     el.setAttribute("data-reveal", "");

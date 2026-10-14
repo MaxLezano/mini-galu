@@ -89,3 +89,78 @@ export const ChildInputSchema = z.object({
   heightCm: z.number().int().min(40).max(180).nullable(),
 });
 export type ChildInput = z.infer<typeof ChildInputSchema>;
+
+/* ------------------------------------------------------------------ cuenta de la tienda (ingresar.html, cuenta.html) */
+
+export const SignUpInputSchema = z.object({
+  firstName: FirstNameSchema,
+  lastName: LastNameSchema,
+  email: z.string().trim().toLowerCase().max(120).pipe(z.email("Revisá el email")),
+  password: PasswordSchema,
+  newsletter: z.boolean(),
+});
+export type SignUpInput = z.infer<typeof SignUpInputSchema>;
+
+export const ProfileUpdateSchema = z.object({
+  firstName: FirstNameSchema,
+  lastName: LastNameSchema,
+  /** Celular en E.164 (+5491155551234) o null. */
+  phone: z
+    .string()
+    .regex(/^\+[1-9]\d{6,14}$/, "Teléfono inválido")
+    .nullable(),
+  newsletterOptIn: z.boolean(),
+});
+export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>;
+
+export type AccountProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  emailVerified: boolean;
+  phone: string | null;
+  newsletterOptIn: boolean;
+  /** Para "Cliente desde mayo 2026". */
+  createdAt: string;
+};
+
+export type AccountChild = {
+  id: string;
+  name: string;
+  birthday: string | null;
+  size: string | null;
+  heightCm: number | null;
+};
+
+export type AccountAddress = {
+  id: string;
+  label: string;
+  street: string;
+  number: string;
+  unit: string | null;
+  city: string;
+  province: string;
+  postalCode: string;
+  notes: string | null;
+  isDefault: boolean;
+};
+
+export type AccountOrder = {
+  number: string;
+  status: string;
+  createdAt: string;
+  totalCents: number;
+  items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
+};
+
+export type AccountOverview = {
+  profile: AccountProfile;
+  children: AccountChild[];
+  addresses: AccountAddress[];
+  orders: AccountOrder[];
+  /** Slugs de los favoritos. */
+  favorites: string[];
+};
+
+export const FavoritesMergeSchema = z.object({ slugs: z.array(z.string().min(1).max(120)).max(200) });

@@ -4,6 +4,7 @@ import {
   date,
   index,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -12,6 +13,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
+import { products } from "./catalog";
 
 const stamps = {
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -64,4 +66,19 @@ export const children = pgTable(
     ...stamps,
   },
   (t) => [index().on(t.userId)],
+);
+
+/** Favoritos de la cuenta (la web los guarda en el navegador y los sube al ingresar). */
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    productId: uuid()
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.productId] })],
 );

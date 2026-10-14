@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-/** Favoritos de invitada (localStorage). En la fase 8 se sincronizan con la cuenta. */
+/** Favoritos en el navegador (localStorage); con sesión se sincronizan con la cuenta (account-store). */
 type FavState = { slugs: string[]; toggle: (slug: string) => boolean };
 
 export const useFavorites = create<FavState>()(

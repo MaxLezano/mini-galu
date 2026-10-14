@@ -22,11 +22,21 @@ type AuthConfig = {
   rateLimit: boolean;
   /** Se bloqueó una cuenta por intentos fallidos: avisarle (si existe). */
   onLoginLocked?: (email: string) => Promise<void>;
+  /** Mails de la cuenta (los arma el módulo de notificaciones). */
+  mail?: {
+    resetPassword(to: string, name: string, url: string): Promise<void>;
+    verifyEmail(to: string, name: string, url: string): Promise<void>;
+  };
+  /** Cuenta nueva de la tienda (para sumarla a las cartas si lo pidió). */
+  onSignUp?: (u: { email: string; newsletterOptIn: boolean }) => Promise<void>;
+  /** "Continuar con Google" (opcional: sin credenciales no se muestra). */
+  google?: { clientId: string; clientSecret: string } | null;
 };
 
 /**
  * Better Auth: email + contraseña para el panel del taller.
- * El registro público está apagado: la cuenta admin la crea el seed. En la fase 8 se habilita para clientes (+ Google).
+ * Cuentas de la tienda (registro con mail o Google) y del taller (la cuenta admin la crea el seed; el rol no se
+ * puede elegir al registrarse).
  * Seguridad: verificación en dos pasos (TOTP + códigos de respaldo), límite por IP y bloqueo por cuenta.
  */
 export function createAuth(db: Db, config: AuthConfig, guard = new LoginGuard()) {
@@ -46,7 +56,44 @@ export function createAuth(db: Db, config: AuthConfig, guard = new LoginGuard())
         twoFactor: s.twoFactor,
       },
     }),
-    emailAndPassword: { enabled: true, disableSignUp: true, minPasswordLength: 8, maxPasswordLength: 128 },
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, url }) => {
+        await config.mail?.resetPassword(user.email, (user as { firstName?: string }).firstName || user.name, url);
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        await config.mail?.verifyEmail(user.email, (user as { firstName?: string }).firstName || user.name, url);
+      },
+    },
+    socialProviders: config.google
+      ? {
+          google: {
+            clientId: config.google.clientId,
+            clientSecret: config.google.clientSecret,
+            mapProfileToUser: (p) => ({ firstName: p.given_name ?? "", lastName: p.family_name ?? "" }),
+          },
+        }
+      : undefined,
+    databaseHooks: {
+      user: {
+        create: {
+          // quien crea la cuenta acepta los términos (ingresar.html → "Al continuar aceptás…")
+          before: async (u) => ({ data: { ...u, termsAcceptedAt: new Date() } }),
+          after: async (u) => {
+            await config
+              .onSignUp?.({ email: u.email, newsletterOptIn: !!(u as { newsletterOptIn?: boolean }).newsletterOptIn })
+              .catch(() => {});
+          },
+        },
+      },
+    },
     user: {
       additionalFields: {
         role: { type: "string", input: false, defaultValue: "customer" },
@@ -56,6 +103,7 @@ export function createAuth(db: Db, config: AuthConfig, guard = new LoginGuard())
         phoneCountry: { type: "string", required: false },
         newsletterOptIn: { type: "boolean", required: false, defaultValue: false },
         twoFactorEnabled: { type: "boolean", input: false, defaultValue: false },
+        termsAcceptedAt: { type: "date", input: false, required: false },
       },
     },
     // la regla de contraseña (8+, mayúscula, minúscula, número y especial) se valida también acá, no solo en la web

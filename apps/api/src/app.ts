@@ -41,6 +41,9 @@ import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
+import { CustomerService } from "./customers/application/customer-service";
+import { DrizzleCustomerOrders, DrizzleCustomers } from "./customers/infrastructure/drizzle-customers";
+import { accountRoutes } from "./customers/infrastructure/http/account-routes";
 import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
@@ -97,6 +100,32 @@ export function buildApp(config: Config) {
     secret: config.authSecret,
     secureCookies: config.env === "production",
     rateLimit: config.env === "production",
+    google: config.google,
+    onSignUp: async (u) => {
+      if (u.newsletterOptIn) await newsletter.subscribe(u.email, "registro");
+    },
+    mail: {
+      resetPassword: (to, name, url) =>
+        notifications.message({
+          to,
+          subject: "Creá una contraseña nueva",
+          eyebrow: "Tu cuenta",
+          name: name || null,
+          body: "Nos pediste cambiar la contraseña de tu cuenta de Mini Galú. El link vale 1 hora. Si no fuiste vos, ignorá este mail: tu contraseña sigue igual.",
+          cta: { label: "Crear contraseña nueva", url },
+          number: null,
+        }),
+      verifyEmail: (to, name, url) =>
+        notifications.message({
+          to,
+          subject: "Confirmá tu mail",
+          eyebrow: "Tu cuenta",
+          name: name || null,
+          body: "¡Gracias por crear tu cuenta! Confirmá tu mail para recibir los avisos de tus pedidos y de los talles que vuelven.",
+          cta: { label: "Confirmar mi mail", url },
+          number: null,
+        }),
+    },
     // se bloqueó una cuenta por intentos fallidos: si existe, se le avisa (la respuesta al navegador es la misma)
     onLoginLocked: async (email) => {
       const [u] = await db
@@ -247,6 +276,11 @@ export function buildApp(config: Config) {
     notifications,
     (t) => `${config.webOrigin}/cartas/baja?t=${encodeURIComponent(t)}`,
   );
+  const customers = new CustomerService(
+    new DrizzleCustomers(db),
+    new DrizzleCustomerOrders(db, storage, formatOrderNumber),
+    newsletter,
+  );
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
     new DrizzleAutomationSettings(db),
@@ -309,6 +343,8 @@ export function buildApp(config: Config) {
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
+    .route("/me", accountRoutes(auth, customers))
+    .get("/account/options", (c) => c.json({ google: !!config.google }))
     .use("/admin/*", requireAdmin(auth, config.requireAdmin2fa))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))

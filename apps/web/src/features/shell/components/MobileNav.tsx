@@ -3,6 +3,7 @@
 import { GARMENT_SIZES, sizeLabel } from "@mini-galu/contracts";
 import { ArrowRight, MessageCircleHeart, Search, Truck, UserRound } from "lucide-react";
 import Link from "next/link";
+import { useAccount } from "@/features/account/account-store";
 import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
@@ -11,6 +12,7 @@ import { useUi } from "../ui-store";
 
 export function MobileNav() {
   const { products, collections, launch } = useShellData();
+  const signedIn = useAccount((s) => s.status === "in");
   const { menuOpen, setMenu, openGalu } = useUi();
   const mounted = useMounted();
   const days = mounted ? launchCountLabel(launch) : null;
@@ -58,8 +60,8 @@ export function MobileNav() {
           <Link href="/seguimiento" onClick={close}>
             <Truck className="i-sm" /> Seguir mi pedido
           </Link>
-          <Link href="/ingresar" onClick={close}>
-            <UserRound className="i-sm" /> Ingresar o crear cuenta
+          <Link href={signedIn ? "/cuenta" : "/ingresar"} onClick={close}>
+            <UserRound className="i-sm" /> {signedIn ? "Mi cuenta" : "Ingresar o crear cuenta"}
           </Link>
           {/* biome-ignore lint/a11y/useValidAnchor: comparte el estilo de los links del menú */}
           <a

@@ -30,6 +30,12 @@ export class NewsletterService {
     });
   }
 
+  /** Desde "Mis datos" de la cuenta (destildar las cartas). */
+  async unsubscribeEmail(email: string): Promise<void> {
+    const s = await this.subscribers.findByEmail(email);
+    if (s && !s.unsubscribedAt) await this.subscribers.unsubscribe(s.token, this.clock());
+  }
+
   async unsubscribe(token: string): Promise<void> {
     if (!(await this.subscribers.unsubscribe(token, this.clock())))
       throw new NotFoundError("Ese link de baja no existe");
