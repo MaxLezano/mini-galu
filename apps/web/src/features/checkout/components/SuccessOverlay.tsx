@@ -58,7 +58,10 @@ export function SuccessOverlay({
           {
             icon: <House />,
             title: deliveryDetail ?? "En unos días",
-            text: receipt.shippingMethod === "sucursal" ? "Lo retirás en la sucursal" : "Llega a tu casa",
+            text:
+              receipt.shippingMethod === "sucursal"
+                ? `Lo retirás en la sucursal${receipt.branchLabel ? ` ${receipt.branchLabel.split(" · ")[0]}` : ""}`
+                : "Llega a tu casa",
           },
         ];
 

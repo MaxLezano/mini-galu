@@ -8,6 +8,7 @@ import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
+import { FakeBranches } from "../../shipping/infrastructure/andreani-branches";
 import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
 import { MemoryOrders } from "../testing/in-memory";
 import { CheckoutService } from "./checkout-service";
@@ -53,7 +54,7 @@ beforeEach(async () => {
   const couponService = new CouponService(coupons, clock);
   checkout = new CheckoutService(
     cart,
-    new ShippingService(new TableShippingRates(), clock),
+    new ShippingService(new TableShippingRates(), clock, new FakeBranches()),
     couponService,
     orders,
     storage,
@@ -65,6 +66,20 @@ beforeEach(async () => {
 });
 
 describe("CheckoutService", () => {
+  it("envío a sucursal: se muestra la del CP, se guarda la elegida y se rechaza una que no es del CP", async () => {
+    const opts = await checkout.shippingOptions(guest, "1414");
+    expect(opts.branches[0]).toMatchObject({ id: "10010", name: "Palermo (Av Scalabrini Ortiz)" });
+    expect(opts.options.find((o) => o.method === "sucursal")?.detail).toBe(
+      "Sucursal Palermo (Av Scalabrini Ortiz) · Raúl Scalabrini Ortiz 615 · C.a.b.a.",
+    );
+    const sucursal = (branchId: string) =>
+      order({ shipping: { method: "sucursal", postalCode: "1414", province: "CABA", branchId } as never });
+    await expect(checkout.place(guest, null, sucursal("999"))).rejects.toThrow("Esa sucursal no está disponible");
+    const placed = await checkout.place(guest, null, sucursal("10020"));
+    expect(orders.items[0]?.shippingBranch).toMatchObject({ id: "10020", name: "Caballito (Av Rivadavia)" });
+    expect((await checkout.receipt(placed.number, placed.accessToken)).branchLabel).toContain("Caballito");
+  });
+
   it("cotiza envío por CP y aplica el cupón sin cortar la compra si no sirve", async () => {
     await coupons.create({
       code: "OTONO10",

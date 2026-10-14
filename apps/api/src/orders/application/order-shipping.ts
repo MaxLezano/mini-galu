@@ -108,6 +108,7 @@ export class OrderShipping implements ShippableOrders {
       province: a?.province ?? o.province,
       postalCode: a?.postalCode ?? o.postalCode,
       notes: a?.notes ?? null,
+      branch: o.shippingBranch,
       items: o.items.map((i) => ({
         slug: i.productSlug,
         name: i.name,

@@ -26,7 +26,7 @@ export class MemoryShipments implements ShipmentRepository {
   }
   async addEvents(shipmentId: string, events: CarrierEvent[]) {
     const known = this.log.get(shipmentId) ?? [];
-    const fresh = events.filter((e) => !known.some((k) => k.code === e.code));
+    const fresh = events.filter((e) => !known.some((k) => k.code === e.code && k.at.getTime() === e.at.getTime()));
     this.log.set(shipmentId, [...known, ...fresh]);
     return fresh;
   }

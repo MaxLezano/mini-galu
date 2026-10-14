@@ -66,6 +66,7 @@ export class CheckoutService {
     if (s.method === "taller" && !this.shipping.validSlot(s.pickupSlot))
       throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
     const postalCode = s.method === "taller" ? undefined : s.postalCode;
+    const branch = await sucursalOf(this.shipping, s);
     const shippingCents = (await this.shipping.cost(s.method, postalCode, subtotalCents)) ?? 0;
 
     let coupon: { id: string; code: string } | null = null;
@@ -93,7 +94,7 @@ export class CheckoutService {
       userId,
       accessToken,
       ...input.contact,
-      ...shippingFields(s),
+      ...shippingFields(s, branch),
       ...totals,
       couponId: coupon?.id ?? null,
       couponCode: coupon?.code ?? null,
@@ -183,6 +184,7 @@ export class CheckoutService {
       installments: o.installments,
       shippingMethod: o.shippingMethod,
       pickupSlot: o.pickupSlot,
+      branchLabel: o.shippingBranch ? `${o.shippingBranch.name} · ${o.shippingBranch.address}` : null,
       subtotalCents: o.subtotalCents,
       discountCents: o.discountCents,
       shippingCents: o.shippingCents,
@@ -200,9 +202,21 @@ export class CheckoutService {
   }
 }
 
+/** La sucursal elegida para un envío a sucursal (error si ya no es una de las del CP). */
+export async function sucursalOf(shipping: ShippingService, s: PlaceOrder["shipping"]) {
+  if (s.method !== "sucursal") return null;
+  const b = await shipping.branch(s.postalCode, s.branchId);
+  if (!b) throw new ValidationError("Esa sucursal no está disponible para tu código postal, elegí otra");
+  return { id: b.id, name: b.name, address: b.address };
+}
+
 /** Cómo se guarda en el pedido el envío que eligió el cliente. */
-export function shippingFields(s: PlaceOrder["shipping"]) {
+export function shippingFields(
+  s: PlaceOrder["shipping"],
+  branch: { id: string; name: string; address: string } | null,
+) {
   return {
+    shippingBranch: s.method === "sucursal" ? branch : null,
     shippingMethod: s.method,
     shippingAddress:
       s.method === "domicilio"

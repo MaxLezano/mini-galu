@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   FAKE_ANDREANI_SPEED: z.coerce.number().positive().default(1),
   /** Cada cuántos segundos se consultan los eventos de los envíos sin entregar. */
   TRACKING_EVERY_SECONDS: z.coerce.number().int().min(30).default(600),
+  /** Sucursales para retirar: las reales de Andreani (API pública) o unas fijas (tests y CI, sin internet). */
+  ANDREANI_BRANCHES: z.enum(["andreani", "fake"]).optional(),
 });
 
 /** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
@@ -48,6 +50,7 @@ export type Config = {
   smtp: { host: string; port: number; user?: string; pass?: string; from: string };
   fakeAndreaniSpeed: number;
   trackingEverySeconds: number;
+  branches: "andreani" | "fake";
 };
 
 export function loadConfig(): Config {
@@ -84,5 +87,6 @@ export function loadConfig(): Config {
     },
     fakeAndreaniSpeed: env.FAKE_ANDREANI_SPEED,
     trackingEverySeconds: env.TRACKING_EVERY_SECONDS,
+    branches: env.ANDREANI_BRANCHES ?? (env.NODE_ENV === "test" ? "fake" : "andreani"),
   };
 }

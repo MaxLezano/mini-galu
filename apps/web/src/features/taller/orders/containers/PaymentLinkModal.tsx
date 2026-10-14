@@ -6,6 +6,7 @@ import {
   PAYMENT_LINK_HOURS,
   type PaymentLinkCreated,
   PROVINCES,
+  type ShippingBranch,
   type ShippingOptions,
   type Size,
   toE164AR,
@@ -19,7 +20,13 @@ import { launchWhen } from "@/lib/date";
 import { cover } from "@/lib/product";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Modal } from "@/ui/organisms/Modal";
-import { type ContactForm, EMPTY_CONTACT, EMPTY_SHIPPING, type ShippingForm } from "../../../checkout/checkout-form";
+import {
+  type ContactForm,
+  EMPTY_CONTACT,
+  EMPTY_SHIPPING,
+  quotablePostalCode,
+  type ShippingForm,
+} from "../../../checkout/checkout-form";
 import { fillTemplate, TEMPLATES, waLink } from "../order-flow";
 import { addLine, type LinkChannel, type LinkLine, linesSubtotal, linkError, toLinkInput } from "../payment-link-form";
 
@@ -42,6 +49,25 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
   const [error, setError] = useState<{ field: string; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<PaymentLinkCreated | null>(null);
+  const [branches, setBranches] = useState<ShippingBranch[]>([]);
+
+  // envío a sucursal: las sucursales del CP (la primera es la que lo atiende)
+  const cp = ship.method === "sucursal" && quotablePostalCode(ship.postalCode) ? ship.postalCode : null;
+  useEffect(() => {
+    if (!cp) return setBranches([]);
+    let alive = true;
+    api.shipping(cp).then(
+      (o) => {
+        if (!alive) return;
+        setBranches(o.branches);
+        setShip((x) => (o.branches.some((b) => b.id === x.branchId) ? x : { ...x, branchId: o.branches[0]?.id ?? "" }));
+      },
+      () => alive && setBranches([]),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [cp]);
 
   useEffect(() => {
     if (!open) return;
@@ -352,6 +378,24 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
                     ))}
                   </select>
                 </div>
+                {ship.method === "sucursal" && (
+                  <select
+                    className="input"
+                    id="pl-branchId"
+                    aria-label="Sucursal"
+                    value={ship.branchId}
+                    onChange={(e) => setS("branchId", e.target.value)}
+                  >
+                    <option value="">
+                      {branches.length ? "Elegí la sucursal…" : "Poné el código postal para ver las sucursales"}
+                    </option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} · {b.address}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {ship.method === "domicilio" && (
                   <>
                     <div className="pl-grid">
@@ -394,7 +438,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
                 )}
               </>
             )}
-            {["pickupSlot", "postalCode", "province", "street", "number", "city"].map((f) => (
+            {["pickupSlot", "postalCode", "province", "branchId", "street", "number", "city"].map((f) => (
               <span key={f}>{err(f)}</span>
             ))}
           </fieldset>

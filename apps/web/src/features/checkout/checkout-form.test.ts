@@ -26,11 +26,19 @@ describe("checkout-form", () => {
     expect(shippingError(base)?.field).toBe("street");
     expect(shippingError({ ...base, street: "Gurruchaga", number: "1234", city: "CABA" })).toBeNull();
     expect(shippingError({ ...base, method: "taller" })?.message).toContain("retirar");
-    expect(toShippingInput({ ...base, method: "sucursal" })).toEqual({
+    expect(shippingError({ ...base, method: "sucursal" })).toEqual({
+      field: "branchId",
+      message: "Elegí en qué sucursal lo retirás",
+    });
+    expect(toShippingInput({ ...base, method: "sucursal", branchId: "10010" })).toEqual({
       method: "sucursal",
       postalCode: "1414",
       province: "CABA",
+      branchId: "10010",
     });
+    expect(shippingSummary({ ...base, method: "sucursal" }, undefined, "Palermo")).toBe(
+      "Andreani a sucursal · Palermo",
+    );
   });
 
   it("CP cotizable y resumen", () => {

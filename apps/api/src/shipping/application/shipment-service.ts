@@ -75,7 +75,7 @@ export class ShipmentService {
         o.shippingMethod === "taller"
           ? `El taller · ${o.workshop}`
           : o.shippingMethod === "sucursal"
-            ? `Sucursal Andreani · ${o.province ?? ""}`
+            ? `Sucursal Andreani · ${o.branch?.name ?? o.province ?? ""}`
             : [o.city, o.province].filter(Boolean).join(", "),
       recipient: recipientLabel(o.firstName, o.lastName),
       shipment: s
@@ -105,6 +105,7 @@ function toNewShipment(o: ShippableOrder & { shippingMethod: "domicilio" | "sucu
     province: o.province ?? "",
     postalCode: o.postalCode ?? "",
     notes: o.notes,
+    branch: o.branch,
     units: o.items.reduce((a, i) => a + i.qty, 0),
   };
 }

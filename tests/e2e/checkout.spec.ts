@@ -129,3 +129,21 @@ test("aplicar un cupón en el paso de pago no borra lo que se cargó de la tarje
   await expect(page.locator(".totals .total")).not.toHaveText(before ?? "");
   await expect(holder).toHaveValue("Lucía Fernández");
 });
+
+test("retiro en sucursal Andreani: se elige la sucursal del código postal", async ({ page, request }) => {
+  await skipIfRealMercadoPago(request);
+  await addBow(page);
+  await fillContact(page, uniqueEmail());
+  await page.getByRole("textbox", { name: "Código postal" }).fill("1414");
+  const option = page.getByRole("radio", { name: /Retiro en sucursal/ });
+  await option.check();
+  // la opción muestra la sucursal que atiende el CP (como el mockup) y se puede elegir otra
+  await expect(page.locator("label.option").filter({ has: option })).toContainText("Sucursal Palermo");
+  const select = page.getByLabel("¿En qué sucursal lo retirás?");
+  await expect(select).toHaveValue("10010");
+  expect(await select.locator("option").count()).toBeGreaterThan(1);
+  await page.getByRole("button", { name: /Continuar al pago/ }).click();
+  await expect(page.getByRole("region", { name: "Envío" })).toContainText("Andreani a sucursal · Palermo");
+  await page.locator("#pay").click();
+  await expect(page.getByRole("dialog", { name: "Pago aprobado" })).toContainText("Lo retirás en la sucursal Palermo");
+});

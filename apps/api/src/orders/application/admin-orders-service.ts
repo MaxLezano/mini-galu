@@ -34,6 +34,7 @@ export class AdminOrdersService {
       whatsappOptIn: o.whatsappOptIn,
       shippingAddress: o.shippingAddress,
       pickupLabel: o.pickupSlot ? this.pickupLabel(o.pickupSlot) : null,
+      shippingBranch: o.shippingBranch,
       subtotalCents: o.subtotalCents,
       discountCents: o.discountCents,
       shippingCents: o.shippingCents,

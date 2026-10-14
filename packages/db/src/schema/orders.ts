@@ -110,6 +110,9 @@ export type ShippingAddress = {
   notes: string | null;
 };
 
+/** Sucursal del correo donde retira el cliente (envío a sucursal). */
+export type ShippingBranch = { id: string; name: string; address: string };
+
 export const orders = pgTable(
   "orders",
   {
@@ -133,6 +136,7 @@ export const orders = pgTable(
     whatsappOptIn: boolean().notNull().default(true),
     shippingMethod: shippingMethod().notNull(),
     shippingAddress: jsonb().$type<ShippingAddress>(),
+    shippingBranch: jsonb().$type<ShippingBranch>(),
     postalCode: varchar({ length: 8 }),
     province: text(),
     /** Retiro en el taller: franja elegida ("2026-10-08T10:00/13:00"). */

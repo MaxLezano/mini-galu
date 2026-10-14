@@ -19,6 +19,8 @@ export type ShippingForm = {
   city: string;
   notes: string;
   pickupSlot: string;
+  /** Sucursal Andreani elegida (envío a sucursal). */
+  branchId: string;
 };
 
 export const EMPTY_CONTACT: ContactForm = { email: "", firstName: "", lastName: "", phone: "", whatsappOptIn: true };
@@ -33,12 +35,14 @@ export const EMPTY_SHIPPING: ShippingForm = {
   city: "",
   notes: "",
   pickupSlot: "",
+  branchId: "",
 };
 
 /** Lo que pide la API según la forma de envío (sin campos de más). */
 export function toShippingInput(f: ShippingForm): ShippingInput {
   if (f.method === "taller") return { method: "taller", pickupSlot: f.pickupSlot };
-  if (f.method === "sucursal") return { method: "sucursal", postalCode: f.postalCode, province: f.province };
+  if (f.method === "sucursal")
+    return { method: "sucursal", postalCode: f.postalCode, province: f.province, branchId: f.branchId };
   return {
     method: "domicilio",
     postalCode: f.postalCode,
@@ -70,7 +74,8 @@ export function shippingError(f: ShippingForm): { field: string; message: string
 export const quotablePostalCode = (cp: string) => /^[A-Z]?\d{4}[A-Z]{0,3}$/i.test(cp.trim());
 
 /** Resumen de una línea para el paso cerrado ("Andreani a domicilio · CABA"). */
-export function shippingSummary(f: ShippingForm, slotLabel?: string): string {
+export function shippingSummary(f: ShippingForm, slotLabel?: string, branchName?: string): string {
   if (f.method === "taller") return `Retiro en el taller${slotLabel ? ` · ${slotLabel}` : ""}`;
+  if (f.method === "sucursal" && branchName) return `Andreani a sucursal · ${branchName}`;
   return `${f.method === "domicilio" ? "Andreani a domicilio" : "Andreani a sucursal"} · ${f.province}`;
 }

@@ -11,6 +11,10 @@ const shipment = (method: "domicilio" | "sucursal"): NewShipment => ({
   province: "CABA",
   postalCode: "1414",
   notes: null,
+  branch:
+    method === "sucursal"
+      ? { id: "10010", name: "Palermo (Av Scalabrini Ortiz)", address: "Raúl Scalabrini Ortiz 615" }
+      : null,
   units: 2,
 });
 

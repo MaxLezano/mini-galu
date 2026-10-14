@@ -11,7 +11,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../shared/doma
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ShippingService } from "../../shipping/application/shipping-service";
 import { computeTotals, formatOrderNumber, payPath } from "../domain/order";
-import { shippingFields } from "./checkout-service";
+import { shippingFields, sucursalOf } from "./checkout-service";
 import type { OrderRepository } from "./ports";
 
 type PaymentLinkInput = z.output<typeof PaymentLinkInputSchema>;
@@ -44,6 +44,7 @@ export class PaymentLinks {
     const s = input.shipping;
     if (s.method === "taller" && !this.shipping.validSlot(s.pickupSlot))
       throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
+    const branch = await sucursalOf(this.shipping, s);
     const subtotalCents = items.reduce((a, { v, qty }) => a + v.priceCents * qty, 0);
     const shippingCents =
       (await this.shipping.cost(s.method, s.method === "taller" ? undefined : s.postalCode, subtotalCents)) ?? 0;
@@ -56,7 +57,7 @@ export class PaymentLinks {
       userId: null,
       accessToken,
       ...input.contact,
-      ...shippingFields(s),
+      ...shippingFields(s, branch),
       ...totals,
       couponId: null,
       couponCode: null,

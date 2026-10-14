@@ -114,7 +114,13 @@ export const ShippingInputSchema = z.discriminatedUnion("method", [
     city: z.string().trim().min(2, "Poné la localidad").max(80),
     notes: z.string().trim().max(300).nullable().default(null),
   }),
-  z.object({ method: z.literal("sucursal"), postalCode: PostalCodeSchema, province: ProvinceSchema }),
+  z.object({
+    method: z.literal("sucursal"),
+    postalCode: PostalCodeSchema,
+    province: ProvinceSchema,
+    /** Sucursal Andreani donde retira (id de Andreani). */
+    branchId: z.string().trim().min(1, "Elegí en qué sucursal lo retirás"),
+  }),
   z.object({ method: z.literal("taller"), pickupSlot: z.string().min(1, "Elegí cuándo pasás a retirar") }),
 ]);
 export type ShippingInput = z.input<typeof ShippingInputSchema>;
@@ -129,7 +135,16 @@ export type ShippingOption = {
 
 export type PickupSlot = { id: string; label: string };
 
-export type ShippingOptions = { options: ShippingOption[]; pickupSlots: PickupSlot[]; workshop: string };
+/** Sucursal Andreani para retirar (la primera es la que atiende el código postal). */
+export type ShippingBranch = { id: string; name: string; address: string; hours: string | null };
+
+export type ShippingOptions = {
+  options: ShippingOption[];
+  pickupSlots: PickupSlot[];
+  workshop: string;
+  /** Sucursales para el CP consultado (vacío sin CP o si no se pudieron consultar). */
+  branches: ShippingBranch[];
+};
 
 /* ------------------------------------------------------------------ cotización y pedido */
 
@@ -219,6 +234,8 @@ export type OrderReceipt = {
   installments: number | null;
   shippingMethod: ShippingMethod;
   pickupSlot: string | null;
+  /** Envío a sucursal: "Palermo (Av Scalabrini Ortiz) · Raúl Scalabrini Ortiz 615". */
+  branchLabel: string | null;
   subtotalCents: Cents;
   discountCents: Cents;
   shippingCents: Cents;

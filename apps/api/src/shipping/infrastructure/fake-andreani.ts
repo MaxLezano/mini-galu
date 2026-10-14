@@ -100,8 +100,8 @@ export async function shippingLabel(trackingNumber: string, s: NewShipment): Pro
     if (s.street) line(s.street, 11);
     line(`${s.city ?? ""}${s.city ? ", " : ""}${s.province}`, 11);
   } else {
-    line("Retira en la sucursal Andreani más cercana", 11);
-    line(s.province, 11);
+    line(s.branch ? `Retira en sucursal ${s.branch.name}` : "Retira en la sucursal Andreani más cercana", 11);
+    line(s.branch?.address ?? s.province, 11);
   }
   line(`CP ${s.postalCode}`, 14, bold, 6);
   line(`Tel. ${s.recipient.phone}`, 9);

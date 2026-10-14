@@ -1,3 +1,4 @@
+import type { Branch } from "../domain/branches";
 import type { CarrierEvent, TrackedOrder } from "../domain/tracking";
 
 /**
@@ -23,6 +24,8 @@ export type NewShipment = {
   province: string;
   postalCode: string;
   notes: string | null;
+  /** Envío a sucursal: dónde retira el cliente. */
+  branch: { id: string; name: string; address: string } | null;
   units: number;
 };
 
@@ -73,6 +76,7 @@ export type ShippableOrder = TrackedOrder & {
   province: string | null;
   postalCode: string | null;
   notes: string | null;
+  branch: { id: string; name: string; address: string } | null;
   items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
 };
 
@@ -86,4 +90,9 @@ export interface ShippableOrders {
   shipped(orderId: string, at: Date): Promise<void>;
   /** El correo lo entregó: → entregado. */
   delivered(orderId: string, at: Date): Promise<void>;
+}
+
+/** Listado de sucursales del correo (Andreani publica el suyo sin credenciales). */
+export interface BranchDirectory {
+  all(): Promise<Branch[]>;
 }

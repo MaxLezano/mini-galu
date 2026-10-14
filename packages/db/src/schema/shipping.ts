@@ -33,5 +33,6 @@ export const shipmentEvents = pgTable(
     location: text(),
     at: timestamp({ withTimezone: true }).notNull(),
   },
-  (t) => [uniqueIndex().on(t.shipmentId, t.code), index().on(t.shipmentId, t.at)],
+  // el mismo evento puede repetirse (varias visitas): lo que no se repite es el evento en el mismo momento
+  (t) => [uniqueIndex().on(t.shipmentId, t.code, t.at), index().on(t.shipmentId, t.at)],
 );

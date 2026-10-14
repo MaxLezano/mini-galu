@@ -119,6 +119,12 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     };
   }, [cp, cartKey]);
 
+  // la sucursal sugerida es la que atiende el CP; si cambia el CP y la elegida ya no está, se vuelve a esa
+  useEffect(() => {
+    const list = options?.branches ?? [];
+    setShip((x) => (list.some((b) => b.id === x.branchId) ? x : { ...x, branchId: list[0]?.id ?? "" }));
+  }, [options]);
+
   // cotización: subtotal, cupón, envío y total
   const email = contactError(contact) === null ? contact.email.trim().toLowerCase() : undefined;
   useEffect(() => {
@@ -270,6 +276,8 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
 
   const selected = options?.options.find((o) => o.method === ship.method);
   const slotLabel = options?.pickupSlots.find((s) => s.id === ship.pickupSlot)?.label;
+  const branches = options?.branches ?? [];
+  const branch = branches.find((b) => b.id === ship.branchId);
   const setS = <K extends keyof ShippingForm>(k: K, v: ShippingForm[K]) => setShip((x) => ({ ...x, [k]: v }));
   const setC = <K extends keyof ContactForm>(k: K, v: ContactForm[K]) => setContact((x) => ({ ...x, [k]: v }));
   const err = (field: string) =>
@@ -396,7 +404,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
               n={2}
               title="Envío"
               step={step}
-              summary={shippingSummary(ship, slotLabel)}
+              summary={shippingSummary(ship, slotLabel, branch?.name)}
               onEdit={step > 2 ? () => go(2) : undefined}
             >
               {ship.method !== "taller" && (
@@ -447,6 +455,36 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                   </span>
                 </label>
               ))}
+              {ship.method === "sucursal" && (
+                <div className="field">
+                  <label htmlFor="f-branchId">¿En qué sucursal lo retirás?</label>
+                  {branches.length ? (
+                    <select
+                      className="input"
+                      id="f-branchId"
+                      value={ship.branchId}
+                      onChange={(e) => setS("branchId", e.target.value)}
+                    >
+                      {branches.map((b, i) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} · {b.address}
+                          {i === 0 ? " (la de tu código postal)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="muted" style={{ margin: 0, fontSize: 13.5 }} id="f-branchId" tabIndex={-1}>
+                      Poné tu código postal para ver las sucursales Andreani.
+                    </p>
+                  )}
+                  {branch?.hours && (
+                    <small className="muted" style={{ fontSize: 12.5 }}>
+                      {branch.hours}
+                    </small>
+                  )}
+                  {err("branchId")}
+                </div>
+              )}
               {ship.method === "domicilio" && (
                 <>
                   <div className="grid2">

@@ -1,0 +1,2 @@
+DROP INDEX "shipment_events_shipment_id_code_index";--> statement-breakpoint
+CREATE UNIQUE INDEX "shipment_events_shipment_id_code_at_index" ON "shipment_events" USING btree ("shipment_id","code","at");

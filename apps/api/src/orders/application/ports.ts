@@ -34,6 +34,8 @@ export type NewOrder = {
   whatsappOptIn: boolean;
   shippingMethod: ShippingMethod;
   shippingAddress: ShippingAddress | null;
+  /** Sucursal del correo donde retira (envío a sucursal). */
+  shippingBranch: { id: string; name: string; address: string } | null;
   postalCode: string | null;
   province: string | null;
   pickupSlot: string | null;

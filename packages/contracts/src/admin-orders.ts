@@ -54,6 +54,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
   } | null;
   /** Retiro en el taller: "Jue 8 · 10 a 13 h". */
   pickupLabel: string | null;
+  /** Envío a sucursal: dónde retira. */
+  shippingBranch: { id: string; name: string; address: string } | null;
   subtotalCents: Cents;
   discountCents: Cents;
   shippingCents: Cents;

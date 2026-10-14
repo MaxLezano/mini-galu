@@ -26,6 +26,8 @@ jobs:
     env:
       DATABASE_URL: postgres://minigalu:minigalu@localhost:5433/minigalu
       NEXT_PUBLIC_API_URL: http://localhost:4000
+      # sucursales fijas: los e2e no dependen de la API de Andreani
+      ANDREANI_BRANCHES: fake
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

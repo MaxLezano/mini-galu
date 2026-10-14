@@ -19,6 +19,8 @@ export type MailOrder = {
   shippingAddress: string | null;
   /** "Jue 8 · 10 a 13 h" */
   pickupLabel: string | null;
+  /** Envío a sucursal: "Palermo (Av Scalabrini Ortiz) · Raúl Scalabrini Ortiz 615". */
+  branchLabel?: string | null;
   paymentMethod: PaymentMethod | null;
   installments: number | null;
 };
@@ -78,7 +80,9 @@ function deliveryLine(o: MailOrder, links: MailLinks): string {
   if (o.shippingMethod === "taller")
     return `Retirás en el taller (${links.workshop})${o.pickupLabel ? ` el ${o.pickupLabel}` : ""}.`;
   if (o.shippingMethod === "sucursal")
-    return "Sale con Andreani a la sucursal más cercana: te confirmamos cuál antes de despacharlo.";
+    return o.branchLabel
+      ? `Sale con Andreani y lo retirás en la sucursal ${o.branchLabel}.`
+      : "Sale con Andreani a la sucursal más cercana: te confirmamos cuál antes de despacharlo.";
   return `Sale con Andreani a ${o.shippingAddress ?? "tu domicilio"}.`;
 }
 

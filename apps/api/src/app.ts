@@ -60,6 +60,7 @@ import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
 import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
 import { slotLabel } from "./shipping/domain/pickup";
+import { AndreaniBranches, FakeBranches } from "./shipping/infrastructure/andreani-branches";
 import { DrizzleShipmentRepository } from "./shipping/infrastructure/drizzle-shipment-repository";
 import { FakeAndreani } from "./shipping/infrastructure/fake-andreani";
 import { adminShipmentRoutes, trackingRoutes } from "./shipping/infrastructure/http/shipment-routes";
@@ -102,7 +103,11 @@ export function buildApp(config: Config) {
   // checkout: bolsa → pedido (reserva stock) → pago
   const orders = new DrizzleOrderRepository(db);
   const variants = new DrizzleVariantCatalog(db);
-  const shipping = new ShippingService(new TableShippingRates());
+  const shipping = new ShippingService(
+    new TableShippingRates(),
+    undefined,
+    config.branches === "andreani" ? new AndreaniBranches() : new FakeBranches(),
+  );
   const cart = new CartService(new DrizzleCartRepository(db), variants, storage, orders);
   const coupons = new CouponService(new DrizzleCouponRepository(db));
   const checkout = new CheckoutService(cart, shipping, coupons, orders, storage);
@@ -176,6 +181,7 @@ export function buildApp(config: Config) {
             ? `${a.street} ${a.number}${a.unit ? `, ${a.unit}` : ""} · ${a.city}, ${a.province} (${a.postalCode})`
             : null,
           pickupLabel: o.pickupSlot ? slotLabel(o.pickupSlot) : null,
+          branchLabel: r.branchLabel,
           paymentMethod: o.paymentMethod,
           installments: o.installments,
         };

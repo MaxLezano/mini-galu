@@ -327,8 +327,9 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     <>
                       <dt>Sucursal</dt>
                       <dd>
-                        {/* TODO(fase 10 · shipping): sucursal Andreani elegida en el mapa (API real de Andreani) */}
-                        La más cercana al CP del cliente (a confirmar)
+                        {o.shippingBranch
+                          ? `${o.shippingBranch.name} · ${o.shippingBranch.address}`
+                          : "La más cercana al CP del cliente (a confirmar)"}
                       </dd>
                     </>
                   )}
