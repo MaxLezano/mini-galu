@@ -26,7 +26,7 @@ async function main() {
   const api = new AndreaniClient(cfg);
   console.log(`Andreani ${cfg.env === "produccion" ? "PRODUCCIÓN" : "QA (pruebas)"} · ${api.baseUrl}`);
   try {
-    await api.json("/v2/sucursales?codigoPostal=" + cp);
+    await api.json(`/v2/sucursales?codigoPostal=${cp}`);
     console.log("✓ Login y token: ok");
   } catch (e) {
     console.log(`✗ Login: ${e instanceof Error ? e.message : e}`);
