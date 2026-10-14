@@ -61,6 +61,6 @@ Qué podría sumar la web, ordenado por impacto. ✅ = ya está en los mockups. 
 
 - **Pagos**: Mercado Pago dentro de la web (tarjeta de crédito, débito y dinero en cuenta) + links de pago + gift cards.
   Se descartaron señas/reservas, packaging de regalo y etiquetas de "pieza única".
-- **Sin íconos de "IA"** en ningún lado. Galú se presenta como "la asistente del taller", con el moño como ícono.
+- **Sin íconos de "IA"** en ningún lado. Galú se presenta como "la asistente del taller", con el foco (filamento de corazón) como ícono.
 - **WhatsApp e Instagram** como contacto flotante discreto: barra lateral en escritorio, un botón que se despliega en celular.
 - **Todo en la paleta**: ningún botón o estado usa colores de marca de terceros (azul MP, rojo Andreani, etc.).

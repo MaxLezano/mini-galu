@@ -16,9 +16,9 @@ import type { CSSProperties } from "react";
 import { OpenGaluButton } from "@/features/assistant/components/OpenGaluButton";
 import { LaunchDrop } from "@/features/launch/components/LaunchDrop";
 import { cover } from "@/lib/product";
-import { Bow } from "@/ui/atoms/Bow";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Emphasis } from "@/ui/atoms/Emphasis";
+import { Foco } from "@/ui/atoms/Foco";
 import { Lookbook } from "./components/Lookbook";
 import { Rail } from "./components/Rail";
 import { ReviewsBand } from "./components/ReviewsBand";
@@ -77,7 +77,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
               </text>
             </svg>
             <div className="core">
-              <Bow />
+              <Foco />
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
       {/* MANIFIESTO */}
       <section className="section wrap manifest-wrap">
         <span className="manifest-bow" aria-hidden="true" data-reveal="">
-          <Bow />
+          <Foco />
         </span>
         <p className="display manifest" data-reveal="" style={d(0.1)}>
           Cada prenda nace en el taller: se corta, se cose y se <em className="stitch">borda a mano</em>. Diseños

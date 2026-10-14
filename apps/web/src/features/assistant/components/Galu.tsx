@@ -10,7 +10,7 @@ import { useShellData } from "@/features/shell/shell-context";
 import { useUi } from "@/features/shell/ui-store";
 import { cover, sizesIn, stockOf } from "@/lib/product";
 import { SITE } from "@/lib/site";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 import { answer, contextSuggestions, DEFAULT_SUGGESTIONS, type GaluReply, greeting } from "../galu-engine";
 
 type MsgBody =
@@ -48,7 +48,7 @@ function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (
   );
 }
 
-/** Galú: el moño flotante + el panel de chat (mockup app.js → galu). */
+/** Galú: el foco flotante + el panel de chat (mockup app.js → galu). */
 export function Galu() {
   const { products } = useShellData();
   const { galu, openGalu, closeGalu, consumeGaluQuestion } = useUi();
@@ -122,7 +122,7 @@ export function Galu() {
     <>
       <div className={`galu-fab ${galu.open ? "is-hidden" : ""} ${hint ? "" : "no-hint"}`} id="galu-fab">
         <button type="button" className="galu-orb" aria-label="Abrir asistente Galú" onClick={() => openGalu()}>
-          <Bow />
+          <Foco />
         </button>
         <div className="galu-hint">
           <button
@@ -151,7 +151,7 @@ export function Galu() {
       >
         <div className="galu-head hem-bottom">
           <div className="avatar">
-            <Bow />
+            <Foco />
           </div>
           <div>
             <h3>Galú</h3>

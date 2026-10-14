@@ -38,8 +38,8 @@ import { ApiRequestError, api } from "@/lib/api";
 import { longDate } from "@/lib/date";
 import { sizesIn, splitLastWord, stockOf } from "@/lib/product";
 import { SITE } from "@/lib/site";
-import { Bow } from "@/ui/atoms/Bow";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
+import { Foco } from "@/ui/atoms/Foco";
 import { Stars } from "@/ui/atoms/Stars";
 import { Modal } from "@/ui/organisms/Modal";
 import { formatMeasures, recommendSize } from "../size-advisor";
@@ -327,7 +327,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
 
       <div className="ask">
         <div className="bg-bow">
-          <Bow />
+          <Foco />
         </div>
         <p className="display" style={{ margin: 0 }}>
           ¿Dudas con este modelo? <em>Preguntale a Galú</em>

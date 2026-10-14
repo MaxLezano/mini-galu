@@ -1,4 +1,4 @@
-/* Ingreso al panel — basado en design/mockups/ingresar.html (sin foto: panel cacao con el moño). */
+/* Ingreso al panel — basado en design/mockups/ingresar.html (sin foto: panel cacao con el foco). */
 .auth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: calc(100svh - var(--header-h) - var(--announce-h)); }
 .auth-media { position: relative; overflow: hidden; }
 .auth-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }

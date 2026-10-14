@@ -65,7 +65,7 @@
   /* Éxito */
   .done-ov { position: fixed; inset: 0; z-index: 130; background: var(--paper); display: grid; place-items: center; text-align: center; padding: 24px; clip-path: circle(0% at 50% 100%); visibility: hidden; transition: clip-path 1s var(--ease), visibility 0s 1s; overflow: auto; }
   .done-ov.is-on { clip-path: circle(150% at 50% 100%); visibility: visible; transition: clip-path 1s var(--ease); }
-  .done-ov .bowdraw { width: 150px; color: var(--canela); margin: 0 auto 10px; }
+  .done-ov .bowdraw { width: 96px; color: var(--canela); margin: 0 auto 10px; }
   .done-ov .bowdraw path, .done-ov .bowdraw circle { stroke-dasharray: 200; stroke-dashoffset: 200; }
   .done-ov.is-on .bowdraw path, .done-ov.is-on .bowdraw circle { animation: draw 1.6s .6s var(--ease) forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }

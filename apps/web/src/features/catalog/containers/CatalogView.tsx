@@ -17,8 +17,8 @@ import { OpenGaluButton } from "@/features/assistant/components/OpenGaluButton";
 import { isStill } from "@/features/shell/craft";
 import { toast } from "@/features/shell/ui-store";
 import { api } from "@/lib/api";
-import { Bow } from "@/ui/atoms/Bow";
 import { Embroidery } from "@/ui/atoms/Embroidery";
+import { Foco } from "@/ui/atoms/Foco";
 import { activeFilterCount, type CatalogState, toQuery, toUrl } from "../catalog-state";
 import { CatalogFilters } from "../components/CatalogFilters";
 import { ProductCardContainer } from "./ProductCardContainer";
@@ -177,7 +177,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
       0,
       <div className="promo-tile" key="promo" style={{ viewTransitionName: "promo" }}>
         <div className="big-bow">
-          <Bow />
+          <Foco />
         </div>
         <span className="eyebrow" style={{ color: "var(--rosa)" }}>
           ¿No sabés el talle?

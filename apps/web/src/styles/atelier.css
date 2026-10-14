@@ -274,7 +274,7 @@ body.search-open { overflow: hidden; }
 @keyframes bump { 40% { transform: scale(1.45); } }
 
 .logo { display: inline-flex; align-items: baseline; font-family: var(--f-display); font-style: italic; font-weight: 400; font-size: 32px; letter-spacing: -.02em; line-height: 1; font-variation-settings: "SOFT" 100, "WONK" 1; position: relative; white-space: nowrap; }
-.logo .bow { position: absolute; top: -12px; left: 50%; width: 26px; color: var(--canela); transform: translateX(-80%) rotate(-8deg); transition: transform var(--t-med) var(--ease-spring); }
+.logo .bow { position: absolute; top: -19px; left: 50%; width: 19px; color: var(--canela); transform: translateX(-80%) rotate(-8deg); transition: transform var(--t-med) var(--ease-spring); }
 .logo:hover .bow { transform: translateX(-80%) rotate(8deg) scale(1.15); }
 .site-header.is-over:not(.is-solid) .logo .bow { color: var(--rosa); }
 .menu-btn { display: none; }
@@ -665,7 +665,7 @@ html :is(.bg-linen, .bg-rosa, .bg-salvia, .bg-cacao, .site-footer, body.adm-body
 .eyebrow::before { transform: scaleX(0); transform-origin: left; transition: transform .9s var(--ease) .1s; }
 .eyebrow.is-in::before, .static .eyebrow::before { transform: none; }
 
-/* Moños que se atan y bordados que se bordan pétalo a pétalo */
+/* Focos que se encienden y bordados que se bordan pétalo a pétalo */
 .draw svg path { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .draw svg circle { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.2); transition: opacity .3s, transform .5s var(--ease-spring); }
 .draw.is-drawn svg path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s var(--ease); }

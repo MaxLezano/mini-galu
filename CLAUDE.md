@@ -55,7 +55,7 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
   `.ring`, `.grid` o `.static` generan utilidades de Tailwind que pisan el diseño (pasó con el sello del hero).
 - **Paleta cerrada**: solo tokens de `packages/design-tokens`. Sin azules ni colores de marcas; logos de terceros
   monocromos (`ui/atoms/BrandIcon`). Íconos Lucide (`lucide-react`), trazo 1.6. **Sin íconos de "IA"** (sparkles):
-  Galú usa el moño.
+  Galú usa el foco (`ui/atoms/Foco`: foco con filamento de corazón, logo y firma de la marca).
 - **Movimiento**: todo efecto nuevo respeta `prefers-reduced-motion` y `?static` (ver `features/shell/craft.ts`).
 - Decisiones de la fase 0 que no se discuten: solo venta minorista con stock (sin preventa ni a medida); decir
   "clientes", no "clientas"; Mercado Pago dentro de la web; WhatsApp/Instagram como contacto discreto.

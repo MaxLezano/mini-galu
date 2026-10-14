@@ -2,7 +2,7 @@
 
 /**
  * Detalles de taller (mockups app.js): reveal al scrollear, aguja que cose los dobladillos,
- * moños que se atan, bordados que florecen, cinta métrica, estallido de puntadas y prenda que vuela a la bolsa.
+ * focos que se encienden, bordados que florecen, cinta métrica, estallido de puntadas y prenda que vuela a la bolsa.
  * Todo se apaga con prefers-reduced-motion o con ?static (capturas).
  */
 
@@ -57,7 +57,7 @@ export function observeReveal(root: ParentNode = document): () => void {
   return () => io.disconnect();
 }
 
-/** Moños que se atan, bordados que florecen y eyebrows que se cosen. */
+/** Focos que se encienden, bordados que florecen y eyebrows que se cosen. */
 export function drawCraft(root: ParentNode = document): () => void {
   for (const el of $$(".logo .bow, .manifest-bow, .badge-rot .core, .end-tile .emb", root)) el.classList.add("draw");
   for (const svg of $$("svg.emb", root)) svg.classList.add("bloom");

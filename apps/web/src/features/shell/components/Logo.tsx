@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 
 export function Logo({ style }: { style?: CSSProperties }) {
   return (
     <Link href="/" className="logo" aria-label="Mini Galú, inicio" style={style}>
       <span className="bow">
-        <Bow />
+        <Foco />
       </span>
       Mini Galú
     </Link>

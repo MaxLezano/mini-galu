@@ -1,6 +1,6 @@
 import { formatARS, type GiftcardDesign } from "@mini-galu/contracts";
-import { Bow } from "@/ui/atoms/Bow";
 import { Embroidery } from "@/ui/atoms/Embroidery";
+import { Foco } from "@/ui/atoms/Foco";
 
 /** La tarjeta (giftcards.html → .gc): diseño, monto y para quién. */
 export function GiftcardCard({
@@ -20,7 +20,7 @@ export function GiftcardCard({
     <div className={`gc ${className}`} data-d={design}>
       <Embroidery />
       <div className="bow">
-        <Bow />
+        <Foco />
       </div>
       <span className="logo" style={{ fontSize: logoSize }}>
         Mini Galú

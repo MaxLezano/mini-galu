@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 import "./login.css";
 
 /** Ingreso al panel del taller (email + contraseña). */
@@ -25,7 +25,7 @@ export function AdminLogin() {
     <main className="auth">
       <div className="auth-media is-brand">
         <span className="big-bow">
-          <Bow />
+          <Foco />
         </span>
         <div className="quote">
           <p>Lo que cargues acá aparece al instante en la tienda y en Galú.</p>

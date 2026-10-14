@@ -1,7 +1,7 @@
 import type { AccountChild } from "@mini-galu/contracts";
 import { Cake, Pencil, Plus, X } from "lucide-react";
 import Link from "next/link";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 import { ageOf, birthdayLabel, daysToBirthday } from "../account-view";
 
 type Props = {
@@ -23,7 +23,7 @@ export function NenasGrid({ nenas, now, onAdd, onEdit, onRemove }: Props) {
         return (
           <div className={`nena-card ${i % 2 ? "salvia" : ""}`} key={n.id} data-nena={n.name}>
             <div className="bow">
-              <Bow />
+              <Foco />
             </div>
             <button type="button" className="nena-x" aria-label={`Quitar a ${n.name}`} onClick={() => onRemove(n)}>
               <X className="i-sm" />

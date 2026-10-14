@@ -23,7 +23,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { ToastHost } from "@/features/shell/components/ToastHost";
 import { adminApi } from "@/lib/admin-api";
 import { relativeWhen } from "@/lib/date";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { OPEN_ORDER } from "./panel-events";
@@ -110,7 +110,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
         <aside className={`adm-side ${sideOpen ? "is-open" : ""}`} id="adm-side">
           <Link className="logo" href="/taller">
             <span className="bow">
-              <Bow />
+              <Foco />
             </span>
             Mini Galú<small>taller</small>
           </Link>

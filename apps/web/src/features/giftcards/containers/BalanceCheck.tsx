@@ -4,7 +4,7 @@ import { formatARS, type GiftcardBalance } from "@mini-galu/contracts";
 import { type FormEvent, useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
 import { longDateYear } from "@/lib/date";
-import { Bow } from "@/ui/atoms/Bow";
+import { Foco } from "@/ui/atoms/Foco";
 
 type Result = { ok: true; card: GiftcardBalance } | { ok: false; message: string } | null;
 
@@ -36,7 +36,7 @@ export function BalanceCheck() {
   return (
     <div className="bal">
       <span className="big-bow">
-        <Bow />
+        <Foco />
       </span>
       <span className="eyebrow" style={{ color: "var(--rosa)" }}>
         Ya tengo una
