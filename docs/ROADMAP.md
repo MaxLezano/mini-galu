@@ -126,9 +126,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
   real en la fase 7
 - ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
-- ✅ Mail "Recibimos tu pago" (Mailpit en local) · ⏳ WhatsApp → fase 6 · ver pedidos y reembolsos en el panel → fase 4
+- ✅ Mail "Recibimos tu pago" (Mailpit en local) · ⏳ WhatsApp → fase 6 · ✅ pedidos en el panel (fase 4)
 
-## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`) · en curso
+## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`) · terminada
 - ✅ `admin-pedidos`: tablero por estado arrastrable (dnd-kit, mouse y táctil), lista con chips por estado, búsqueda,
   filtros por canal y envío, selección múltiple con "Avanzar estado" y "Preparación" en lote
 - ✅ Lista de preparación imprimible agrupada por modelo y talle
@@ -148,7 +148,12 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Contadores en el menú (pedidos para preparar, productos con la última unidad), campana de novedades (pedidos
   nuevos, links sin pagar, última unidad; "marcar como leídas") y búsqueda global con pedidos y productos ("/")
 - 🟡 Búsqueda de clientes → fase 8; "Galú no supo responder" en la campana → fase 7
-- ⏳ Links de pago automáticos (reserva 72 h, recordatorio a las 24 h)
+- ✅ Links de pago: venta por Instagram/WhatsApp cargada en el panel (prendas, cliente, entrega); el pedido queda
+  "esperando pago" con el stock reservado 72 h y el cliente paga en `/pagar/MG-…?t=…` con el mismo Brick del
+  checkout. Copiar link o mandarlo por WhatsApp; "Reenviar link de pago" como siguiente paso; recordatorio por mail
+  a las 24 h (una vez) y a las 72 h el stock vuelve a la tienda
+- 🟡 Recordatorio por WhatsApp → fase 6 · links que crea Galú → fase 7 · reembolsar desde el panel → fase 10 (hoy un
+  pago sin stock queda marcado en el historial y en "lo que se hizo solo")
 
 ## Fase 5 · Envíos (`seguimiento.html`)
 - ⏳ FakeAndreani (cotiza por CP, etiqueta, eventos) + AndreaniAdapter

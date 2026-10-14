@@ -1,12 +1,15 @@
 import type { OrderStatus } from "@mini-galu/contracts";
 
-/** Mientras se paga en el checkout, el stock queda reservado este tiempo. Links de pago (fase 4): 72 h. */
+/** Mientras se paga en el checkout, el stock queda reservado este tiempo (los links de pago, 72 h). */
 export const CHECKOUT_RESERVATION_MINUTES = 30;
 
 /** Estados con el pago ya aprobado. */
 export const PAID_STATUSES: readonly OrderStatus[] = ["nuevo", "preparando", "listo", "en_camino", "entregado"];
 
 export const formatOrderNumber = (n: number) => `MG-${n}`;
+
+/** Página de la tienda donde se paga un pedido sin cuenta (links de pago y vuelta de Mercado Pago). */
+export const payPath = (number: string, token: string) => `/pagar/${number}?t=${encodeURIComponent(token)}`;
 
 export function parseOrderNumber(s: string): number | null {
   const m = /^(?:MG-?)?(\d{4,9})$/i.exec(s.trim());

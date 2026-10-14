@@ -22,7 +22,10 @@ describe("order-flow", () => {
       kind: "whatsapp",
       template: "resena",
     });
-    expect(nextAction({ status: "esperando_pago", shippingMethod: "domicilio" })).toBeNull();
+    expect(nextAction({ status: "esperando_pago", shippingMethod: "domicilio" })).toMatchObject({
+      label: "Reenviar link de pago",
+      template: "link",
+    });
   });
 
   it("plantilla de WhatsApp según estado y con los datos del pedido", () => {
@@ -34,10 +37,24 @@ describe("order-flow", () => {
       seguimiento: "",
       taller: "Villa Crespo",
       horario: "Te esperamos el Jue 8 · 10 a 13 h.",
+      link: "",
+      vence: "",
     });
     expect(text).toBe(
       "Hola Lucía! Tu pedido #MG-1001 está listo para retirar en el taller (Villa Crespo). Te esperamos el Jue 8 · 10 a 13 h.",
     );
+    expect(defaultTemplate({ status: "esperando_pago", shippingMethod: "taller" })).toBe("link");
+    expect(
+      fillTemplate(TEMPLATES.link.body, {
+        nombre: "Paula",
+        pedido: "MG-1046",
+        seguimiento: "",
+        taller: "",
+        horario: "",
+        link: "http://web/pagar/MG-1046?t=x",
+        vence: "jueves 16 de octubre · 22 h",
+      }),
+    ).toContain("#MG-1046: http://web/pagar/MG-1046?t=x Podés pagar");
     expect(waLink("+5491155551234", "hola ✿")).toBe("https://wa.me/5491155551234?text=hola%20%E2%9C%BF");
   });
 

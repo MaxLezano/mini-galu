@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CartItemInputSchema, CheckoutContactSchema, ShippingInputSchema } from "./checkout";
 import type { Cents } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
 
@@ -58,6 +59,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
   paidAt: string | null;
   reservedUntil: string | null;
   internalNote: string | null;
+  /** Link para pagar (pedidos por Instagram/WhatsApp que esperan el pago). */
+  payUrl: string | null;
   payment: {
     provider: string;
     /** Número de operación (Mercado Pago: ORD… o el id del pago). */
@@ -115,4 +118,29 @@ export type AdminDaySummary = {
   months: SalesPoint[];
   recent: AdminOrderSummary[];
   feed: AutoActivity[];
+};
+
+/* ------------------------------------------------------------------ links de pago (ventas por Instagram/WhatsApp) */
+
+/** Horas que se guarda el stock de un link de pago; a las 24 h se le recuerda al cliente. */
+export const PAYMENT_LINK_HOURS = 72;
+export const PAYMENT_LINK_REMINDER_HOURS = 24;
+
+export const PaymentLinkInputSchema = z.object({
+  channel: z.enum(["whatsapp", "instagram"]),
+  contact: CheckoutContactSchema,
+  shipping: ShippingInputSchema,
+  items: z
+    .array(CartItemInputSchema.extend({ qty: z.number().int().min(1).max(20) }))
+    .min(1, "Agregá al menos una prenda")
+    .max(30),
+});
+export type PaymentLinkInput = z.input<typeof PaymentLinkInputSchema>;
+
+export type PaymentLinkCreated = {
+  number: string;
+  /** Página de la tienda donde el cliente paga (sin cuenta): /pagar/MG-1046?t=… */
+  payUrl: string;
+  totalCents: Cents;
+  reservedUntil: string;
 };

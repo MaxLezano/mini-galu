@@ -113,6 +113,11 @@ El webhook (`/payments/webhook`) necesita una URL pública https: `cloudflared t
 | POST | `/payments/webhook` | avisos de Mercado Pago (firma `x-signature`) |
 | GET/PUT | `/admin/payments` | panel: medios de pago y cuotas sin interés |
 | GET/POST/PUT/PATCH/DELETE | `/admin/coupons` | panel: cupones |
+| GET | `/admin/orders` · `/admin/orders/summary` | panel: pedidos del tablero · resumen del día |
+| GET | `/admin/orders/:numero` | panel: detalle con pago, historial, notas y link de pago |
+| PATCH/PUT | `/admin/orders/:numero/status` · `/note` | panel: mover de estado · nota interna |
+| POST | `/admin/orders/advance` | panel: avanzar varios pedidos a su siguiente paso |
+| POST | `/admin/orders/links` | panel: link de pago (venta por Instagram/WhatsApp, reserva 72 h) |
 
 ## Estado
 

@@ -259,3 +259,47 @@ test("buscar un pedido desde la barra lo abre y la campana avisa el pedido nuevo
   await expect(page).toHaveURL(new RegExp(`/taller/pedidos\\?pedido=${number}`));
   await expect(page.locator("#od.is-open")).toContainText(`#${number}`);
 });
+
+test("link de pago: se arma en el panel, el cliente paga en la tienda y el pedido pasa a nuevo", async ({
+  page,
+  request,
+}) => {
+  const config = await (await request.get("http://localhost:4000/checkout/config")).json();
+  test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  await page.getByRole("button", { name: "Link de pago" }).click();
+  const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
+  await modal.getByRole("button", { name: "Instagram" }).click();
+  // sin prendas no deja crear
+  await modal.getByRole("button", { name: "Crear link de pago" }).click();
+  await expect(modal.locator(".field-error")).toContainText("Agregá al menos una prenda");
+
+  await modal.getByLabel("Prenda").selectOption({ label: "Moño Verde Largo" });
+  await modal.getByLabel("Talle").selectOption({ index: 1 });
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Nombre").fill("Paula");
+  await modal.getByLabel("Apellido").fill("Benítez");
+  await modal.getByLabel("Celular").fill("11 5555-1234");
+  await modal.getByLabel("Email").fill(`link-${Date.now()}@ejemplo.com`);
+  await modal.getByRole("group", { name: "Horario de retiro" }).getByRole("button").first().click();
+  await modal.getByRole("button", { name: "Crear link de pago" }).click();
+
+  const url = await modal.getByLabel("Link para pagar").inputValue();
+  const number = /\/pagar\/(MG-\d+)/.exec(url)?.[1] ?? "";
+  expect(number).not.toBe("");
+  await modal.getByRole("button", { name: "Listo" }).click();
+  // queda en "esperando pago" con canal Instagram
+  await expect(page.locator(`[data-order="${number}"]`)).toBeVisible();
+
+  await page.goto(url);
+  await expect(page.getByRole("heading", { name: /Hola, Paula/ })).toBeVisible();
+  await expect(page.locator(".summary")).toContainText("Moño Verde Largo");
+  await page.locator("#pay").click();
+  await expect(page.getByRole("dialog", { name: "Pago aprobado" })).toContainText("¡Gracias, Paula!");
+
+  // el link ya no se puede volver a pagar
+  await page.goto(url);
+  await expect(page.getByText("Este pedido ya está pagado")).toBeVisible();
+});

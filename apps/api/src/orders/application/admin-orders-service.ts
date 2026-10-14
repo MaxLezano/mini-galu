@@ -15,6 +15,8 @@ export class AdminOrdersService {
     private readonly events: EventBus,
     /** "2026-10-08T10-13" → "Jue 8 · 10 a 13 h" (lo sabe el módulo de envíos). */
     private readonly pickupLabel: (slot: string) => string | null,
+    /** Página de la tienda donde se paga un pedido (número + token). */
+    private readonly payUrl: (number: string, token: string) => string,
     private readonly clock: () => Date = () => new Date(),
   ) {}
 
@@ -39,6 +41,10 @@ export class AdminOrdersService {
       paidAt: o.paidAt?.toISOString() ?? null,
       reservedUntil: o.reservedUntil?.toISOString() ?? null,
       internalNote: o.internalNote,
+      payUrl:
+        o.status === "esperando_pago" && o.channel !== "web"
+          ? this.payUrl(formatOrderNumber(o.number), o.accessToken)
+          : null,
       payment,
       events: events.map((e) => ({ ...e, at: e.at.toISOString() })),
     };

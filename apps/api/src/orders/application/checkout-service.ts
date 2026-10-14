@@ -93,22 +93,7 @@ export class CheckoutService {
       userId,
       accessToken,
       ...input.contact,
-      shippingMethod: s.method,
-      shippingAddress:
-        s.method === "domicilio"
-          ? {
-              street: s.street,
-              number: s.number,
-              unit: s.unit,
-              city: s.city,
-              province: s.province,
-              postalCode: s.postalCode,
-              notes: s.notes,
-            }
-          : null,
-      postalCode: postalCode ?? null,
-      province: s.method === "taller" ? null : s.province,
-      pickupSlot: s.method === "taller" ? s.pickupSlot : null,
+      ...shippingFields(s),
       ...totals,
       couponId: coupon?.id ?? null,
       couponCode: coupon?.code ?? null,
@@ -198,6 +183,9 @@ export class CheckoutService {
       installments: o.installments,
       shippingMethod: o.shippingMethod,
       pickupSlot: o.pickupSlot,
+      subtotalCents: o.subtotalCents,
+      discountCents: o.discountCents,
+      shippingCents: o.shippingCents,
       totalCents: o.totalCents,
       createdAt: o.createdAt.toISOString(),
       reservedUntil: o.reservedUntil?.toISOString() ?? null,
@@ -210,6 +198,28 @@ export class CheckoutService {
       })),
     };
   }
+}
+
+/** Cómo se guarda en el pedido el envío que eligió el cliente. */
+export function shippingFields(s: PlaceOrder["shipping"]) {
+  return {
+    shippingMethod: s.method,
+    shippingAddress:
+      s.method === "domicilio"
+        ? {
+            street: s.street,
+            number: s.number,
+            unit: s.unit,
+            city: s.city,
+            province: s.province,
+            postalCode: s.postalCode,
+            notes: s.notes,
+          }
+        : null,
+    postalCode: s.method === "taller" ? null : s.postalCode,
+    province: s.method === "taller" ? null : s.province,
+    pickupSlot: s.method === "taller" ? s.pickupSlot : null,
+  };
 }
 
 /** El pedido existe y el token coincide (si no, 404: no se revela si el número existe). */

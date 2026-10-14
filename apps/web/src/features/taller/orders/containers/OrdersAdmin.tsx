@@ -9,12 +9,12 @@ import {
   type OrderStatus,
   type ShippingMethod,
 } from "@mini-galu/contracts";
-import { ArrowRight, GripVertical, List, ListChecks, Search, SquareCheck, SquareKanban, X } from "lucide-react";
+import { ArrowRight, GripVertical, Link2, List, ListChecks, Search, SquareCheck, SquareKanban, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
-import { relativeWhen } from "@/lib/date";
+import { launchWhen, relativeWhen } from "@/lib/date";
 import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { OPEN_ORDER, panelChanged } from "../../shell/panel-events";
@@ -25,6 +25,7 @@ import { PICKING_MODAL, PickingModal } from "../components/PickingModal";
 import { WHATSAPP_MODAL, WhatsAppModal } from "../components/WhatsAppModal";
 import { defaultTemplate, type NextAction, pickingList, type TemplateKey, toPrepare } from "../order-flow";
 import { OrderDrawer } from "./OrderDrawer";
+import { PAYMENT_LINK_MODAL, PaymentLinkModal } from "./PaymentLinkModal";
 import "../orders.css";
 
 const HOUR = 3_600_000;
@@ -164,8 +165,11 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
           <h1 className="display">Pedidos</h1>
         </div>
         <div className="actions">
-          <button type="button" className="btn btn-sm" onClick={() => showPicking(toPrepare(orders))}>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => showPicking(toPrepare(orders))}>
             <ListChecks className="i-sm" /> Lista de preparación
+          </button>
+          <button type="button" className="btn btn-sm" onClick={() => openModal(PAYMENT_LINK_MODAL)}>
+            <Link2 className="i-sm" /> Link de pago
           </button>
         </div>
       </div>
@@ -287,6 +291,7 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
         onClose={() => setOpenNumber(null)}
       />
       <PickingModal rows={pickRows} orders={picking.length} onClose={closeModal} />
+      <PaymentLinkModal onCreated={() => adminApi.orders().then(setOrders, () => {})} />
       <WhatsAppModal
         order={wo ?? null}
         template={wa?.template ?? "libre"}
@@ -294,6 +299,8 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
           seguimiento: wo ? `${location.origin}/seguimiento?pedido=${wo.number}` : "",
           taller: SITE.workshop,
           horario: wo?.pickupLabel ? `Te esperamos el ${wo.pickupLabel}.` : "Coordinamos el horario por acá.",
+          link: wo?.payUrl ?? "",
+          vence: wo?.reservedUntil ? launchWhen(wo.reservedUntil) : "",
         }}
       />
     </main>

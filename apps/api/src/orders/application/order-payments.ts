@@ -3,11 +3,19 @@ import type { CartService } from "../../cart/application/cart-service";
 import type { CouponService } from "../../coupons/application/coupon-service";
 import { ConflictError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
-import { formatOrderNumber } from "../domain/order";
+import { formatOrderNumber, payPath } from "../domain/order";
 import { findOwned } from "./checkout-service";
 import type { OrderRecord, OrderRepository } from "./ports";
 
-export type Payable = { id: string; number: string; email: string; totalCents: number; title: string };
+export type Payable = {
+  id: string;
+  number: string;
+  email: string;
+  totalCents: number;
+  title: string;
+  /** Adónde vuelve el cliente desde Mercado Pago (la web vuelve al checkout; un link de pago, a su página). */
+  returnPath: string;
+};
 
 /**
  * Lo que el módulo de pagos puede hacer con un pedido: saber si se puede cobrar y avisar el resultado.
@@ -25,9 +33,9 @@ export class OrderPayments {
   async payable(number: string, token: string): Promise<Payable> {
     const o = await findOwned(this.orders, number, token);
     if (o.status !== "esperando_pago")
-      throw new ConflictError(o.paidAt ? "Este pedido ya está pagado" : "Este pedido se canceló: volvé a la bolsa");
+      throw new ConflictError(o.paidAt ? "Este pedido ya está pagado" : "Este pedido se canceló");
     if (o.reservedUntil && o.reservedUntil.getTime() < this.clock().getTime())
-      throw new ConflictError("Se venció la reserva del pedido: volvé a intentarlo desde la bolsa");
+      throw new ConflictError("Se venció la reserva del pedido");
     return toPayable(o);
   }
 
@@ -111,11 +119,16 @@ export class OrderPayments {
 
 function toPayable(o: OrderRecord): Payable {
   const units = o.items.reduce((a, i) => a + i.qty, 0);
+  const number = formatOrderNumber(o.number);
   return {
     id: o.id,
     number: formatOrderNumber(o.number),
     email: o.email,
     totalCents: o.totalCents,
-    title: `Mini Galú · Pedido ${formatOrderNumber(o.number)} (${units} ${units === 1 ? "prenda" : "prendas"})`,
+    title: `Mini Galú · Pedido ${number} (${units} ${units === 1 ? "prenda" : "prendas"})`,
+    returnPath:
+      o.channel === "web"
+        ? `/checkout?pedido=${encodeURIComponent(number)}&t=${encodeURIComponent(o.accessToken)}`
+        : payPath(number, o.accessToken),
   };
 }

@@ -41,6 +41,31 @@ const money = formatARS;
 export const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch);
 
+/** Marco común de los mails: logo, tarjeta blanca con el contenido y pie con WhatsApp y cambios. */
+function frame(title: string, links: Pick<MailLinks, "site" | "whatsapp">, number: string, card: string): string {
+  const e = escapeHtml;
+  return `<!doctype html>
+<html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title></head>
+<body style="margin:0;background:${C.paper};font-family:Helvetica,Arial,sans-serif;color:${C.cacao}">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${C.paper}">
+    <tr><td align="center" style="padding:32px 16px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px">
+        <tr><td style="text-align:center;padding-bottom:24px">
+          <a href="${e(links.site)}" style="font-family:Georgia,serif;font-style:italic;font-size:28px;color:${C.cacao};text-decoration:none">Mini Galú</a>
+        </td></tr>
+        <tr><td style="background:#fff;border-radius:20px;padding:28px;border:1px solid ${C.line}">${card}</td></tr>
+        <tr><td style="text-align:center;padding:22px 8px;font-size:12.5px;line-height:1.6;color:${C.cacao2}">
+          ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a> con el número <b>#${e(number)}</b>.<br>
+          30 días para cambiar el talle, sin uso y con la etiqueta.<br>
+          <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
 const METHOD: Record<PaymentMethod, string> = {
   credito: "Tarjeta de crédito",
   debito: "Tarjeta de débito",
@@ -93,17 +118,11 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
     )
     .join("");
 
-  const html = `<!doctype html>
-<html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Recibimos tu pago · Pedido #${e(o.number)}</title></head>
-<body style="margin:0;background:${C.paper};font-family:Helvetica,Arial,sans-serif;color:${C.cacao}">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${C.paper}">
-    <tr><td align="center" style="padding:32px 16px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px">
-        <tr><td style="text-align:center;padding-bottom:24px">
-          <a href="${e(links.site)}" style="font-family:Georgia,serif;font-style:italic;font-size:28px;color:${C.cacao};text-decoration:none">Mini Galú</a>
-        </td></tr>
-        <tr><td style="background:#fff;border-radius:20px;padding:28px;border:1px solid ${C.line}">
+  const html = frame(
+    `Recibimos tu pago · Pedido #${e(o.number)}`,
+    links,
+    o.number,
+    `
           <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Pago aprobado · Pedido #${e(o.number)}</div>
           <h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">¡Gracias, <em style="color:${C.canela}">${e(o.firstName)}</em>!</h1>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2}">
@@ -120,16 +139,8 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
           <div style="text-align:center;margin-top:26px">
             <a href="${e(links.tracking)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Seguir mi pedido</a>
           </div>
-        </td></tr>
-        <tr><td style="text-align:center;padding:22px 8px;font-size:12.5px;line-height:1.6;color:${C.cacao2}">
-          ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a> con el número <b>#${e(o.number)}</b>.<br>
-          30 días para cambiar el talle, sin uso y con la etiqueta.<br>
-          <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
+`,
+  );
 
   const text = [
     `¡Gracias, ${o.firstName}!`,
@@ -147,4 +158,54 @@ export function paymentApprovedMail(o: MailOrder, links: MailLinks): Mail {
   ].join("\n");
 
   return { to: o.email, subject: `Recibimos tu pago · Pedido #${o.number}`, html, text };
+}
+
+/** Lo que necesita el recordatorio de un link de pago. */
+export type ReminderOrder = {
+  number: string;
+  firstName: string;
+  email: string;
+  totalCents: number;
+  payUrl: string;
+  /** "jueves 16 de octubre, 22 h": hasta cuándo se guardan las prendas (null si no vence). */
+  reservedUntilLabel: string | null;
+};
+
+/** Recordatorio a las 24 h de un link de pago sin pagar (sale una sola vez). */
+export function paymentReminderMail(o: ReminderOrder, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+  const e = escapeHtml;
+  const until = o.reservedUntilLabel ? ` Te las guardamos hasta el ${o.reservedUntilLabel}.` : "";
+  const html = frame(
+    `Tu pedido #${e(o.number)} te espera`,
+    links,
+    o.number,
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Pedido #${e(o.number)} · falta el pago</div>
+          <h1 style="font-family:Georgia,serif;font-weight:400;font-size:30px;margin:12px 0 8px">Hola, <em style="color:${C.canela}">${e(o.firstName)}</em></h1>
+          <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${C.cacao2}">
+            Te dejamos de nuevo el link para pagar tu pedido de ${money(o.totalCents)}. Podés pagar con tarjeta de
+            crédito, débito o dinero en cuenta de Mercado Pago.${e(until)}
+          </p>
+          <div style="text-align:center;margin-top:10px">
+            <a href="${e(o.payUrl)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Pagar mi pedido</a>
+          </div>`,
+  );
+  const text = [
+    `Hola, ${o.firstName}`,
+    `Te dejamos de nuevo el link para pagar tu pedido #${o.number} de ${money(o.totalCents)}.${until}`,
+    "",
+    `Pagar: ${o.payUrl}`,
+    `¿Dudas? WhatsApp: ${links.whatsapp}`,
+  ].join("\n");
+  return { to: o.email, subject: `Tu pedido #${o.number} te espera`, html, text };
+}
+
+/** "jueves 16 de octubre, 22 h" en hora de Argentina. */
+export function untilLabel(d: Date): string {
+  const tz = "America/Argentina/Buenos_Aires";
+  const day = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: tz })
+    .format(d)
+    .replace(",", "");
+  const hour = new Intl.DateTimeFormat("es-AR", { hour: "numeric", hour12: false, timeZone: tz }).format(d);
+  return `${day}, ${Number(hour)} h`;
 }

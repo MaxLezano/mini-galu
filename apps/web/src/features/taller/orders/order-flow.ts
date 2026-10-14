@@ -25,6 +25,8 @@ export function nextAction(o: Pick<AdminOrderSummary, "status" | "shippingMethod
       return { kind: "move", label: "Marcar entregado", icon: "circle-check", to: "entregado" };
     case "entregado":
       return { kind: "whatsapp", label: "Pedir reseña", icon: "star", template: "resena" };
+    case "esperando_pago":
+      return { kind: "whatsapp", label: "Reenviar link de pago", icon: "send", template: "link" };
     default:
       return null;
   }
@@ -32,9 +34,13 @@ export function nextAction(o: Pick<AdminOrderSummary, "status" | "shippingMethod
 
 /* ------------------------------------------------------------------ WhatsApp */
 
-export type TemplateKey = "pago" | "despacho" | "retiro" | "resena" | "libre";
+export type TemplateKey = "link" | "pago" | "despacho" | "retiro" | "resena" | "libre";
 
 export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
+  link: {
+    title: "Link de pago",
+    body: "Hola {nombre}! Te dejo el link para pagar tu pedido #{pedido}: {link} Podés pagar con tarjeta de crédito, débito o dinero en cuenta. Te lo guardamos hasta el {vence} ✿",
+  },
   pago: {
     title: "Pago recibido",
     body: "Hola {nombre}! Recibimos el pago de tu pedido #{pedido}. Ya lo estamos preparando en el taller. Te avisamos cuando salga ✿",
@@ -56,6 +62,7 @@ export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
 
 /** La plantilla que corresponde según el estado (como openWA() del mockup). */
 export function defaultTemplate(o: Pick<AdminOrderSummary, "status" | "shippingMethod">): TemplateKey {
+  if (o.status === "esperando_pago") return "link";
   if (o.status === "listo") return o.shippingMethod === "taller" ? "retiro" : "despacho";
   if (o.status === "en_camino") return "despacho";
   if (o.status === "entregado") return "resena";
@@ -64,9 +71,19 @@ export function defaultTemplate(o: Pick<AdminOrderSummary, "status" | "shippingM
 
 export function fillTemplate(
   body: string,
-  v: { nombre: string; pedido: string; seguimiento: string; taller: string; horario: string },
+  v: {
+    nombre: string;
+    pedido: string;
+    seguimiento: string;
+    taller: string;
+    horario: string;
+    link: string;
+    vence: string;
+  },
 ): string {
   return body
+    .replaceAll("{link}", v.link)
+    .replaceAll("{vence}", v.vence)
     .replaceAll("{nombre}", v.nombre)
     .replaceAll("{pedido}", v.pedido)
     .replaceAll("{seguimiento}", v.seguimiento)

@@ -219,6 +219,9 @@ export type OrderReceipt = {
   installments: number | null;
   shippingMethod: ShippingMethod;
   pickupSlot: string | null;
+  subtotalCents: Cents;
+  discountCents: Cents;
+  shippingCents: Cents;
   totalCents: Cents;
   createdAt: string;
   reservedUntil: string | null;

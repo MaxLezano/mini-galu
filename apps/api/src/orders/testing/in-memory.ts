@@ -109,6 +109,15 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
         for (const i of o.items) if (i.variantId) held.set(i.variantId, (held.get(i.variantId) ?? 0) + i.qty);
     return held;
   }
+  async linksToRemind(createdBefore: Date) {
+    return this.items.filter(
+      (o) =>
+        o.status === "esperando_pago" &&
+        o.channel !== "web" &&
+        o.createdAt < createdBefore &&
+        !(this.log.get(o.id) ?? []).some((e) => e.kind === "reminder"),
+    );
+  }
   async expired(now: Date) {
     return this.items
       .filter((o) => o.status === "esperando_pago" && o.reservedUntil && o.reservedUntil < now)

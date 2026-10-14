@@ -32,7 +32,13 @@ beforeEach(() => {
   bus.on("OrderStatusChanged", (e) => void published.push(e));
   const checkout = new CheckoutService(cart, new ShippingService(new TableShippingRates()), coupons, orders, storage);
   const payments = new OrderPayments(orders, cart, coupons, bus);
-  admin = new AdminOrdersService(orders, storage, bus, (s) => `franja ${s}`);
+  admin = new AdminOrdersService(
+    orders,
+    storage,
+    bus,
+    (s) => `franja ${s}`,
+    (n, t) => `http://web/pagar/${n}?t=${t}`,
+  );
   place = async (token, shipping) => {
     await cart.add({ token }, { slug: "maddie", size: "4", qty: 1 });
     return checkout.place(

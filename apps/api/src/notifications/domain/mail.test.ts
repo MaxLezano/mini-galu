@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type MailOrder, paymentApprovedMail } from "./mail";
+import { type MailOrder, paymentApprovedMail, paymentReminderMail } from "./mail";
 
 const links = {
   tracking: "http://web/seguimiento?pedido=MG-1001",
@@ -61,5 +61,26 @@ describe("paymentApprovedMail", () => {
     const m = paymentApprovedMail(order({ firstName: "<script>x</script>" }), links);
     expect(m.html).not.toContain("<script>x");
     expect(m.html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("recordatorio de link de pago", () => {
+  it("lleva el link para pagar, el total y hasta cuándo se guardan las prendas", () => {
+    const m = paymentReminderMail(
+      {
+        number: "MG-1046",
+        firstName: "Paula",
+        email: "paula@gmail.com",
+        totalCents: 36_900_00,
+        payUrl: "http://web/pagar/MG-1046?t=abc&x=1",
+        reservedUntilLabel: "jueves 16 de octubre, 22 h",
+      },
+      links,
+    );
+    expect(m.to).toBe("paula@gmail.com");
+    expect(m.subject).toBe("Tu pedido #MG-1046 te espera");
+    expect(m.html).toContain('href="http://web/pagar/MG-1046?t=abc&amp;x=1"');
+    expect(m.text).toContain("$36.900");
+    expect(m.text).toContain("hasta el jueves 16 de octubre, 22 h");
   });
 });

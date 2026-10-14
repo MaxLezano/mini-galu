@@ -9,3 +9,14 @@
 /* agregados: el número de la tarjeta es un botón (abrir con teclado) */
 .ocard .onum { all: unset; cursor: pointer; border-radius: 4px; }
 .ocard .onum:focus-visible { outline: 2px solid var(--cacao); outline-offset: 2px; }
+/* agregado: modal "Link de pago" (no está en el mockup; usa los chips y campos del checkout) */
+.pl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pl-chips .chip { display: inline-flex; gap: 6px; align-items: center; }
+.pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .pl-grid { grid-template-columns: 1fr; } }
+.pl-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.pl-item .ph { position: relative; }
+.pl-item img { width: 44px; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; display: block; }
+.pl-item .q { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--cacao); color: var(--paper); font-size: 10.5px; font-weight: 700; display: grid; place-items: center; }
+.pl-item b { font: 400 16px/1.2 var(--f-display); display: block; }
+.pl-item .muted { font-size: 12.5px; }

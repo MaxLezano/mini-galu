@@ -11,6 +11,8 @@ import type {
   HomeHeroInput,
   LaunchInput,
   OrderStatus,
+  PaymentLinkCreated,
+  PaymentLinkInput,
   PaymentSettings,
   ProductInput,
   ProductStatus,
@@ -85,6 +87,8 @@ export const adminApi = {
     adminRequest<AdminCoupon>(`/admin/coupons/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
   deleteCoupon: (id: string) => adminRequest<null>(`/admin/coupons/${id}`, { method: "DELETE" }),
   orders: () => adminRequest<AdminOrderSummary[]>("/admin/orders"),
+  createPaymentLink: (input: PaymentLinkInput) =>
+    adminRequest<PaymentLinkCreated>("/admin/orders/links", { method: "POST", body: JSON.stringify(input) }),
   order: (number: string) => adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}`),
   moveOrder: (number: string, to: OrderStatus) =>
     adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}/status`, {

@@ -182,6 +182,22 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     return new Map(rows.flatMap((r) => (r.variantId ? [[r.variantId, r.qty] as const] : [])));
   }
 
+  async linksToRemind(createdBefore: Date) {
+    const rows = await this.db
+      .select({ id: s.orders.id })
+      .from(s.orders)
+      .where(
+        and(
+          eq(s.orders.status, "esperando_pago"),
+          not(eq(s.orders.channel, "web")),
+          lt(s.orders.createdAt, createdBefore),
+          sql`not exists (select 1 from ${s.orderEvents} where ${s.orderEvents.orderId} = ${s.orders.id} and ${s.orderEvents.kind} = 'reminder')`,
+        ),
+      );
+    const found = await Promise.all(rows.map((r) => this.findById(r.id)));
+    return found.flatMap((o) => (o ? [o] : []));
+  }
+
   async expired(now: Date) {
     const rows = await this.db
       .select({ id: s.orders.id })

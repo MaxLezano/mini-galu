@@ -109,6 +109,8 @@ export interface OrderRepository extends OrderEvents {
   findByNumber(number: number): Promise<OrderRecord | null>;
   /** Pedidos esperando pago hechos desde esa bolsa. */
   pendingForCart(cartId: string): Promise<string[]>;
+  /** Links de pago (no web) esperando pago, creados antes de `createdBefore` y todavía sin recordatorio. */
+  linksToRemind(createdBefore: Date): Promise<OrderRecord[]>;
   /** Pedidos esperando pago con la reserva vencida. */
   expired(now: Date): Promise<string[]>;
   /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */

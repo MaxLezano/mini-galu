@@ -32,10 +32,13 @@ import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
 import { OrderNotifications } from "./notifications/application/order-notifications";
+import { untilLabel } from "./notifications/domain/mail";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
 import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
+import { PaymentLinks } from "./orders/application/payment-links";
+import { payPath } from "./orders/domain/order";
 import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
@@ -93,11 +96,20 @@ export function buildApp(config: Config) {
 
   // checkout: bolsa → pedido (reserva stock) → pago
   const orders = new DrizzleOrderRepository(db);
-  const cart = new CartService(new DrizzleCartRepository(db), new DrizzleVariantCatalog(db), storage, orders);
+  const variants = new DrizzleVariantCatalog(db);
+  const shipping = new ShippingService(new TableShippingRates());
+  const cart = new CartService(new DrizzleCartRepository(db), variants, storage, orders);
   const coupons = new CouponService(new DrizzleCouponRepository(db));
-  const checkout = new CheckoutService(cart, new ShippingService(new TableShippingRates()), coupons, orders, storage);
+  const checkout = new CheckoutService(cart, shipping, coupons, orders, storage);
   const orderPayments = new OrderPayments(orders, cart, coupons, events);
-  const adminOrders = new AdminOrdersService(orders, storage, events, slotLabel);
+  const adminOrders = new AdminOrdersService(
+    orders,
+    storage,
+    events,
+    slotLabel,
+    (number, token) => config.webOrigin + payPath(number, token),
+  );
+  const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin);
   const webhookUrl = `${config.publicUrl}/payments/webhook`;
   const gateway: PaymentGateway = config.mercadoPago
     ? new MercadoPagoGateway({
@@ -119,6 +131,7 @@ export function buildApp(config: Config) {
   if (config.env !== "test") {
     scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
     scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
+    scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
   }
 
   // TODO(fase 6 · automations): "Volvió un talle" avisa a la lista de espera por WhatsApp/mail
@@ -173,8 +186,20 @@ export function buildApp(config: Config) {
         auto: true,
       });
   });
+  // TODO(fase 6 · automations): el recordatorio también por WhatsApp
+  events.on("PaymentLinkReminder", async (e) => {
+    const p = e.payload;
+    await notifications.paymentReminder({
+      number: String(p.number),
+      firstName: String(p.firstName),
+      email: String(p.email),
+      totalCents: Number(p.totalCents),
+      payUrl: String(p.payUrl),
+      reservedUntilLabel: p.reservedUntil ? untilLabel(new Date(String(p.reservedUntil))) : null,
+    });
+  });
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
-  // TODO(fase 4 · orders): mostrar en el panel los pagos a reembolsar o revisar
+  // TODO(fase 10 · payments): reembolsar desde el panel (hoy se ve en el historial del pedido y en el resumen)
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
 
@@ -203,7 +228,7 @@ export function buildApp(config: Config) {
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
     .route("/admin/content/home", adminHomeRoutes(content))
-    .route("/admin/orders", adminOrderRoutes(adminOrders))
+    .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .onError(onError)

@@ -12,6 +12,7 @@ import {
   BadgeCheck,
   CircleCheck,
   Clock,
+  Link2,
   Mail,
   MailCheck,
   Package,
@@ -27,7 +28,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
-import { longDate, relativeWhen, shortDate } from "@/lib/date";
+import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { ActionIcon } from "../components/OrderCard";
@@ -138,6 +139,11 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
   const step = o ? (STEP[o.status] ?? 0) : 0;
   const a = o?.shippingAddress;
   const paidMore = o?.payment?.paidByCustomerCents && o.payment.paidByCustomerCents > o.totalCents;
+  const copyLink = (url: string) =>
+    navigator.clipboard?.writeText(url).then(
+      () => toast("Link de pago copiado", { icon: <Link2 className="i-sm" /> }),
+      () => toast("No se pudo copiar: mantené apretado el link para copiarlo"),
+    );
 
   return (
     <>
@@ -371,6 +377,22 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     <>
                       <dt>Operación MP</dt>
                       <dd>{o.payment.reference}</dd>
+                    </>
+                  )}
+                  {o.payUrl && (
+                    <>
+                      <dt>Link</dt>
+                      <dd>
+                        <button type="button" className="link" onClick={() => copyLink(o.payUrl ?? "")}>
+                          Copiar link de pago
+                        </button>
+                        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                          {o.reservedUntil
+                            ? `Las prendas quedan reservadas hasta el ${launchWhen(o.reservedUntil)}. `
+                            : ""}
+                          A las 24 h se le manda un recordatorio por mail.
+                        </div>
+                      </dd>
                     </>
                   )}
                 </dl>
