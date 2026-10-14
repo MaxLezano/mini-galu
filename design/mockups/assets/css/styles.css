@@ -326,8 +326,8 @@ body.search-open { overflow: hidden; }
 @keyframes bump { 40% { transform: scale(1.45); } }
 
 .logo { display: inline-flex; align-items: baseline; font-family: var(--f-display); font-style: italic; font-weight: 400; font-size: 32px; letter-spacing: -.02em; line-height: 1; font-variation-settings: "SOFT" 100, "WONK" 1; position: relative; white-space: nowrap; }
-.logo .bow { position: absolute; top: -19px; left: 50%; width: 19px; color: var(--canela); transform: translateX(-80%) rotate(-8deg); transition: transform var(--t-med) var(--ease-spring); }
-.logo:hover .bow { transform: translateX(-80%) rotate(8deg) scale(1.15); }
+.logo .bow { position: absolute; top: -15px; left: 50%; width: 22px; color: var(--canela); transform: translateX(-46%) rotate(-6deg); transition: transform var(--t-med) var(--ease-spring); }
+.logo:hover .bow { transform: translateX(-46%) rotate(6deg) scale(1.12); }
 .site-header.is-over:not(.is-solid) .logo .bow { color: var(--rosa); }
 .menu-btn { display: none; }
 
@@ -715,18 +715,22 @@ html :is(.bg-linen, .bg-rosa, .bg-salvia, .bg-cacao, .site-footer, body.adm-body
 .eyebrow.is-in::before, .static .eyebrow::before { transform: none; }
 
 /* Moños que se atan y bordados que se bordan pétalo a pétalo */
-/* el foco "se enciende": aparece de abajo hacia arriba y brilla un instante */
+/* El foco se dibuja solo donde aparezca (vidrio, rosca, corazón y al final los destellos) y el corazón titila.
+   Grosor parejo en todas las líneas: --foco-trazo (en unidades del dibujo, 591 de ancho). */
+svg.foco { stroke-width: var(--foco-trazo, 26); overflow: visible; }
+svg.foco path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: dibujar 1s var(--ease) forwards; }
+svg.foco path:nth-of-type(2) { animation-delay: .45s; animation-duration: .35s; }
+svg.foco path:nth-of-type(3) { animation-delay: .55s; animation-name: dibujar, encender; animation-duration: 1s, 1.4s; animation-delay: .55s, 1.6s; animation-timing-function: var(--ease), ease-in-out; animation-fill-mode: forwards, both; }
+svg.foco path:nth-of-type(4) { animation-delay: .9s; animation-duration: .6s; }
+svg.foco path:nth-of-type(5) { animation-delay: 1.25s; animation-duration: .5s; }
+@keyframes dibujar { to { stroke-dashoffset: 0; } }
 @keyframes encender {
-  0% { clip-path: inset(100% 0 0 0); filter: none; }
-  70% { clip-path: inset(-40%); filter: drop-shadow(0 0 0 currentColor); }
-  85% { filter: drop-shadow(0 0 5px currentColor); }
-  100% { clip-path: inset(-40%); filter: none; }
+  0%, 100% { stroke: currentColor; }
+  15%, 40%, 60% { stroke: var(--rojo); }
+  27% { stroke: currentColor; }
 }
-.draw svg.foco { clip-path: inset(100% 0 0 0); }
-.draw.is-drawn svg.foco { animation: encender 1.4s var(--ease) forwards; }
-.static .draw svg.foco { clip-path: none; animation: none; }
+.static svg.foco path { animation: none; stroke-dashoffset: 0; }
 .draw svg path { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.draw svg.foco path { stroke-dasharray: none; stroke-dashoffset: 0; }
 .draw svg circle { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.2); transition: opacity .3s, transform .5s var(--ease-spring); }
 .draw.is-drawn svg path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s var(--ease); }
 .draw.is-drawn svg path:nth-of-type(2) { transition-delay: .25s; }
@@ -749,7 +753,7 @@ svg.emb.bloom.is-drawn path, svg.emb.bloom.is-drawn circle { opacity: 1; transfo
 @keyframes catch { 30% { transform: scale(1.25) rotate(-8deg); } 60% { transform: scale(.92) rotate(4deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .draw svg.foco, .done-ov .bowdraw { clip-path: none; animation: none; }
+  svg.foco path { animation: none; stroke-dashoffset: 0; }
   .tape { display: none; }
   .draw svg path { stroke-dashoffset: 0; } .draw svg circle, svg.emb.bloom path, svg.emb.bloom circle { opacity: 1; transform: none; }
   .eyebrow::before { transform: none; }

@@ -66,9 +66,7 @@
   .done-ov { position: fixed; inset: 0; z-index: 130; background: var(--paper); display: grid; place-items: center; text-align: center; padding: 24px; clip-path: circle(0% at 50% 100%); visibility: hidden; transition: clip-path 1s var(--ease), visibility 0s 1s; overflow: auto; }
   .done-ov.is-on { clip-path: circle(150% at 50% 100%); visibility: visible; transition: clip-path 1s var(--ease); }
   .done-ov .bowdraw { width: 96px; color: var(--canela); margin: 0 auto 10px; }
-  .done-ov .bowdraw { clip-path: inset(100% 0 0 0); }
-  .done-ov.is-on .bowdraw { animation: encender 1.4s .6s var(--ease) forwards; }
-  .static .done-ov .bowdraw { clip-path: none; animation: none; }
+  .done-ov .bowdraw { --foco-trazo: 14; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   .done-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 640px; margin: 0 auto 28px; text-align: left; }
   .done-steps div { padding: 14px; border-radius: 14px; background: var(--linen); font-size: 13px; display: grid; gap: 6px; }

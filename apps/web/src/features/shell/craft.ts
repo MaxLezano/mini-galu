@@ -59,7 +59,7 @@ export function observeReveal(root: ParentNode = document): () => void {
 
 /** Focos que se encienden, bordados que florecen y eyebrows que se cosen. */
 export function drawCraft(root: ParentNode = document): () => void {
-  for (const el of $$(".logo .bow, .manifest-bow, .badge-rot .core, .end-tile .emb", root)) el.classList.add("draw");
+  for (const el of $$(".manifest-bow, .badge-rot .core, .end-tile .emb", root)) el.classList.add("draw");
   for (const svg of $$("svg.emb", root)) svg.classList.add("bloom");
   const items = $$(".draw:not(.is-drawn), svg.emb:not(.is-drawn), .eyebrow:not(.is-in)", root);
   if (isStill()) {
