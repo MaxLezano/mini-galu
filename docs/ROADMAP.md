@@ -176,7 +176,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 Interruptor "Avisos por WhatsApp" en el seguimiento y aviso de despacho → fase 6 · "Probá con" del mockup era
   solo demo
 
-## Fase 6 · Automatizaciones (`admin-automatizaciones.html`)
+## Fase 6 · Automatizaciones (`admin-automatizaciones.html`) · terminada (WhatsApp espera credenciales)
 - ✅ Módulo `automations`: reglas activables con mensaje editable (vista previa e "insertar dato"), registro de lo
   que se hizo solo, métricas del mes (mensajes, tiempo ahorrado, ventas por avisos de talle, links recuperados),
   canales y "Enviarme una prueba"
@@ -187,7 +187,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - 🟡 WhatsApp Business: "sin conectar" hasta tener las credenciales de Meta (los anotados solo por WhatsApp quedan
   esperando) · Resend en producción → fase 10
 - 🟡 Bolsa abandonada y cumpleaños → fase 8 (necesitan cuentas de clientes)
-- ⏳ Newsletter "Cartas del taller"
+- ✅ Newsletter "Cartas del taller": suscripción desde el pie (mail de bienvenida), baja en un clic con el link de
+  cada carta, y en Tienda y pagos: suscriptos, CSV, escribir una carta, mandarse una prueba y enviarla a todos
 
 ## Fase 7 · Galú (`admin-galu.html`)
 - ⏳ `LlmProvider` (Ollama local → Claude Haiku en prod), tools sobre casos de uso, pgvector

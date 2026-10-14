@@ -99,6 +99,9 @@ export const api = {
   quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
   placeOrder: (body: PlaceOrderInput) =>
     request<PlacedOrder>("/checkout/orders", { method: "POST", body: JSON.stringify(body) }),
+  subscribe: (email: string, source: "footer" | "cuenta" | "registro" = "footer") =>
+    request<null>("/newsletter", { method: "POST", body: JSON.stringify({ email, source }) }),
+  unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),
   receipt: (number: string, t: string) =>

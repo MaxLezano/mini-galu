@@ -1,10 +1,18 @@
-import type { AdminCoupon, AdminHome, AdminLaunch, AdminPayments, AdminShipping } from "@mini-galu/contracts";
+import type {
+  AdminCoupon,
+  AdminHome,
+  AdminLaunch,
+  AdminNewsletter,
+  AdminPayments,
+  AdminShipping,
+} from "@mini-galu/contracts";
 import { Gift } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { launchWhen } from "@/lib/date";
 import { CouponsEditor } from "./CouponsEditor";
 import { HeroEditor } from "./HeroEditor";
+import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
 import { ShippingEditor } from "./ShippingEditor";
 import "./store.css";
@@ -41,9 +49,11 @@ type Props = {
   payments: AdminPayments;
   shipping: AdminShipping;
   coupons: AdminCoupon[];
+  newsletter: AdminNewsletter;
+  email: string;
 };
 
-export function StoreSettings({ home, next, payments, shipping, coupons }: Props) {
+export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, email }: Props) {
   return (
     <main className="adm-content">
       <div className="adm-head">
@@ -59,6 +69,7 @@ export function StoreSettings({ home, next, payments, shipping, coupons }: Props
         <PaymentsEditor initial={payments} />
 
         <ShippingEditor initial={shipping} />
+        <NewsletterEditor initial={newsletter} email={email} />
         <section className="box" id="lanzamiento">
           <div className="box-head">
             <h2>Lanzamientos</h2>

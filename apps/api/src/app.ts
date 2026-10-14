@@ -41,6 +41,9 @@ import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
+import { NewsletterService } from "./newsletter/application/newsletter-service";
+import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
+import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
 import { OrderNotifications } from "./notifications/application/order-notifications";
 import { untilLabel } from "./notifications/domain/mail";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
@@ -220,6 +223,12 @@ export function buildApp(config: Config) {
       workshop: WORKSHOP,
     }),
   );
+  const newsletter = new NewsletterService(
+    new DrizzleSubscribers(db),
+    new DrizzleLetters(db),
+    notifications,
+    (t) => `${config.webOrigin}/cartas/baja?t=${encodeURIComponent(t)}`,
+  );
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
     new DrizzleAutomationSettings(db),
@@ -281,6 +290,7 @@ export function buildApp(config: Config) {
     .route("/checkout", checkoutPaymentRoutes(payments))
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
+    .route("/newsletter", newsletterRoutes(newsletter))
     .use("/admin/*", requireAdmin(auth))
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
@@ -290,6 +300,7 @@ export function buildApp(config: Config) {
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
+    .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
     .route(
       "/admin/automations",
       adminAutomationRoutes(automations, () => ({

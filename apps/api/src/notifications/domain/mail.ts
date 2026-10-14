@@ -266,3 +266,31 @@ export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "wha
   ].join("\n");
   return { to: m.to, subject: m.subject, html, text };
 }
+
+/** Una carta del taller (newsletter): el texto de Gaby y, al pie, el link para darse de baja. */
+export function letterMail(
+  m: { to: string; subject: string; body: string; unsubscribeUrl: string },
+  links: Pick<MailLinks, "site" | "whatsapp">,
+): Mail {
+  const e = escapeHtml;
+  const html = frame(
+    e(m.subject),
+    links,
+    "",
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Cartas del taller</div>
+          <h1 style="font-family:Georgia,serif;font-weight:400;font-size:28px;margin:12px 0 8px">${e(m.subject)}</h1>
+          <p style="margin:12px 0 20px;font-size:15px;line-height:1.6;color:${C.cacao2};white-space:pre-line">${e(m.body)}</p>
+          <div style="text-align:center;margin-top:10px">
+            <a href="${e(links.site)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Ver la tienda</a>
+          </div>
+          <p style="margin:24px 0 0;font-size:12px;color:${C.cacao2};text-align:center">
+            Te llega porque te sumaste a las Cartas del taller.
+            <a href="${e(m.unsubscribeUrl)}" style="color:${C.cacao2}">Darme de baja</a>
+          </p>`,
+  );
+  const text = [m.subject, "", m.body, "", `Ver la tienda: ${links.site}`, `Darme de baja: ${m.unsubscribeUrl}`].join(
+    "\n",
+  );
+  return { to: m.to, subject: m.subject, html, text };
+}

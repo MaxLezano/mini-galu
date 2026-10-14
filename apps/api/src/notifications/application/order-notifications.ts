@@ -1,4 +1,5 @@
 import {
+  letterMail,
   type MailLinks,
   type MessageMail,
   messageMail,
@@ -33,5 +34,25 @@ export class OrderNotifications {
 
   async message(m: MessageMail): Promise<void> {
     await this.mailer.send(messageMail(m, this.links(m.number ?? "")));
+  }
+
+  /* ---- Cartas del taller ---- */
+
+  async welcome(to: string, unsubscribeUrl: string): Promise<void> {
+    await this.mailer.send(
+      letterMail(
+        {
+          to,
+          subject: "Te sumaste a las Cartas del taller ♡",
+          body: "Gracias por sumarte. Una vez por mes te contamos lo que se viene: lanzamientos antes que en Instagram, telas nuevas y lo que estamos cosiendo en el taller.",
+          unsubscribeUrl,
+        },
+        this.links(""),
+      ),
+    );
+  }
+
+  async letter(m: { to: string; subject: string; body: string; unsubscribeUrl: string }): Promise<void> {
+    await this.mailer.send(letterMail(m, this.links("")));
   }
 }

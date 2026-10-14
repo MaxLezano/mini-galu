@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import { StoreSettings } from "@/features/taller/store/StoreSettings";
-import { adminServer } from "@/lib/admin-server";
+import { adminServer, getAdminSession } from "@/lib/admin-server";
 
 export const metadata: Metadata = { title: "Tienda y pagos" };
 
 export default async function Page() {
-  const [home, launches, payments, shipping, coupons] = await Promise.all([
+  const [home, launches, payments, shipping, coupons, newsletter, session] = await Promise.all([
     adminServer.home(),
     adminServer.launches(),
     adminServer.payments(),
     adminServer.shipping(),
     adminServer.coupons(),
+    adminServer.newsletter(),
+    getAdminSession(),
   ]);
   return (
     <StoreSettings
@@ -18,6 +20,8 @@ export default async function Page() {
       next={launches.find((l) => l.state === "scheduled") ?? null}
       payments={payments}
       shipping={shipping}
+      newsletter={newsletter}
+      email={session?.email ?? ""}
       coupons={coupons}
     />
   );

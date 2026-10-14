@@ -3,6 +3,7 @@ import type {
   AdminCoupon,
   AdminHome,
   AdminLaunch,
+  AdminNewsletter,
   AdminOrderDetail,
   AdminOrderSummary,
   AdminPayments,
@@ -86,6 +87,12 @@ export const adminApi = {
     adminRequest<AdminAutomations>(`/admin/automations/${key}`, { method: "PATCH", body: JSON.stringify(upd) }),
   testAutomations: (email: string) =>
     adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
+  newsletter: () => adminRequest<AdminNewsletter>("/admin/newsletter"),
+  subscribersCsvUrl: () => `${API_URL}/admin/newsletter/suscriptos.csv`,
+  testLetter: (input: { subject: string; body: string; email: string }) =>
+    adminRequest<null>("/admin/newsletter/test", { method: "POST", body: JSON.stringify(input) }),
+  sendLetter: (input: { subject: string; body: string }) =>
+    adminRequest<{ recipients: number }>("/admin/newsletter/send", { method: "POST", body: JSON.stringify(input) }),
   saveShipping: (input: ShippingSettings) =>
     adminRequest<AdminShipping>("/admin/shipping", { method: "PUT", body: JSON.stringify(input) }),
   savePayments: (s: PaymentSettings) =>

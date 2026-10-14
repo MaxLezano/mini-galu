@@ -7,5 +7,6 @@ export * from "./catalog";
 export * from "./checkout";
 export * from "./content";
 export * from "./money";
+export * from "./newsletter";
 export * from "./orders";
 export * from "./tracking";

@@ -3,6 +3,7 @@
 import { CreditCard, Mail, Truck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ApiRequestError, api } from "@/lib/api";
 import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { useUi } from "../ui-store";
@@ -11,6 +12,8 @@ import { Logo } from "./Logo";
 export function Footer() {
   const openGalu = useUi((s) => s.openGalu);
   const [subscribed, setSubscribed] = useState(false);
+  const [nlError, setNlError] = useState<string | null>(null);
+  const [nlBusy, setNlBusy] = useState(false);
   return (
     <footer className="site-footer hem-top">
       <div className="wrap footer-grid">
@@ -84,19 +87,40 @@ export function Footer() {
               ¡Gracias! Te escribimos pronto.
             </span>
           ) : (
-            // TODO(fase 6 · notifications): guardar la suscripción y mandar la carta mensual
             <form
               className="nl-form"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                setSubscribed(true);
+                const email = String(new FormData(e.currentTarget).get("email") ?? "");
+                setNlBusy(true);
+                setNlError(null);
+                try {
+                  await api.subscribe(email);
+                  setSubscribed(true);
+                } catch (err) {
+                  setNlError(err instanceof ApiRequestError ? err.message : "No pudimos sumarte. Probá de nuevo.");
+                } finally {
+                  setNlBusy(false);
+                }
               }}
             >
-              <input className="input" type="email" required placeholder="tu@email.com" aria-label="Email" />
-              <button type="submit" className="btn btn-light">
+              <input
+                className="input"
+                type="email"
+                name="email"
+                required
+                placeholder="tu@email.com"
+                aria-label="Email"
+              />
+              <button type="submit" className="btn btn-light" disabled={nlBusy}>
                 Sumarme
               </button>
             </form>
+          )}
+          {nlError && (
+            <p role="alert" style={{ color: "var(--rosa)", fontSize: 13, margin: "8px 0 0" }}>
+              {nlError}
+            </p>
           )}
         </div>
       </div>
