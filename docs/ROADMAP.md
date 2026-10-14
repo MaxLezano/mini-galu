@@ -69,7 +69,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Moño flotante con pista, panel, sugerencias, saludo contextual en la ficha, tarjetas con "Agregar"
 - ✅ Responde talles, stock, precios, cuotas, envíos, ocasiones, regalos, colores, presupuesto, a medida
 - 🟡 "¿Dónde está mi pedido?": pide el número → con pedidos reales en la fase 5
-- ⏳ LLM + tools + "enseñale" → fase 7
+- ✅ LLM + tools (fase 7) · ⏳ "enseñale" → fase 7
 
 ### Panel del taller (fase 2)
 - ✅ Ingreso del taller (`/taller/ingresar`): Better Auth email + contraseña, sin registro público; la cuenta la crea el seed
@@ -196,7 +196,15 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   cada carta, y en Tienda y pagos: suscriptos, CSV, escribir una carta, mandarse una prueba y enviarla a todos
 
 ## Fase 7 · Galú (`admin-galu.html`)
-- ⏳ `LlmProvider` (Ollama local → Claude Haiku en prod), tools sobre casos de uso, pgvector
+- ✅ Módulo `assistant`: `LlmProvider` con Ollama en local (`OLLAMA_URL`, por defecto `qwen3:4b`) y Claude en
+  producción (`ANTHROPIC_API_KEY`, por defecto `claude-haiku-5-5`); sin ninguno, la tienda responde por reglas como antes
+- ✅ Tools sobre los casos de uso: `buscar_prendas` (talle, ocasión, color, precio, texto), `ver_prenda` (por slug o
+  nombre; sin borradores), `talle_para` (edad/altura, la misma calculadora de la ficha), `seguir_pedido` (sin calle ni
+  apellido) y `cotizar_envio`; el modelo no inventa datos y las prendas consultadas salen como tarjetas con "Agregar"
+- ✅ Respuesta por SSE (`POST /assistant/chat`): el texto aparece de a pedazos; sabe qué ficha se está mirando; límite
+  de 30 preguntas cada 10 min por IP y 500 caracteres por mensaje
+- 🟡 pgvector → con 11 prendas alcanzan los filtros del catálogo; se suma si crece el catálogo o para buscar en lo que
+  Gaby le enseña (Claude no tiene embeddings: haría falta otro proveedor)
 - ⏳ Conversaciones, "enseñale" (`AssistantFact`), ajustes
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)

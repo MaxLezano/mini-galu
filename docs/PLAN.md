@@ -59,7 +59,7 @@ Estética **vintage-campestre, romántica** (lino, pana, plumeti, puntilla, bord
 | Pagos | **Mercado Pago** Payment Brick + Checkout API + links de pago (sandbox) | Ver §6 |
 | Envíos | **Andreani** (adapter) + **FakeAndreani** local | Ver §6 |
 | Mensajes | WhatsApp Business (Cloud API) + mail (Mailpit local → Resend) | Ver §6 |
-| Asistente | **Ollama** local → Claude Haiku 4.5 en prod | Gratis en local, mismo puerto |
+| Asistente | **Ollama** local (`qwen3:4b`) → Claude Haiku 5.5 en prod | Gratis en local, mismo puerto |
 | Imágenes | Disco local → Cloudinary free / R2 en prod | Puerto `ImageStorage` |
 | Túnel webhooks | **cloudflared** | Mercado Pago y Andreani necesitan URL pública |
 | Tests | Vitest (dominio) · Playwright (e2e + capturas en 4 tamaños) · MSW | |
@@ -171,7 +171,8 @@ Los pasan el webhook de Mercado Pago, Gaby desde el tablero y los eventos de And
   `shipping_quote`, `join_waitlist`.
 - Búsqueda semántica con **pgvector** + filtros SQL de stock real. Respuestas con tarjetas y acciones de UI.
 - Lo que no sabe se registra; Gaby le enseña la respuesta desde el panel (`AssistantFact`).
-- Local: Ollama (gratis). Prod: Claude Haiku 4.5 (`claude-haiku-4-5`) — mismo puerto `LlmProvider`.
+- Local: Ollama (gratis, `qwen3:4b`). Prod: Claude Haiku 5.5 (`claude-haiku-5-5`, `ANTHROPIC_MODEL` lo cambia) — mismo
+  puerto `LlmProvider`. Sin ninguno configurado, la tienda responde con las reglas de la fase 2.
 
 ---
 

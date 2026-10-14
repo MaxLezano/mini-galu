@@ -34,7 +34,37 @@ test("un talle agotado ofrece anotarse en la lista de espera", async ({ page }) 
   await expect(page.locator("#toast")).toContainText(/Te avisamos|Ya estabas anotada/);
 });
 
-test("Galú responde con el stock real", async ({ page }) => {
+// Galú con modelo: la respuesta de la API se fija acá (el texto de un LLM no es determinístico);
+// las tools sobre el stock real se prueban en apps/api/src/assistant
+test("Galú responde con el modelo: texto de a pedazos y tarjetas", async ({ page, request }) => {
+  const products = await (await request.get("http://localhost:4000/catalog/products?talle=2")).json();
+  let asked: { messages: { role: string; text: string }[] } | null = null;
+  await page.route("**/assistant/chat", async (route) => {
+    asked = route.request().postDataJSON();
+    const sse = [
+      { type: "text", delta: "En talle 2 " },
+      { type: "text", delta: "tengo **estos** modelos." },
+      { type: "products", products: products.slice(0, 2), size: "2" },
+      { type: "done" },
+    ]
+      .map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`)
+      .join("");
+    await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: sse });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  await page.getByLabel("Mensaje").fill("¿qué hay en talle 2?");
+  await page.getByLabel("Mensaje").press("Enter");
+  await expect(page.locator(".galu-body")).toContainText("En talle 2 tengo estos modelos.");
+  await expect(page.locator(".galu-body .msg.bot b", { hasText: "estos" })).toBeVisible();
+  await expect(page.locator(".galu-body .mini-card")).toHaveCount(Math.min(2, products.length));
+  expect(asked).toEqual({ messages: [{ role: "user", text: "¿qué hay en talle 2?" }] });
+});
+
+test("sin modelo en la API, Galú responde por reglas con el stock real", async ({ page }) => {
+  await page.route("**/assistant/chat", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),
+  );
   await page.goto("/");
   await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
   await page.getByLabel("Mensaje").fill("¿qué hay en talle 2?");

@@ -5,9 +5,9 @@ import { sizesIn, stockOf, stripAccents, totalStock } from "@/lib/product";
 import { SITE } from "@/lib/site";
 
 /**
- * Galú de la fase 2: reglas sobre el catálogo REAL (stock y precios de la API), portado del mockup.
- * Fase 7: se reemplaza por api/assistant (LLM + tools search_products, check_stock, track_order…)
- * manteniendo esta misma forma de respuesta (textos + tarjetas).
+ * Galú por reglas sobre el catálogo REAL (stock y precios de la API), portado del mockup.
+ * Desde la fase 7 responde el modelo de la API (api/assistant: LLM + tools); esto queda para cuando la API no
+ * tiene modelo configurado (CI, local sin Ollama) o no responde, con la misma forma (textos + tarjetas).
  */
 export type GaluReply =
   | { kind: "text"; content: ReactNode }

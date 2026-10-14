@@ -3,6 +3,7 @@ export * from "./admin";
 export * from "./admin-customers";
 export * from "./admin-orders";
 export * from "./api";
+export * from "./assistant";
 export * from "./automations";
 export * from "./catalog";
 export * from "./checkout";

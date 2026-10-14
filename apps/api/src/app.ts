@@ -1,10 +1,24 @@
 import { relative } from "node:path";
+import Anthropic from "@anthropic-ai/sdk";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { CatalogQuerySchema, type OrderStatus } from "@mini-galu/contracts";
+import {
+  CatalogQuerySchema,
+  FREE_SHIPPING_FROM_CENTS,
+  formatARS,
+  GIFTCARD_MAX_CENTS,
+  GIFTCARD_MIN_CENTS,
+  type OrderStatus,
+} from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { AssistantService } from "./assistant/application/assistant-service";
+import type { AssistantCatalog, LlmProvider } from "./assistant/application/ports";
+import { assistantTools } from "./assistant/application/tools";
+import { ClaudeProvider } from "./assistant/infrastructure/claude-provider";
+import { assistantRoutes } from "./assistant/infrastructure/http/assistant-routes";
+import { OllamaProvider } from "./assistant/infrastructure/ollama-provider";
 import { createAuth } from "./auth/infrastructure/better-auth";
 import { authRoutes, requireAdmin } from "./auth/infrastructure/http/auth-routes";
 import { AutomationService } from "./automations/application/automation-service";
@@ -78,6 +92,7 @@ import {
 } from "./payments/infrastructure/http/payment-routes";
 import { MercadoPagoGateway } from "./payments/infrastructure/mercadopago-gateway";
 import { SimulatedGateway } from "./payments/infrastructure/simulated-gateway";
+import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
@@ -414,6 +429,43 @@ export function buildApp(config: Config) {
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
 
+  // Galú: Claude si está ANTHROPIC_API_KEY, Ollama si está OLLAMA_URL; sin modelo, la tienda responde por reglas
+  const llm: LlmProvider | null =
+    config.assistant?.kind === "claude"
+      ? new ClaudeProvider(new Anthropic({ apiKey: config.assistant.apiKey }), config.assistant.model)
+      : config.assistant?.kind === "ollama"
+        ? new OllamaProvider(config.assistant.url, config.assistant.model)
+        : null;
+  const notFoundAsNull = <T>(p: Promise<T>) =>
+    p.catch((e: unknown) => {
+      if (e instanceof NotFoundError) return null;
+      throw e;
+    });
+  const assistantCatalog: AssistantCatalog = {
+    search: (q) => catalog.list(q),
+    // los borradores (lanzamientos sin publicar) no existen para Galú
+    product: async (slug) => {
+      const p = await notFoundAsNull(catalog.detail(slug));
+      return p?.status === "published" ? p : null;
+    },
+  };
+  const assistant = new AssistantService(
+    llm,
+    assistantTools({
+      catalog: assistantCatalog,
+      orders: { track: (number) => notFoundAsNull(shipments.track(number, null)) },
+      shipping: { options: (cp) => shipping.options(cp, 0) },
+    }),
+    assistantCatalog,
+    {
+      workshop: WORKSHOP,
+      freeShippingFrom: formatARS(FREE_SHIPPING_FROM_CENTS),
+      giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
+      whatsapp: "https://wa.me/5491100000000",
+    },
+  );
+  if (llm && config.env !== "test") console.info(`[galú] responde con ${llm.name}`);
+
   // el programador arranca cuando ya existen todos los servicios (corre la primera vuelta al registrarse)
   const scheduler = new IntervalScheduler();
   if (config.env !== "test") {
@@ -452,6 +504,7 @@ export function buildApp(config: Config) {
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/giftcards", giftcardRoutes(giftcards))
+    .route("/assistant", assistantRoutes(assistant))
     .route("/me", accountRoutes(auth, customers))
     .route("/lists", wishlistRoutes(customers))
     .get("/account/options", (c) => c.json({ google: !!config.google }))

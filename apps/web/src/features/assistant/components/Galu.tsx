@@ -1,6 +1,6 @@
 "use client";
 
-import { formatARS, type ProductSummary, type Size } from "@mini-galu/contracts";
+import { type AssistantMessage, formatARS, type ProductSummary, type Size } from "@mini-galu/contracts";
 import { SendHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,9 +12,13 @@ import { cover, sizesIn, stockOf } from "@/lib/product";
 import { SITE } from "@/lib/site";
 import { Foco } from "@/ui/atoms/Foco";
 import { answer, contextSuggestions, DEFAULT_SUGGESTIONS, type GaluReply, greeting } from "../galu-engine";
+import { boldSegments } from "../galu-sse";
+import { askGalu, GaluOffline } from "../galu-stream";
 
 type MsgBody =
   | { role: "me" | "bot" | "typing"; content?: ReactNode }
+  /** Respuesta del modelo (llega de a pedazos). */
+  | { role: "galu"; text: string }
   | { role: "cards"; products: ProductSummary[]; size?: Size };
 type Msg = MsgBody & { id: number };
 
@@ -58,6 +62,9 @@ export function Galu() {
   const [sugs, setSugs] = useState<string[]>([]);
   const [hint, setHint] = useState(false);
   const body = useRef<HTMLDivElement>(null);
+  // la charla que viaja a la API (solo texto); sin modelo en la API, Galú responde por reglas toda la sesión
+  const history = useRef<AssistantMessage[]>([]);
+  const offline = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const ctxSlug = pathname.startsWith("/producto/") ? decodeURIComponent(pathname.split("/")[2] ?? "") : null;
   const ctx = products.find((p) => p.slug === ctxSlug) ?? null;
@@ -74,10 +81,40 @@ export function Galu() {
 
   const push = (m: MsgBody) => setMsgs((l) => [...l, { ...m, id: ++mid }]);
 
+  /** Galú con el modelo (API, por SSE). Si no está disponible antes de escribir nada, avisa con GaluOffline. */
+  const askModel = async (q: string, typingId: number) => {
+    const chat = [...history.current, { role: "user" as const, text: q }];
+    const answerId = ++mid;
+    let text = "";
+    await askGalu({ messages: chat, productSlug: ctx?.slug }, (e) => {
+      if (e.type === "text") {
+        text += e.delta;
+        setMsgs((l) =>
+          l.some((m) => m.id === answerId)
+            ? l.map((m) => (m.id === answerId ? { id: answerId, role: "galu", text } : m))
+            : [...l.filter((m) => m.id !== typingId), { id: answerId, role: "galu", text }],
+        );
+      } else if (e.type === "products") {
+        setMsgs((l) => [...l, { id: ++mid, role: "cards", products: e.products, size: e.size ?? undefined }]);
+      } else if (e.type === "error" && !text) throw new GaluOffline(e.message);
+    });
+    if (!text) throw new GaluOffline("respuesta vacía");
+    history.current = [...chat, { role: "assistant" as const, text }];
+  };
+
   const reply = async (q: string) => {
     push({ role: "me", content: q });
     const typingId = ++mid;
     setMsgs((l) => [...l, { id: typingId, role: "typing" }]);
+    if (!offline.current) {
+      try {
+        await askModel(q, typingId);
+        return;
+      } catch (e) {
+        if (!(e instanceof GaluOffline)) throw e;
+        offline.current = true;
+      }
+    }
     await new Promise((r) => setTimeout(r, 650 + Math.random() * 450));
     const out: GaluReply[] = answer(q, products, ctx);
     setMsgs((l) => [
@@ -176,6 +213,13 @@ export function Galu() {
                   <i />
                   <i />
                 </span>
+              </div>
+            ) : m.role === "galu" ? (
+              <div key={m.id} className="msg bot" style={{ whiteSpace: "pre-line" }}>
+                {boldSegments(m.text).map((s, i) =>
+                  // biome-ignore lint/suspicious/noArrayIndexKey: tramos fijos de un mismo texto
+                  s.bold ? <b key={i}>{s.text}</b> : <span key={i}>{s.text}</span>,
+                )}
               </div>
             ) : (
               <div key={m.id} className={`msg ${m.role}`}>

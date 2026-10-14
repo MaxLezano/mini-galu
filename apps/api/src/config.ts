@@ -36,6 +36,11 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   /** El panel exige verificación en dos pasos (por defecto, solo en producción). */
   REQUIRE_ADMIN_2FA: z.enum(["true", "false"]).optional(),
+  /** Galú: con ANTHROPIC_API_KEY usa Claude; si no, con OLLAMA_URL usa Ollama; sin ninguno, responde por reglas. */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-haiku-5-5"),
+  OLLAMA_URL: z.string().optional(),
+  OLLAMA_MODEL: z.string().default("qwen3:4b"),
   ANDREANI_USER: z.string().optional(),
   ANDREANI_PASSWORD: z.string().optional(),
   ANDREANI_CLIENT: z.string().optional(),
@@ -67,6 +72,7 @@ export type Config = {
   andreani: AndreaniConfig | null;
   requireAdmin2fa: boolean;
   google: { clientId: string; clientSecret: string } | null;
+  assistant: { kind: "claude"; apiKey: string; model: string } | { kind: "ollama"; url: string; model: string } | null;
 };
 
 export function loadConfig(): Config {
@@ -109,6 +115,11 @@ export function loadConfig(): Config {
         ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
         : null,
     requireAdmin2fa: env.REQUIRE_ADMIN_2FA ? env.REQUIRE_ADMIN_2FA === "true" : env.NODE_ENV === "production",
+    assistant: env.ANTHROPIC_API_KEY
+      ? { kind: "claude", apiKey: env.ANTHROPIC_API_KEY, model: env.ANTHROPIC_MODEL }
+      : env.OLLAMA_URL
+        ? { kind: "ollama", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL }
+        : null,
     andreani:
       env.ANDREANI_USER &&
       env.ANDREANI_PASSWORD &&

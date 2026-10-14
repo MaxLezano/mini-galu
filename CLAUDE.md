@@ -71,6 +71,9 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
   (`FAKE_ANDREANI_SPEED` los acelera) y se cotiza con la tabla por zona; con credenciales, `AndreaniGateway` y
   `AndreaniRates` (API REST; docs de Andreani en `andreani/`, fuera del repo). El seguimiento es público: nunca
   mostrar la calle ni el apellido completo.
+- **Galú**: con `ANTHROPIC_API_KEY` responde Claude; si no, con `OLLAMA_URL` responde Ollama (`ollama pull qwen3:4b`);
+  sin ninguno (CI), la tienda usa las reglas de `galu-engine.tsx`. Datos solo desde tools sobre casos de uso; los e2e
+  fijan la respuesta SSE porque el texto de un modelo no es determinístico.
 - **Stock**: se descuenta al crear el pedido (reserva de 30 min; links de pago, 72 h) dentro de una transacción; se devuelve al vencer o
   cancelar. Los e2e del checkout compran `mono-verde` (el de más stock del seed): si se agota, `pnpm db:reset`.
 
