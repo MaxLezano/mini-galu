@@ -120,7 +120,7 @@ import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { mediaVariantsOnDemand } from "./shared/media/media-variants";
 import { ResponsiveImageStorage } from "./shared/media/responsive-image-storage";
 import { S3ImageStorage } from "./shared/media/s3-image-storage";
-import { SharpResizer } from "./shared/media/sharp-resizer";
+import { SharpCropper, SharpResizer } from "./shared/media/sharp-resizer";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
 import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
@@ -202,7 +202,12 @@ export function buildApp(config: Config) {
   });
 
   const catalog = new CatalogService(new DrizzleProductRepository(db), new DrizzleWaitlistRepository(db), storage);
-  const adminCatalog = new AdminCatalogService(new DrizzleAdminProductRepository(db), storage, events);
+  const adminCatalog = new AdminCatalogService(
+    new DrizzleAdminProductRepository(db),
+    storage,
+    events,
+    new SharpCropper(),
+  );
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
   // políticas del panel (cambios, envío gratis, formas de entrega, tarifas, horarios): las leen envíos, ayuda, Galú y mails
   const policies = new PoliciesService(new DrizzlePoliciesStore(db));

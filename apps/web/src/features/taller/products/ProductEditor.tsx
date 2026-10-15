@@ -217,7 +217,7 @@ export function ProductEditor({ open, product, collections, onClose, onSaved }: 
                 <span>
                   Subir fotos
                   <br />
-                  (vertical 3:4)
+                  (se recortan 3:4)
                 </span>
               </button>
               <input

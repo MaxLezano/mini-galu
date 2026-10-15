@@ -4,10 +4,11 @@ import { join } from "node:path";
 import { Hono } from "hono";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { coverBox } from "./image-cropper";
 import { LocalDiskImageStorage } from "./image-storage";
 import { mediaVariantsOnDemand } from "./media-variants";
 import { type ImageResizer, ResponsiveImageStorage, variantPath } from "./responsive-image-storage";
-import { SharpResizer } from "./sharp-resizer";
+import { SharpCropper, SharpResizer } from "./sharp-resizer";
 
 const fakeResizer: ImageResizer = { resize: async (_b, w, f) => new TextEncoder().encode(`${w}.${f}`) };
 const photo = (width: number) =>
@@ -36,6 +37,43 @@ describe("ResponsiveImageStorage", () => {
 
   it("nombra las variantes como contracts", () => {
     expect(variantPath("content/hero-campo.webp", 320, "webp")).toBe("content/hero-campo@320.webp");
+  });
+});
+
+describe("coverBox", () => {
+  it("da el rectángulo 3:4 más grande que entra, o null si ya es 3:4", () => {
+    expect(coverBox(1200, 1200, 3 / 4)).toEqual({ width: 900, height: 1200 });
+    expect(coverBox(900, 1600, 3 / 4)).toEqual({ width: 900, height: 1200 });
+    expect(coverBox(4000, 3000, 3 / 4)).toEqual({ width: 2250, height: 3000 });
+    expect(coverBox(900, 1200, 3 / 4)).toBeNull();
+    expect(coverBox(901, 1200, 3 / 4)).toBeNull();
+  });
+});
+
+describe("SharpCropper", () => {
+  const image = (width: number, height: number) =>
+    sharp({ create: { width, height, channels: 3, background: "#c9a27e" } });
+
+  it("recorta a 3:4 y deja el formato", async () => {
+    const cropper = new SharpCropper();
+    const square = await sharp(await cropper.crop(await image(800, 800).jpeg().toBuffer(), 3 / 4)).metadata();
+    expect([square.format, square.width, square.height]).toEqual(["jpeg", 600, 800]);
+    const tall = await sharp(await cropper.crop(await image(600, 1200).webp().toBuffer(), 3 / 4)).metadata();
+    expect([tall.format, tall.width, tall.height]).toEqual(["webp", 600, 800]);
+  });
+
+  it("no toca la que ya es 3:4", async () => {
+    const bytes = new Uint8Array(await image(600, 800).png().toBuffer());
+    expect(await new SharpCropper().crop(bytes, 3 / 4)).toBe(bytes);
+  });
+
+  it("mide la foto ya girada según el EXIF del celular", async () => {
+    // guardada apaisada 1200×900 con orientación 6: se ve vertical 900×1200, que ya es 3:4
+    const bytes = new Uint8Array(await image(1200, 900).withMetadata({ orientation: 6 }).jpeg().toBuffer());
+    expect(await new SharpCropper().crop(bytes, 3 / 4)).toBe(bytes);
+    const rotated = await image(1600, 900).withMetadata({ orientation: 6 }).jpeg().toBuffer();
+    const out = await sharp(await new SharpCropper().crop(rotated, 3 / 4)).metadata();
+    expect([out.width, out.height, out.orientation]).toEqual([900, 1200, undefined]);
   });
 });
 

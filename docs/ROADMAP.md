@@ -82,7 +82,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   etiqueta, accesorio, talles y stock con medidas, guardar borrador / publicar
 - ✅ Volvió un talle: al cargar stock de un talle con anotadas, el editor lo avisa y la API publica `StockReplenished`
   (el envío del aviso es la fase 6)
-- 🟡 Fotos: ✅ AVIF/WebP en varios tamaños (sharp, ver fase 9) · ⏳ recorte 3:4 al subir
+- ✅ Fotos: AVIF/WebP en varios tamaños (sharp, ver fase 9) · recorte 3:4 al subir (solo prendas; centrado en la prenda
+  con `attention` de sharp, respeta el EXIF del celular; la que ya es 3:4 no se recomprime; portada y lanzamientos quedan
+  como vienen)
 - ✅ Resumen del día y notificaciones (campana) → fase 4
 - ✅ `admin-lanzamientos`: crear/editar/programar/borrar borradores, "usar de base", portada (elegir o subir), prendas,
   cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las

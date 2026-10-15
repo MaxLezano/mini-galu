@@ -2,13 +2,25 @@ import { type ProductInput, ProductInputSchema } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
+import type { ImageCropper } from "../../shared/media/image-cropper";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { InMemoryAdminProductRepository } from "../testing/in-memory-admin";
 import { AdminCatalogService } from "./admin-catalog-service";
 
+const saved = new Map<string, string>();
 const storage: ImageStorage = {
   url: (p) => `http://api/media/${p}`,
-  save: async (p) => p,
+  save: async (p, b) => {
+    saved.set(p, new TextDecoder().decode(b));
+    return p;
+  },
+};
+const crops: number[] = [];
+const cropper: ImageCropper = {
+  crop: async (b, aspect) => {
+    crops.push(aspect);
+    return new TextEncoder().encode(`recortada:${new TextDecoder().decode(b)}`);
+  },
 };
 
 const input = (over: Partial<ProductInput> = {}): ProductInput =>
@@ -40,11 +52,13 @@ let service: AdminCatalogService;
 beforeEach(() => {
   repo = new InMemoryAdminProductRepository();
   events = [];
+  saved.clear();
+  crops.length = 0;
   const bus = new EventBus();
   bus.on("StockReplenished", (e) => {
     events.push(e);
   });
-  service = new AdminCatalogService(repo, storage, bus);
+  service = new AdminCatalogService(repo, storage, bus, cropper);
 });
 
 describe("AdminCatalogService", () => {
@@ -100,6 +114,17 @@ describe("AdminCatalogService", () => {
     expect((await service.uploadImage({ type: "image/webp", bytes: new Uint8Array(10) })).path).toMatch(
       /^products\/.+\.webp$/,
     );
+  });
+
+  it("recorta a 3:4 las fotos de prendas y deja como vienen las de contenido", async () => {
+    const photo = new TextEncoder().encode("foto");
+    const product = await service.uploadImage({ type: "image/jpeg", bytes: photo });
+    expect(saved.get(product.path)).toBe("recortada:foto");
+    expect(crops).toEqual([3 / 4]);
+
+    const hero = await service.uploadImage({ type: "image/jpeg", bytes: photo }, "content");
+    expect(saved.get(hero.path)).toBe("foto");
+    expect(crops).toHaveLength(1);
   });
 
   it("el contrato pide al menos una foto para publicar y precio anterior mayor al actual", () => {

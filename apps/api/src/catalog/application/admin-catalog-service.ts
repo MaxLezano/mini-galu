@@ -10,6 +10,7 @@ import {
 } from "@mini-galu/contracts";
 import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
+import type { ImageCropper } from "../../shared/media/image-cropper";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { replenishedSizes, slugify, uniqueSlug } from "../domain/admin";
 import type { Product } from "../domain/product";
@@ -23,12 +24,16 @@ const EXT: Record<(typeof ACCEPTED_IMAGE_TYPES)[number], string> = {
   "image/avif": "avif",
 };
 
+/** Las fotos de las prendas son verticales 3:4 (tarjetas, ficha y carrito). */
+const PRODUCT_PHOTO_ASPECT = 3 / 4;
+
 /** Casos de uso del panel: productos, stock por talle, fotos y publicación. */
 export class AdminCatalogService {
   constructor(
     private readonly repo: AdminProductRepository,
     private readonly storage: ImageStorage,
     private readonly events: EventBus,
+    private readonly cropper: ImageCropper,
   ) {}
 
   async list(): Promise<AdminProduct[]> {
@@ -76,7 +81,10 @@ export class AdminCatalogService {
     return this.get(slug);
   }
 
-  /** Sube una foto de producto (las variantes AVIF/WebP las guarda ResponsiveImageStorage). TODO(fase 9 · catalog): recorte 3:4. */
+  /**
+   * Sube una foto: las de prendas se recortan a 3:4; las de contenido (portada, lanzamientos) quedan como vienen.
+   * Las variantes AVIF/WebP las guarda ResponsiveImageStorage.
+   */
   async uploadImage(
     file: { type: string; bytes: Uint8Array },
     folder: "products" | "content" = "products",
@@ -84,7 +92,8 @@ export class AdminCatalogService {
     const ext = EXT[file.type as keyof typeof EXT];
     if (!ext) throw new ValidationError("Formato no soportado: subí WebP, JPG, PNG o AVIF");
     if (file.bytes.byteLength > MAX_IMAGE_BYTES) throw new ValidationError("La foto pesa más de 8 MB");
-    const path = await this.storage.save(`${folder}/${randomUUID()}.${ext}`, file.bytes);
+    const bytes = folder === "products" ? await this.cropper.crop(file.bytes, PRODUCT_PHOTO_ASPECT) : file.bytes;
+    const path = await this.storage.save(`${folder}/${randomUUID()}.${ext}`, bytes);
     return { path, url: this.storage.url(path) };
   }
 

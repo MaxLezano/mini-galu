@@ -71,6 +71,35 @@ test("cargar stock en el panel se ve en la tienda", async ({ page }) => {
   await expect(page.locator("#toast")).toContainText("guardado y publicado");
 });
 
+test("una foto cuadrada que se sube a una prenda queda recortada 3:4", async ({ page }) => {
+  await login(page);
+  await page.getByRole("button", { name: "Editar Jumper Mariel Bordado" }).first().click();
+  const editor = page.getByRole("complementary", { name: "Editar producto" });
+  await expect(editor).toHaveAttribute("aria-hidden", "false");
+  const before = await editor.locator(".photo:not(.add) img").count();
+
+  // PNG cuadrado dibujado en el navegador (no hay fotos de prueba en el repo)
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    ctx.fillStyle = "#c9a27e";
+    ctx.fillRect(0, 0, 400, 400);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await editor
+    .locator('input[type="file"]')
+    .setInputFiles({ name: "cuadrada.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+
+  const uploaded = editor.locator(".photo:not(.add) img").nth(before);
+  await expect(uploaded).toHaveJSProperty("complete", true);
+  await expect
+    .poll(() => uploaded.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight]))
+    .toEqual([300, 400]);
+  // no se guarda: la prenda queda como estaba
+});
+
 test("ocultar un producto lo saca del catálogo", async ({ page }) => {
   await login(page);
   const toggle = page.getByLabel("Publicado: Vestido Elsa");
