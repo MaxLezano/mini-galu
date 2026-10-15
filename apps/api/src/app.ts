@@ -83,6 +83,7 @@ import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
 import { OrderNotifications } from "./notifications/application/order-notifications";
 import { untilLabel } from "./notifications/domain/mail";
+import { ResendMailer } from "./notifications/infrastructure/resend-mailer";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
 import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
@@ -331,7 +332,7 @@ export function buildApp(config: Config) {
         };
       },
     },
-    new SmtpMailer(config.smtp),
+    config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail),
     async (number) => ({
       tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
       whatsapp: "https://wa.me/5491100000000",
@@ -556,6 +557,7 @@ export function buildApp(config: Config) {
     assistantMemory,
   );
   if (llm && config.env !== "test") console.info(`[galú] responde con ${llm.name}`);
+  if (config.mail.kind === "resend" && config.env !== "test") console.info("[mails] salen por Resend");
 
   // el programador arranca cuando ya existen todos los servicios (corre la primera vuelta al registrarse)
   const scheduler = new IntervalScheduler();

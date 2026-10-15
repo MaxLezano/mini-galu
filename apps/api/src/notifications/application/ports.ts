@@ -1,6 +1,6 @@
 import type { Mail, MailOrder } from "../domain/mail";
 
-/** Puerto de envío de mails. Local: SMTP a Mailpit (http://localhost:8025). Prod: Resend (fase 10). */
+/** Puerto de envío de mails. Local: SMTP a Mailpit (http://localhost:8025). Prod: Resend (RESEND_API_KEY). */
 export interface Mailer {
   send(mail: Mail): Promise<void>;
 }

@@ -12,9 +12,7 @@ const production = {
   MP_WEBHOOK_SECRET: "secreto",
   PUBLIC_API_URL: "https://api.minigalu.com.ar",
   WEB_ORIGIN: "https://minigalu.com.ar",
-  SMTP_HOST: "smtp.resend.com",
-  SMTP_USER: "resend",
-  SMTP_PASS: "re_clave",
+  RESEND_API_KEY: "re_clave",
 };
 
 function problemsOf(env: Record<string, string | undefined>): string[] {
@@ -33,7 +31,7 @@ describe("parseConfig", () => {
     expect(config.env).toBe("development");
     expect(config.mercadoPago).toBeNull();
     expect(config.andreani).toBeNull();
-    expect(config.smtp.host).toBe("localhost");
+    expect(config.mail).toMatchObject({ kind: "smtp", host: "localhost", port: 1025 });
     expect(config.requireAdmin2fa).toBe(false);
   });
 
@@ -46,6 +44,19 @@ describe("parseConfig", () => {
     expect(config.publicUrl).toBe("https://api.minigalu.com.ar");
     expect(config.mercadoPago?.webhookSecret).toBe("secreto");
     expect(config.requireAdmin2fa).toBe(true);
+    expect(config.mail).toEqual({ kind: "resend", apiKey: "re_clave", from: "Mini Galú <hola@minigalu.com.ar>" });
+  });
+
+  it("en producción acepta un SMTP propio en vez de Resend", () => {
+    const config = parseConfig({
+      ...production,
+      RESEND_API_KEY: undefined,
+      SMTP_HOST: "smtp.proveedor.com",
+      SMTP_PORT: "465",
+      SMTP_USER: "u",
+      SMTP_PASS: "p",
+    });
+    expect(config.mail).toMatchObject({ kind: "smtp", host: "smtp.proveedor.com", port: 465 });
   });
 
   it("en producción junta todo lo que falta en un solo error", () => {
@@ -64,13 +75,19 @@ describe("parseConfig", () => {
       ...production,
       BETTER_AUTH_SECRET: "corto",
       PUBLIC_API_URL: "http://api.minigalu.com.ar",
-      SMTP_PASS: undefined,
+      RESEND_API_KEY: undefined,
+      SMTP_HOST: "smtp.proveedor.com",
+      SMTP_USER: "u",
     });
     expect(problems).toEqual([
       expect.stringContaining("32 caracteres"),
       expect.stringContaining("PUBLIC_API_URL"),
       expect.stringContaining("SMTP_USER y SMTP_PASS"),
     ]);
+  });
+
+  it("en producción avisa si RESEND_API_KEY no es una clave de Resend", () => {
+    expect(problemsOf({ ...production, RESEND_API_KEY: "smtp-pass" })).toEqual([expect.stringContaining("re_")]);
   });
 
   it("en producción avisa de Andreani o Google cargados a medias", () => {

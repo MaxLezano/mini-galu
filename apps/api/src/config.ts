@@ -23,6 +23,8 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default("Mini Galú <hola@minigalu.com.ar>"),
+  /** Producción: Resend (resend.com → API Keys). Con la clave, los mails salen por su API en vez de SMTP. */
+  RESEND_API_KEY: z.string().optional(),
   /** Envíos simulados: cuántas horas del correo pasan por hora real (60 = una por minuto, para probar a mano). */
   FAKE_ANDREANI_SPEED: z.coerce.number().positive().default(1),
   /** Cada cuántos segundos se consultan los eventos de los envíos sin entregar. */
@@ -65,7 +67,9 @@ export type Config = {
     webhookSecret: string | null;
     mode: "prueba" | "produccion";
   } | null;
-  smtp: { host: string; port: number; user?: string; pass?: string; from: string };
+  mail:
+    | { kind: "resend"; apiKey: string; from: string }
+    | { kind: "smtp"; host: string; port: number; user?: string; pass?: string; from: string };
   fakeAndreaniSpeed: number;
   trackingEverySeconds: number;
   branches: "andreani" | "fake";
@@ -109,8 +113,11 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   if (mp.length) problems.push(`Faltan las credenciales de Mercado Pago (${mp.join(", ")})`);
   if (!isHttps(env.PUBLIC_API_URL)) problems.push("PUBLIC_API_URL tiene que ser la URL pública de la API con https://");
   if (!isHttps(env.WEB_ORIGIN)) problems.push("WEB_ORIGIN tiene que ser la URL de la tienda con https://");
-  if (/^(localhost|127\.0\.0\.1)$/.test(env.SMTP_HOST))
-    problems.push("SMTP_HOST apunta a Mailpit (localhost): configurá el SMTP de producción");
+  if (env.RESEND_API_KEY) {
+    if (!env.RESEND_API_KEY.startsWith("re_"))
+      problems.push("RESEND_API_KEY no parece una clave de Resend (empieza con re_)");
+  } else if (/^(localhost|127\.0\.0\.1)$/.test(env.SMTP_HOST))
+    problems.push("Los mails apuntan a Mailpit (localhost): cargá RESEND_API_KEY (o un SMTP de producción)");
   else if (!(env.SMTP_USER && env.SMTP_PASS)) problems.push("Faltan SMTP_USER y SMTP_PASS");
   const andreani = missing({
     ANDREANI_USER: env.ANDREANI_USER,
@@ -152,13 +159,16 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
             mode: env.MP_MODE,
           }
         : null,
-    smtp: {
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS,
-      from: env.MAIL_FROM,
-    },
+    mail: env.RESEND_API_KEY
+      ? { kind: "resend", apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM }
+      : {
+          kind: "smtp",
+          host: env.SMTP_HOST,
+          port: env.SMTP_PORT,
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+          from: env.MAIL_FROM,
+        },
     fakeAndreaniSpeed: env.FAKE_ANDREANI_SPEED,
     trackingEverySeconds: env.TRACKING_EVERY_SECONDS,
     branches: env.ANDREANI_BRANCHES ?? (env.NODE_ENV === "test" ? "fake" : "andreani"),

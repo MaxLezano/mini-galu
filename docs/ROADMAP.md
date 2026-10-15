@@ -186,7 +186,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   pago sin pagar (24 h) · stock bajo (aviso en el panel)
 - ✅ Mails con el marco del taller (Mailpit en local); cada aviso queda en el historial del pedido
 - 🟡 WhatsApp Business: "sin conectar" hasta tener las credenciales de Meta (los anotados solo por WhatsApp quedan
-  esperando) · Resend en producción → fase 10
+  esperando) · ✅ Resend en producción (fase 10)
 - ✅ Se acerca un cumple: 15 días antes del cumple de cada nena de "Mis nenas" (con talle), mail con 3 prendas
   con stock en su talle, link al catálogo filtrado y el cupón "Mail de cumpleaños" vigente; una vez por cumple, desde
   las 9 (al cargar la nena, en el momento). El cupón de cumple solo vale con el email que recibió el aviso (45 días)
@@ -312,7 +312,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ **Validación del entorno**: la API no arranca con la configuración rota y dice todo lo que falta de una vez. En
   producción exige `BETTER_AUTH_SECRET` (32+), Mercado Pago completo, `PUBLIC_API_URL` y `WEB_ORIGIN` con https, SMTP
   que no sea Mailpit y con usuario/clave, y avisa de Andreani o Google cargados a medias (`config.test.ts`)
-- ⏳ Mails con Resend · fotos en R2/S3 · Docker + Render/Fly + Vercel + Neon · guía de deploy
+- ✅ **Mails con Resend**: con `RESEND_API_KEY` todos los mails (pedidos, avisos, cartas, gift cards, cuenta) salen
+  por la API de Resend (`ResendMailer`, sin SDK); sin la clave, SMTP (Mailpit en local y CI). Reintenta ante el
+  límite por segundo (429, respeta `retry-after`) y fallas de Resend; un error de datos (dominio sin verificar) no se
+  reintenta. En producción alcanza con Resend o un SMTP con credenciales. ⏳ Verificar el dominio en Resend (DNS)
+- ⏳ Fotos en R2/S3 · Docker + Render/Fly + Vercel + Neon · guía de deploy
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
