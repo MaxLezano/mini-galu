@@ -5,6 +5,7 @@ import type {
   AdminCoupon,
   AdminCustomers,
   AdminDaySummary,
+  AdminGiftcards,
   AdminHome,
   AdminLaunch,
   AdminNewsletter,
@@ -60,6 +61,7 @@ export const adminServer = {
   newsletter: () => serverRequest<AdminNewsletter>("/admin/newsletter"),
   customers: () => serverRequest<AdminCustomers>("/admin/customers"),
   coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),
+  giftcards: () => serverRequest<AdminGiftcards>("/admin/giftcards"),
   orders: () => serverRequest<AdminOrderSummary[]>("/admin/orders"),
   summary: () => serverRequest<AdminDaySummary>("/admin/orders/summary"),
 };

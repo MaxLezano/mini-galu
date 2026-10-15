@@ -91,7 +91,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   "favoritos" → fase 8; "vendidas el primer día" → fase 4
 - ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
   próximo lanzamiento
-- ⏳ `admin-tienda`: Mercado Pago y cupones → fase 3; envíos, horarios de retiro y paquete → fase 5; gift cards → fase 8
+- ✅ `admin-tienda`: Mercado Pago y cupones (fase 3); envíos, horarios de retiro y paquete (fase 5); gift cards (fase 8)
 
 ## Fase 3 · Checkout (`checkout.html`) ✅ (falta el webhook en el sandbox)
 - ✅ Bolsa en la API: cookie de invitada `mg_cart`, merge con la cuenta al ingresar y con la bolsa vieja del navegador;
@@ -227,7 +227,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   y le llegan por mail a quien la recibe (ahora o ese día a las 9) o, por WhatsApp, quien compra la manda con el botón
   de su mail. Consulta de saldo, campo "Gift card" en el checkout (descuenta del total; si cubre todo, el pedido queda
   pagado sin Mercado Pago) y el saldo se descuenta una sola vez al pagarse el pedido
-- ⏳ Usar una gift card en el taller (cobro presencial / link de pago desde el panel)
+- ✅ Usar una gift card en el taller: el link de pago del panel suma el canal "En el taller" (venta presencial, sin
+  entrega) y un campo "Gift card" con "Ver saldo". Si cubre todo, la venta queda pagada sin Mercado Pago (y, en el
+  taller, entregada); si no, el link cobra la diferencia y el saldo se descuenta al pagarse. "Gift cards" en Tienda y
+  pagos: vendido, saldo sin usar (sin las vencidas) y cada tarjeta con su saldo y vencimiento
+- 🟡 La diferencia de una venta en el taller se cobra con el link de Mercado Pago (no hay registro de efectivo)
 - ✅ Clientes en el panel: todo el que compró (con o sin cuenta, por mail) y las cuentas, con nenas, próximo cumple,
   pedidos y gastado; filtros (cumple en 30 días, volvieron a comprar, nuevas del mes), búsqueda, ficha con
   contacto, resumen ("le gustan" por colección), pedidos y nota del taller; exportar CSV

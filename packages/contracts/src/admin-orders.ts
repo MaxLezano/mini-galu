@@ -3,7 +3,13 @@ import { CartItemInputSchema, CheckoutContactSchema, ShippingInputSchema } from 
 import type { Cents } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
 
-export const ORDER_CHANNELS = { web: "Web", instagram: "Instagram", whatsapp: "WhatsApp", galu: "Galú" } as const;
+export const ORDER_CHANNELS = {
+  web: "Web",
+  instagram: "Instagram",
+  whatsapp: "WhatsApp",
+  galu: "Galú",
+  taller: "En el taller",
+} as const;
 export type OrderChannel = keyof typeof ORDER_CHANNELS;
 
 /** Estados del tablero, en orden (cancelado y reembolsado no son columnas). */
@@ -130,21 +136,32 @@ export type AdminDaySummary = {
 export const PAYMENT_LINK_HOURS = 72;
 export const PAYMENT_LINK_REMINDER_HOURS = 24;
 
-export const PaymentLinkInputSchema = z.object({
-  channel: z.enum(["whatsapp", "instagram"]),
-  contact: CheckoutContactSchema,
-  shipping: ShippingInputSchema,
-  items: z
-    .array(CartItemInputSchema.extend({ qty: z.number().int().min(1).max(20) }))
-    .min(1, "Agregá al menos una prenda")
-    .max(30),
-});
+/**
+ * Venta cargada en el panel: por Instagram o WhatsApp (sale un link de pago) o en el taller (se la lleva en el
+ * momento, sin entrega). Con una gift card se descuenta su saldo; si cubre todo, el pedido queda pagado.
+ */
+export const PaymentLinkInputSchema = z
+  .object({
+    channel: z.enum(["whatsapp", "instagram", "taller"]),
+    contact: CheckoutContactSchema,
+    shipping: ShippingInputSchema.nullable().default(null),
+    items: z
+      .array(CartItemInputSchema.extend({ qty: z.number().int().min(1).max(20) }))
+      .min(1, "Agregá al menos una prenda")
+      .max(30),
+    giftcardCode: z.string().trim().max(40).nullable().default(null),
+  })
+  .refine((v) => v.channel === "taller" || v.shipping, { path: ["shipping"], message: "Elegí la entrega" });
 export type PaymentLinkInput = z.input<typeof PaymentLinkInputSchema>;
 
 export type PaymentLinkCreated = {
   number: string;
   /** Página de la tienda donde el cliente paga (sin cuenta): /pagar/MG-1046?t=… */
   payUrl: string;
+  /** Lo que queda por pagar (0 si la gift card cubrió todo). */
   totalCents: Cents;
+  giftcardCents: Cents;
+  /** La gift card cubrió todo: el pedido ya está pagado y no hace falta el link. */
+  paid: boolean;
   reservedUntil: string;
 };

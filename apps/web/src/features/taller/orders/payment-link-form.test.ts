@@ -17,8 +17,8 @@ describe("formulario de link de pago", () => {
   });
 
   it("pide prendas, datos del cliente y la entrega, en ese orden", () => {
-    expect(linkError([], EMPTY_CONTACT, EMPTY_SHIPPING)?.field).toBe("product");
-    expect(linkError([elsa], EMPTY_CONTACT, EMPTY_SHIPPING)?.field).toBe("email");
+    expect(linkError("whatsapp", [], EMPTY_CONTACT, EMPTY_SHIPPING)?.field).toBe("product");
+    expect(linkError("whatsapp", [elsa], EMPTY_CONTACT, EMPTY_SHIPPING)?.field).toBe("email");
     const contact = {
       ...EMPTY_CONTACT,
       email: "paula@gmail.com",
@@ -26,13 +26,24 @@ describe("formulario de link de pago", () => {
       lastName: "B",
       phone: "11 5555-1234",
     };
-    expect(linkError([elsa], contact, { ...EMPTY_SHIPPING, method: "taller" })?.field).toBe("pickupSlot");
+    expect(linkError("whatsapp", [elsa], contact, { ...EMPTY_SHIPPING, method: "taller" })?.field).toBe("pickupSlot");
     const shipping = { ...EMPTY_SHIPPING, method: "taller" as const, pickupSlot: "x" };
-    expect(linkError([elsa], contact, shipping)).toBeNull();
+    expect(linkError("whatsapp", [elsa], contact, shipping)).toBeNull();
     expect(toLinkInput("instagram", [elsa], contact, shipping)).toMatchObject({
       channel: "instagram",
       shipping: { method: "taller", pickupSlot: "x" },
       items: [{ slug: "elsa", size: "4", qty: 1 }],
+      giftcardCode: null,
+    });
+  });
+
+  it("en el taller no pide entrega y lleva la gift card si se cargó", () => {
+    const contact = { ...EMPTY_CONTACT, email: "a@b.com", firstName: "Ana", lastName: "B", phone: "11 5555-1234" };
+    expect(linkError("taller", [elsa], contact, EMPTY_SHIPPING)).toBeNull();
+    expect(toLinkInput("taller", [elsa], contact, EMPTY_SHIPPING, " galu-7kq2-m9xa ")).toMatchObject({
+      channel: "taller",
+      shipping: null,
+      giftcardCode: "galu-7kq2-m9xa",
     });
   });
 });

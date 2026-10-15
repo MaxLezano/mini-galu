@@ -97,7 +97,7 @@ export const orderStatus = pgEnum("order_status", [
 export const shippingMethod = pgEnum("shipping_method", ["domicilio", "sucursal", "taller"]);
 export const paymentMethod = pgEnum("payment_method", ["credito", "debito", "dinero_cuenta", "link", "giftcard"]);
 /** Por dónde entró la venta: la web o un link de pago mandado por WhatsApp/Instagram, o una charla con Galú. */
-export const orderChannel = pgEnum("order_channel", ["web", "whatsapp", "instagram", "galu"]);
+export const orderChannel = pgEnum("order_channel", ["web", "whatsapp", "instagram", "galu", "taller"]);
 /** prendas: un pedido común · giftcard: la compra de una gift card (sin prendas ni envío). */
 export const orderKind = pgEnum("order_kind", ["prendas", "giftcard"]);
 

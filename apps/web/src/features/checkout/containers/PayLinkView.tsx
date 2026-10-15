@@ -246,6 +246,12 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
                     : "Gratis"}
               </span>
             </div>
+            {receipt.giftcardCents > 0 && (
+              <div className="row">
+                <span className="muted">Gift card</span>
+                <span>-{formatARS(receipt.giftcardCents)}</span>
+              </div>
+            )}
             <div className="row total">
               <span>Total</span>
               <span>{formatARS(receipt.totalCents)}</span>

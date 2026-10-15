@@ -9,3 +9,8 @@ export function giftcardRoutes(giftcards: GiftcardService) {
     .post("/", async (c) => c.json(await giftcards.buy(parse(GiftcardPurchaseSchema, await c.req.json())), 201))
     .get("/:code", async (c) => c.json(await giftcards.balance(c.req.param("code"))));
 }
+
+/** /admin/giftcards — vendidas, saldo sin usar y cada tarjeta (admin-tienda.html). Requiere sesión del taller. */
+export function adminGiftcardRoutes(giftcards: GiftcardService) {
+  return new Hono().get("/", async (c) => c.json(await giftcards.admin()));
+}

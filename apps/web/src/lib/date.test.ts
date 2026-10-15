@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromArInputs, launchWhen, relativeWhen, toArInputs } from "./date";
+import { fromArInputs, launchWhen, monthYear, relativeWhen, toArInputs } from "./date";
 
 describe("fechas en hora de Argentina", () => {
   it("ida y vuelta entre ISO y los inputs del formulario", () => {
@@ -20,5 +20,12 @@ describe("relativeWhen", () => {
     expect(relativeWhen("2026-10-13T09:00:00-03:00", now)).toBe("hace 6 h");
     expect(relativeWhen("2026-10-12T22:00:00-03:00", now)).toBe("ayer");
     expect(relativeWhen("2026-10-04T10:00:00-03:00", now)).toBe("4 oct");
+  });
+});
+
+describe("monthYear", () => {
+  it("mes y año del vencimiento, en hora de Argentina", () => {
+    expect(monthYear("2027-04-14T15:00:00Z")).toBe("abr 2027");
+    expect(monthYear("2027-01-01T02:00:00Z")).toBe("dic 2026");
   });
 });

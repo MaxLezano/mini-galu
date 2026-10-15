@@ -5,13 +5,14 @@ import { adminServer, getAdminSession } from "@/lib/admin-server";
 export const metadata: Metadata = { title: "Tienda y pagos" };
 
 export default async function Page() {
-  const [home, launches, payments, shipping, coupons, newsletter, session] = await Promise.all([
+  const [home, launches, payments, shipping, coupons, newsletter, giftcards, session] = await Promise.all([
     adminServer.home(),
     adminServer.launches(),
     adminServer.payments(),
     adminServer.shipping(),
     adminServer.coupons(),
     adminServer.newsletter(),
+    adminServer.giftcards(),
     getAdminSession(),
   ]);
   return (
@@ -21,6 +22,7 @@ export default async function Page() {
       payments={payments}
       shipping={shipping}
       newsletter={newsletter}
+      giftcards={giftcards}
       email={session?.email ?? ""}
       coupons={coupons}
     />

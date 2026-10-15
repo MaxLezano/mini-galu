@@ -73,7 +73,7 @@ import { adminCustomerRoutes } from "./customers/infrastructure/http/admin-custo
 import { GiftcardService } from "./giftcards/application/giftcard-service";
 import type { GiftcardRecord } from "./giftcards/application/ports";
 import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
-import { giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
+import { adminGiftcardRoutes, giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
 import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
@@ -235,8 +235,17 @@ export function buildApp(config: Config) {
     slotLabel,
     (number, token) => config.webOrigin + payPath(number, token),
   );
-  const paymentLinks = new PaymentLinks(variants, shipping, orders, events, config.webOrigin, () =>
-    automations.isOn("link_sin_pagar"),
+  const paymentLinks = new PaymentLinks(
+    variants,
+    shipping,
+    orders,
+    events,
+    config.webOrigin,
+    () => automations.isOn("link_sin_pagar"),
+    undefined,
+    undefined,
+    { check: (code) => giftcards.check(code), checkById: (id) => giftcards.checkById(id), summary: async () => null },
+    (orderId) => orderPayments.approved(orderId, { method: "giftcard", installments: 1 }),
   );
   const shipments = new ShipmentService(
     andreani && config.andreani
@@ -411,6 +420,8 @@ export function buildApp(config: Config) {
   );
   // gift cards: se activa la que se compró o se descuenta la que se usó
   events.on("PaymentApproved", (e) => giftcards.paymentApproved(String(e.payload.orderId)));
+  // venta en el taller: pagada, se la llevó en el momento
+  events.on("PaymentApproved", (e) => paymentLinks.handedOver(String(e.payload.orderId)));
   events.on("OrderStatusChanged", (e) =>
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
@@ -530,6 +541,7 @@ export function buildApp(config: Config) {
     .route("/admin/orders", adminShipmentRoutes(shipments))
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/coupons", adminCouponRoutes(coupons))
+    .route("/admin/giftcards", adminGiftcardRoutes(giftcards))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))

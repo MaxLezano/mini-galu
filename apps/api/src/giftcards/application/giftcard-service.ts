@@ -1,5 +1,6 @@
 import type {
   AccountGiftcard,
+  AdminGiftcards,
   GiftcardBalance,
   GiftcardCreated,
   GiftcardPurchaseSchema,
@@ -122,6 +123,32 @@ export class GiftcardService {
     if (!c?.code) return { error: "No encontramos esa gift card" };
     const why = usable(c, this.clock());
     return why ? { error: why } : { id: c.id, code: c.code, balanceCents: c.balanceCents };
+  }
+
+  /** Panel (admin-tienda.html): lo vendido, el saldo que falta usar (sin las vencidas) y cada tarjeta. */
+  async admin(): Promise<AdminGiftcards> {
+    const now = this.clock();
+    const cards = (await this.cards.active()).flatMap((c) =>
+      c.code && c.expiresAt
+        ? [
+            {
+              code: c.code,
+              toName: c.toName,
+              fromName: c.fromName,
+              amountCents: c.amountCents,
+              balanceCents: c.balanceCents,
+              expiresAt: c.expiresAt.toISOString(),
+              expired: c.expiresAt < now,
+            },
+          ]
+        : [],
+    );
+    return {
+      sold: cards.length,
+      soldCents: cards.reduce((a, c) => a + c.amountCents, 0),
+      unusedCents: cards.reduce((a, c) => a + (c.expired ? 0 : c.balanceCents), 0),
+      cards,
+    };
   }
 
   forEmail(email: string): Promise<AccountGiftcard[]> {

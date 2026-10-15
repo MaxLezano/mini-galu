@@ -307,6 +307,73 @@ test("link de pago: se arma en el panel, el cliente paga en la tienda y el pedid
   await expect(page.getByText("Este pedido ya está pagado")).toBeVisible();
 });
 
+test("venta en el taller pagada con una gift card", async ({ page, request }) => {
+  const config = await (await request.get("http://localhost:4000/checkout/config")).json();
+  test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  // una gift card de $100.000 comprada y pagada (APRO); el código le llega por mail a quien la compró
+  const buyer = `gc-taller-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  const res = await request.post("http://localhost:4000/giftcards", {
+    data: {
+      design: "rosa",
+      amountCents: 100_000_00,
+      toName: "Mía",
+      fromName: "La tía Sole",
+      message: null,
+      via: "whatsapp",
+      recipient: "11 4444-5555",
+      deliverOn: null,
+      buyer: { email: buyer, firstName: "Sole", lastName: "Paz", phone: "11 5555-1234" },
+    },
+  });
+  expect(res.status()).toBe(201);
+  const g = await res.json();
+  await page.goto(`/pagar/${g.number}?t=${encodeURIComponent(g.accessToken)}`);
+  await page.getByLabel("Nombre como figura").fill("APRO");
+  await page.locator("#pay").click();
+  await expect(page.getByRole("dialog", { name: "Pago aprobado" })).toBeVisible();
+  const search = await request.get(`http://localhost:8025/api/v1/search?query=to:${buyer}`).catch(() => null);
+  test.skip(!search?.ok(), "Sin Mailpit no se puede leer el código de la gift card");
+  let code = "";
+  await expect
+    .poll(async () => {
+      const r = await (await request.get(`http://localhost:8025/api/v1/search?query=to:${buyer}`)).json();
+      const id = r.messages?.[0]?.ID;
+      const text = id ? (await (await request.get(`http://localhost:8025/api/v1/message/${id}`)).json()).Text : "";
+      code = /GALU-[A-Z0-9]{4}-[A-Z0-9]{4}/.exec(text)?.[0] ?? "";
+      return code;
+    })
+    .not.toBe("");
+
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  await page.getByRole("button", { name: "Link de pago" }).click();
+  const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
+  await modal.getByRole("button", { name: "En el taller", exact: true }).click();
+  // en el taller no hay entrega
+  await expect(modal.getByRole("button", { name: "Retira en el taller" })).toBeHidden();
+  await modal.getByLabel("Prenda").selectOption({ label: "Moño Verde Largo" });
+  await modal.getByLabel("Talle").selectOption({ index: 1 });
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Nombre").fill("Mamá");
+  await modal.getByLabel("Apellido").fill("De Mía");
+  await modal.getByLabel("Celular").fill("11 4444-5555");
+  await modal.getByLabel("Email").fill(buyer);
+  await modal.getByLabel(/Gift card/).fill(code.toLowerCase());
+  await modal.getByRole("button", { name: "Ver saldo" }).click();
+  await expect(modal).toContainText("Saldo $100.000 · para Mía");
+  await modal.getByRole("button", { name: "Cargar venta" }).click();
+  await expect(modal).toContainText("se pagó con la gift card");
+  await expect(modal).toContainText("Quedó como entregada");
+  await modal.getByRole("button", { name: "Listo" }).click();
+
+  const balance = await (await request.get(`http://localhost:4000/giftcards/${code}`)).json();
+  expect(balance.balanceCents).toBeLessThan(100_000_00);
+  // en Tienda y pagos figura con el saldo que le queda
+  await page.goto("/taller/tienda");
+  await expect(page.locator("#giftcards")).toContainText(code);
+});
+
 test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido", async ({ page, request }) => {
   const number = await paidOrder(request, {
     method: "domicilio",

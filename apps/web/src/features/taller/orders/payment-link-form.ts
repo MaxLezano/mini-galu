@@ -20,14 +20,15 @@ export function addLine(lines: LinkLine[], line: LinkLine, stock: number): LinkL
 
 export const linesSubtotal = (lines: LinkLine[]) => lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
 
-/** Primer error del formulario (prendas, cliente, entrega) con el campo para enfocarlo. */
+/** Primer error del formulario (prendas, cliente, entrega) con el campo para enfocarlo. En el taller no hay entrega. */
 export function linkError(
+  channel: LinkChannel,
   lines: LinkLine[],
   contact: ContactForm,
   shipping: ShippingForm,
 ): { field: string; message: string } | null {
   if (!lines.length) return { field: "product", message: "Agregá al menos una prenda" };
-  return contactError(contact) ?? shippingError(shipping);
+  return contactError(contact) ?? (channel === "taller" ? null : shippingError(shipping));
 }
 
 export function toLinkInput(
@@ -35,11 +36,13 @@ export function toLinkInput(
   lines: LinkLine[],
   contact: ContactForm,
   shipping: ShippingForm,
+  giftcardCode = "",
 ): PaymentLinkInput {
   return {
     channel,
     contact,
-    shipping: toShippingInput(shipping),
+    shipping: channel === "taller" ? null : toShippingInput(shipping),
     items: lines.map(({ slug, size, qty }) => ({ slug, size, qty })),
+    giftcardCode: giftcardCode.trim() || null,
   };
 }

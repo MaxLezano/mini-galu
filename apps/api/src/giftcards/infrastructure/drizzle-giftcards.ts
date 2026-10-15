@@ -110,6 +110,15 @@ export class DrizzleGiftcards implements GiftcardRepository {
     }
   }
 
+  async active() {
+    const rows = await this.db
+      .select()
+      .from(s.giftcards)
+      .where(eq(s.giftcards.status, "activa"))
+      .orderBy(desc(s.giftcards.createdAt));
+    return rows.map(toRecord);
+  }
+
   async forEmail(email: string): Promise<AccountGiftcard[]> {
     const rows = await this.db
       .select({ card: s.giftcards, buyer: s.orders.email })

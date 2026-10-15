@@ -1,46 +1,21 @@
 import type {
   AdminCoupon,
+  AdminGiftcards,
   AdminHome,
   AdminLaunch,
   AdminNewsletter,
   AdminPayments,
   AdminShipping,
 } from "@mini-galu/contracts";
-import { Gift } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { launchWhen } from "@/lib/date";
 import { CouponsEditor } from "./CouponsEditor";
+import { GiftcardsBox } from "./GiftcardsBox";
 import { HeroEditor } from "./HeroEditor";
 import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
 import { ShippingEditor } from "./ShippingEditor";
 import "./store.css";
-
-function Soon({
-  title,
-  icon,
-  phase,
-  children,
-}: {
-  title: string;
-  icon: ReactNode;
-  phase: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="box">
-      <div className="box-head">
-        <h2>{title}</h2>
-        <span className="pill-status st-muted">{phase}</span>
-      </div>
-      <div className="soon-box">
-        <b style={{ display: "flex", gap: 8, alignItems: "center" }}>{icon} Todavía no está conectado</b>
-        {children}
-      </div>
-    </section>
-  );
-}
 
 /** Tienda y pagos — design/mockups/admin-tienda.html */
 type Props = {
@@ -50,10 +25,11 @@ type Props = {
   shipping: AdminShipping;
   coupons: AdminCoupon[];
   newsletter: AdminNewsletter;
+  giftcards: AdminGiftcards;
   email: string;
 };
 
-export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, email }: Props) {
+export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, giftcards, email }: Props) {
   return (
     <main className="adm-content">
       <div className="adm-head">
@@ -109,9 +85,7 @@ export function StoreSettings({ home, next, payments, shipping, coupons, newslet
 
         <HeroEditor initial={home} />
         <CouponsEditor initial={coupons} />
-        <Soon title="Gift cards" icon={<Gift className="i-sm" />} phase="Fase 8">
-          Vendidas, saldo sin usar y vencimientos de cada tarjeta.
-        </Soon>
+        <GiftcardsBox data={giftcards} />
       </div>
     </main>
   );

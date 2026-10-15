@@ -51,6 +51,9 @@ export class MemoryGiftcards implements GiftcardRepository {
     this.redemptions.push({ giftcardId: id, orderId, cents });
     return "ok" as const;
   }
+  async active() {
+    return this.list.filter((c) => c.status === "activa").reverse();
+  }
   async forEmail(email: string): Promise<AccountGiftcard[]> {
     return this.list
       .filter((c) => this.buyers.get(c.orderId) === email || c.recipient === email)

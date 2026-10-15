@@ -3,6 +3,8 @@
 import {
   type AdminProduct,
   formatARS,
+  type GiftcardBalance,
+  ORDER_CHANNELS,
   PAYMENT_LINK_HOURS,
   type PaymentLinkCreated,
   PROVINCES,
@@ -11,7 +13,7 @@ import {
   type Size,
   toE164AR,
 } from "@mini-galu/contracts";
-import { Copy, Plus, X } from "lucide-react";
+import { Copy, Gift, Plus, Store, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -34,7 +36,8 @@ export const PAYMENT_LINK_MODAL = "m-link";
 
 /**
  * Venta por Instagram o WhatsApp (PLAN §6): se cargan las prendas, el cliente y la entrega; el pedido queda
- * esperando el pago con el stock reservado 72 h y sale un link para mandarle.
+ * esperando el pago con el stock reservado 72 h y sale un link para mandarle. En el taller no hay entrega; con una
+ * gift card se descuenta su saldo y, si cubre todo, la venta queda pagada sin link.
  */
 export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
   const { modal, closeModal } = useUi();
@@ -50,6 +53,9 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<PaymentLinkCreated | null>(null);
   const [branches, setBranches] = useState<ShippingBranch[]>([]);
+  const [gift, setGift] = useState("");
+  const [balance, setBalance] = useState<GiftcardBalance | null>(null);
+  const inPerson = channel === "taller";
 
   // envío a sucursal: las sucursales del CP (la primera es la que lo atiende)
   const cp = ship.method === "sucursal" && quotablePostalCode(ship.postalCode) ? ship.postalCode : null;
@@ -82,6 +88,8 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
     setShip({ ...EMPTY_SHIPPING, method: "taller" });
     setError(null);
     setCreated(null);
+    setGift("");
+    setBalance(null);
   };
   const close = () => {
     closeModal();
@@ -110,13 +118,28 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
     setError(null);
   };
 
+  const checkGift = async () => {
+    if (!gift.trim()) return;
+    try {
+      const b = await api.giftcardBalance(gift.trim());
+      setBalance(b);
+      setError(b.usable ? null : { field: "giftcard", message: "Esa gift card venció o ya no tiene saldo" });
+    } catch (err) {
+      setBalance(null);
+      setError({
+        field: "giftcard",
+        message: err instanceof ApiRequestError ? err.message : "No se pudo consultar la gift card",
+      });
+    }
+  };
+
   const submit = async () => {
-    const e = linkError(lines, contact, ship);
+    const e = linkError(channel, lines, contact, ship);
     setError(e);
     if (e) return document.getElementById(`pl-${e.field}`)?.focus();
     setBusy(true);
     try {
-      setCreated(await adminApi.createPaymentLink(toLinkInput(channel, lines, contact, ship)));
+      setCreated(await adminApi.createPaymentLink(toLinkInput(channel, lines, contact, ship, gift)));
       onCreated();
     } catch (err) {
       setError({ field: "", message: err instanceof ApiRequestError ? err.message : "No se pudo crear el link" });
@@ -155,11 +178,23 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
         </>
       }
     >
-      {created ? (
+      {created?.paid ? (
         <div className="modal-body" style={{ display: "grid", gap: 14 }}>
           <p style={{ margin: 0 }}>
-            Listo: el pedido <b>#{created.number}</b> por <b>{formatARS(created.totalCents)}</b> quedó esperando el
-            pago. Las prendas se guardan hasta el {launchWhen(created.reservedUntil)}.
+            Listo: la venta <b>#{created.number}</b> se pagó con la gift card (<b>{formatARS(created.giftcardCents)}</b>
+            ) y ya se descontó de su saldo.
+            {inPerson ? " Quedó como entregada." : " Pasa a preparar."}
+          </p>
+          <button type="button" className="btn btn-block btn-soft" onClick={close}>
+            Listo
+          </button>
+        </div>
+      ) : created ? (
+        <div className="modal-body" style={{ display: "grid", gap: 14 }}>
+          <p style={{ margin: 0 }}>
+            Listo: el pedido <b>#{created.number}</b> por <b>{formatARS(created.totalCents)}</b> quedó esperando el pago
+            {created.giftcardCents > 0 ? ` (además, la gift card cubre ${formatARS(created.giftcardCents)})` : ""}. Las
+            prendas se guardan hasta el {launchWhen(created.reservedUntil)}.
           </p>
           <div className="field">
             <label htmlFor="pl-url">Link para pagar</label>
@@ -197,7 +232,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
           <div className="field">
             <span className="lbl">Por dónde fue la venta</span>
             <div className="pl-chips" role="group" aria-label="Canal">
-              {(["whatsapp", "instagram"] as const).map((c) => (
+              {(["whatsapp", "instagram", "taller"] as const).map((c) => (
                 <button
                   type="button"
                   key={c}
@@ -205,7 +240,8 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
                   aria-pressed={channel === c}
                   onClick={() => setChannel(c)}
                 >
-                  <BrandIcon name={c} className="i-sm" /> {c === "whatsapp" ? "WhatsApp" : "Instagram"}
+                  {c === "taller" ? <Store className="i-sm" /> : <BrandIcon name={c} className="i-sm" />}{" "}
+                  {ORDER_CHANNELS[c]}
                 </button>
               ))}
             </div>
@@ -319,7 +355,11 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
             {err("email")}
           </fieldset>
 
-          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 10 }}>
+          <fieldset
+            className="field"
+            hidden={inPerson}
+            style={{ border: 0, padding: 0, margin: 0, display: inPerson ? "none" : "grid", gap: 10 }}
+          >
             <legend className="lbl">Entrega</legend>
             <div className="pl-chips" role="group" aria-label="Entrega">
               {(
@@ -443,6 +483,35 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
             ))}
           </fieldset>
 
+          <div className="field">
+            <label htmlFor="pl-giftcard">
+              Gift card <small className="muted">(opcional)</small>
+            </label>
+            <div className="pl-grid">
+              <input
+                className="input"
+                id="pl-giftcard"
+                placeholder="GALU-XXXX-XXXX"
+                autoComplete="off"
+                style={{ textTransform: "uppercase", letterSpacing: ".06em" }}
+                value={gift}
+                onChange={(e) => {
+                  setGift(e.target.value);
+                  setBalance(null);
+                }}
+              />
+              <button type="button" className="btn btn-sm btn-ghost" disabled={!gift.trim()} onClick={checkGift}>
+                <Gift className="i-sm" /> Ver saldo
+              </button>
+            </div>
+            {balance?.usable && (
+              <span className="muted" style={{ fontSize: 13 }}>
+                Saldo {formatARS(balance.balanceCents)} · para {balance.toName}
+              </span>
+            )}
+            {err("giftcard")}
+          </div>
+
           {error?.field === "" && (
             <span className="field-error" role="alert">
               {error.message}
@@ -451,10 +520,11 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
           <div className="row" style={{ alignItems: "center" }}>
             <span className="muted">
               Prendas <b style={{ color: "var(--cacao)" }}>{formatARS(linesSubtotal(lines))}</b>
-              {ship.method !== "taller" ? " + envío" : ""}
+              {!inPerson && ship.method !== "taller" ? " + envío" : ""}
+              {balance?.usable && <> · gift card −{formatARS(balance.balanceCents)}</>}
             </span>
             <button type="button" className="btn" disabled={busy} onClick={submit}>
-              {busy ? "Reservando…" : "Crear link de pago"}
+              {busy ? "Reservando…" : inPerson ? "Cargar venta" : "Crear link de pago"}
             </button>
           </div>
         </div>

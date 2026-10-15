@@ -35,6 +35,8 @@ export interface GiftcardRepository {
    * "repetido": ese pedido ya la había usado · "sin_saldo": se gastó en otro pedido mientras este se pagaba.
    */
   redeem(id: string, orderId: string, cents: number): Promise<"ok" | "repetido" | "sin_saldo">;
+  /** Todas las pagadas (activas), las más nuevas primero. */
+  active(): Promise<GiftcardRecord[]>;
   /** Las que compró ese mail y las que se mandaron a ese mail. */
   forEmail(email: string): Promise<AccountGiftcard[]>;
 }

@@ -68,3 +68,19 @@ export type AccountGiftcard = {
   expiresAt: string | null;
   mine: "compre" | "recibi";
 };
+
+/** Gift cards en el panel (admin-tienda.html): vendidas, saldo sin usar y cada tarjeta activa. */
+export type AdminGiftcards = {
+  sold: number;
+  soldCents: Cents;
+  unusedCents: Cents;
+  cards: {
+    code: string;
+    toName: string;
+    fromName: string;
+    amountCents: Cents;
+    balanceCents: Cents;
+    expiresAt: string;
+    expired: boolean;
+  }[];
+};

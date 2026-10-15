@@ -32,6 +32,7 @@ export function ChannelIcon({ channel }: { channel: AdminOrderSummary["channel"]
   if (channel === "whatsapp") return <BrandIcon name="whatsapp" />;
   if (channel === "instagram") return <BrandIcon name="instagram" />;
   if (channel === "galu") return <MessageCircleHeart className="i-sm" />;
+  if (channel === "taller") return <Store className="i-sm" />;
   return <Globe className="i-sm" />;
 }
 

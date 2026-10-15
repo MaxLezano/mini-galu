@@ -95,3 +95,10 @@ export const dayTitle = (iso: string) => {
 
 /** Hora (0–23) en Argentina. */
 export const arHour = (iso: string) => Number(toArInputs(iso).time.slice(0, 2));
+
+/** "abr 2027" (vencimiento de una gift card). */
+export const monthYear = (iso: string) =>
+  new Intl.DateTimeFormat("es-AR", { month: "short", year: "numeric", timeZone: TZ })
+    .format(new Date(iso))
+    .replace(".", "")
+    .replace(" de ", " ");
