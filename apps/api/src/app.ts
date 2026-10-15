@@ -88,6 +88,7 @@ import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
 import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
+import { OrderRefunds } from "./orders/application/order-refunds";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
 import { Revocations } from "./orders/application/revocations";
@@ -98,9 +99,11 @@ import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
 import { revocationRoutes } from "./orders/infrastructure/http/revocation-routes";
 import { PaymentService } from "./payments/application/payment-service";
 import type { PaymentGateway } from "./payments/application/ports";
+import { RefundService } from "./payments/application/refund-service";
 import { DrizzlePaymentRepository, DrizzlePaymentSettings } from "./payments/infrastructure/drizzle-payments";
 import {
   adminPaymentRoutes,
+  adminRefundRoutes,
   checkoutPaymentRoutes,
   webhookRoutes,
 } from "./payments/infrastructure/http/payment-routes";
@@ -257,12 +260,24 @@ export function buildApp(config: Config) {
     (orderId) => orderPayments.approved(orderId, { method: "giftcard", installments: 1 }),
   );
   const orderPayments = new OrderPayments(orders, cart, coupons, events);
+  const orderRefunds = new OrderRefunds(
+    orders,
+    {
+      purchasedUsed: (orderId) => giftcards.purchasedUsed(orderId),
+      annulPurchased: (orderId) => giftcards.annulPurchased(orderId),
+      reactivatePurchased: (orderId) => giftcards.reactivatePurchased(orderId),
+      restoreRedeemed: (orderId) => giftcards.restoreRedeemed(orderId),
+    },
+    events,
+  );
   const adminOrders = new AdminOrdersService(
     orders,
     storage,
     events,
     slotLabel,
     (number, token) => config.webOrigin + payPath(number, token),
+    undefined,
+    orderRefunds,
   );
   const paymentLinks = new PaymentLinks(
     variants,
@@ -293,9 +308,11 @@ export function buildApp(config: Config) {
         notificationUrl: webhookUrl.startsWith("https://") ? webhookUrl : null,
       })
     : new SimulatedGateway();
+  const paymentRepository = new DrizzlePaymentRepository(db);
+  const refunds = new RefundService(gateway, paymentRepository, orderRefunds);
   const payments = new PaymentService(
     gateway,
-    new DrizzlePaymentRepository(db),
+    paymentRepository,
     new DrizzlePaymentSettings(db),
     orderPayments,
     events,
@@ -506,7 +523,31 @@ export function buildApp(config: Config) {
     });
   });
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
-  // TODO(fase 10 · payments): reembolsar desde el panel (hoy se ve en el historial del pedido y en el resumen)
+  // reintegro desde el panel: el cliente se entera por mail de cuánto vuelve y por dónde
+  events.on("OrderRefunded", async (e) => {
+    const p = e.payload as { orderId: string; number: string; cents: number; giftcardCents: number; pending: boolean };
+    const o = await orders.findById(p.orderId);
+    if (!o) return;
+    const parts = [
+      p.cents > 0 ? `${formatARS(p.cents)} por el mismo medio con el que pagaste` : null,
+      p.giftcardCents > 0 ? `${formatARS(p.giftcardCents)} al saldo de tu gift card` : null,
+    ].filter(Boolean);
+    await notifications.message({
+      to: o.email,
+      subject: `Te devolvimos el dinero del pedido #${p.number}`,
+      eyebrow: `Pedido #${p.number} · reintegro`,
+      name: o.firstName || null,
+      body: `Reintegramos el pedido #${p.number}: ${parts.join(" y ") || "no había nada que devolver"}.${
+        p.cents > 0
+          ? p.pending
+            ? " Mercado Pago lo está procesando; según el medio, puede tardar unos días en verse."
+            : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."
+          : ""
+      } Si tenés alguna duda, respondé este mail.`,
+      cta: null,
+      number: p.number,
+    });
+  });
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
 
@@ -617,6 +658,7 @@ export function buildApp(config: Config) {
     .route("/admin/content/help", adminHelpRoutes(help))
     .route("/admin/orders", adminShipmentRoutes(shipments))
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
+    .route("/admin/orders", adminRefundRoutes(refunds))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/giftcards", adminGiftcardRoutes(giftcards))
     .route("/admin/payments", adminPaymentRoutes(payments))

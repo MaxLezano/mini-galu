@@ -51,6 +51,24 @@ export class MemoryGiftcards implements GiftcardRepository {
     this.redemptions.push({ giftcardId: id, orderId, cents });
     return "ok" as const;
   }
+  async annulUnused(orderId: string) {
+    const c = this.list.find((x) => x.orderId === orderId);
+    if (c?.status !== "activa" || c.balanceCents < c.amountCents) return false;
+    c.status = "anulada";
+    return true;
+  }
+  async reactivate(orderId: string) {
+    const c = this.list.find((x) => x.orderId === orderId);
+    if (c?.status === "anulada") c.status = "activa";
+  }
+  async restoreRedemption(orderId: string) {
+    const r = this.redemptions.find((x) => x.orderId === orderId);
+    if (!r) return 0;
+    this.redemptions = this.redemptions.filter((x) => x !== r);
+    const c = this.list.find((x) => x.id === r.giftcardId);
+    if (c) c.balanceCents += r.cents;
+    return r.cents;
+  }
   async active() {
     return this.list.filter((c) => c.status === "activa").reverse();
   }

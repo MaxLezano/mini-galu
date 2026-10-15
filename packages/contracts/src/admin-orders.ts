@@ -83,6 +83,35 @@ export type AdminOrderDetail = AdminOrderSummary & {
     paidByCustomerCents: Cents | null;
   } | null;
   events: AdminOrderEvent[];
+  /** Lo que se puede devolver de este pedido (null si no hay nada para reintegrar). */
+  refund: AdminRefund | null;
+};
+
+/** Reintegro total de un pedido pagado (o de un pago que llegó cuando ya no había stock). */
+export type AdminRefund = {
+  /** Lo que vuelve por Mercado Pago, por el mismo medio con que se pagó (0 si se pagó todo con gift card). */
+  cents: Cents;
+  /** Lo que vuelve al saldo de la gift card con que se pagó una parte. */
+  giftcardCents: Cents;
+  /** Si hay prendas que pueden volver al stock (no en la compra de una gift card ni en un pago sin stock). */
+  restock: boolean;
+  /** Las prendas todavía no salieron del taller: lo normal es devolverlas al stock. */
+  restockSuggested: boolean;
+  /** Por qué no se puede reintegrar (la gift card comprada ya se usó, no está el pago…). */
+  blocked: string | null;
+};
+
+export const RefundInputSchema = z.object({
+  restock: z.boolean().default(false),
+  reason: z.string().trim().max(300).default(""),
+});
+export type RefundInput = z.input<typeof RefundInputSchema>;
+
+export type RefundResult = {
+  cents: Cents;
+  giftcardCents: Cents;
+  /** Mercado Pago lo tomó pero todavía lo está procesando. */
+  pending: boolean;
 };
 
 export const MoveOrderInputSchema = z.object({ to: z.enum(BOARD_STATUSES) });

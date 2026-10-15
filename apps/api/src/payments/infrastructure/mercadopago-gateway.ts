@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PaymentMethod } from "@mini-galu/contracts";
-import type { GatewayPayment, PaymentGateway } from "../application/ports";
+import { type GatewayPayment, type PaymentGateway, RefundRejected } from "../application/ports";
 
 const API = "https://api.mercadopago.com";
 
@@ -151,6 +151,34 @@ export class MercadoPagoGateway implements PaymentGateway {
   }
 
   /**
+   * Reintegro total, sin monto en el cuerpo. Tarjetas (ORD…): `POST /v1/orders/{id}/refund`; dinero en cuenta:
+   * `POST /v1/payments/{id}/refunds`. Si ya estaba devuelto (un reintento, o se devolvió desde Mercado Pago) se da
+   * por hecho. Mercado Pago pide saldo disponible en la cuenta y hasta 180 días desde la aprobación.
+   */
+  async refund(req: { paymentId: string; idempotencyKey: string }) {
+    const id = encodeURIComponent(req.paymentId);
+    const isOrder = req.paymentId.startsWith("ORD");
+    try {
+      const r = await this.call<MpOrderRefund | MpPaymentRefund>(
+        isOrder ? `/v1/orders/${id}/refund` : `/v1/payments/${id}/refunds`,
+        { method: "POST", headers: { "X-Idempotency-Key": req.idempotencyKey } },
+      );
+      return { pending: refundPending(r) };
+    } catch (e) {
+      if (e instanceof RefundRejected) throw e;
+      if (e instanceof MercadoPagoError) {
+        if (/already_refunded/i.test(e.body)) return { pending: false };
+        if (/refund_already_in_process/i.test(e.body)) return { pending: true };
+      }
+      // puede que lo haya hecho y la respuesta no llegó: se consulta el pago antes de decir que falló
+      const now = await this.fetch(req.paymentId).catch(() => null);
+      if (now && (now.status === "refunded" || now.statusDetail === "refunded")) return { pending: false };
+      console.error("[pagos] no se pudo reintegrar:", e);
+      throw new RefundRejected(refundError(e));
+    }
+  }
+
+  /**
    * Planes de cuotas de la cuenta para Visa y Mastercard (todos los bancos). Sin interés = el máximo de cuotas con
    * tasa 0 que comparten TODOS los emisores, para que la promesa valga con cualquier tarjeta.
    */
@@ -242,10 +270,40 @@ export class MercadoPagoGateway implements PaymentGateway {
 export class MercadoPagoError extends Error {
   constructor(
     readonly status: number,
-    body: string,
+    readonly body: string,
   ) {
     super(`Mercado Pago respondió ${status}: ${body.slice(0, 300)}`);
   }
+}
+
+/** Respuesta de `/v1/orders/{id}/refund` (lo que usamos). */
+type MpOrderRefund = {
+  status: string;
+  status_detail: string | null;
+  transactions?: { refunds?: { id: string; status: string }[] };
+};
+/** Respuesta de `/v1/payments/{id}/refunds`. */
+type MpPaymentRefund = { id: number; status: string; payment_id: number };
+
+const IN_PROCESS = ["processing", "in_process", "pending"];
+
+function refundPending(r: MpOrderRefund | MpPaymentRefund): boolean {
+  if ("transactions" in r || "status_detail" in r) {
+    const o = r as MpOrderRefund;
+    if (o.status_detail === "refunded" || o.status === "refunded") return false;
+    return (o.transactions?.refunds ?? []).some((x) => IN_PROCESS.includes(x.status));
+  }
+  if (r.status === "rejected" || r.status === "cancelled")
+    throw new RefundRejected("Mercado Pago rechazó el reintegro. Revisá el saldo de la cuenta y probá de nuevo.");
+  return IN_PROCESS.includes(r.status);
+}
+
+function refundError(e: unknown): string {
+  if (!(e instanceof MercadoPagoError)) return "No pudimos hablar con Mercado Pago: probá de nuevo en un rato.";
+  if (e.status === 401 || e.status === 403) return "Mercado Pago no autorizó el reintegro: revisá las credenciales.";
+  if (e.status === 404) return "Mercado Pago no encuentra ese pago.";
+  if (e.status === 429 || e.status >= 500) return "Mercado Pago no responde: probá de nuevo en un rato.";
+  return "Mercado Pago no pudo hacer el reintegro. Revisá que la cuenta tenga saldo disponible y que no hayan pasado 180 días desde el pago.";
 }
 
 function fromOrder(o: MpOrder): GatewayPayment {

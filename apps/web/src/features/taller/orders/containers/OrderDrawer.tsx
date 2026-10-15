@@ -33,6 +33,7 @@ import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { ActionIcon } from "../components/OrderCard";
+import { RefundPanel } from "../components/RefundPanel";
 import { generateLabel } from "../label-action";
 import { type NextAction, nextAction, type TemplateKey } from "../order-flow";
 
@@ -44,6 +45,7 @@ const EVENT_ICON: Record<string, ReactNode> = {
   mail: <MailCheck />,
   expired: <Clock />,
   refund_needed: <Clock />,
+  refunded: <Undo2 />,
   status: <Package />,
 };
 const statusIcon = (title: string) =>
@@ -138,6 +140,24 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
     }
   };
 
+  const refund = async (input: { restock: boolean; reason: string }) => {
+    if (!o) return;
+    setBusy(true);
+    try {
+      const r = await adminApi.refundOrder(o.number, input);
+      const updated = await adminApi.order(o.number);
+      setOrder(updated);
+      onChanged(updated);
+      toast(`#${o.number} · ${r.pending ? "Reintegro en proceso en Mercado Pago" : "Reintegrado"}`, {
+        icon: <Undo2 className="i-sm" />,
+      });
+    } catch (e) {
+      toast(e instanceof ApiRequestError ? e.message : "No se pudo hacer el reintegro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const saveNote = async () => {
     if (!o || note.trim() === (o.internalNote ?? "")) return;
     try {
@@ -215,7 +235,7 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     </span>
                     {o.revocation.reason && <span>"{o.revocation.reason}"</span>}
                     <span className="muted">
-                      Escribile para coordinar la devolución de las prendas y el reintegro por el mismo medio de pago.
+                      Escribile para coordinar la devolución de las prendas; el reintegro se hace desde Pago, más abajo.
                     </span>
                   </div>
                 </div>
@@ -389,7 +409,9 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                   </dd>
                   <dt>Estado</dt>
                   <dd>
-                    {o.paidAt ? (
+                    {o.status === "reembolsado" ? (
+                      <span className="pill-status st-muted">Reintegrado</span>
+                    ) : o.paidAt ? (
                       <span className="pill-status st-ok">Aprobado</span>
                     ) : (
                       <span className="pill-status st-muted">Pendiente</span>
@@ -443,6 +465,7 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     </>
                   )}
                 </dl>
+                {o.refund && <RefundPanel key={o.number} refund={o.refund} busy={busy} onConfirm={refund} />}
               </div>
 
               <div className="od-sec">

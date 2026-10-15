@@ -104,7 +104,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     const [p] = await this.db
       .select()
       .from(s.payments)
-      .where(and(eq(s.payments.orderId, orderId), inArray(s.payments.status, ["approved", "processed"])))
+      .where(and(eq(s.payments.orderId, orderId), inArray(s.payments.status, ["approved", "processed", "refunded"])))
       .orderBy(desc(s.payments.updatedAt))
       .limit(1);
     if (!p) return null;
@@ -126,6 +126,33 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       .where(and(eq(s.orders.id, id), eq(s.orders.status, from)))
       .returning({ id: s.orders.id });
     return !!row;
+  }
+
+  async markRefunded(id: string, from: OrderStatus, at: Date, restock: boolean) {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(s.orders)
+        .set({ status: "reembolsado", statusChangedAt: at })
+        .where(and(eq(s.orders.id, id), eq(s.orders.status, from)))
+        .returning({ id: s.orders.id });
+      if (!row) return false;
+      if (!restock) return true;
+      const items = await this.itemsOf(tx, id);
+      for (const i of items)
+        if (i.variantId)
+          await tx
+            .update(s.variants)
+            .set({ stock: sql`${s.variants.stock} + ${i.qty}` })
+            .where(eq(s.variants.id, i.variantId));
+      const sold = new Map<string, number>();
+      for (const i of items) sold.set(i.productSlug, (sold.get(i.productSlug) ?? 0) + i.qty);
+      for (const [slug, qty] of sold)
+        await tx
+          .update(s.products)
+          .set({ unitsSold: sql`greatest(${s.products.unitsSold} - ${qty}, 0)` })
+          .where(eq(s.products.slug, slug));
+      return true;
+    });
   }
 
   async setNote(id: string, note: string | null) {

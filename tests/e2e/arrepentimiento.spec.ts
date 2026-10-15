@@ -25,7 +25,7 @@ async function buyBow(page: Page, email: string): Promise<string> {
   return number as string;
 }
 
-test("botón de arrepentimiento: visible arriba, da un código, lo manda por mail y el taller lo ve", async ({
+test("botón de arrepentimiento: visible arriba, da un código, lo manda por mail y el taller lo ve y reintegra", async ({
   page,
   request,
 }) => {
@@ -84,4 +84,23 @@ test("botón de arrepentimiento: visible arriba, da un código, lo manda por mai
   const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
   await expect(drawer.locator(".od-revocation")).toContainText(code);
   await expect(drawer.locator(".od-revocation")).toContainText("Me equivoqué de color");
+
+  // reintegro desde el detalle: el total por Mercado Pago, las prendas (sin retirar) vuelven al stock
+  await drawer.getByRole("button", { name: "Reintegrar el pago" }).click();
+  const refund = drawer.getByRole("region", { name: "Reintegrar el pago" });
+  await expect(refund).toContainText("por Mercado Pago, al mismo medio con el que pagó");
+  await expect(refund.getByRole("checkbox", { name: /Las prendas vuelven al stock/ })).toBeChecked();
+  await refund.getByLabel("Motivo del reintegro").fill("arrepentimiento");
+  await refund.getByRole("button", { name: /^Reintegrar \$/ }).click();
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Reembolsado");
+  await expect(drawer.locator(".tl")).toContainText("Pago reintegrado");
+  await expect(drawer.locator(".tl")).toContainText("prendas al stock");
+  await expect(drawer.getByRole("button", { name: "Reintegrar el pago" })).toHaveCount(0);
+  if (search?.ok())
+    await expect
+      .poll(async () => {
+        const r = await (await request.get(`${MAILPIT}/search?query=to:${email}`)).json();
+        return (r.messages ?? []).map((m: { Subject: string }) => m.Subject).join(" | ");
+      })
+      .toContain(`Te devolvimos el dinero del pedido #${number}`);
 });

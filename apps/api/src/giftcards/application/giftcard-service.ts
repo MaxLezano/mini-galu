@@ -91,6 +91,27 @@ export class GiftcardService {
     if (!card.deliverAt || card.deliverAt <= now) await this.deliver(active);
   }
 
+  /* ---------------------------------------------------------------- reintegro de un pedido (RefundGiftcards) */
+
+  async purchasedUsed(orderId: string): Promise<boolean> {
+    const c = await this.cards.byOrder(orderId);
+    return !!c && c.balanceCents < c.amountCents;
+  }
+
+  /** Se reintegra la compra de una gift card: deja de valer (solo si nadie la usó). */
+  annulPurchased(orderId: string): Promise<boolean> {
+    return this.cards.annulUnused(orderId);
+  }
+
+  reactivatePurchased(orderId: string): Promise<void> {
+    return this.cards.reactivate(orderId);
+  }
+
+  /** Se reintegra un pedido pagado en parte con una gift card: lo que usó vuelve a su saldo. */
+  restoreRedeemed(orderId: string): Promise<number> {
+    return this.cards.restoreRedemption(orderId);
+  }
+
   /** Las programadas para un día: salen a las 9. Lo corre el programador. */
   async deliverDue(): Promise<number> {
     const due = await this.cards.dueForDelivery(this.clock());

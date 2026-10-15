@@ -1,5 +1,5 @@
 import { DEFAULT_PAYMENT_SETTINGS, type PaymentSettings, PaymentSettingsSchema } from "@mini-galu/contracts";
-import { type Db, eq, schema as s } from "@mini-galu/db";
+import { and, type Db, eq, schema as s } from "@mini-galu/db";
 import type { GatewayPayment, PaymentRepository, PaymentSettingsStore } from "../application/ports";
 
 export class DrizzlePaymentRepository implements PaymentRepository {
@@ -18,6 +18,13 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       .insert(s.payments)
       .values({ orderId, provider, providerPaymentId: p.id, ...values })
       .onConflictDoUpdate({ target: [s.payments.provider, s.payments.providerPaymentId], set: values });
+  }
+
+  async markRefunded(provider: string, paymentId: string) {
+    await this.db
+      .update(s.payments)
+      .set({ status: "refunded" })
+      .where(and(eq(s.payments.provider, provider), eq(s.payments.providerPaymentId, paymentId)));
   }
 }
 

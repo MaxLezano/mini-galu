@@ -167,3 +167,51 @@ describe("MercadoPagoGateway.cardPlans", () => {
     });
   });
 });
+
+describe("MercadoPagoGateway · reintegros", () => {
+  const replies = (...r: [number, unknown][]) => {
+    const f = vi.spyOn(globalThis, "fetch");
+    for (const [status, body] of r) f.mockResolvedValueOnce(new Response(JSON.stringify(body), { status }));
+    return f;
+  };
+
+  it("devuelve el total de una orden de tarjeta sin monto en el cuerpo y con clave de idempotencia", async () => {
+    const f = replies([
+      201,
+      {
+        id: "ORDTST01",
+        status: "processed",
+        status_detail: "refunded",
+        transactions: { refunds: [{ id: "REF01", status: "processed" }] },
+      },
+    ]);
+    expect(await mp.refund({ paymentId: "ORDTST01", idempotencyKey: "r-1" })).toEqual({ pending: false });
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.mercadopago.com/v1/orders/ORDTST01/refund");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeUndefined();
+    expect((init.headers as Record<string, string>)["X-Idempotency-Key"]).toBe("r-1");
+  });
+
+  it("dinero en cuenta va por la API de Payments; en proceso queda pendiente", async () => {
+    const f = replies([201, { id: 9, payment_id: 123, status: "in_process" }]);
+    expect(await mp.refund({ paymentId: "123", idempotencyKey: "r-2" })).toEqual({ pending: true });
+    expect(f.mock.calls[0]?.[0]).toBe("https://api.mercadopago.com/v1/payments/123/refunds");
+  });
+
+  it("si ya estaba devuelta la da por hecha", async () => {
+    replies([409, { errors: [{ code: "order_already_refunded" }] }]);
+    expect(await mp.refund({ paymentId: "ORDTST01", idempotencyKey: "r-3" })).toEqual({ pending: false });
+  });
+
+  it("si falla consulta el pago y, si no se devolvió, explica qué revisar", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    replies([400, { message: "insufficient balance" }], [200, order("processed", "accredited")]);
+    await expect(mp.refund({ paymentId: "ORDTST01", idempotencyKey: "r-4" })).rejects.toThrow(/saldo disponible/);
+  });
+
+  it("un reintegro rechazado por Payments no se da por hecho", async () => {
+    replies([201, { id: 9, payment_id: 123, status: "rejected" }]);
+    await expect(mp.refund({ paymentId: "123", idempotencyKey: "r-5" })).rejects.toThrow(/rechazó el reintegro/);
+  });
+});

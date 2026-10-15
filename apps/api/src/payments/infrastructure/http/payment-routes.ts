@@ -1,8 +1,9 @@
-import { CardPaymentInputSchema, PaymentSettingsSchema } from "@mini-galu/contracts";
+import { CardPaymentInputSchema, PaymentSettingsSchema, RefundInputSchema } from "@mini-galu/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { parse } from "../../../shared/http/errors";
 import type { PaymentService } from "../../application/payment-service";
+import type { RefundService } from "../../application/refund-service";
 
 const Token = z.object({ t: z.string().min(1) });
 
@@ -68,4 +69,11 @@ export function adminPaymentRoutes(payments: PaymentService) {
   return new Hono()
     .get("/", async (c) => c.json(await payments.admin()))
     .put("/", async (c) => c.json(await payments.saveSettings(parse(PaymentSettingsSchema, await c.req.json()))));
+}
+
+/** /admin/orders/:number/refund — reintegrar un pedido desde su detalle. Requiere sesión del taller. */
+export function adminRefundRoutes(refunds: RefundService) {
+  return new Hono().post("/:number/refund", async (c) =>
+    c.json(await refunds.refund(c.req.param("number"), parse(RefundInputSchema, await c.req.json().catch(() => ({}))))),
+  );
 }

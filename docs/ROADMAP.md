@@ -260,7 +260,17 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   tienda. Mismo error si el pedido no existe o el mail no coincide; no aplica a pedidos sin pagar o cancelados; fuera
   de los 10 días desde la entrega igual se registra, marcada. Tope de 20 por IP cada 10 min en producción. En el panel:
   campana, etiqueta en la tarjeta, aviso en el detalle e historial (módulo `orders`, tabla `order_revocations`).
-  ⏳ Reintegro desde el panel (fase 10 · payments)
+- ✅ **Reintegro desde el panel** (sin mockup; apartado Pago del detalle del pedido): "Reintegrar el pago" muestra qué
+  vuelve y por dónde (el total por Mercado Pago, al mismo medio; lo usado de una gift card, a su saldo), si las prendas
+  vuelven al stock (tildado si todavía no salieron del taller) y un motivo para el historial. Mercado Pago devuelve el
+  total (`POST /v1/orders/{id}/refund` para tarjetas, `/v1/payments/{id}/refunds` para dinero en cuenta, con clave de
+  idempotencia; si ya estaba devuelto se da por hecho) y recién entonces el pedido pasa a "reembolsado" (stock y
+  vendidas en la misma transacción), queda la línea en el historial y le llega un mail al cliente. Si Mercado Pago no
+  puede (sin saldo, más de 180 días) el pedido queda como estaba y el panel dice qué revisar. También sirve para el pago
+  que llegó con la reserva vencida y sin stock, y para la compra de una gift card (solo si nadie la usó: se anula).
+  Sin el pago registrado (pedidos viejos) avisa que se haga desde Mercado Pago. Los pagos simulados ya no repiten id
+  al reiniciar la API (pisaban el pago de otro pedido). Queda afuera: reintegros parciales, devolver el uso del cupón
+  y enterarse de un reintegro hecho desde la cuenta de Mercado Pago
 - ✅ SEO: `metadataBase` con `NEXT_PUBLIC_SITE_URL`, Open Graph (es_AR) y canonical en inicio, catálogo (los filtros
   apuntan a `/catalogo`), ficha, gift cards y ayuda; `robots.txt` (sin panel, cuenta ni pasos de compra) y
   `sitemap.xml` (páginas públicas y cada prenda publicada, con foto); JSON-LD `OnlineStore` en el inicio y `Product`

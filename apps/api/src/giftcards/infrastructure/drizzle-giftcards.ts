@@ -110,6 +110,43 @@ export class DrizzleGiftcards implements GiftcardRepository {
     }
   }
 
+  async annulUnused(orderId: string) {
+    const rows = await this.db
+      .update(s.giftcards)
+      .set({ status: "anulada" })
+      .where(
+        and(
+          eq(s.giftcards.orderId, orderId),
+          eq(s.giftcards.status, "activa"),
+          eq(s.giftcards.balanceCents, s.giftcards.amountCents),
+        ),
+      )
+      .returning({ id: s.giftcards.id });
+    return rows.length > 0;
+  }
+
+  async reactivate(orderId: string) {
+    await this.db
+      .update(s.giftcards)
+      .set({ status: "activa" })
+      .where(and(eq(s.giftcards.orderId, orderId), eq(s.giftcards.status, "anulada")));
+  }
+
+  async restoreRedemption(orderId: string) {
+    return this.db.transaction(async (tx) => {
+      const used = await tx
+        .delete(s.giftcardRedemptions)
+        .where(eq(s.giftcardRedemptions.orderId, orderId))
+        .returning({ giftcardId: s.giftcardRedemptions.giftcardId, cents: s.giftcardRedemptions.amountCents });
+      for (const u of used)
+        await tx
+          .update(s.giftcards)
+          .set({ balanceCents: sql`${s.giftcards.balanceCents} + ${u.cents}` })
+          .where(eq(s.giftcards.id, u.giftcardId));
+      return used.reduce((a, u) => a + u.cents, 0);
+    });
+  }
+
   async active() {
     const rows = await this.db
       .select()

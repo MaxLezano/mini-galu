@@ -13,6 +13,8 @@ export class SimulatedGateway implements PaymentGateway {
   private payments = new Map<string, GatewayPayment>();
   private byKey = new Map<string, string>();
   private seq = 1;
+  /** Los pagos se guardan por id en la base: cada arranque numera aparte para no pisar los de antes de reiniciar. */
+  private readonly boot = Date.now().toString(36);
 
   async payWithCard(req: Parameters<PaymentGateway["payWithCard"]>[0]) {
     const repeated = this.byKey.get(req.idempotencyKey);
@@ -67,12 +69,19 @@ export class SimulatedGateway implements PaymentGateway {
     return { brand: null, debit: false, plans: [] };
   }
 
+  /** Sin cuenta siempre se puede devolver (aunque el pago sea de antes de reiniciar la API). */
+  async refund(req: { paymentId: string; idempotencyKey: string }) {
+    const p = this.payments.get(req.paymentId);
+    if (p) p.status = "refunded";
+    return { pending: false };
+  }
+
   verifyWebhook() {
     return false;
   }
 
   private create(p: Omit<GatewayPayment, "id" | "raw">) {
-    const payment = { ...p, id: `sim-${this.seq++}`, raw: { simulated: true } };
+    const payment = { ...p, id: `sim-${this.boot}-${this.seq++}`, raw: { simulated: true } };
     this.payments.set(payment.id, payment);
     return payment;
   }

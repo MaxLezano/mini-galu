@@ -27,6 +27,8 @@ import type {
   PaymentSettings,
   ProductInput,
   ProductStatus,
+  RefundInput,
+  RefundResult,
   SaveProductResult,
   ShipmentCreated,
   ShippingSettings,
@@ -170,6 +172,11 @@ export const adminApi = {
     adminRequest<{ moved: string[]; skipped: { number: string; reason: string }[] }>("/admin/orders/advance", {
       method: "POST",
       body: JSON.stringify({ numbers }),
+    }),
+  refundOrder: (number: string, input: RefundInput) =>
+    adminRequest<RefundResult>(`/admin/orders/${encodeURIComponent(number)}/refund`, {
+      method: "POST",
+      body: JSON.stringify(input),
     }),
   saveOrderNote: (number: string, note: string) =>
     adminRequest<null>(`/admin/orders/${encodeURIComponent(number)}/note`, {

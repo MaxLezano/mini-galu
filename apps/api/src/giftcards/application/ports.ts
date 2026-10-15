@@ -35,6 +35,12 @@ export interface GiftcardRepository {
    * "repetido": ese pedido ya la había usado · "sin_saldo": se gastó en otro pedido mientras este se pagaba.
    */
   redeem(id: string, orderId: string, cents: number): Promise<"ok" | "repetido" | "sin_saldo">;
+  /** Anula la gift card comprada con ese pedido si está activa y sin usar. false si no (ya se usó). */
+  annulUnused(orderId: string): Promise<boolean>;
+  /** La anulada de ese pedido vuelve a estar activa. */
+  reactivate(orderId: string): Promise<void>;
+  /** Borra el uso que hizo ese pedido y le devuelve el saldo a la gift card (en la misma transacción). Lo devuelto. */
+  restoreRedemption(orderId: string): Promise<number>;
   /** Todas las pagadas (activas), las más nuevas primero. */
   active(): Promise<GiftcardRecord[]>;
   /** Las que compró ese mail y las que se mandaron a ese mail. */

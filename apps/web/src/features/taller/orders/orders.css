@@ -25,3 +25,12 @@
 .od-revocation > b { display: inline-flex; gap: 6px; align-items: center; }
 .od-revocation span { color: var(--cacao); }
 .od-revocation .muted { color: var(--cacao-2); font-size: 12.5px; }
+.od-refund-cta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 14px; font-size: 12.5px; }
+.od-refund { display: grid; gap: 10px; margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: var(--linen-2); font-size: 13.5px; }
+.od-refund > b { display: inline-flex; gap: 6px; align-items: center; }
+.od-refund ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.od-refund > .muted { font-size: 12.5px; }
+.od-refund-check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.od-refund-check input { margin-top: 3px; accent-color: var(--cacao); }
+.od-refund-check small { display: block; font-size: 12px; }
+.od-refund-actions { display: flex; gap: 8px; flex-wrap: wrap; }

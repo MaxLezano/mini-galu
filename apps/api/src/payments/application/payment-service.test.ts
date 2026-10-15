@@ -76,7 +76,7 @@ beforeEach(async () => {
   recorded = [];
   service = new PaymentService(
     gateway,
-    { record: async (_o, _p, p) => void recorded.push(p) },
+    { record: async (_o, _p, p) => void recorded.push(p), markRefunded: async () => {} },
     settings,
     new OrderPayments(orders, cart, coupons, bus),
     bus,

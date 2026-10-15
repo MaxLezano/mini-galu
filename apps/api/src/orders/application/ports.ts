@@ -98,7 +98,7 @@ export interface OrderEvents {
   addEvent(orderId: string, e: Omit<OrderEvent, "at">): Promise<void>;
 }
 
-/** El pago aprobado de un pedido, como lo guardó el módulo de pagos. */
+/** El pago aprobado de un pedido (o ya reintegrado), como lo guardó el módulo de pagos. */
 export type OrderPayment = {
   provider: string;
   reference: string;
@@ -117,6 +117,11 @@ export interface AdminOrderRepository extends OrderEvents {
   /** Cambia de estado solo si sigue en `from` (dos pestañas no pisan el cambio de la otra). */
   setStatus(id: string, from: OrderStatus, to: OrderStatus, at: Date): Promise<boolean>;
   setNote(id: string, note: string | null): Promise<void>;
+  /**
+   * Pasa a "reembolsado" solo si sigue en `from` (dos clics no reintegran dos veces). Con `restock`, las prendas
+   * vuelven al stock y se restan de las vendidas, en la misma transacción.
+   */
+  markRefunded(id: string, from: OrderStatus, at: Date, restock: boolean): Promise<boolean>;
   /** Pedidos pagados desde `since` (sin cancelados ni reembolsados), para el resumen. */
   paidSince(since: Date): Promise<PaidOrder[]>;
   /** De esos emails, los que ya habían pagado algún pedido antes de `before`. */
@@ -157,6 +162,18 @@ export interface OrderRepository extends OrderEvents {
   ): Promise<boolean>;
   /** Un pedido cancelado por vencimiento que igual se pagó: vuelve a reservar si hay stock (y queda esperando pago). */
   reReserve(id: string): Promise<boolean>;
+}
+
+/** Lo que el reintegro de un pedido necesita del módulo de gift cards. */
+export interface RefundGiftcards {
+  /** Si la gift card que se compró con este pedido ya se usó (aunque sea una parte). */
+  purchasedUsed(orderId: string): Promise<boolean>;
+  /** Anula la gift card comprada con este pedido si sigue sin usar. false si ya se usó. */
+  annulPurchased(orderId: string): Promise<boolean>;
+  /** Vuelve a activar la que se anuló (Mercado Pago no pudo devolver la plata). */
+  reactivatePurchased(orderId: string): Promise<void>;
+  /** Devuelve al saldo lo que este pedido usó de una gift card (una sola vez). Lo devuelto, en centavos. */
+  restoreRedeemed(orderId: string): Promise<number>;
 }
 
 /** Solicitud del botón de arrepentimiento (una por pedido). */

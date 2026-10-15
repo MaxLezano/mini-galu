@@ -8,6 +8,7 @@ import type {
   OrderPayment,
   OrderRecord,
   OrderRepository,
+  RefundGiftcards,
   Revocation,
   RevocationStore,
 } from "../application/ports";
@@ -72,6 +73,17 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     if (o?.status !== from) return false;
     o.status = to;
     o.statusChangedAt = at;
+    return true;
+  }
+  async markRefunded(id: string, from: OrderStatus, at: Date, restock: boolean) {
+    const o = this.items.find((x) => x.id === id);
+    if (o?.status !== from) return false;
+    o.status = "reembolsado";
+    o.statusChangedAt = at;
+    if (restock) {
+      this.move(o.items, +1);
+      for (const i of o.items) this.unitsSold.set(i.productSlug, (this.unitsSold.get(i.productSlug) ?? 0) - i.qty);
+    }
     return true;
   }
   async setNote(id: string, note: string | null) {
@@ -184,6 +196,34 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       const v = this.variants.list.find((x) => x.variantId === i.variantId);
       if (v) v.stock += sign * i.qty;
     }
+  }
+}
+
+/** Gift cards vistas desde el reintegro: compradas (con su saldo) y usadas por pedidos. */
+export class MemoryRefundGiftcards implements RefundGiftcards {
+  purchased = new Map<string, { amountCents: number; balanceCents: number; status: "activa" | "anulada" }>();
+  /** orderId → lo que ese pedido usó de una gift card (y si ya se devolvió). */
+  redeemed = new Map<string, { cents: number; restored: boolean }>();
+
+  async purchasedUsed(orderId: string) {
+    const c = this.purchased.get(orderId);
+    return !!c && c.balanceCents < c.amountCents;
+  }
+  async annulPurchased(orderId: string) {
+    const c = this.purchased.get(orderId);
+    if (c?.status !== "activa" || c.balanceCents < c.amountCents) return false;
+    c.status = "anulada";
+    return true;
+  }
+  async reactivatePurchased(orderId: string) {
+    const c = this.purchased.get(orderId);
+    if (c) c.status = "activa";
+  }
+  async restoreRedeemed(orderId: string) {
+    const r = this.redeemed.get(orderId);
+    if (!r || r.restored) return 0;
+    r.restored = true;
+    return r.cents;
   }
 }
 
