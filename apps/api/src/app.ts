@@ -3,11 +3,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { serveStatic } from "@hono/node-server/serve-static";
 import {
   CatalogQuerySchema,
-  FREE_SHIPPING_FROM_CENTS,
   formatARS,
+  freeShippingFrom,
   GIFTCARD_MAX_CENTS,
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
+  pickupHoursLabel,
 } from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
@@ -102,6 +103,9 @@ import {
 } from "./payments/infrastructure/http/payment-routes";
 import { MercadoPagoGateway } from "./payments/infrastructure/mercadopago-gateway";
 import { SimulatedGateway } from "./payments/infrastructure/simulated-gateway";
+import { PoliciesService } from "./policies/application/policies-service";
+import { DrizzlePoliciesStore } from "./policies/infrastructure/drizzle-policies-store";
+import { adminPoliciesRoutes, policiesRoutes } from "./policies/infrastructure/http/policies-routes";
 import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
@@ -187,11 +191,13 @@ export function buildApp(config: Config) {
   const catalog = new CatalogService(new DrizzleProductRepository(db), new DrizzleWaitlistRepository(db), storage);
   const adminCatalog = new AdminCatalogService(new DrizzleAdminProductRepository(db), storage, events);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
-  const help = new HelpService(new DrizzleHelpRepository(db), {
+  // políticas del panel (cambios, envío gratis, formas de entrega, tarifas, horarios): las leen envíos, ayuda, Galú y mails
+  const policies = new PoliciesService(new DrizzlePoliciesStore(db));
+  const help = new HelpService(new DrizzleHelpRepository(db), async () => ({
     workshop: WORKSHOP,
-    freeShippingFrom: formatARS(FREE_SHIPPING_FROM_CENTS),
     email: "hola@minigalu.com.ar",
-  });
+    policies: await policies.get(),
+  }));
 
   // los lanzamientos publican prendas a través del catálogo (que valida, por ejemplo, que tengan foto)
   const publisher: ProductPublisher = {
@@ -219,10 +225,11 @@ export function buildApp(config: Config) {
   const andreani = config.andreani ? new AndreaniClient(config.andreani) : null;
   const shipping = new ShippingService(
     andreani && config.andreani
-      ? new AndreaniRates(andreani, config.andreani, shippingSettings, new TableShippingRates())
-      : new TableShippingRates(),
+      ? new AndreaniRates(andreani, config.andreani, shippingSettings, new TableShippingRates(policies))
+      : new TableShippingRates(policies),
     undefined,
     config.branches === "andreani" ? new AndreaniBranches() : new FakeBranches(),
+    policies,
   );
   const cart = new CartService(new DrizzleCartRepository(db), variants, storage, orders);
   const coupons = new CouponService(new DrizzleCouponRepository(db));
@@ -319,11 +326,12 @@ export function buildApp(config: Config) {
       },
     },
     new SmtpMailer(config.smtp),
-    (number) => ({
+    async (number) => ({
       tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
       whatsapp: "https://wa.me/5491100000000",
       site: config.webOrigin,
       workshop: WORKSHOP,
+      exchangeDays: (await policies.get()).exchangeDays,
     }),
   );
   const newsletter = new NewsletterService(
@@ -494,11 +502,17 @@ export function buildApp(config: Config) {
       shipping: { options: (cp) => shipping.options(cp, 0) },
     }),
     assistantCatalog,
-    {
-      workshop: WORKSHOP,
-      freeShippingFrom: formatARS(FREE_SHIPPING_FROM_CENTS),
-      giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
-      whatsapp: "https://wa.me/5491100000000",
+    async () => {
+      const p = await policies.get();
+      const free = freeShippingFrom(p);
+      return {
+        workshop: WORKSHOP,
+        freeShippingFrom: free === null ? null : formatARS(free),
+        exchangeDays: p.exchangeDays,
+        pickup: p.methods.taller ? pickupHoursLabel(p) : null,
+        giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
+        whatsapp: "https://wa.me/5491100000000",
+      };
     },
     assistantMemory,
   );
@@ -544,6 +558,7 @@ export function buildApp(config: Config) {
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
     .route("/newsletter", newsletterRoutes(newsletter))
+    .route("/policies", policiesRoutes(policies))
     .route("/giftcards", giftcardRoutes(giftcards))
     .use("/assistant/chat", cartOwner(auth, cart, secure))
     .route("/assistant", assistantRoutes(assistant, { secure }))
@@ -562,6 +577,7 @@ export function buildApp(config: Config) {
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
+    .route("/admin/policies", adminPoliciesRoutes(policies))
     .route(
       "/admin/assistant",
       adminAssistantRoutes(new AssistantAdminService(assistantMemory, () => llm?.name ?? null, formatOrderNumber)),

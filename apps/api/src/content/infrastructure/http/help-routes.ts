@@ -15,7 +15,7 @@ function topic(raw: string) {
 export function helpRoutes(help: HelpService) {
   return new Hono()
     .get("/", async (c) => c.json(await help.links()))
-    .get("/:topic", async (c) => c.json(await help.page(topic(c.req.param("topic")))));
+    .get("/:topic", async (c) => c.json(await help.publicPage(topic(c.req.param("topic")))));
 }
 
 /** /admin/content/help — editar las páginas de ayuda (protegido con requireAdmin en app.ts). */

@@ -1,9 +1,6 @@
 /** Los precios viajan siempre en centavos (int). Nunca float. */
 export type Cents = number;
 
-/** Envío gratis desde $90.000. */
-export const FREE_SHIPPING_FROM_CENTS: Cents = 90_000_00;
-
 const groupThousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
 /** 3800000 → "$38.000" (es-AR, sin depender del ICU del entorno: igual en server y browser). */

@@ -1,11 +1,21 @@
-import { type HelpPage, type HelpPageInput, HelpPageInputSchema, type HelpSection } from "@mini-galu/contracts";
+import {
+  type HelpPage,
+  type HelpPageInput,
+  HelpPageInputSchema,
+  type HelpSection,
+  type HelpTopic,
+  withdrawalError,
+} from "@mini-galu/contracts";
 
 export const toDraft = (p: HelpPage): HelpPageInput => ({ title: p.title, intro: p.intro, sections: p.sections });
 
 /** Primer problema del borrador, con el número de apartado si es de uno; null si se puede guardar. */
-export function helpError(draft: HelpPageInput): string | null {
+export function helpError(topic: HelpTopic, draft: HelpPageInput): string | null {
   const r = HelpPageInputSchema.safeParse(draft);
-  if (r.success) return null;
+  if (r.success) {
+    if (draft.sections.every((s) => s.hidden)) return "Dejá al menos un apartado visible";
+    return withdrawalError(topic, draft);
+  }
   const issue = r.error.issues[0];
   if (!issue) return "Revisá la página";
   const [field, index] = issue.path;

@@ -18,7 +18,14 @@ function app(owner: CartVars["Variables"]["cartOwner"]) {
     new ScriptedLlm([{ text: "¡Hola!" }, { text: "¡Hola!" }]),
     assistantTools({ catalog, orders: new MemoryOrders(), shipping: new FixedShipping() }),
     catalog,
-    { workshop: "Villa Crespo", freeShippingFrom: "$90.000", giftcardRange: "$5.000 a $500.000", whatsapp: "wa" },
+    async () => ({
+      workshop: "Villa Crespo",
+      freeShippingFrom: "$90.000",
+      exchangeDays: 30,
+      pickup: "Lun a vie · 10 a 13 h",
+      giftcardRange: "$5.000 a $500.000",
+      whatsapp: "wa",
+    }),
     memory,
   );
   // en app.ts va cartOwner (sesión o cookie mg_cart); acá se fija el resultado

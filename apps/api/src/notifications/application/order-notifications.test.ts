@@ -23,11 +23,12 @@ const order: MailOrder = {
 describe("OrderNotifications", () => {
   it("manda 'Recibimos tu pago' al email del pedido con el link de seguimiento", async () => {
     const mailer = new MemoryMailer();
-    const n = new OrderNotifications({ find: async (id) => (id === "o1" ? order : null) }, mailer, (num) => ({
+    const n = new OrderNotifications({ find: async (id) => (id === "o1" ? order : null) }, mailer, async (num) => ({
       tracking: `http://web/seguimiento?pedido=${num}`,
       whatsapp: "w",
       site: "s",
       workshop: "Villa Crespo",
+      exchangeDays: 30,
     }));
     expect(await n.paymentApproved("o1")).toBe("lucia@gmail.com");
     expect(await n.paymentApproved("no-existe")).toBeNull();

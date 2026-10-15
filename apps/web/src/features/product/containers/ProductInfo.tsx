@@ -3,12 +3,14 @@
 import {
   type ContactChannel,
   discountPercent,
-  FREE_SHIPPING_FROM_CENTS,
   formatARS,
   installmentsLabel,
   type ProductDetail,
+  qualifiesForFreeShipping,
   type Size,
+  type StorePolicies,
   sizeAge,
+  zoneQuote,
 } from "@mini-galu/contracts";
 import {
   Bell,
@@ -32,6 +34,7 @@ import { cartTotal, useCart } from "@/features/cart/cart-store";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
+import { useShellData } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { WISH_PICK_MODAL, WishPickModal } from "@/features/wishlist/WishPickModal";
 import { ApiRequestError, api } from "@/lib/api";
@@ -46,22 +49,34 @@ import { formatMeasures, recommendSize } from "../size-advisor";
 
 type Quote = { label: string; detail: string; cents: number | null }[];
 
-/** Estimación local (mockup). Fase 5: api/shipping → cotización Andreani real por CP. */
-function estimateShipping(cp: number, freeShipping: boolean): Quote {
-  const base = cp < 1900 ? 5_900_00 : cp < 5000 ? 7_400_00 : 8_900_00;
+/**
+ * Estimación con la tabla por zona del panel (las mismas tarifas que usa el checkout sin Andreani; con Andreani
+ * conectado, el checkout cotiza con Andreani). Solo las formas de entrega prendidas.
+ */
+function estimateShipping(policies: StorePolicies, cp: string, subtotalCents: number): Quote {
+  const q = zoneQuote(policies, cp);
+  const free = qualifiesForFreeShipping(policies, subtotalCents);
+  const { methods } = policies;
   return [
-    {
+    methods.domicilio && {
       label: "Andreani a domicilio",
-      detail: cp < 1900 ? "Llega en 2 a 3 días hábiles" : "Llega en 4 a 6 días hábiles",
-      cents: freeShipping ? 0 : base,
+      detail: q.domicilio.detail,
+      cents: free ? 0 : q.domicilio.cents,
     },
-    {
+    methods.sucursal && {
       label: "Andreani a sucursal",
       detail: "Retirás en la sucursal más cercana",
-      cents: freeShipping ? 0 : Math.round(base * 0.72),
+      cents: free ? 0 : q.sucursal.cents,
     },
-    { label: "Retiro en el taller", detail: `${SITE.workshop} · coordinamos por WhatsApp`, cents: 0 },
-  ];
+    methods.taller && { label: "Retiro en el taller", detail: `${SITE.workshop} · elegís día y horario`, cents: 0 },
+  ].filter((o) => o !== false);
+}
+
+/** "Envíos a todo el país con Andreani (domicilio o sucursal) o retiro gratis por el taller." según lo prendido. */
+function shippingText({ methods }: StorePolicies): string {
+  const how = [methods.domicilio && "domicilio", methods.sucursal && "sucursal"].filter(Boolean).join(" o ");
+  if (!how) return `Retiro gratis por el taller de ${SITE.workshop}.`;
+  return `Envíos a todo el país con Andreani (${how})${methods.taller ? " o retiro gratis por el taller" : ""}.`;
 }
 
 /** Columna de compra de la ficha (mockup producto.html → .info). */
@@ -71,6 +86,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const toggleFav = useToggleFavorite();
   const isFav = useIsFavorite(p.slug);
   const lines = useCart((s) => s.lines);
+  const { policies } = useShellData();
+  const shipped = policies.methods.domicilio || policies.methods.sucursal;
   const plan = useInstallmentPlan(p.priceCents);
   const cuotas = plan ? installmentsLabel(plan, p.priceCents, formatARS) : null;
   const { openModal, closeModal, openGalu } = useUi();
@@ -272,7 +289,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
       <div className="trust">
         <div>
           <Truck />
-          <span>Envíos Andreani a todo el país</span>
+          <span>{shipped ? "Envíos Andreani a todo el país" : `Retiro gratis en el taller de ${SITE.workshop}`}</span>
         </div>
         <div>
           <CreditCard />
@@ -280,50 +297,52 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
         </div>
         <div>
           <RefreshCcw />
-          <span>30 días para cambiar talle</span>
+          <span>{policies.exchangeDays} días para cambiar talle</span>
         </div>
       </div>
 
-      <div className="ship">
-        <div className="row">
-          <b style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-            <MapPin className="i-sm" /> Calculá tu envío
-          </b>
-          <span className="muted" style={{ fontSize: 12 }}>
-            Andreani
-          </span>
+      {shipped && (
+        <div className="ship">
+          <div className="row">
+            <b style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+              <MapPin className="i-sm" /> Calculá tu envío
+            </b>
+            <span className="muted" style={{ fontSize: 12 }}>
+              Andreani
+            </span>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const cp = String(new FormData(e.currentTarget).get("cp") ?? "").trim() || "1414";
+              setQuote(estimateShipping(policies, cp, cartTotal(lines) + p.priceCents));
+            }}
+          >
+            <input
+              className="input"
+              name="cp"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="Código postal (ej. 1414)"
+              aria-label="Código postal"
+            />
+            <button type="submit" className="btn btn-sm">
+              Calcular
+            </button>
+          </form>
+          <div className="ship-res">
+            {quote?.map((o) => (
+              <div key={o.label}>
+                <span>
+                  <b>{o.label}</b>
+                  <small>{o.detail}</small>
+                </span>
+                <b>{o.cents ? formatARS(o.cents) : "Gratis"}</b>
+              </div>
+            ))}
+          </div>
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const cp = Number(new FormData(e.currentTarget).get("cp")) || 1414;
-            setQuote(estimateShipping(cp, cartTotal(lines) + p.priceCents >= FREE_SHIPPING_FROM_CENTS));
-          }}
-        >
-          <input
-            className="input"
-            name="cp"
-            inputMode="numeric"
-            maxLength={4}
-            placeholder="Código postal (ej. 1414)"
-            aria-label="Código postal"
-          />
-          <button type="submit" className="btn btn-sm">
-            Calcular
-          </button>
-        </form>
-        <div className="ship-res">
-          {quote?.map((o) => (
-            <div key={o.label}>
-              <span>
-                <b>{o.label}</b>
-                <small>{o.detail}</small>
-              </span>
-              <b>{o.cents ? formatARS(o.cents) : "Gratis"}</b>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
       <div className="ask">
         <div className="bg-bow">
@@ -398,9 +417,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
             Envíos, cambios y pagos <ChevronDown />
           </summary>
           <div>
-            Envíos a todo el país con Andreani (domicilio o sucursal) o retiro gratis por el taller. Cambios de talle
-            dentro de los 30 días. Pagás con Mercado Pago sin salir de la web: tarjeta de crédito (hasta 6 cuotas sin
-            interés), débito o dinero en cuenta.
+            {shippingText(policies)} Cambios de talle dentro de los {policies.exchangeDays} días. Pagás con Mercado Pago
+            sin salir de la web: tarjeta de crédito (hasta 6 cuotas sin interés), débito o dinero en cuenta.
           </div>
         </details>
       </div>

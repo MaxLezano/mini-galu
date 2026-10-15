@@ -174,10 +174,6 @@ export function ShippingEditor({ initial }: { initial: AdminShipping }) {
           {input("sender", "email", "Email", { inputMode: "email" })}
         </div>
 
-        {/* TODO(fase 10 · shipping): envío gratis desde un monto, formas de entrega y horarios de retiro editables */}
-        <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
-          Envío gratis desde $90.000, formas de entrega y horarios de retiro: por ahora son fijos.
-        </p>
         <button type="button" className="btn" disabled={busy} onClick={save} style={{ justifySelf: "start" }}>
           {busy ? "Guardando…" : "Guardar datos de envío"}
         </button>

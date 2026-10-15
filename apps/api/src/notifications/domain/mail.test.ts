@@ -6,6 +6,7 @@ const links = {
   whatsapp: "https://wa.me/549",
   site: "http://web",
   workshop: "Villa Crespo",
+  exchangeDays: 15,
 };
 
 const order = (over: Partial<MailOrder> = {}): MailOrder => ({
@@ -38,6 +39,7 @@ describe("paymentApprovedMail", () => {
     expect(m.text).toContain("Tarjeta de crédito en 3 cuotas");
     expect(m.text).toContain("Gurruchaga 1234");
     expect(m.html).toContain(links.tracking);
+    expect(m.html).toContain("15 días para cambiar el talle");
   });
 
   it("retiro en el taller con su horario y envío gratis", () => {

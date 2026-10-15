@@ -1,11 +1,17 @@
-import type { HelpPageInput, HelpTopic } from "@mini-galu/contracts";
+import {
+  formatARS,
+  freeShippingFrom,
+  type HelpPageInput,
+  type HelpTopic,
+  pickupHoursLabel,
+  type StorePolicies,
+} from "@mini-galu/contracts";
 
-/** Datos de la tienda que aparecen en los textos de base. */
+/** Datos de la tienda que aparecen en los textos de base (las políticas son las del panel). */
 export type HelpFacts = {
   workshop: string;
-  /** "$ 90.000" */
-  freeShippingFrom: string;
   email: string;
+  policies: StorePolicies;
 };
 
 /**
@@ -20,12 +26,12 @@ export function defaultHelpPage(topic: HelpTopic, f: HelpFacts): HelpPageInput {
 const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
   cambios: (f) => ({
     title: "Cambios y devoluciones",
-    intro: "Si el talle no fue el justo, lo cambiamos. Tenés 30 días desde que recibís el pedido.",
+    intro: `Si el talle no fue el justo, lo cambiamos. Tenés ${days(f)} desde que recibís el pedido.`,
     sections: [
       {
         title: "Cambios de talle",
         body: [
-          "Tenés 30 días desde que recibís tu pedido para cambiar el talle de cualquier prenda.",
+          `Tenés ${days(f)} desde que recibís tu pedido para cambiar el talle de cualquier prenda.`,
           "- La prenda tiene que estar sin uso, sin lavar y con su etiqueta.",
           "- El cambio está sujeto al stock del talle que necesitás. Si no queda, te ofrecemos otro modelo o una gift card por el mismo valor.",
         ].join("\n"),
@@ -34,7 +40,9 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
         title: "Cómo pedir un cambio",
         body: [
           `Escribinos por WhatsApp o a ${f.email} con tu número de pedido y el talle que querés.`,
-          `Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller de ${f.workshop}.`,
+          f.policies.methods.taller
+            ? `Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller de ${f.workshop}.`
+            : "Coordinamos cómo nos hacés llegar la prenda por Andreani.",
         ].join("\n\n"),
       },
       {
@@ -50,40 +58,61 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       },
     ],
   }),
-  "envios-y-pagos": (f) => ({
-    title: "Envíos y pagos",
-    intro: `Enviamos a todo el país con Andreani o lo retirás gratis por el taller. Envío gratis desde ${f.freeShippingFrom}.`,
-    sections: [
-      {
-        title: "Envíos",
-        body: [
-          "- A domicilio o a una sucursal Andreani, a todo el país.",
-          `- Retiro gratis en el taller de ${f.workshop}, eligiendo día y horario.`,
-          `- Envío gratis en compras desde ${f.freeShippingFrom}.`,
-          "",
-          "El costo de envío se calcula con tu código postal: lo ves en cada prenda y en el checkout antes de pagar.",
-        ].join("\n"),
-      },
-      {
-        title: "Seguimiento",
-        body: "Cuando despachamos tu pedido te avisamos con el número de seguimiento. Lo podés seguir desde “¿Dónde está mi pedido?” con tu número de pedido.",
-      },
-      {
-        title: "Medios de pago",
-        body: [
-          "Pagás con Mercado Pago sin salir de la web:",
-          "- Tarjeta de crédito, en cuotas (las que hay hoy se ven en cada prenda).",
-          "- Tarjeta de débito.",
-          "- Dinero en cuenta de Mercado Pago.",
-          "- Gift card de Mini Galú: cargás el código en el checkout y se descuenta del total.",
-        ].join("\n"),
-      },
-      {
-        title: "Stock y reserva",
-        body: "Vendemos solo lo que tenemos en el taller. Cuando confirmás el pedido, reservamos tus prendas por 30 minutos mientras pagás; si el pago no se completa, vuelven a la tienda.",
-      },
-    ],
-  }),
+  "envios-y-pagos": (f) => {
+    const { methods } = f.policies;
+    const free = freeShippingFrom(f.policies);
+    const shipped = methods.domicilio || methods.sucursal;
+    const how = [
+      shipped && "Enviamos a todo el país con Andreani",
+      methods.taller &&
+        (shipped ? "o lo retirás gratis por el taller" : `Lo retirás gratis por el taller de ${f.workshop}`),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return {
+      title: "Envíos y pagos",
+      intro: `${how}.${shipped && free !== null ? ` Envío gratis desde ${formatARS(free)}.` : ""}`,
+      sections: [
+        {
+          title: "Envíos",
+          body: [
+            methods.domicilio && methods.sucursal && "- A domicilio o a una sucursal Andreani, a todo el país.",
+            methods.domicilio && !methods.sucursal && "- A domicilio con Andreani, a todo el país.",
+            !methods.domicilio && methods.sucursal && "- A una sucursal Andreani, a todo el país.",
+            methods.taller &&
+              `- Retiro gratis en el taller de ${f.workshop}, eligiendo día y horario (${pickupHoursLabel(f.policies)}).`,
+            shipped && free !== null && `- Envío gratis en compras desde ${formatARS(free)}.`,
+            ...(shipped
+              ? [
+                  "",
+                  "El costo de envío se calcula con tu código postal: lo ves en cada prenda y en el checkout antes de pagar.",
+                ]
+              : []),
+          ]
+            .filter((l) => l !== false)
+            .join("\n"),
+        },
+        {
+          title: "Seguimiento",
+          body: "Cuando despachamos tu pedido te avisamos con el número de seguimiento. Lo podés seguir desde “¿Dónde está mi pedido?” con tu número de pedido.",
+        },
+        {
+          title: "Medios de pago",
+          body: [
+            "Pagás con Mercado Pago sin salir de la web:",
+            "- Tarjeta de crédito, en cuotas (las que hay hoy se ven en cada prenda).",
+            "- Tarjeta de débito.",
+            "- Dinero en cuenta de Mercado Pago.",
+            "- Gift card de Mini Galú: cargás el código en el checkout y se descuenta del total.",
+          ].join("\n"),
+        },
+        {
+          title: "Stock y reserva",
+          body: "Vendemos solo lo que tenemos en el taller. Cuando confirmás el pedido, reservamos tus prendas por 30 minutos mientras pagás; si el pago no se completa, vuelven a la tienda.",
+        },
+      ],
+    };
+  },
   terminos: (f) => ({
     title: "Términos y condiciones",
     intro: "Las condiciones para comprar en la tienda online de Mini Galú.",
@@ -160,3 +189,8 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
     ],
   }),
 };
+
+/** "30 días" (o "1 día"). */
+function days(f: HelpFacts): string {
+  return f.policies.exchangeDays === 1 ? "1 día" : `${f.policies.exchangeDays} días`;
+}

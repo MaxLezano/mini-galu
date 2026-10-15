@@ -1,4 +1,13 @@
-import { discountPercent, formatARS, GARMENT_SIZES, type ProductSummary, type Size } from "@mini-galu/contracts";
+import {
+  DEFAULT_POLICIES,
+  discountPercent,
+  formatARS,
+  freeShippingFrom,
+  GARMENT_SIZES,
+  type ProductSummary,
+  type Size,
+  type StorePolicies,
+} from "@mini-galu/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { sizesIn, stockOf, stripAccents, totalStock } from "@/lib/product";
@@ -60,7 +69,12 @@ export function greeting(ctx: ProductSummary | null): ReactNode {
 const ageToSize = (age: number): Size =>
   age <= 1 ? "12m" : (String(Math.max(2, Math.min(10, age + (age % 2)))) as Size);
 
-export function answer(raw: string, products: ProductSummary[], ctx: ProductSummary | null): GaluReply[] {
+export function answer(
+  raw: string,
+  products: ProductSummary[],
+  ctx: ProductSummary | null,
+  policies: StorePolicies = DEFAULT_POLICIES,
+): GaluReply[] {
   const q = stripAccents(raw);
   const live = products.filter((p) => p.status === "published");
   const named = live.find(
@@ -85,11 +99,18 @@ export function answer(raw: string, products: ProductSummary[], ctx: ProductSumm
     ];
   }
   if (/envio|enviar|mandan|codigo postal/.test(q)) {
+    const free = freeShippingFrom(policies);
     return [
       text(
         <>
-          Enviamos a todo el país con <b>Andreani</b> (a domicilio o a sucursal) o podés retirar gratis por el taller.
-          Desde <b>$90.000</b> el envío es gratis. En cada prenda podés calcular el envío con tu código postal.
+          Enviamos a todo el país con <b>Andreani</b> (a domicilio o a sucursal)
+          {policies.methods.taller ? " o podés retirar gratis por el taller" : ""}.{" "}
+          {free !== null && (
+            <>
+              Desde <b>{formatARS(free)}</b> el envío es gratis.{" "}
+            </>
+          )}
+          En cada prenda podés calcular el envío con tu código postal.
         </>,
       ),
     ];

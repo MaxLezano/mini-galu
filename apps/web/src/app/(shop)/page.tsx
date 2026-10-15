@@ -7,7 +7,7 @@ import { JsonLd } from "@/ui/atoms/JsonLd";
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function Page() {
-  const [home, products] = await Promise.all([api.home(), api.products({ instock: "0" })]);
+  const [home, products, policies] = await Promise.all([api.home(), api.products({ instock: "0" }), api.policies()]);
   // el lookbook muestra también el borrador del lanzamiento
   const draft = await Promise.all(
     home.lookbook
@@ -17,7 +17,11 @@ export default async function Page() {
   return (
     <>
       <JsonLd data={storeJsonLd()} />
-      <HomePage home={home} products={[...products, ...draft.filter((p) => p !== null)]} />
+      <HomePage
+        home={home}
+        products={[...products, ...draft.filter((p) => p !== null)]}
+        exchangeDays={policies.exchangeDays}
+      />
     </>
   );
 }

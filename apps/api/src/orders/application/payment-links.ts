@@ -67,8 +67,7 @@ export class PaymentLinks {
     }
     const s = input.channel === "taller" ? null : input.shipping;
     if (input.channel !== "taller" && !s) throw new ValidationError("Elegí la entrega");
-    if (s?.method === "taller" && !this.shipping.validSlot(s.pickupSlot))
-      throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
+    if (s) await this.shipping.checkDelivery(s);
     const branch = s ? await sucursalOf(this.shipping, s) : null;
     const subtotalCents = items.reduce((a, { v, qty }) => a + v.priceCents * qty, 0);
     const shippingCents = s

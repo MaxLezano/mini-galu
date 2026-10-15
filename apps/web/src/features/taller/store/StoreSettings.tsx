@@ -7,6 +7,7 @@ import type {
   AdminPayments,
   AdminShipping,
   HelpPage,
+  StorePolicies,
 } from "@mini-galu/contracts";
 import Link from "next/link";
 import { launchWhen } from "@/lib/date";
@@ -16,6 +17,7 @@ import { HelpEditor } from "./HelpEditor";
 import { HeroEditor } from "./HeroEditor";
 import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
+import { PoliciesEditor } from "./PoliciesEditor";
 import { ShippingEditor } from "./ShippingEditor";
 import "./store.css";
 
@@ -29,10 +31,22 @@ type Props = {
   newsletter: AdminNewsletter;
   giftcards: AdminGiftcards;
   help: HelpPage[];
+  policies: StorePolicies;
   email: string;
 };
 
-export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, giftcards, help, email }: Props) {
+export function StoreSettings({
+  home,
+  next,
+  payments,
+  shipping,
+  coupons,
+  newsletter,
+  giftcards,
+  help,
+  policies,
+  email,
+}: Props) {
   return (
     <main className="adm-content">
       <div className="adm-head">
@@ -48,6 +62,11 @@ export function StoreSettings({ home, next, payments, shipping, coupons, newslet
         <PaymentsEditor initial={payments} />
 
         <ShippingEditor initial={shipping} />
+        <PoliciesEditor
+          initial={policies}
+          andreani={shipping.andreani.mode !== "simulado"}
+          helpEdited={help.some((h) => (h.topic === "cambios" || h.topic === "envios-y-pagos") && h.updatedAt !== null)}
+        />
         <NewsletterEditor initial={newsletter} email={email} />
         <section className="box" id="lanzamiento">
           <div className="box-head">

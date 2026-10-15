@@ -28,6 +28,7 @@ import type {
   QuoteRequest,
   ShippingOptions,
   Size,
+  StorePolicies,
   WalletPreference,
 } from "@mini-galu/contracts";
 
@@ -81,6 +82,7 @@ export const api = {
   product: (slug: string) => request<ProductDetail>(`/catalog/products/${encodeURIComponent(slug)}`),
   facets: () => request<Facets>("/catalog/facets"),
   home: () => request<HomeContent>("/content/home"),
+  policies: () => request<StorePolicies>("/policies"),
   help: (topic: HelpTopic) => request<HelpPage>(`/content/help/${topic}`),
   helpLinks: () => request<HelpLink[]>("/content/help"),
   joinWaitlist: (body: { slug: string; size: Size | null; channel: ContactChannel; contact: string }) =>

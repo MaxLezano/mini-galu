@@ -1,9 +1,10 @@
 "use client";
 
-import { FREE_SHIPPING_FROM_CENTS, formatARS, imageThumb } from "@mini-galu/contracts";
+import { formatARS, freeShippingFrom, imageThumb } from "@mini-galu/contracts";
 import { ArrowRight, Minus, Plus, Truck, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useShellData } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Embroidery } from "@/ui/atoms/Embroidery";
@@ -13,7 +14,9 @@ export function CartDrawer() {
   const { drawerOpen, setDrawer } = useUi();
   const { lines, setQty, remove } = useCart();
   const total = cartTotal(lines);
-  const left = FREE_SHIPPING_FROM_CENTS - total;
+  const { policies } = useShellData();
+  const freeFrom = policies.methods.domicilio || policies.methods.sucursal ? freeShippingFrom(policies) : null;
+  const left = freeFrom === null ? 0 : freeFrom - total;
   const close = () => setDrawer(false);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export function CartDrawer() {
             <X />
           </button>
         </div>
-        {lines.length > 0 && (
+        {lines.length > 0 && freeFrom !== null && (
           <div style={{ padding: "16px 24px 0" }} className="ship-progress">
             <span>
               {left > 0 ? (
@@ -60,7 +63,7 @@ export function CartDrawer() {
               )}
             </span>
             <div className="bar">
-              <i style={{ width: `${Math.min(100, (total / FREE_SHIPPING_FROM_CENTS) * 100)}%` }} />
+              <i style={{ width: `${Math.min(100, (total / freeFrom) * 100)}%` }} />
             </div>
           </div>
         )}

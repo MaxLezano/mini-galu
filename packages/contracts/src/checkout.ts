@@ -174,7 +174,8 @@ export type Quote = {
   /** Lo que paga la gift card y el saldo que le queda después. */
   giftcard: { code: string; appliedCents: Cents; balanceAfterCents: Cents } | null;
   giftcardError: string | null;
-  freeShippingFromCents: Cents;
+  /** null: no hay envío gratis. */
+  freeShippingFromCents: Cents | null;
 };
 
 export const PlaceOrderInputSchema = z.object({

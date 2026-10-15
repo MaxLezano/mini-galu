@@ -30,6 +30,7 @@ import type {
   SaveProductResult,
   ShipmentCreated,
   ShippingSettings,
+  StorePolicies,
   UploadResult,
 } from "@mini-galu/contracts";
 import { API_URL, ApiRequestError } from "./api";
@@ -141,6 +142,8 @@ export const adminApi = {
     adminRequest<{ recipients: number }>("/admin/newsletter/send", { method: "POST", body: JSON.stringify(input) }),
   saveShipping: (input: ShippingSettings) =>
     adminRequest<AdminShipping>("/admin/shipping", { method: "PUT", body: JSON.stringify(input) }),
+  savePolicies: (p: StorePolicies) =>
+    adminRequest<StorePolicies>("/admin/policies", { method: "PUT", body: JSON.stringify(p) }),
   savePayments: (s: PaymentSettings) =>
     adminRequest<AdminPayments>("/admin/payments", { method: "PUT", body: JSON.stringify(s) }),
   createCoupon: (input: CouponInput) =>

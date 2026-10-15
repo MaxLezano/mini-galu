@@ -12,10 +12,10 @@ const draft = {
 
 describe("help-form", () => {
   it("valida y dice en qué apartado está el problema", () => {
-    expect(helpError(draft)).toBeNull();
-    expect(helpError({ ...draft, title: "" })).toBe("Poné un título");
+    expect(helpError("terminos", draft)).toBeNull();
+    expect(helpError("terminos", { ...draft, title: "" })).toBe("Poné un título");
     expect(
-      helpError({
+      helpError("terminos", {
         ...draft,
         sections: [
           { title: "Plazo", body: "30 días." },
@@ -23,7 +23,7 @@ describe("help-form", () => {
         ],
       }),
     ).toBe("Apartado 2: Cada apartado necesita texto");
-    expect(helpError({ ...draft, sections: [] })).toBe("Sumá al menos un apartado");
+    expect(helpError("terminos", { ...draft, sections: [] })).toBe("Sumá al menos un apartado");
   });
 
   it("mueve apartados sin salirse de los bordes", () => {
@@ -35,5 +35,25 @@ describe("help-form", () => {
   it("detecta si hay cambios sin guardar", () => {
     expect(sameHelp(draft, { ...draft })).toBe(true);
     expect(sameHelp(draft, { ...draft, intro: "Nueva" })).toBe(false);
+  });
+
+  it("no deja guardar Cambios sin el apartado de arrepentimiento visible", () => {
+    const cambios = {
+      title: "Cambios",
+      intro: "",
+      sections: [
+        { title: "Plazo", body: "30 días." },
+        { title: "Arrepentimiento de compra", body: "10 días corridos." },
+      ],
+    };
+    expect(helpError("cambios", cambios)).toBeNull();
+    const hidden = { ...cambios, sections: cambios.sections.map((s) => ({ ...s, hidden: /Arrep/.test(s.title) })) };
+    expect(helpError("cambios", hidden)).toMatch(/obligatorio por ley/);
+    expect(
+      helpError("cambios", { ...cambios, sections: [cambios.sections[0] as (typeof cambios.sections)[0]] }),
+    ).toMatch(/obligatorio por ley/);
+    expect(helpError("terminos", { ...cambios, sections: [{ title: "Uno", body: "Texto.", hidden: true }] })).toBe(
+      "Dejá al menos un apartado visible",
+    );
   });
 });

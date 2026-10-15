@@ -14,4 +14,5 @@ export * from "./media";
 export * from "./money";
 export * from "./newsletter";
 export * from "./orders";
+export * from "./policies";
 export * from "./tracking";

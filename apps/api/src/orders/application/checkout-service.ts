@@ -1,13 +1,12 @@
 import { randomBytes } from "node:crypto";
-import {
-  FREE_SHIPPING_FROM_CENTS,
-  type GiftcardSummary,
-  type OrderReceipt,
-  type PlacedOrder,
-  type PlaceOrderInputSchema,
-  type Quote,
-  type QuoteRequest,
-  type ShippingOptions,
+import type {
+  GiftcardSummary,
+  OrderReceipt,
+  PlacedOrder,
+  PlaceOrderInputSchema,
+  Quote,
+  QuoteRequest,
+  ShippingOptions,
 } from "@mini-galu/contracts";
 import type { z } from "zod";
 import type { CartService } from "../../cart/application/cart-service";
@@ -107,7 +106,7 @@ export class CheckoutService {
       couponError,
       giftcard,
       giftcardError,
-      freeShippingFromCents: FREE_SHIPPING_FROM_CENTS,
+      freeShippingFromCents: await this.shipping.freeShippingFrom(),
     };
   }
 
@@ -116,8 +115,7 @@ export class CheckoutService {
     if (!snap.lines.length) throw new ValidationError("Tu bolsa está vacía");
     const subtotalCents = snap.lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
     const s = input.shipping;
-    if (s.method === "taller" && !this.shipping.validSlot(s.pickupSlot))
-      throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
+    await this.shipping.checkDelivery(s);
     const postalCode = s.method === "taller" ? undefined : s.postalCode;
     const branch = await sucursalOf(this.shipping, s);
     const shippingCents = (await this.shipping.cost(s.method, postalCode, subtotalCents)) ?? 0;

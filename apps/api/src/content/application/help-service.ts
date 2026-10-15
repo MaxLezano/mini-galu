@@ -1,4 +1,12 @@
-import { HELP_TOPICS, type HelpLink, type HelpPage, type HelpPageInput, type HelpTopic } from "@mini-galu/contracts";
+import {
+  HELP_TOPICS,
+  type HelpLink,
+  type HelpPage,
+  type HelpPageInput,
+  type HelpTopic,
+  withdrawalError,
+} from "@mini-galu/contracts";
+import { ValidationError } from "../../shared/domain/errors";
 import { defaultHelpPage, type HelpFacts } from "../domain/help";
 import type { HelpRepository, StoredHelpPage } from "./help-ports";
 
@@ -6,11 +14,19 @@ import type { HelpRepository, StoredHelpPage } from "./help-ports";
 export class HelpService {
   constructor(
     private readonly repo: HelpRepository,
-    private readonly facts: HelpFacts,
+    /** Se piden en cada lectura: las políticas cambian desde el panel. */
+    private readonly facts: () => Promise<HelpFacts>,
   ) {}
 
   async page(topic: HelpTopic): Promise<HelpPage> {
-    return this.toPage(topic, (await this.repo.findAll()).get(topic));
+    const [stored, facts] = await Promise.all([this.repo.findAll(), this.facts()]);
+    return this.toPage(topic, stored.get(topic), facts);
+  }
+
+  /** Lo que ve la tienda: sin los apartados apagados. */
+  async publicPage(topic: HelpTopic): Promise<HelpPage> {
+    const page = await this.page(topic);
+    return { ...page, sections: page.sections.filter((s) => !s.hidden) };
   }
 
   async links(): Promise<HelpLink[]> {
@@ -18,11 +34,14 @@ export class HelpService {
   }
 
   async all(): Promise<HelpPage[]> {
-    const stored = await this.repo.findAll();
-    return HELP_TOPICS.map((t) => this.toPage(t, stored.get(t)));
+    const [stored, facts] = await Promise.all([this.repo.findAll(), this.facts()]);
+    return HELP_TOPICS.map((t) => this.toPage(t, stored.get(t), facts));
   }
 
   async save(topic: HelpTopic, input: HelpPageInput): Promise<HelpPage> {
+    const legal = withdrawalError(topic, input);
+    if (legal) throw new ValidationError(legal);
+    if (input.sections.every((s) => s.hidden)) throw new ValidationError("Dejá al menos un apartado visible");
     await this.repo.save(topic, input);
     return this.page(topic);
   }
@@ -33,9 +52,9 @@ export class HelpService {
     return this.page(topic);
   }
 
-  private toPage(topic: HelpTopic, stored: StoredHelpPage | undefined): HelpPage {
+  private toPage(topic: HelpTopic, stored: StoredHelpPage | undefined, facts: HelpFacts): HelpPage {
     return stored
       ? { topic, ...stored.page, updatedAt: stored.updatedAt.toISOString() }
-      : { topic, ...defaultHelpPage(topic, this.facts), updatedAt: null };
+      : { topic, ...defaultHelpPage(topic, facts), updatedAt: null };
   }
 }

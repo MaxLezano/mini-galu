@@ -28,6 +28,8 @@ type Props = {
   onApplyGiftcard: (code: string) => void;
   onRemoveGiftcard: () => void;
   onEditBag: () => void;
+  /** Días para cambiar el talle (políticas del panel). */
+  exchangeDays: number;
 };
 
 /** Resumen lateral (checkout.html → .summary). En celular es un desplegable arriba. */
@@ -49,6 +51,7 @@ export function OrderSummary({
   onApplyGiftcard,
   onRemoveGiftcard,
   onEditBag,
+  exchangeDays,
 }: Props) {
   const [open, setOpen] = useState(false);
   const subtotal = quote?.subtotalCents ?? lines.reduce((a, l) => a + l.priceCents * l.qty, 0);
@@ -221,7 +224,7 @@ export function OrderSummary({
           <li>
             <RefreshCcw />
             <span>
-              <b>30 días para cambiar el talle</b>Sin uso y con la etiqueta.
+              <b>{exchangeDays} días para cambiar el talle</b>Sin uso y con la etiqueta.
             </span>
           </li>
           <li>

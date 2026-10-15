@@ -19,6 +19,7 @@ import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
+import { useShellData } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { useGifts } from "@/features/wishlist/gift-store";
 import { accountApi } from "@/lib/account-api";
@@ -49,6 +50,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const lines = useCart((s) => s.lines);
   const refreshCart = useCart((s) => s.refresh);
   const setDrawer = useUi((s) => s.setDrawer);
+  const { policies } = useShellData();
 
   const [step, setStep] = useState(1);
   const [contact, setContact] = useState<ContactForm>(EMPTY_CONTACT);
@@ -704,6 +706,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       </div>
 
       <OrderSummary
+        exchangeDays={policies.exchangeDays}
         lines={quote?.lines ?? lines}
         quote={quote}
         installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}

@@ -7,10 +7,10 @@ import "./giftcards.css";
 
 const d = (s: string) => ({ "--d": s }) as CSSProperties;
 
-const FAQ = [
+const faq = (exchangeDays: number) => [
   [
     "¿Y si no le queda el talle?",
-    "La gift card no elige talle: lo elige quien la recibe. Y si compra y no le queda, tiene 30 días para cambiarlo.",
+    `La gift card no elige talle: lo elige quien la recibe. Y si compra y no le queda, tiene ${exchangeDays} días para cambiarlo.`,
   ],
   [
     "¿Cómo se usa?",
@@ -18,10 +18,10 @@ const FAQ = [
   ],
   ["¿Cuánto dura?", "Seis meses desde que se paga. Se puede usar en varias compras hasta agotar el saldo."],
   ["¿Puedo programar el envío?", "Sí: elegí una fecha y le llega esa mañana a las 9."],
-] as const;
+];
 
 /** giftcards.html: hero, armado con vista previa, cómo funciona, saldo y preguntas. */
-export function GiftcardsPage() {
+export function GiftcardsPage({ exchangeDays }: { exchangeDays: number }) {
   return (
     <main>
       <section className="wrap gh">
@@ -108,7 +108,7 @@ export function GiftcardsPage() {
       <section className="wrap bal-faq" style={{ paddingBottom: "clamp(64px,8vw,120px)" }}>
         <BalanceCheck />
         <div className="faq">
-          {FAQ.map(([q, a], i) => (
+          {faq(exchangeDays).map(([q, a], i) => (
             <details key={q} open={i === 0}>
               <summary>
                 {q} <Plus />

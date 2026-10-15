@@ -1,7 +1,7 @@
 "use client";
 
-import type { HelpPage, HelpPageInput, HelpTopic } from "@mini-galu/contracts";
-import { ArrowDown, ArrowUp, Check, ExternalLink, Plus, Trash2, Undo2 } from "lucide-react";
+import { type HelpPage, type HelpPageInput, type HelpTopic, isWithdrawalSection } from "@mini-galu/contracts";
+import { ArrowDown, ArrowUp, Check, ExternalLink, Lock, Plus, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -94,8 +94,27 @@ export function HelpEditor({ initial }: { initial: HelpPage[] }) {
             // biome-ignore lint/suspicious/noArrayIndexKey: los apartados no tienen id; el índice es su lugar
             <li key={i} className="help-ed-sec">
               <div className="help-ed-sec-head">
-                <span className="muted">Apartado {i + 1}</span>
+                <span className="muted">
+                  Apartado {i + 1}
+                  {s.hidden && " · apagado"}
+                </span>
                 <div>
+                  {isWithdrawalSection(topic, s) ? (
+                    <span className="help-ed-lock" title="Obligatorio por la Ley 24.240 y la Res. SCI 424/2020">
+                      <Lock className="i-sm" /> Obligatorio
+                    </span>
+                  ) : (
+                    <label className="switch help-ed-vis">
+                      Visible
+                      <input
+                        className="tog"
+                        type="checkbox"
+                        aria-label={`Mostrar el apartado ${i + 1} en la tienda`}
+                        checked={!s.hidden}
+                        onChange={(e) => setSection(i, { hidden: !e.target.checked || undefined })}
+                      />
+                    </label>
+                  )}
                   <button
                     type="button"
                     className="btn btn-xs btn-ghost"
@@ -118,6 +137,7 @@ export function HelpEditor({ initial }: { initial: HelpPage[] }) {
                     type="button"
                     className="btn btn-xs btn-ghost"
                     aria-label="Quitar apartado"
+                    disabled={isWithdrawalSection(topic, s)}
                     onClick={() => setDraft({ ...draft, sections: draft.sections.filter((_, j) => j !== i) })}
                   >
                     <Trash2 className="i-sm" />
@@ -162,7 +182,7 @@ export function HelpEditor({ initial }: { initial: HelpPage[] }) {
             className="btn btn-sm"
             disabled={busy || !dirty}
             onClick={() => {
-              const err = helpError(draft);
+              const err = helpError(topic, draft);
               setError(err);
               if (!err) run(() => adminApi.saveHelp(topic, draft), "Página guardada");
             }}

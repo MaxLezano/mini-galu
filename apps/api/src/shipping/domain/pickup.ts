@@ -2,30 +2,8 @@
 const AR_OFFSET_MS = -3 * 60 * 60 * 1000;
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-/** Franjas de retiro en el taller por día de la semana (0 = domingo). Fase 5: editables desde el panel. */
-export const PICKUP_HOURS: Record<number, [number, number][]> = {
-  1: [
-    [10, 13],
-    [16, 19],
-  ],
-  2: [
-    [10, 13],
-    [16, 19],
-  ],
-  3: [
-    [10, 13],
-    [16, 19],
-  ],
-  4: [
-    [10, 13],
-    [16, 19],
-  ],
-  5: [
-    [10, 13],
-    [16, 19],
-  ],
-  6: [[10, 13]],
-};
+/** Franjas de retiro por día de la semana (0 = domingo): [[10, 13], [16, 19]]. Las edita Gaby en el panel. */
+export type PickupHours = [number, number][][];
 
 export type Slot = { id: string; label: string };
 
@@ -33,12 +11,12 @@ export type Slot = { id: string; label: string };
  * Próximas franjas para retirar: desde mañana (el pedido se prepara en el día) y hasta `count` opciones.
  * id: "2026-10-08T10-13" (fecha y horas en hora argentina).
  */
-export function pickupSlots(now: Date, count = 4): Slot[] {
+export function pickupSlots(now: Date, hours: PickupHours, count = 4): Slot[] {
   const slots: Slot[] = [];
   const ar = new Date(now.getTime() + AR_OFFSET_MS);
   for (let d = 1; slots.length < count && d < 15; d++) {
     const day = new Date(Date.UTC(ar.getUTCFullYear(), ar.getUTCMonth(), ar.getUTCDate() + d));
-    for (const [from, to] of PICKUP_HOURS[day.getUTCDay()] ?? []) {
+    for (const [from, to] of hours[day.getUTCDay()] ?? []) {
       if (slots.length >= count) break;
       const date = day.toISOString().slice(0, 10);
       slots.push({
@@ -58,6 +36,6 @@ export function slotLabel(id: string): string | null {
   return `${DAYS[day.getUTCDay()]} ${day.getUTCDate()} · ${m[2]} a ${m[3]} h`;
 }
 
-export function isValidSlot(id: string, now: Date): boolean {
-  return pickupSlots(now, 12).some((s) => s.id === id);
+export function isValidSlot(id: string, now: Date, hours: PickupHours): boolean {
+  return pickupSlots(now, hours, 12).some((s) => s.id === id);
 }

@@ -283,11 +283,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   miniaturas `lazy`, `/media` con cache `immutable`, `preconnect` a la API. ⏳ Falta: bajar layout y capas en el
   celular (~2000 objetos de layout y "layerize" de 300 ms con CPU ×4): montar menú, buscador, mega menú y Galú recién
   al abrirlos, y revisar animaciones infinitas (pulso de los hotspots, cinta del anuncio) y el grano del `body::before`
-- ⏳ **Políticas y envíos configurables desde el panel** (pedido 2026-10-15): días de cambio (hoy 30 fijo en la ficha,
-  el inicio, el checkout y la ayuda), cómo pedir un cambio, prender/apagar apartados como "Arrepentimiento" (ojo: el
-  botón de arrepentimiento es obligatorio por la Res. SCI 424/2020 para tiendas online), envío gratis (sí/no y monto),
-  tarifas por zona y retiro en el taller. Hoy "Tienda y pagos" edita textos de ayuda, paquete, origen, remitente,
-  pagos y cupones
+- ✅ **Entregas y cambios desde el panel** ("Tienda y pagos" → `#entregas`, módulo `policies` de la API, guardado en
+  `content_blocks["policies"]`; sin nada guardado rigen las de base): días para cambiar el talle (ficha, inicio,
+  checkout, gift cards, mails, ayuda y Galú), formas de entrega prendidas/apagadas (el checkout solo ofrece y acepta las
+  prendidas), horarios de retiro por día ("10 a 13, 16 a 19"), envío gratis sí/no y desde qué monto (bolsa, ficha,
+  checkout, ayuda, Galú) y tarifas por zona AMBA/centro/resto (las usa el checkout sin Andreani y la ficha). Los textos
+  de base de la ayuda siguen las políticas; si Gaby editó esas páginas, el panel le avisa que las revise
+- ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); el de **arrepentimiento** en Cambios queda
+  bloqueado ("Obligatorio": Ley 24.240 y Res. SCI 424/2020) y la API no deja guardar la página sin él visible
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)

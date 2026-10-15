@@ -20,33 +20,33 @@ export class OrderNotifications {
   constructor(
     private readonly orders: MailOrders,
     private readonly mailer: Mailer,
-    private readonly links: (orderNumber: string) => MailLinks,
+    private readonly links: (orderNumber: string) => Promise<MailLinks>,
   ) {}
 
   /** "Recibimos tu pago" con el detalle del pedido. Devuelve a quién se mandó (null si no existe el pedido). */
   async paymentApproved(orderId: string, intro?: string): Promise<string | null> {
     const o = await this.orders.find(orderId);
     if (!o) return null;
-    await this.mailer.send(paymentApprovedMail(o, this.links(o.number), intro));
+    await this.mailer.send(paymentApprovedMail(o, await this.links(o.number), intro));
     return o.email;
   }
 
   async paymentReminder(o: ReminderOrder, intro?: string): Promise<void> {
-    await this.mailer.send(paymentReminderMail(o, this.links(o.number), intro));
+    await this.mailer.send(paymentReminderMail(o, await this.links(o.number), intro));
   }
 
   async message(m: MessageMail): Promise<void> {
-    await this.mailer.send(messageMail(m, this.links(m.number ?? "")));
+    await this.mailer.send(messageMail(m, await this.links(m.number ?? "")));
   }
 
   /* ---- Gift cards ---- */
 
   async giftcard(to: string, g: GiftcardMailData): Promise<void> {
-    await this.mailer.send(giftcardMail(to, g, this.links("")));
+    await this.mailer.send(giftcardMail(to, g, await this.links("")));
   }
 
   async giftcardBuyer(to: string, g: GiftcardMailData, delivery: Parameters<typeof giftcardBuyerMail>[2]) {
-    await this.mailer.send(giftcardBuyerMail(to, g, delivery, this.links("")));
+    await this.mailer.send(giftcardBuyerMail(to, g, delivery, await this.links("")));
   }
 
   /* ---- Cartas del taller ---- */
@@ -60,12 +60,12 @@ export class OrderNotifications {
           body: "Gracias por sumarte. Una vez por mes te contamos lo que se viene: lanzamientos antes que en Instagram, telas nuevas y lo que estamos cosiendo en el taller.",
           unsubscribeUrl,
         },
-        this.links(""),
+        await this.links(""),
       ),
     );
   }
 
   async letter(m: { to: string; subject: string; body: string; unsubscribeUrl: string }): Promise<void> {
-    await this.mailer.send(letterMail(m, this.links("")));
+    await this.mailer.send(letterMail(m, await this.links("")));
   }
 }

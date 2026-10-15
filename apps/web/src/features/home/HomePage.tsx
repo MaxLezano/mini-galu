@@ -28,7 +28,15 @@ import { Picture } from "@/ui/atoms/Picture";
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
 
 /** Home — design/mockups/index.html */
-export function HomePage({ home, products }: { home: HomeContent; products: ProductSummary[] }) {
+export function HomePage({
+  home,
+  products,
+  exchangeDays,
+}: {
+  home: HomeContent;
+  products: ProductSummary[];
+  exchangeDays: number;
+}) {
   const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
   const img = (slug: string, n = 1) => {
     const p = bySlug[slug];
@@ -296,7 +304,8 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
         <div>
           <RefreshCcw />
           <span>
-            <b>Cambios fáciles</b>30 días para cambiar talle
+            <b>Cambios fáciles</b>
+            {exchangeDays} días para cambiar talle
           </span>
         </div>
       </section>

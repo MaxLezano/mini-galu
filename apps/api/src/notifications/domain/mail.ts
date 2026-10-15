@@ -25,7 +25,14 @@ export type MailOrder = {
   installments: number | null;
 };
 
-export type MailLinks = { tracking: string; whatsapp: string; site: string; workshop: string };
+export type MailLinks = {
+  tracking: string;
+  whatsapp: string;
+  site: string;
+  workshop: string;
+  /** Días para cambiar el talle (políticas del panel), en el pie de cada mail. */
+  exchangeDays: number;
+};
 
 /** Paleta del atelier (tokens de design-tokens) en hex: los clientes de mail no entienden variables CSS. */
 const C = {
@@ -44,7 +51,12 @@ export const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch);
 
 /** Marco común de los mails: logo, tarjeta blanca con el contenido y pie con WhatsApp y cambios. */
-function frame(title: string, links: Pick<MailLinks, "site" | "whatsapp">, number: string, card: string): string {
+function frame(
+  title: string,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
+  number: string,
+  card: string,
+): string {
   const e = escapeHtml;
   return `<!doctype html>
 <html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -59,7 +71,7 @@ function frame(title: string, links: Pick<MailLinks, "site" | "whatsapp">, numbe
         <tr><td style="background:#fff;border-radius:20px;padding:28px;border:1px solid ${C.line}">${card}</td></tr>
         <tr><td style="text-align:center;padding:22px 8px;font-size:12.5px;line-height:1.6;color:${C.cacao2}">
           ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a>${number ? ` con el número <b>#${e(number)}</b>` : ""}.<br>
-          30 días para cambiar el talle, sin uso y con la etiqueta.<br>
+          ${links.exchangeDays} días para cambiar el talle, sin uso y con la etiqueta.<br>
           <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>
         </td></tr>
       </table>
@@ -183,7 +195,7 @@ export type ReminderOrder = {
 /** Recordatorio a las 24 h de un link de pago sin pagar (sale una sola vez). */
 export function paymentReminderMail(
   o: ReminderOrder,
-  links: Pick<MailLinks, "site" | "whatsapp">,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
   /** Texto de la regla "Link de pago sin pagar" (editable en Automatizaciones). */
   intro?: string,
 ): Mail {
@@ -260,7 +272,7 @@ function productsGrid(products: NonNullable<MessageMail["products"]>): string {
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:4px 0 22px"><tr>${cells}</tr></table>`;
 }
 
-export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+export function messageMail(m: MessageMail, links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">): Mail {
   const e = escapeHtml;
   const html = frame(
     e(m.subject),
@@ -328,7 +340,11 @@ function giftcardBlock(g: GiftcardMailData): string {
 }
 
 /** La gift card que le llega a quien la recibe. */
-export function giftcardMail(to: string, g: GiftcardMailData, links: Pick<MailLinks, "site" | "whatsapp">): Mail {
+export function giftcardMail(
+  to: string,
+  g: GiftcardMailData,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
+): Mail {
   const e = escapeHtml;
   const html = frame(
     `Una gift card de Mini Galú para ${e(g.toName)}`,
@@ -357,7 +373,7 @@ export function giftcardBuyerMail(
   to: string,
   g: GiftcardMailData,
   delivery: { via: "mail" | "whatsapp"; recipient: string; when: string | null; whatsappUrl: string | null },
-  links: Pick<MailLinks, "site" | "whatsapp">,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
 ): Mail {
   const e = escapeHtml;
   const how =
@@ -390,7 +406,7 @@ export function giftcardBuyerMail(
 /** Una carta del taller (newsletter): el texto de Gaby y, al pie, el link para darse de baja. */
 export function letterMail(
   m: { to: string; subject: string; body: string; unsubscribeUrl: string },
-  links: Pick<MailLinks, "site" | "whatsapp">,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
 ): Mail {
   const e = escapeHtml;
   const html = frame(

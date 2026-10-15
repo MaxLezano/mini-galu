@@ -32,7 +32,8 @@ export class AssistantService {
     private readonly llm: LlmProvider | null,
     private readonly tools: AssistantTools,
     private readonly catalog: AssistantCatalog,
-    private readonly facts: StoreFacts,
+    /** Se piden en cada charla: las políticas cambian desde el panel. */
+    private readonly facts: () => Promise<StoreFacts>,
     private readonly memory: AssistantMemory,
     private readonly clock: () => Date = () => new Date(),
   ) {}
@@ -50,15 +51,16 @@ export class AssistantService {
     if (!llm) throw new Error("Galú no tiene un modelo configurado");
     const askedAt = this.clock();
 
-    const [published, viewing, saved, taught] = await Promise.all([
+    const [published, viewing, saved, taught, facts] = await Promise.all([
       this.catalog.search(CatalogQuerySchema.parse({ instock: "0" })),
       req.productSlug ? this.catalog.product(req.productSlug) : null,
       this.memory.settings.get(),
       this.memory.facts.list(),
+      this.facts(),
     ]);
     const settings = { ...ASSISTANT_DEFAULT_SETTINGS, ...saved };
     const system = systemPrompt(
-      this.facts,
+      facts,
       published.map((p) => ({ slug: p.slug, name: p.name })),
       viewing && viewing.status === "published" ? { slug: viewing.slug, name: viewing.name } : null,
       { ...settings, facts: taught },

@@ -54,7 +54,7 @@ function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (
 
 /** Galú: el foco flotante + el panel de chat (mockup app.js → galu). */
 export function Galu() {
-  const { products } = useShellData();
+  const { products, policies } = useShellData();
   const { galu, openGalu, closeGalu, consumeGaluQuestion } = useUi();
   const pathname = usePathname();
   const addToCart = useAddToCart();
@@ -121,7 +121,7 @@ export function Galu() {
       }
     }
     await new Promise((r) => setTimeout(r, 650 + Math.random() * 450));
-    const out: GaluReply[] = answer(q, products, ctx);
+    const out: GaluReply[] = answer(q, products, ctx, policies);
     setMsgs((l) => [
       ...l.filter((m) => m.id !== typingId),
       ...out.map((r) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Collection, Launch, ProductSummary } from "@mini-galu/contracts";
+import type { Collection, Launch, ProductSummary, StorePolicies } from "@mini-galu/contracts";
 import { createContext, type ReactNode, useContext } from "react";
 
 /** Datos que comparten header, buscador y Galú (se cargan una vez en el layout de la tienda). */
@@ -9,6 +9,8 @@ export type ShellData = {
   collections: Collection[];
   launch: Launch | null;
   announcements: string[];
+  /** Días de cambio, envío gratis, formas de entrega y tarifas (se editan en el panel). */
+  policies: StorePolicies;
 };
 
 const Ctx = createContext<ShellData | null>(null);

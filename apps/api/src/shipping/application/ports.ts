@@ -1,11 +1,8 @@
-import type { ShippingSettings } from "@mini-galu/contracts";
+import type { ShippingSettings, StorePolicies } from "@mini-galu/contracts";
 import type { Branch } from "../domain/branches";
 import type { CarrierEvent, TrackedOrder } from "../domain/tracking";
 
-/**
- * Puerto de cotización. Hoy: tabla por código postal (`TableShippingRates`).
- * TODO(fase 10 · shipping): cotización real de Andreani cuando haya credenciales.
- */
+/** Cotización: la tabla por zona del panel (`TableShippingRates`) o Andreani con credenciales (`AndreaniRates`). */
 export interface ShippingRates {
   /** Precios en centavos y texto de plazo para un CP. */
   quote(postalCode: string): Promise<{
@@ -109,4 +106,9 @@ export interface BranchDirectory {
 export interface ShippingSettingsStore {
   get(): Promise<ShippingSettings | null>;
   save(s: ShippingSettings): Promise<void>;
+}
+
+/** Políticas de la tienda (envío gratis, formas de entrega, tarifas, horarios): las da el módulo de políticas. */
+export interface PoliciesReader {
+  get(): Promise<StorePolicies>;
 }

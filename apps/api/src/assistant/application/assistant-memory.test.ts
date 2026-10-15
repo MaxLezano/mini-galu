@@ -36,12 +36,14 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
     llm,
     tools,
     catalog,
-    {
+    async () => ({
       workshop: "Villa Crespo",
       freeShippingFrom: "$90.000",
+      exchangeDays: 30,
+      pickup: "Lun a vie · 10 a 13 y 16 a 19 h · Sáb · 10 a 13 h",
       giftcardRange: "$5.000 a $500.000",
       whatsapp: "https://wa.me/5491100000000",
-    },
+    }),
     memory,
     clock,
   );

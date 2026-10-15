@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GiftcardsPage } from "@/features/giftcards/GiftcardsPage";
+import { api } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Gift cards",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 /** Mockup: design/mockups/giftcards.html */
-export default function Page() {
-  return <GiftcardsPage />;
+export default async function Page() {
+  const policies = await api.policies();
+  return <GiftcardsPage exchangeDays={policies.exchangeDays} />;
 }
