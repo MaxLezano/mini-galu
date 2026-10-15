@@ -384,6 +384,10 @@ body.menu-open { overflow: hidden; }
   .p-card .quick-toggle { width: 34px; height: 34px; right: 8px; bottom: 8px; }
 }
 
+/* ---------- Rendimiento ---------- */
+/* lo que queda debajo de la primera pantalla no se maqueta ni se pinta hasta acercarse (celulares: ~1000 objetos de layout menos) */
+.cv-auto, .hero ~ section { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+
 /* ---------- Reveal ---------- */
 [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); transition-delay: var(--d, 0s); }
 /* data-in (atributo) además de .is-in: React reescribe className al re-renderizar y borraba la clase (parpadeo) */
@@ -731,6 +735,7 @@ svg.emb.bloom.is-drawn path, svg.emb.bloom.is-drawn circle { opacity: 1; transfo
 .static .hero { min-height: 860px !important; }
 .static *, .static *::before, .static *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition: none !important; }
 .static body::before { display: none; }
+.static .cv-auto, .static .hero ~ section { content-visibility: visible; } /* capturas de página completa: Chrome no pinta lo salteado fuera del viewport */
 .static .marquee { animation: none; }
 
 /* Sumar a una lista de cumple */

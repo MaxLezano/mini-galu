@@ -267,3 +267,46 @@ export function releaseHero() {
       el.style.viewTransitionName = "";
   }
 }
+
+/**
+ * Secciones con content-visibility (.cv-auto): lo de arriba mide lo estimado hasta pintarse y el ancla (#lanzamiento,
+ * #resenas) queda corrida. Al llegar con un # o al terminar el salto de un link, se reacomoda contra el scroll-padding.
+ */
+export function settleAnchor(): () => void {
+  // solo el scroll que sigue al click de un link con # (no el del usuario después)
+  let until = 0;
+  let raf = 0;
+  const settle = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    const el = id ? document.getElementById(id) : null;
+    if (!el) return;
+    let tries = 0;
+    const fix = () => {
+      const pad = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      const off = el.getBoundingClientRect().top - pad;
+      if (Math.abs(off) < 2 || tries++ > 4) return;
+      scrollBy({ top: off, behavior: "instant" });
+      raf = requestAnimationFrame(() => (raf = requestAnimationFrame(fix)));
+    };
+    raf = requestAnimationFrame(() => (raf = requestAnimationFrame(fix)));
+  };
+  const onScrollEnd = () => {
+    if (performance.now() > until) return;
+    until = 0;
+    settle();
+  };
+  const onClick = (e: MouseEvent) => {
+    const a = (e.target as Element | null)?.closest?.("a[href*='#']") as HTMLAnchorElement | null;
+    if (a && a.pathname === location.pathname) until = performance.now() + 2000;
+  };
+  settle();
+  const late = setTimeout(settle, 400); // Next puede llegar al # después del primer frame
+  addEventListener("scrollend", onScrollEnd);
+  document.addEventListener("click", onClick);
+  return () => {
+    cancelAnimationFrame(raf);
+    clearTimeout(late);
+    removeEventListener("scrollend", onScrollEnd);
+    document.removeEventListener("click", onClick);
+  };
+}

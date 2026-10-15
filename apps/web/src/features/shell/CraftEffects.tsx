@@ -5,7 +5,16 @@ import { useEffect } from "react";
 import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useFavorites } from "@/features/favorites/favorites-store";
-import { autoReveal, drawCraft, heroOnCardClick, measuringTape, observeReveal, releaseHero, sewSeams } from "./craft";
+import {
+  autoReveal,
+  drawCraft,
+  heroOnCardClick,
+  measuringTape,
+  observeReveal,
+  releaseHero,
+  settleAnchor,
+  sewSeams,
+} from "./craft";
 import { dragScroll } from "./drag-scroll";
 import { useUi } from "./ui-store";
 
@@ -46,7 +55,7 @@ export function CraftEffects() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: se rearma en cada navegación
   useEffect(() => {
     releaseHero();
-    const cleanups: (() => void)[] = [];
+    const cleanups: (() => void)[] = [settleAnchor()];
     const run = () => {
       autoReveal();
       cleanups.push(observeReveal(), drawCraft(), sewSeams());

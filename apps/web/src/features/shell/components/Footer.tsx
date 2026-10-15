@@ -15,7 +15,7 @@ export function Footer() {
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlBusy, setNlBusy] = useState(false);
   return (
-    <footer className="site-footer hem-top">
+    <footer className="site-footer hem-top cv-auto">
       <div className="wrap footer-grid">
         <div>
           <Logo style={{ color: "var(--linen)" }} />

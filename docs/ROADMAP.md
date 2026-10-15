@@ -279,10 +279,17 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   tablero): `features/shell/drag-scroll.ts`, en la tienda y el panel; si hubo arrastre no se dispara el click
 - ✅ Fotos del hero y del lookbook de vuelta (los selectores `> img` no veían el `<img>` dentro de `<picture>`)
 - 🟡 Lighthouse (build de producción, local): escritorio 97–99 en rendimiento y 99–100 en accesibilidad y SEO;
-  celular 99–100 en accesibilidad y SEO pero **rendimiento 74–81** (LCP simulado 5–6 s; el real es 0.4 s). Hecho:
-  miniaturas `lazy`, `/media` con cache `immutable`, `preconnect` a la API. ⏳ Falta: bajar layout y capas en el
-  celular (~2000 objetos de layout y "layerize" de 300 ms con CPU ×4): montar menú, buscador, mega menú y Galú recién
-  al abrirlos, y revisar animaciones infinitas (pulso de los hotspots, cinta del anuncio) y el grano del `body::before`
+  celular 99–100 en accesibilidad y SEO y **rendimiento 78–79** (antes 66–78). Hecho: miniaturas `lazy`, `/media` con
+  cache `immutable`, `preconnect` a la API; `content-visibility: auto` (`.cv-auto`) en las secciones de abajo del
+  inicio y la ficha y en el pie (inicio con CPU ×4: layerize 540 → 99 ms, objetos de layout 2269 → 1222; las animaciones
+  de lo que no se ve tampoco se pintan); los anclas (`#lanzamiento`, `#resenas`) se reacomodan al llegar
+  (`settleAnchor` en `craft.ts`) y `?static` lo apaga para las capturas; el texto del hero entra con CSS sin esperar
+  al JS (antes, con hidratación lenta, el LCP era la bajada a los ~3 s). Medido y descartado: montar menú, buscador,
+  mega menú y Galú al abrirlos (casi sin efecto en layout/capas), el grano y las animaciones infinitas (solo
+  `transform`/`opacity`, van por el compositor), sacar el preload de Fraunces/Caveat (empeora FCP y suma CLS) y recortar
+  ejes de Fraunces (118 → 106 KB; SOFT/WONK/pesos se usan todos). El LCP simulado (5.5–6 s; real 0.4 s, 0.4–0.6 s con
+  CPU ×4) lo dominan los bytes a 1.6 Mbps: 363 KB de fuentes variables (−1.9 s si no estuvieran) y ~190 KB de
+  React/Next (−1.4 s). ⏳ Bajar de ahí pide resignar diseño (fuentes estáticas o menos ejes): decisión de Gaby
 - ✅ **Entregas y cambios desde el panel** ("Tienda y pagos" → `#entregas`, módulo `policies` de la API, guardado en
   `content_blocks["policies"]`; sin nada guardado rigen las de base): días para cambiar el talle (ficha, inicio,
   checkout, gift cards, mails, ayuda y Galú), formas de entrega prendidas/apagadas (el checkout solo ofrece y acepta las

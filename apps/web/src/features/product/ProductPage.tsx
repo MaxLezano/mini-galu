@@ -34,7 +34,7 @@ export function ProductPage({ product: p, launchAt }: { product: ProductDetail; 
         </div>
       </main>
 
-      <section className="bg-linen hem-top section">
+      <section className="bg-linen hem-top section cv-auto">
         <div className="wrap story">
           <Picture src={cover(p, 2)} alt="" data-reveal="mask" loading="lazy" sizes="(max-width: 900px) 100vw, 50vw" />
           <div>
@@ -78,7 +78,7 @@ export function ProductPage({ product: p, launchAt }: { product: ProductDetail; 
       </section>
 
       {p.reviews.length > 0 && (
-        <section className="section wrap" id="resenas">
+        <section className="section wrap cv-auto" id="resenas">
           <div className="rv-grid">
             <div className="rv-sum">
               <span className="eyebrow">Reseñas</span>
@@ -135,7 +135,7 @@ export function ProductPage({ product: p, launchAt }: { product: ProductDetail; 
       )}
 
       {p.completeTheLook.length > 0 && (
-        <section className="wrap" style={{ paddingBottom: "clamp(64px,9vw,120px)" }}>
+        <section className="wrap cv-auto" style={{ paddingBottom: "clamp(64px,9vw,120px)" }}>
           <div className="section-head">
             <div>
               <span className="eyebrow">Completá el look</span>
