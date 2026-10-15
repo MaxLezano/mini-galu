@@ -18,6 +18,8 @@ type AuthConfig = {
   webOrigin: string;
   secret: string;
   secureCookies: boolean;
+  /** Tienda y API en subdominios distintos: la cookie va al dominio que comparten. */
+  cookieDomain?: string | null;
   /** Límite de pedidos por IP de Better Auth (producción). */
   rateLimit: boolean;
   /** Se bloqueó una cuenta por intentos fallidos: avisarle (si existe). */
@@ -141,6 +143,7 @@ export function createAuth(db: Db, config: AuthConfig, guard = new LoginGuard())
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
     advanced: {
       useSecureCookies: config.secureCookies,
+      ...(config.cookieDomain && { crossSubDomainCookies: { enabled: true, domain: config.cookieDomain } }),
       // detrás del proxy de Render/Fly la IP real viene en estos headers
       ipAddress: { ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"] },
     },

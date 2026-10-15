@@ -12,12 +12,14 @@ function findRepoRoot(from = process.cwd()): string {
   return dir;
 }
 
-export const repoRoot = findRepoRoot();
+let root: string | undefined;
+/** Se busca al usarla, no al importar: el bundle de la API corre fuera del monorepo (Docker). */
+export const repoRoot = () => (root ??= findRepoRoot());
 
 /** Lee DATABASE_URL del entorno o del .env de la raíz (los scripts de db corren fuera de turbo). */
 export function databaseUrl(): string {
   if (!process.env.DATABASE_URL) {
-    const envFile = resolve(repoRoot, ".env");
+    const envFile = resolve(repoRoot(), ".env");
     if (existsSync(envFile)) process.loadEnvFile(envFile);
   }
   const url = process.env.DATABASE_URL;

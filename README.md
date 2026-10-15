@@ -12,6 +12,7 @@ Estética *"Atelier de cuento"*: vintage-campestre, romántica, con detalles de 
 | Mockups (fase 0) | [design/mockups](design/mockups/README.md) |
 | Ideas y decisiones | [docs/IDEAS.md](docs/IDEAS.md) · [docs/adr](docs/adr) |
 | Cómo contribuir | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Deploy (Vercel + Render + Neon) | [docs/DEPLOY.md](docs/DEPLOY.md) |
 
 ## Stack
 

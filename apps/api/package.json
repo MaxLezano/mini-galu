@@ -8,6 +8,7 @@
     "build": "node build.mjs",
     "start": "node --enable-source-maps dist/main.js",
     "migrate": "node dist/migrate.js",
+    "admin": "node dist/admin.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "andreani:check": "tsx src/scripts/andreani-check.ts",

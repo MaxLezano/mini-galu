@@ -20,6 +20,11 @@ const EnvSchema = z.object({
   MEDIA_PUBLIC_URL: z.string().optional(),
   /** URL pública de la API (para armar las URLs de imágenes). */
   PUBLIC_API_URL: z.string().optional(),
+  /**
+   * Dominio que comparten tienda y API (ej. minigalu.com.ar para minigalu.com.ar + api.minigalu.com.ar): la cookie
+   * de sesión se pone ahí para que el servidor de la tienda también la vea. Hace falta si los hosts son distintos.
+   */
+  COOKIE_DOMAIN: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
   /** Mercado Pago. Sin MP_ACCESS_TOKEN, en local se cobra con el gateway simulado. */
   MP_ACCESS_TOKEN: z.string().optional(),
@@ -71,6 +76,8 @@ export type Config = {
   /** Con bucket, las fotos se suben ahí; si no, quedan en `mediaDir` y las sirve la API en /media. */
   s3: S3StorageConfig | null;
   publicUrl: string;
+  /** Con tienda y API en hosts distintos, dominio común para la cookie de sesión. */
+  cookieDomain: string | null;
   authSecret: string;
   mercadoPago: {
     accessToken: string;
@@ -106,6 +113,29 @@ export function loadConfig(): Config {
 }
 
 const isHttps = (url: string | undefined) => !!url && /^https:\/\/[^/]/.test(url);
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+};
+const underDomain = (host: string, domain: string) => host === domain || host.endsWith(`.${domain}`);
+
+/** La cookie de sesión la pone la API y la tiene que ver la tienda (el navegador y su servidor). */
+function cookieProblem(env: z.infer<typeof EnvSchema>): string | null {
+  if (!(env.PUBLIC_API_URL && env.WEB_ORIGIN)) return null;
+  const api = hostOf(env.PUBLIC_API_URL);
+  const web = hostOf(env.WEB_ORIGIN);
+  const domain = env.COOKIE_DOMAIN?.replace(/^\./, "");
+  if (!domain)
+    return api === web
+      ? null
+      : `La tienda (${web}) y la API (${api}) están en hosts distintos: cargá COOKIE_DOMAIN con el dominio que comparten`;
+  if (!(underDomain(api, domain) && underDomain(web, domain)))
+    return `COOKIE_DOMAIN (${domain}) tiene que contener a la tienda (${web}) y a la API (${api})`;
+  return null;
+}
 const missing = (vars: Record<string, string | undefined>) =>
   Object.entries(vars)
     .filter(([, v]) => !v)
@@ -134,6 +164,8 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   if (mp.length) problems.push(`Faltan las credenciales de Mercado Pago (${mp.join(", ")})`);
   if (!isHttps(env.PUBLIC_API_URL)) problems.push("PUBLIC_API_URL tiene que ser la URL pública de la API con https://");
   if (!isHttps(env.WEB_ORIGIN)) problems.push("WEB_ORIGIN tiene que ser la URL de la tienda con https://");
+  const cookie = cookieProblem(env);
+  if (cookie) problems.push(cookie);
   if (env.RESEND_API_KEY) {
     if (!env.RESEND_API_KEY.startsWith("re_"))
       problems.push("RESEND_API_KEY no parece una clave de Resend (empieza con re_)");
@@ -163,7 +195,8 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
 }
 
 export function parseConfig(source: Record<string, string | undefined>): Config {
-  const parsed = EnvSchema.safeParse(source);
+  // Render y Fly avisan el puerto en PORT
+  const parsed = EnvSchema.safeParse({ ...source, API_PORT: source.API_PORT || source.PORT });
   if (!parsed.success)
     throw new ConfigError(parsed.error.issues.map((i) => `${i.path.join(".") || "entorno"}: ${i.message}`));
   const env = parsed.data;
@@ -189,6 +222,7 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
           }
         : null,
     publicUrl: env.PUBLIC_API_URL ?? `http://localhost:${env.API_PORT}`,
+    cookieDomain: env.COOKIE_DOMAIN?.replace(/^\./, "") || null,
     authSecret: env.BETTER_AUTH_SECRET || DEV_AUTH_SECRET,
     mercadoPago:
       env.MP_ACCESS_TOKEN && env.MP_PUBLIC_KEY

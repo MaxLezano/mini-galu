@@ -4,6 +4,6 @@ import { databaseUrl, repoRoot } from "./env";
 import { runMigrations } from "./migrations";
 
 const db = createDb(databaseUrl(), { max: 1 });
-await runMigrations(db, resolve(repoRoot, "packages/db/drizzle"));
+await runMigrations(db, resolve(repoRoot(), "packages/db/drizzle"));
 await db.close();
 console.log("✓ migraciones aplicadas");

@@ -1,0 +1,52 @@
+# Blueprint de Render para la API (Dashboard → New → Blueprint → este repo). Guía: docs/DEPLOY.md
+# Las variables con `sync: false` las pide Render al crear el servicio (no van al repo).
+services:
+  - type: web
+    name: mini-galu-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    # free duerme a los 15 min sin visitas y frena las tareas programadas (ver docs/DEPLOY.md); starter no duerme
+    plan: free
+    # la más cerca de Argentina; Neon en AWS us-east-1 (Virginia) para que la base quede al lado
+    region: virginia
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: COOKIE_DOMAIN
+        sync: false
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: MP_PUBLIC_KEY
+        sync: false
+      - key: MP_WEBHOOK_SECRET
+        sync: false
+      - key: MP_MODE
+        value: produccion
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        value: Mini Galú <hola@minigalu.com.ar>
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MEDIA_PUBLIC_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

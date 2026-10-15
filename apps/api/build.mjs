@@ -5,7 +5,7 @@ import { build } from "esbuild";
 
 await rm("dist", { recursive: true, force: true });
 await build({
-  entryPoints: { main: "src/main.ts", migrate: "src/scripts/migrate.ts" },
+  entryPoints: { main: "src/main.ts", migrate: "src/scripts/migrate.ts", admin: "src/scripts/create-admin.ts" },
   outdir: "dist",
   bundle: true,
   platform: "node",

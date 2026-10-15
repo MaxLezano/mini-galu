@@ -8,8 +8,8 @@ import { upsertAdmin } from "./admin";
 import * as data from "./data";
 
 /** Fotos de prueba: no están en el repo (ver local-assets/README.md). */
-const SAMPLE_IMG = resolve(repoRoot, "local-assets/mockups/img");
-const MEDIA_DIR = resolve(repoRoot, "apps/api", process.env.MEDIA_DIR ?? "./storage/media");
+const SAMPLE_IMG = resolve(repoRoot(), "local-assets/mockups/img");
+const MEDIA_DIR = resolve(repoRoot(), "apps/api", process.env.MEDIA_DIR ?? "./storage/media");
 const missing: string[] = [];
 
 /** Copia la foto al ImageStorage local (apps/api/storage/media). Si no está, igual guarda la ruta (CI, clon nuevo). */

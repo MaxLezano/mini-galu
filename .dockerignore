@@ -1,0 +1,15 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+local-assets
+andreani
+apps/api/storage
+design
+test-results
+playwright-report
+tests

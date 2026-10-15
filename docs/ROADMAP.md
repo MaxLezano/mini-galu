@@ -333,7 +333,16 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   antes. En producción el bucket es obligatorio (el disco del servidor se pierde al redeployar).
   `pnpm --filter @mini-galu/api media:upload [carpeta…]` sube las fotos que ya están en disco (seed o subidas antes)
   con sus variantes, sin tocar la base (las rutas no cambian). La web abre la conexión a `NEXT_PUBLIC_MEDIA_URL`
-- ⏳ Docker + Render/Fly + Vercel + Neon · guía de deploy
+- ✅ **Deploy listo para cargar** ([DEPLOY.md](DEPLOY.md)): `apps/api/Dockerfile` (bundle + solo `sharp`, usuario
+  `node`; al arrancar migra y levanta la API; toma `PORT`), `render.yaml` (Blueprint de Render desde `main`, `/health`,
+  secreto de auth generado), Vercel con root `apps/web`, Neon (la API saca el `channel_binding` de su URL, que
+  postgres.js mandaría como parámetro de sesión), R2 y Resend. Tienda y API en el mismo dominio: `COOKIE_DOMAIN` pone la
+  cookie de sesión en `minigalu.com.ar` y la API no arranca en producción con hosts que no la compartan.
+  `node dist/admin.js` crea la cuenta del taller sin correr el seed. El paquete `db` ya no busca la raíz del monorepo
+  al importarse (el bundle fallaba fuera del repo). La CI construye la imagen y la arranca en modo producción sobre una
+  base vacía (migra, `/health`, catálogo, cuenta del taller)
+- ⏳ Crear las cuentas (Neon, Render, Vercel, R2, Resend), el dominio y el webhook de Mercado Pago de producción:
+  pasos en [DEPLOY.md](DEPLOY.md). Plan gratis de Render duerme la API (frena las tareas programadas): Starter para abrir
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,

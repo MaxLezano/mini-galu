@@ -154,6 +154,7 @@ export function buildApp(config: Config) {
     webOrigin: config.webOrigin,
     secret: config.authSecret,
     secureCookies: config.env === "production",
+    cookieDomain: config.cookieDomain,
     rateLimit: config.env === "production",
     google: config.google,
     onSignUp: async (u) => {

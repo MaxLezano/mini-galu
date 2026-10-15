@@ -55,3 +55,30 @@ jobs:
         with:
           name: playwright-report
           path: test-results/
+
+  docker:
+    name: Imagen de la API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: minigalu
+          POSTGRES_PASSWORD: minigalu
+          POSTGRES_DB: minigalu
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U minigalu" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (el mismo Dockerfile que usa Render)
+        run: docker build -f apps/api/Dockerfile -t mini-galu-api .
+      - name: Arranca en modo producción sobre una base vacía (migra, /health y cuenta del taller)
+        run: |
+          docker run -d --name api --network host             -e NODE_ENV=production -e PORT=10000             -e DATABASE_URL=postgres://minigalu:minigalu@localhost:5432/minigalu             -e BETTER_AUTH_SECRET=ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci             -e MP_ACCESS_TOKEN=APP_USR-ci -e MP_PUBLIC_KEY=APP_USR-ci -e MP_WEBHOOK_SECRET=ci             -e PUBLIC_API_URL=https://api.minigalu.com.ar -e WEB_ORIGIN=https://minigalu.com.ar             -e COOKIE_DOMAIN=minigalu.com.ar -e RESEND_API_KEY=re_ci             -e S3_ENDPOINT=https://ci.r2.cloudflarestorage.com -e S3_BUCKET=fotos -e S3_ACCESS_KEY_ID=ci             -e S3_SECRET_ACCESS_KEY=ci -e MEDIA_PUBLIC_URL=https://fotos.minigalu.com.ar             -e ADMIN_EMAIL=taller@minigalu.com.ar -e ADMIN_PASSWORD=Taller.MiniGalu1             mini-galu-api
+          for i in $(seq 1 30); do curl -sf localhost:10000/health && break; sleep 1; done
+          curl -sf localhost:10000/health
+          curl -sf -o /dev/null localhost:10000/catalog/products
+          docker exec api node dist/admin.js
+      - if: failure()
+        run: docker logs api

@@ -12,6 +12,7 @@ const production = {
   MP_WEBHOOK_SECRET: "secreto",
   PUBLIC_API_URL: "https://api.minigalu.com.ar",
   WEB_ORIGIN: "https://minigalu.com.ar",
+  COOKIE_DOMAIN: "minigalu.com.ar",
   RESEND_API_KEY: "re_clave",
   S3_ENDPOINT: "https://cuenta.r2.cloudflarestorage.com",
   S3_BUCKET: "fotos",
@@ -113,5 +114,27 @@ describe("parseConfig", () => {
       expect.stringContaining("faltan ANDREANI_PASSWORD, ANDREANI_CLIENT"),
       expect.stringContaining("GOOGLE_CLIENT_SECRET"),
     ]);
+  });
+
+  it("en producción pide COOKIE_DOMAIN si tienda y API están en hosts distintos, y que contenga a los dos", () => {
+    expect(parseConfig(production).cookieDomain).toBe("minigalu.com.ar");
+    expect(parseConfig({ ...production, COOKIE_DOMAIN: ".minigalu.com.ar" }).cookieDomain).toBe("minigalu.com.ar");
+    expect(problemsOf({ ...production, COOKIE_DOMAIN: undefined })).toEqual([
+      expect.stringContaining("cargá COOKIE_DOMAIN"),
+    ]);
+    // vercel.app y onrender.com no comparten dominio: la tienda no vería la sesión
+    expect(
+      problemsOf({
+        ...production,
+        WEB_ORIGIN: "https://mini-galu.vercel.app",
+        PUBLIC_API_URL: "https://mini-galu-api.onrender.com",
+      }),
+    ).toEqual([expect.stringContaining("COOKIE_DOMAIN (minigalu.com.ar) tiene que contener")]);
+  });
+
+  it("toma el puerto de PORT (Render, Fly) si no hay API_PORT", () => {
+    expect(parseConfig({ ...local, PORT: "10000" }).port).toBe(10000);
+    expect(parseConfig({ ...local, PORT: "10000", API_PORT: "4000" }).port).toBe(4000);
+    expect(parseConfig(local).port).toBe(4000);
   });
 });
