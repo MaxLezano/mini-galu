@@ -85,6 +85,8 @@ const PANEL = [
 ] as const;
 
 test("panel · ingresar y pantallas principales sin violaciones AA", async ({ page }) => {
+  // axe sobre 10 pantallas en un solo test: con los 30 s de uno común se corta en CI
+  test.slow();
   await page.goto("/taller/ingresar?static");
   await auditar(page);
   await page.getByLabel("Email").fill(ADMIN.email);
