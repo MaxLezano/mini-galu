@@ -1,0 +1,21 @@
+/* Botón de arrepentimiento (sin mockup propio: lenguaje de seguimiento.html y la ayuda) */
+.rv { padding-bottom: 100px; }
+.rv-hero { padding: clamp(40px, 7vw, 96px) 0 32px; text-align: center; display: grid; justify-items: center; }
+.rv-hero h1 { margin: 16px 0 14px; }
+.rv-hero .lead { max-width: 56ch; }
+.rv-card { max-width: 760px; margin-inline: auto; padding: clamp(22px, 4vw, 44px); border-radius: var(--r-lg); background: var(--paper-2); box-shadow: 0 0 0 1px var(--line), var(--shadow-soft); }
+.rv-form { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.rv-wide { grid-column: 1 / -1; }
+.rv-submit { display: flex; gap: 16px 20px; align-items: center; flex-wrap: wrap; }
+.rv-submit p { margin: 0; font-size: 13px; flex: 1 1 260px; }
+.rv-error { margin: 0; font-size: 13.5px; color: var(--rojo); }
+
+.rv-done { display: grid; justify-items: center; text-align: center; gap: 6px; }
+.rv-done p { margin: 0; }
+.rv-code-label { margin-top: 18px !important; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--cacao-2); }
+.rv-code { font: 600 clamp(30px, 5vw, 44px)/1.1 var(--f-ui); letter-spacing: .08em; padding: 12px 22px; border-radius: 14px; background: var(--linen); border: 1.5px dashed var(--line-2); margin-bottom: 8px !important; user-select: all; }
+.rv-note { padding: 12px 16px; border-radius: 14px; background: var(--rosa-l); font-size: 13.5px; margin-top: 8px !important; }
+.rv-steps { text-align: left; margin: 22px 0 6px; padding-left: 22px; display: grid; gap: 8px; color: var(--cacao-2); font-size: 14.5px; max-width: 56ch; }
+.rv-actions { display: flex; gap: 12px 20px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+
+@media (max-width: 640px) { .rv-form { grid-template-columns: 1fr; } }

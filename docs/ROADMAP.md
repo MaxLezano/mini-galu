@@ -253,7 +253,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   envío gratis) y la ley (arrepentimiento de 10 días, Ley 25.326 y leyenda de la AAIP); "Páginas de ayuda" en Tienda y
   pagos edita título, bajada y apartados (párrafos y listas con "- "), y vuelve al texto de base
 - ⏳ Que Gaby revise los textos (y, antes del deploy, términos y privacidad con quien la asesore)
-- ⏳ "Botón de arrepentimiento" (Res. SCI 424/2020): link visible en la home y formulario que da un código → fase 10
+- ✅ **Botón de arrepentimiento** (Res. SCI 424/2020; sin mockup, lenguaje de seguimiento y ayuda): link quieto a la
+  derecha de la barra de novedades (primera pantalla de todas las páginas), en el pie y en el apartado de la ayuda.
+  `/arrepentimiento` pide número de pedido, mail de la compra y motivo opcional, sin cuenta; da al instante un código
+  `ARR-XXXXXX` (una solicitud por pedido: si se repite, el mismo código) y lo manda por mail, con aviso al mail de la
+  tienda. Mismo error si el pedido no existe o el mail no coincide; no aplica a pedidos sin pagar o cancelados; fuera
+  de los 10 días desde la entrega igual se registra, marcada. Tope de 20 por IP cada 10 min en producción. En el panel:
+  campana, etiqueta en la tarjeta, aviso en el detalle e historial (módulo `orders`, tabla `order_revocations`).
+  ⏳ Reintegro desde el panel (fase 10 · payments)
 - ✅ SEO: `metadataBase` con `NEXT_PUBLIC_SITE_URL`, Open Graph (es_AR) y canonical en inicio, catálogo (los filtros
   apuntan a `/catalogo`), ficha, gift cards y ayuda; `robots.txt` (sin panel, cuenta ni pasos de compra) y
   `sitemap.xml` (páginas públicas y cada prenda publicada, con foto); JSON-LD `OnlineStore` en el inicio y `Product`

@@ -128,7 +128,8 @@ export function Footer() {
         <div className="footer-bottom">
           <span className="footer-legal">
             © {new Date().getFullYear()} Mini Galú · Marca registrada · <Link href="/ayuda/terminos">Términos</Link> ·{" "}
-            <Link href="/ayuda/privacidad">Privacidad</Link>
+            <Link href="/ayuda/privacidad">Privacidad</Link> ·{" "}
+            <Link href="/arrepentimiento">Botón de arrepentimiento</Link>
           </span>
           <div className="pay-logos">
             <span>

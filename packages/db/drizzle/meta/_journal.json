@@ -127,6 +127,13 @@
       "when": 1792029491561,
       "tag": "0017_order_channel_taller",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792086718120,
+      "tag": "0018_order_revocations",
+      "breakpoints": true
     }
   ]
 }

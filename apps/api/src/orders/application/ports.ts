@@ -67,6 +67,8 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" |
   internalNote: string | null;
   /** Número de Andreani si ya tiene envío. */
   trackingNumber?: string | null;
+  /** Si el cliente pidió la baja con el botón de arrepentimiento. */
+  revocation?: Revocation | null;
   number: number;
   status: OrderStatus;
   reservedUntil: Date | null;
@@ -155,4 +157,13 @@ export interface OrderRepository extends OrderEvents {
   ): Promise<boolean>;
   /** Un pedido cancelado por vencimiento que igual se pagó: vuelve a reservar si hay stock (y queda esperando pago). */
   reReserve(id: string): Promise<boolean>;
+}
+
+/** Solicitud del botón de arrepentimiento (una por pedido). */
+export type Revocation = { code: string; at: Date; inTime: boolean; reason: string | null };
+
+export interface RevocationStore {
+  forOrder(orderId: string): Promise<Revocation | null>;
+  /** Guarda la solicitud. Si el pedido ya tenía una (dos envíos a la vez), no la pisa y devuelve `created: false`. */
+  save(orderId: string, r: Omit<Revocation, "at">): Promise<{ created: boolean; revocation: Revocation }>;
 }

@@ -89,10 +89,12 @@ import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
+import { Revocations } from "./orders/application/revocations";
 import { formatOrderNumber, payPath } from "./orders/domain/order";
-import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
+import { DrizzleOrderRepository, DrizzleRevocations } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
+import { revocationRoutes } from "./orders/infrastructure/http/revocation-routes";
 import { PaymentService } from "./payments/application/payment-service";
 import type { PaymentGateway } from "./payments/application/ports";
 import { DrizzlePaymentRepository, DrizzlePaymentSettings } from "./payments/infrastructure/drizzle-payments";
@@ -109,6 +111,7 @@ import { adminPoliciesRoutes, policiesRoutes } from "./policies/infrastructure/h
 import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
+import { RateLimiter } from "./shared/http/rate-limit";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { mediaVariantsOnDemand } from "./shared/media/media-variants";
 import { ResponsiveImageStorage } from "./shared/media/responsive-image-storage";
@@ -129,6 +132,9 @@ import {
   trackingRoutes,
 } from "./shipping/infrastructure/http/shipment-routes";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
+
+/** Mail de la tienda: contacto en la ayuda y a donde llegan los avisos para el taller. */
+const SHOP_EMAIL = "hola@minigalu.com.ar";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
 export function buildApp(config: Config) {
@@ -195,7 +201,7 @@ export function buildApp(config: Config) {
   const policies = new PoliciesService(new DrizzlePoliciesStore(db));
   const help = new HelpService(new DrizzleHelpRepository(db), async () => ({
     workshop: WORKSHOP,
-    email: "hola@minigalu.com.ar",
+    email: SHOP_EMAIL,
     policies: await policies.get(),
   }));
 
@@ -463,6 +469,39 @@ export function buildApp(config: Config) {
       reservedUntilLabel: p.reservedUntil ? untilLabel(new Date(String(p.reservedUntil))) : null,
     });
   });
+  // botón de arrepentimiento: el código le llega al cliente por mail y el taller se entera para devolver la plata
+  const revocations = new Revocations(orders, new DrizzleRevocations(db), events);
+  events.on("RevocationRequested", async (e) => {
+    const p = e.payload as {
+      number: string;
+      code: string;
+      email: string;
+      firstName: string;
+      customer: string;
+      inTime: boolean;
+      reason: string | null;
+    };
+    await notifications.message({
+      to: p.email,
+      subject: `Recibimos tu pedido de baja · ${p.code}`,
+      eyebrow: `Pedido #${p.number} · arrepentimiento`,
+      name: p.firstName || null,
+      body: `Registramos tu pedido de baja del pedido #${p.number}. El código de tu solicitud es ${p.code}: guardalo para cualquier consulta. Te escribimos en estos días para coordinar la devolución de las prendas (si ya las recibiste) y del dinero, que vuelve por el mismo medio con el que pagaste.`,
+      cta: null,
+      number: p.number,
+    });
+    await notifications.message({
+      to: SHOP_EMAIL,
+      subject: `Arrepentimiento · #${p.number} · ${p.code}`,
+      eyebrow: "Botón de arrepentimiento",
+      name: null,
+      body: `${p.customer} (${p.email}) pidió la baja del pedido #${p.number} con el código ${p.code}.${
+        p.inTime ? "" : " Ojo: pasaron más de 10 días desde la entrega."
+      }${p.reason ? ` Motivo: "${p.reason}".` : ""} Escribile para coordinar la devolución y el reintegro.`,
+      cta: { label: "Ver el pedido", url: `${config.webOrigin}/taller/pedidos?pedido=${encodeURIComponent(p.number)}` },
+      number: p.number,
+    });
+  });
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
   // TODO(fase 10 · payments): reembolsar desde el panel (hoy se ve en el historial del pedido y en el resumen)
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
@@ -557,6 +596,8 @@ export function buildApp(config: Config) {
     .route("/checkout", checkoutPaymentRoutes(payments))
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
+    // tope por IP para no probar mails (en local y CI, alto: los e2e piden varias bajas seguidas)
+    .route("/revocations", revocationRoutes(revocations, new RateLimiter(secure ? 20 : 500, 10 * 60_000)))
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/policies", policiesRoutes(policies))
     .route("/giftcards", giftcardRoutes(giftcards))

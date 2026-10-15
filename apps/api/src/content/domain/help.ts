@@ -49,7 +49,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
         title: "Arrepentimiento de compra",
         body: [
           "Por la Ley 24.240 de Defensa del Consumidor, podés arrepentirte de una compra online dentro de los 10 días corridos desde que la recibís, sin dar explicaciones y sin costo.",
-          `Para hacerlo, escribinos a ${f.email} con tu número de pedido. Te devolvemos el dinero por el mismo medio de pago con el que compraste.`,
+          `Para hacerlo, tocá "Botón de arrepentimiento" (arriba de todo en la tienda) con tu número de pedido y el mail de la compra: te damos un código de solicitud al instante. También podés escribirnos a ${f.email}. Te devolvemos el dinero por el mismo medio de pago con el que compraste.`,
         ].join("\n\n"),
       },
       {

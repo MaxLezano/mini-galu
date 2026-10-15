@@ -26,6 +26,8 @@ import type {
   PublicWishlist,
   Quote,
   QuoteRequest,
+  RevocationInput,
+  RevocationReceipt,
   ShippingOptions,
   Size,
   StorePolicies,
@@ -117,6 +119,9 @@ export const api = {
   subscribe: (email: string, source: "footer" | "cuenta" | "registro" = "footer") =>
     request<null>("/newsletter", { method: "POST", body: JSON.stringify({ email, source }) }),
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
+  /** Botón de arrepentimiento: pide la baja de un pedido (sin cuenta). */
+  revoke: (input: RevocationInput) =>
+    request<RevocationReceipt>("/revocations", { method: "POST", body: JSON.stringify(input) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),
   receipt: (number: string, t: string) =>

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CartItemInputSchema, CheckoutContactSchema, ShippingInputSchema } from "./checkout";
 import type { Cents } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
+import type { AdminRevocation } from "./revocation";
 
 export const ORDER_CHANNELS = {
   web: "Web",
@@ -39,6 +40,8 @@ export type AdminOrderSummary = {
   installments: number | null;
   /** Número de Andreani si ya tiene etiqueta. */
   trackingNumber: string | null;
+  /** Si el cliente pidió la baja con el botón de arrepentimiento. */
+  revocation: AdminRevocation | null;
   items: AdminOrderItem[];
 };
 

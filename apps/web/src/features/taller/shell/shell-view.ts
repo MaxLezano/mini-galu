@@ -12,7 +12,7 @@ export function navCounts(orders: AdminOrderSummary[], products: AdminProduct[])
 export type Notice = {
   /** Identifica la novedad para "Marcar como leídas" (cambia si cambia lo que avisa). */
   key: string;
-  kind: "pedido" | "sin_pagar" | "stock";
+  kind: "pedido" | "sin_pagar" | "stock" | "arrepentimiento";
   title: string;
   text: string;
   /** ISO: cuándo pasó (los avisos de stock no tienen fecha). */
@@ -21,8 +21,19 @@ export type Notice = {
   href?: string;
 };
 
-/** La campana: pedidos nuevos, links de pago sin pagar y talles con la última unidad. */
+/** La campana: bajas pedidas, pedidos nuevos, links de pago sin pagar y talles con la última unidad. */
 export function notices(orders: AdminOrderSummary[], products: AdminProduct[], money: (c: number) => string): Notice[] {
+  // botón de arrepentimiento: queda en la campana mientras el pedido siga en el tablero (no cancelado)
+  const bajas = orders
+    .filter((o) => o.revocation)
+    .map<Notice>((o) => ({
+      key: `arrepentimiento:${o.number}`,
+      kind: "arrepentimiento",
+      title: `#${o.number} pidió la baja`,
+      text: `${o.customer.name} · ${o.revocation?.code}`,
+      at: o.revocation?.at ?? null,
+      order: o.number,
+    }));
   const nuevos = orders
     .filter((o) => o.status === "nuevo")
     .map<Notice>((o) => ({
@@ -55,7 +66,7 @@ export function notices(orders: AdminOrderSummary[], products: AdminProduct[], m
       at: null,
       href: `/taller/productos?editar=${p.slug}`,
     }));
-  return [...nuevos, ...sinPagar, ...stock];
+  return [...bajas, ...nuevos, ...sinPagar, ...stock];
 }
 
 /** Búsqueda global: pedidos por número, cliente o ciudad; productos por nombre. */

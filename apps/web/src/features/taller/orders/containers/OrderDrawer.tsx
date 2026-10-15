@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Store,
   Truck,
+  Undo2,
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
@@ -202,6 +203,23 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
         <div className="drawer-body" id="od-body">
           {o && (
             <>
+              {o.revocation && (
+                <div className="od-sec">
+                  <div className="od-revocation" role="note">
+                    <b>
+                      <Undo2 className="i-sm" /> Pidió la baja · botón de arrepentimiento
+                    </b>
+                    <span>
+                      Código <b>{o.revocation.code}</b> · {longDate(o.revocation.at)}
+                      {o.revocation.inTime ? "" : " · pasaron más de 10 días desde la entrega"}
+                    </span>
+                    {o.revocation.reason && <span>"{o.revocation.reason}"</span>}
+                    <span className="muted">
+                      Escribile para coordinar la devolución de las prendas y el reintegro por el mismo medio de pago.
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="od-sec">
                 <div className="od-steps">
                   {[1, 2, 3, 4, 5].map((k) => (

@@ -1,10 +1,10 @@
 "use client";
 
-import { Bell, Hourglass, Inbox, TriangleAlert } from "lucide-react";
+import { Bell, Hourglass, Inbox, TriangleAlert, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Notice } from "./shell-view";
 
-const ICON = { pedido: Inbox, sin_pagar: Hourglass, stock: TriangleAlert } as const;
+const ICON = { pedido: Inbox, sin_pagar: Hourglass, stock: TriangleAlert, arrepentimiento: Undo2 } as const;
 
 type Props = {
   items: Notice[];

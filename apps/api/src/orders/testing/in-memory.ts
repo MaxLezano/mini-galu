@@ -8,6 +8,8 @@ import type {
   OrderPayment,
   OrderRecord,
   OrderRepository,
+  Revocation,
+  RevocationStore,
 } from "../application/ports";
 
 /** Pedidos en memoria que descuentan y devuelven el stock de MemoryVariants. */
@@ -182,5 +184,26 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       const v = this.variants.list.find((x) => x.variantId === i.variantId);
       if (v) v.stock += sign * i.qty;
     }
+  }
+}
+
+/** Solicitudes de arrepentimiento en memoria; también le completan `revocation` a los pedidos. */
+export class MemoryRevocations implements RevocationStore {
+  byOrder = new Map<string, Revocation>();
+  clock: () => Date = () => new Date();
+
+  constructor(private readonly orders?: MemoryOrders) {}
+
+  async forOrder(orderId: string) {
+    return this.byOrder.get(orderId) ?? null;
+  }
+  async save(orderId: string, r: Omit<Revocation, "at">) {
+    const had = this.byOrder.get(orderId);
+    if (had) return { created: false, revocation: had };
+    const revocation = { ...r, at: this.clock() };
+    this.byOrder.set(orderId, revocation);
+    const o = this.orders?.items.find((x) => x.id === orderId);
+    if (o) o.revocation = revocation;
+    return { created: true, revocation };
   }
 }

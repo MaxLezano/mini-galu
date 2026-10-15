@@ -27,6 +27,7 @@ const TIENDA = [
   ["ingresar", "/ingresar"],
   ["seguimiento", "/seguimiento"],
   ["ayuda", "/ayuda/cambios"],
+  ["arrepentimiento", "/arrepentimiento"],
 ] as const;
 
 for (const [nombre, url] of TIENDA) {

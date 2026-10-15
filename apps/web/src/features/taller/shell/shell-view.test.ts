@@ -36,6 +36,22 @@ describe("armazón del panel", () => {
     expect(navCounts(orders, products)).toEqual({ pedidos: 2, stock: 1 });
   });
 
+  it("la campana pone primero las bajas pedidas con el botón de arrepentimiento", () => {
+    const baja = {
+      ...order("MG-1005", "entregado", "Sofía Paz"),
+      revocation: { code: "ARR-7K2M9Q", at: "2026-10-14T09:00:00Z", inTime: true, reason: null },
+    };
+    const [first] = notices([...orders, baja], products, (c) => `$${c / 100}`);
+    expect(first).toEqual({
+      key: "arrepentimiento:MG-1005",
+      kind: "arrepentimiento",
+      title: "#MG-1005 pidió la baja",
+      text: "Sofía Paz · ARR-7K2M9Q",
+      at: "2026-10-14T09:00:00Z",
+      order: "MG-1005",
+    });
+  });
+
   it("la campana avisa pedidos nuevos, links sin pagar y la última unidad de un talle", () => {
     const n = notices(orders, products, (c) => `$${c / 100}`);
     expect(n.map((x) => x.title)).toEqual(["Pedido nuevo #MG-1001", "#MG-1003 sin pagar", "Queda 1 en talle 2"]);

@@ -9,6 +9,8 @@ import type {
   OrderRecord,
   OrderRepository,
   ReserveResult,
+  Revocation,
+  RevocationStore,
 } from "../application/ports";
 import type { PaidOrder } from "../domain/stats";
 
@@ -89,9 +91,11 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
         ),
       );
     const tracking = await this.trackingOf(rows.map((r) => r.id));
+    const revoked = await this.revocationsOf(rows.map((r) => r.id));
     return rows.map((o) => ({
       ...o,
       trackingNumber: tracking.get(o.id) ?? null,
+      revocation: revoked.get(o.id) ?? null,
       items: items.filter((i) => i.orderId === o.id).map(({ id: _id, orderId: _o, ...i }) => i),
     }));
   }
@@ -332,6 +336,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     return {
       ...o,
       trackingNumber: (await this.trackingOf([o.id])).get(o.id) ?? null,
+      revocation: (await this.revocationsOf([o.id])).get(o.id) ?? null,
       items: items.map(({ id: _id, orderId: _o, ...i }) => i),
     };
   }
@@ -344,5 +349,41 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       .from(s.shipments)
       .where(inArray(s.shipments.orderId, orderIds));
     return new Map(rows.map((r) => [r.orderId, r.trackingNumber]));
+  }
+
+  /** Bajas pedidas con el botón de arrepentimiento. */
+  private async revocationsOf(orderIds: string[]): Promise<Map<string, Revocation>> {
+    if (!orderIds.length) return new Map();
+    const rows = await this.db.select().from(s.orderRevocations).where(inArray(s.orderRevocations.orderId, orderIds));
+    return new Map(rows.map((r) => [r.orderId, toRevocation(r)]));
+  }
+}
+
+const toRevocation = (r: typeof s.orderRevocations.$inferSelect): Revocation => ({
+  code: r.code,
+  at: r.createdAt,
+  inTime: r.inTime,
+  reason: r.reason,
+});
+
+/** Solicitudes del botón de arrepentimiento (una por pedido). */
+export class DrizzleRevocations implements RevocationStore {
+  constructor(private readonly db: Db) {}
+
+  async forOrder(orderId: string) {
+    const [r] = await this.db.select().from(s.orderRevocations).where(eq(s.orderRevocations.orderId, orderId));
+    return r ? toRevocation(r) : null;
+  }
+
+  async save(orderId: string, r: Omit<Revocation, "at">) {
+    const [row] = await this.db
+      .insert(s.orderRevocations)
+      .values({ orderId, ...r })
+      .onConflictDoNothing({ target: s.orderRevocations.orderId })
+      .returning();
+    if (row) return { created: true, revocation: toRevocation(row) };
+    const had = await this.forOrder(orderId);
+    if (!had) throw new Error("No se pudo guardar la solicitud de arrepentimiento");
+    return { created: false, revocation: had };
   }
 }
