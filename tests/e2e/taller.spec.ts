@@ -34,10 +34,14 @@ test("entrar por /taller lleva al panel y salir vuelve a ingresar", async ({ pag
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller$/);
   await expect(page.getByRole("heading", { name: /Gaby/ })).toBeVisible();
-  // en celular la salida está en el menú lateral
-  const burger = page.getByRole("button", { name: "Abrir menú" });
-  if (await burger.isVisible()) await burger.click();
-  await page.getByRole("button", { name: "Salir del panel" }).click();
+  // en celular la salida está en el menú lateral (se reintenta: un toque antes de hidratar no lo abre)
+  const exit = page.getByRole("button", { name: "Salir del panel" });
+  if (test.info().project.name === "celular")
+    await expect(async () => {
+      await page.getByRole("button", { name: "Abrir menú" }).click();
+      await expect(exit).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+  await exit.click();
   await expect(page).toHaveURL(/\/taller\/ingresar/);
   await page.goto("/taller/productos");
   await expect(page).toHaveURL(/\/taller\/ingresar/);
