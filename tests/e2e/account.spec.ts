@@ -52,6 +52,18 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
   await expect(page.locator('[data-nena="Olivia"]')).toContainText("talle");
   await expect(page.locator('[data-nena="Olivia"]')).toContainText("14 de noviembre");
 
+  // menú de cuenta del header (en escritorio; en el celular la cuenta va por el menú lateral)
+  if (test.info().project.name === "escritorio") {
+    await page.getByRole("button", { name: "Mi cuenta" }).click();
+    const menu = page.locator("#pop-user");
+    await expect(menu).toContainText("Hola, Lucía");
+    await expect(menu).toContainText("Olivia (talle 4)");
+    await menu.getByRole("link", { name: "Mis datos" }).click();
+    await expect(page).toHaveURL(/\/cuenta#datos$/);
+    await expect(page.getByRole("button", { name: "Agregar dirección" })).toBeVisible();
+    await expect(menu).toBeHidden();
+  }
+
   // un favorito desde la ficha queda en la cuenta
   await page.goto("/producto/mono-verde");
   await page

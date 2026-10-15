@@ -258,9 +258,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   apuntan a `/catalogo`), ficha, gift cards y ayuda; `robots.txt` (sin panel, cuenta ni pasos de compra) y
   `sitemap.xml` (páginas públicas y cada prenda publicada, con foto); JSON-LD `OnlineStore` en el inicio y `Product`
   (precio en ARS, stock, puntaje) + migas en la ficha. El adelanto de un lanzamiento (borrador) lleva `noindex`
-- ⏳ **Siguiente**: menú de cuenta del header como en el mockup (`app.js` · `pop-user`): saludo con las nenas, Mis
-  nenas, Mis pedidos (en camino), Favoritos, Lista de cumple, Gift cards (saldo), Mis datos y Salir. Hoy el botón va
-  directo a `/cuenta`
+- ✅ Menú de cuenta del header (mockup `app.js` · `pop-user`): saludo con las nenas y su talle, Mis nenas, Mis pedidos
+  (pill "N en camino" o "N en preparación"), Favoritos (cantidad), Lista de cumple, Gift cards (saldo de las activas;
+  lleva a la pestaña de la cuenta), Mis datos y Salir. Se pide el resumen al abrirlo; en Mi cuenta solo cambia de pestaña
 - ⏳ a11y AA, Lighthouse ≥ 90, imágenes AVIF/WebP con `srcset` (sharp), View Transitions
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 

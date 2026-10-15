@@ -4,11 +4,15 @@ import { ChevronDown, Menu, Search, ShoppingBag, Truck, UserRound, X } from "luc
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { type AccountMenuSummary, accountMenuSummary } from "@/features/account/account-menu";
 import { useAccount } from "@/features/account/account-store";
 import { cartCount, useCart } from "@/features/cart/cart-store";
+import { useFavorites } from "@/features/favorites/favorites-store";
+import { accountApi } from "@/lib/account-api";
 import { useMounted } from "@/lib/use-mounted";
 import { launchCountLabel, useShellData } from "../shell-context";
 import { useUi } from "../ui-store";
+import { AccountMenu } from "./AccountMenu";
 import { Logo } from "./Logo";
 import { MegaMenu } from "./MegaMenu";
 
@@ -23,7 +27,9 @@ export function Header() {
   const { menuOpen, setMenu, setSearch, setDrawer } = useUi();
   const [solid, setSolid] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
-  const [pop, setPop] = useState<"track" | null>(null);
+  const [pop, setPop] = useState<"track" | "user" | null>(null);
+  const [summary, setSummary] = useState<AccountMenuSummary | null>(null);
+  const favorites = useFavorites((s) => s.slugs.length);
   const itemRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const days = mounted ? launchCountLabel(launch) : null;
@@ -62,6 +68,17 @@ export function Header() {
       document.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  // el resumen de la cuenta se pide al abrir el menú (así muestra los pedidos y el saldo al día)
+  useEffect(() => {
+    if (pop === "user")
+      accountApi.overview().then(
+        (o) => setSummary(accountMenuSummary(o)),
+        () => {},
+      );
+  }, [pop]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: al cambiar de cuenta se descarta el resumen anterior
+  useEffect(() => setSummary(null), [account.user?.id]);
 
   // mega menú: se abre al pasar el mouse (con un respiro para no parpadear) o tocando en pantallas táctiles
   const hover = () => typeof window !== "undefined" && matchMedia("(hover: hover)").matches;
@@ -185,9 +202,26 @@ export function Header() {
             </div>
           </div>
           {account.status === "in" ? (
-            <Link className="nav-login hide-m" href="/cuenta">
-              <UserRound className="i-sm" /> {account.user?.firstName || "Mi cuenta"}
-            </Link>
+            <AccountMenu
+              open={pop === "user"}
+              firstName={account.user?.firstName || account.user?.name || "vos"}
+              favorites={mounted ? favorites : 0}
+              summary={summary}
+              onToggle={() => setPop(pop === "user" ? null : "user")}
+              onTab={(e, tab) => {
+                setPop(null);
+                // en Mi cuenta solo cambia de pestaña (escucha el hash), sin volver a cargar
+                if (pathname === "/cuenta") {
+                  e.preventDefault();
+                  location.hash = tab;
+                }
+              }}
+              onSignOut={async () => {
+                setPop(null);
+                await account.signOut();
+                router.push("/");
+              }}
+            />
           ) : (
             <Link className="nav-login hide-m" href="/ingresar">
               <UserRound className="i-sm" /> Ingresar
