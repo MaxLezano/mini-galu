@@ -55,12 +55,15 @@ import { catalogRoutes } from "./catalog/infrastructure/http/catalog-routes";
 import type { Config } from "./config";
 import { AdminLaunchesService } from "./content/application/admin-launches-service";
 import { ContentService } from "./content/application/content-service";
+import { HelpService } from "./content/application/help-service";
 import type { ProductPublisher } from "./content/application/launch-ports";
 import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
+import { DrizzleHelpRepository } from "./content/infrastructure/drizzle-help-repository";
 import { adminHomeRoutes } from "./content/infrastructure/http/admin-home-routes";
 import { adminLaunchesRoutes } from "./content/infrastructure/http/admin-launches-routes";
 import { contentRoutes } from "./content/infrastructure/http/content-routes";
+import { adminHelpRoutes, helpRoutes } from "./content/infrastructure/http/help-routes";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
@@ -179,6 +182,11 @@ export function buildApp(config: Config) {
   const catalog = new CatalogService(new DrizzleProductRepository(db), new DrizzleWaitlistRepository(db), storage);
   const adminCatalog = new AdminCatalogService(new DrizzleAdminProductRepository(db), storage, events);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
+  const help = new HelpService(new DrizzleHelpRepository(db), {
+    workshop: WORKSHOP,
+    freeShippingFrom: formatARS(FREE_SHIPPING_FROM_CENTS),
+    email: "hola@minigalu.com.ar",
+  });
 
   // los lanzamientos publican prendas a través del catálogo (que valida, por ejemplo, que tengan foto)
   const publisher: ProductPublisher = {
@@ -518,6 +526,7 @@ export function buildApp(config: Config) {
     )
     .get("/health", (c) => c.json({ ok: true }))
     .route("/catalog", catalogRoutes(catalog))
+    .route("/content/help", helpRoutes(help))
     .route("/content", contentRoutes(content))
     .route("/auth", authRoutes(auth))
     .use("/cart/*", cartOwner(auth, cart, secure))
@@ -538,6 +547,7 @@ export function buildApp(config: Config) {
     .route("/admin/catalog", adminCatalogRoutes(adminCatalog, catalog))
     .route("/admin/content/launches", adminLaunchesRoutes(launches))
     .route("/admin/content/home", adminHomeRoutes(content))
+    .route("/admin/content/help", adminHelpRoutes(help))
     .route("/admin/orders", adminShipmentRoutes(shipments))
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/coupons", adminCouponRoutes(coupons))

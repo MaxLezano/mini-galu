@@ -5,7 +5,7 @@ import { adminServer, getAdminSession } from "@/lib/admin-server";
 export const metadata: Metadata = { title: "Tienda y pagos" };
 
 export default async function Page() {
-  const [home, launches, payments, shipping, coupons, newsletter, giftcards, session] = await Promise.all([
+  const [home, launches, payments, shipping, coupons, newsletter, giftcards, help, session] = await Promise.all([
     adminServer.home(),
     adminServer.launches(),
     adminServer.payments(),
@@ -13,6 +13,7 @@ export default async function Page() {
     adminServer.coupons(),
     adminServer.newsletter(),
     adminServer.giftcards(),
+    adminServer.help(),
     getAdminSession(),
   ]);
   return (
@@ -23,6 +24,7 @@ export default async function Page() {
       shipping={shipping}
       newsletter={newsletter}
       giftcards={giftcards}
+      help={help}
       email={session?.email ?? ""}
       coupons={coupons}
     />

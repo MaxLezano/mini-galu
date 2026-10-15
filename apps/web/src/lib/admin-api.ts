@@ -16,6 +16,9 @@ import type {
   AutomationKey,
   Collection,
   CouponInput,
+  HelpPage,
+  HelpPageInput,
+  HelpTopic,
   HomeHeroInput,
   LaunchInput,
   OrderStatus,
@@ -102,6 +105,9 @@ export const adminApi = {
     return adminRequest<UploadResult>("/admin/catalog/images", { method: "POST", body: fd });
   },
   launches: () => adminRequest<AdminLaunch[]>("/admin/content/launches"),
+  saveHelp: (topic: HelpTopic, input: HelpPageInput) =>
+    adminRequest<HelpPage>(`/admin/content/help/${topic}`, { method: "PUT", body: JSON.stringify(input) }),
+  resetHelp: (topic: HelpTopic) => adminRequest<HelpPage>(`/admin/content/help/${topic}`, { method: "DELETE" }),
   saveHome: (input: HomeHeroInput) =>
     adminRequest<AdminHome>("/admin/content/home", { method: "PUT", body: JSON.stringify(input) }),
   createLaunch: (input: LaunchInput) =>

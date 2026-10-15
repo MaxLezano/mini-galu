@@ -1,0 +1,42 @@
+/* Páginas de ayuda (sin mockup propio: mismo lenguaje que seguimiento.html y la ficha de producto) */
+.help-hero { padding: clamp(40px, 7vw, 96px) 0 clamp(24px, 4vw, 48px); max-width: 860px; }
+.help-hero h1 { margin: 16px 0 14px; }
+.help-hero .lead { margin: 0; max-width: 56ch; }
+
+.help-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); align-items: start; padding-bottom: clamp(64px, 9vw, 120px); }
+.help-side { position: sticky; top: calc(var(--header-h) + 24px); display: grid; gap: 28px; }
+.help-topics { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.help-topics .chip { width: 100%; justify-content: flex-start; height: 44px; }
+.help-topics .chip[aria-current="page"] { background: var(--cacao); color: var(--paper); box-shadow: none; }
+.help-toc { display: grid; gap: 10px; padding-left: 4px; }
+.help-toc .lbl { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-3); }
+.help-toc ol { list-style: none; margin: 0; padding: 0 0 0 14px; display: grid; gap: 8px; border-left: 1.5px dashed var(--line-2); font-size: 14px; }
+.help-toc a { color: var(--cacao-2); text-decoration: none; }
+@media (hover: hover) { .help-toc a:hover { color: var(--canela); } }
+
+.help-body { max-width: 72ch; }
+.help-sec { padding-block: 28px; }
+.help-sec + .help-sec { border-top: 1.5px dashed var(--line-2); }
+.help-sec:first-child { padding-top: 0; }
+.help-sec h2 { margin: 0 0 14px; }
+.help-sec p { margin: 0 0 12px; color: var(--cacao-2); text-wrap: pretty; }
+.help-sec ul { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--cacao-2); }
+.help-sec li { position: relative; padding-left: 22px; }
+.help-sec li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 10px; border-top: 1.5px dashed var(--canela); }
+.help-upd { font-size: 13px; color: var(--cacao-3); margin: 8px 0 0; }
+
+.help-contact { margin-top: 40px; padding: 44px clamp(20px, 3vw, 32px) 28px; border-radius: var(--r-lg); background: var(--linen); display: grid; gap: 18px; }
+.help-contact .hand { font-size: 32px; display: inline-block; transform: rotate(-3deg); }
+.help-contact p { margin: 6px 0 0; }
+.help-contact-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .help-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .help-side { position: static; }
+  .help-topics { display: flex; flex-wrap: wrap; }
+  .help-topics .chip { width: auto; height: 38px; }
+  .help-toc { display: none; }
+}
+@media (max-width: 480px) {
+  .help-contact-btns .btn { width: 100%; justify-content: center; }
+}

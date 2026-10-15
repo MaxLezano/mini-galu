@@ -126,7 +126,10 @@ export function Footer() {
       </div>
       <div className="wrap">
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} Mini Galú · Marca registrada</span>
+          <span className="footer-legal">
+            © {new Date().getFullYear()} Mini Galú · Marca registrada · <Link href="/ayuda/terminos">Términos</Link> ·{" "}
+            <Link href="/ayuda/privacidad">Privacidad</Link>
+          </span>
           <div className="pay-logos">
             <span>
               <BrandIcon name="mercadopago" /> Mercado Pago

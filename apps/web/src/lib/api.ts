@@ -11,6 +11,9 @@ import type {
   GiftcardBalance,
   GiftcardCreated,
   GiftcardPurchase,
+  HelpLink,
+  HelpPage,
+  HelpTopic,
   HomeContent,
   InstallmentPlan,
   OrderReceipt,
@@ -78,6 +81,8 @@ export const api = {
   product: (slug: string) => request<ProductDetail>(`/catalog/products/${encodeURIComponent(slug)}`),
   facets: () => request<Facets>("/catalog/facets"),
   home: () => request<HomeContent>("/content/home"),
+  help: (topic: HelpTopic) => request<HelpPage>(`/content/help/${topic}`),
+  helpLinks: () => request<HelpLink[]>("/content/help"),
   joinWaitlist: (body: { slug: string; size: Size | null; channel: ContactChannel; contact: string }) =>
     request<{ created: boolean; position: number }>("/catalog/waitlist", {
       method: "POST",

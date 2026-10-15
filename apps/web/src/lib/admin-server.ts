@@ -15,6 +15,7 @@ import type {
   AdminSession,
   AdminShipping,
   Collection,
+  HelpPage,
 } from "@mini-galu/contracts";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -54,6 +55,7 @@ export const adminServer = {
   collections: () => serverRequest<Collection[]>("/admin/catalog/collections"),
   launches: () => serverRequest<AdminLaunch[]>("/admin/content/launches"),
   home: () => serverRequest<AdminHome>("/admin/content/home"),
+  help: () => serverRequest<HelpPage[]>("/admin/content/help"),
   payments: () => serverRequest<AdminPayments>("/admin/payments"),
   shipping: () => serverRequest<AdminShipping>("/admin/shipping"),
   automations: () => serverRequest<AdminAutomations>("/admin/automations"),

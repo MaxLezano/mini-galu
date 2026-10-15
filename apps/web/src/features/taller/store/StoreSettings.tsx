@@ -6,11 +6,13 @@ import type {
   AdminNewsletter,
   AdminPayments,
   AdminShipping,
+  HelpPage,
 } from "@mini-galu/contracts";
 import Link from "next/link";
 import { launchWhen } from "@/lib/date";
 import { CouponsEditor } from "./CouponsEditor";
 import { GiftcardsBox } from "./GiftcardsBox";
+import { HelpEditor } from "./HelpEditor";
 import { HeroEditor } from "./HeroEditor";
 import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
@@ -26,10 +28,11 @@ type Props = {
   coupons: AdminCoupon[];
   newsletter: AdminNewsletter;
   giftcards: AdminGiftcards;
+  help: HelpPage[];
   email: string;
 };
 
-export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, giftcards, email }: Props) {
+export function StoreSettings({ home, next, payments, shipping, coupons, newsletter, giftcards, help, email }: Props) {
   return (
     <main className="adm-content">
       <div className="adm-head">
@@ -86,6 +89,7 @@ export function StoreSettings({ home, next, payments, shipping, coupons, newslet
         <HeroEditor initial={home} />
         <CouponsEditor initial={coupons} />
         <GiftcardsBox data={giftcards} />
+        <HelpEditor initial={help} />
       </div>
     </main>
   );

@@ -247,7 +247,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   la API exige sesión con rol admin en todo `/admin/*`.
 
 ## Fase 9 · Pulido / Fase 10 · Deploy
-- ⏳ a11y AA, Lighthouse ≥ 90, SEO, imágenes AVIF/WebP con `srcset` (sharp), View Transitions, páginas de ayuda
+- ✅ Páginas de ayuda (`/ayuda/cambios`, `envios-y-pagos`, `terminos`, `privacidad`; sin mockup propio, con el lenguaje
+  de seguimiento y la ficha): navegación entre temas, índice "En esta página", contacto (Galú, WhatsApp, mail) y links
+  a términos y privacidad en el pie. Texto de base con lo que ya dice la tienda (30 días, Andreani, retiro, cuotas,
+  envío gratis) y la ley (arrepentimiento de 10 días, Ley 25.326 y leyenda de la AAIP); "Páginas de ayuda" en Tienda y
+  pagos edita título, bajada y apartados (párrafos y listas con "- "), y vuelve al texto de base
+- ⏳ Que Gaby revise los textos (y, antes del deploy, términos y privacidad con quien la asesore)
+- ⏳ "Botón de arrepentimiento" (Res. SCI 424/2020): link visible en la home y formulario que da un código → fase 10
+- ⏳ a11y AA, Lighthouse ≥ 90, SEO, imágenes AVIF/WebP con `srcset` (sharp), View Transitions
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)
