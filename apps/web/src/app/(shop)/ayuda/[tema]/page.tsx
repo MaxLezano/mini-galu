@@ -13,8 +13,9 @@ function topic(raw: string) {
 }
 
 export async function generateMetadata({ params }: PageProps<"/ayuda/[tema]">): Promise<Metadata> {
-  const page = await api.help(topic((await params).tema));
-  return { title: page.title, description: page.intro || undefined };
+  const t = topic((await params).tema);
+  const page = await api.help(t);
+  return { title: page.title, description: page.intro || undefined, alternates: { canonical: `/ayuda/${t}` } };
 }
 
 /** Cambios, envíos y pagos, términos y privacidad: el texto se edita desde el panel (Tienda y pagos). */

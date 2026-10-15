@@ -254,7 +254,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   pagos edita título, bajada y apartados (párrafos y listas con "- "), y vuelve al texto de base
 - ⏳ Que Gaby revise los textos (y, antes del deploy, términos y privacidad con quien la asesore)
 - ⏳ "Botón de arrepentimiento" (Res. SCI 424/2020): link visible en la home y formulario que da un código → fase 10
-- ⏳ a11y AA, Lighthouse ≥ 90, SEO, imágenes AVIF/WebP con `srcset` (sharp), View Transitions
+- ✅ SEO: `metadataBase` con `NEXT_PUBLIC_SITE_URL`, Open Graph (es_AR) y canonical en inicio, catálogo (los filtros
+  apuntan a `/catalogo`), ficha, gift cards y ayuda; `robots.txt` (sin panel, cuenta ni pasos de compra) y
+  `sitemap.xml` (páginas públicas y cada prenda publicada, con foto); JSON-LD `OnlineStore` en el inicio y `Product`
+  (precio en ARS, stock, puntaje) + migas en la ficha. El adelanto de un lanzamiento (borrador) lleva `noindex`
+- ⏳ a11y AA, Lighthouse ≥ 90, imágenes AVIF/WebP con `srcset` (sharp), View Transitions
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)

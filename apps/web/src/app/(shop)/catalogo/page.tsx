@@ -4,7 +4,12 @@ import { CatalogView } from "@/features/catalog/containers/CatalogView";
 import { api } from "@/lib/api";
 import "@/features/catalog/catalog.css";
 
-export const metadata: Metadata = { title: "Catálogo" };
+export const metadata: Metadata = {
+  title: "Catálogo",
+  description: "Todas las prendas de Mini Galú, de 12 meses a talle 10: filtrá por talle, colección, color y ocasión.",
+  // los filtros son la misma página: una sola URL para los buscadores
+  alternates: { canonical: "/catalogo" },
+};
 
 export default async function Page({ searchParams }: PageProps<"/catalogo">) {
   const params = await searchParams;

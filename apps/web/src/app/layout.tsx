@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { OPEN_GRAPH } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -33,6 +34,9 @@ const caveat = localFont({
 export const metadata: Metadata = {
   title: { default: `${SITE.name} — Prendas de diseño para niñas`, template: `%s — ${SITE.name}` },
   description: SITE.description,
+  metadataBase: new URL(SITE.url),
+  openGraph: OPEN_GRAPH,
+  twitter: { card: "summary_large_image" },
   icons: { icon: "/favicon.svg" },
 };
 
