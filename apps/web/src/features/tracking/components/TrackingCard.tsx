@@ -73,7 +73,7 @@ export function TrackingCard({ t, onAskGalu }: { t: PublicTracking; onAskGalu: (
           <div className="pkg">
             {t.items.map((i) => (
               <Link key={`${i.slug}-${i.size}`} href={`/producto/${i.slug}`}>
-                {i.imageUrl && <img src={imageThumb(i.imageUrl)} alt="" />}
+                {i.imageUrl && <img loading="lazy" src={imageThumb(i.imageUrl)} alt="" />}
                 <span>
                   <b>{i.name}</b>
                   <br />

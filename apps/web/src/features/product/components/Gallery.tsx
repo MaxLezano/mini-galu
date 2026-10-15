@@ -30,7 +30,7 @@ export function Gallery({ product: p }: { product: ProductDetail }) {
       >
         {p.images.map((im) => (
           <SwiperSlide key={im.url}>
-            <img src={imageThumb(im.url)} alt="" />
+            <img loading="lazy" src={imageThumb(im.url)} alt="" />
           </SwiperSlide>
         ))}
       </Swiper>

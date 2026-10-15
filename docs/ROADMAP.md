@@ -270,7 +270,24 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   nueva sube (`<ViewTransition>` de React en el `template.tsx` de la tienda y del panel, `features/shell/PageTransition`);
   el header queda quieto. Al tocar la foto o el nombre de una tarjeta, la foto viaja a la primera de la ficha
   (`product-hero`, se nombra al hacer clic y se suelta al llegar). Sin animación con `prefers-reduced-motion` o `?static`
-- ⏳ a11y AA, Lighthouse ≥ 90
+- ✅ a11y WCAG 2.1 AA (`tests/e2e/a11y.spec.ts`, axe-core en celular y escritorio): inicio, catálogo, ficha, gift cards,
+  ingresar, cuenta nueva, seguimiento, ayuda, bolsa, checkout, Galú, menú móvil y las 9 pantallas del panel. Tokens
+  oscurecidos para llegar a 4.5:1 (`--cacao-3` #756860, `--canela` #A95E3A, `--salvia-d` #57654B; también en los
+  mockups y el mail); lanzamientos pasados apagados sin opacidad en el texto; foto de la bolsa con nombre; las tarjetas
+  del tablero ya no se anuncian como botón (no había arrastre con teclado); títulos del pie en orden (`h2.ft-h`)
+- ✅ Arrastrar con el mouse las filas con scroll horizontal (sugerencias y tarjetas de Galú, tabs, chips, tablas,
+  tablero): `features/shell/drag-scroll.ts`, en la tienda y el panel; si hubo arrastre no se dispara el click
+- ✅ Fotos del hero y del lookbook de vuelta (los selectores `> img` no veían el `<img>` dentro de `<picture>`)
+- 🟡 Lighthouse (build de producción, local): escritorio 97–99 en rendimiento y 99–100 en accesibilidad y SEO;
+  celular 99–100 en accesibilidad y SEO pero **rendimiento 74–81** (LCP simulado 5–6 s; el real es 0.4 s). Hecho:
+  miniaturas `lazy`, `/media` con cache `immutable`, `preconnect` a la API. ⏳ Falta: bajar layout y capas en el
+  celular (~2000 objetos de layout y "layerize" de 300 ms con CPU ×4): montar menú, buscador, mega menú y Galú recién
+  al abrirlos, y revisar animaciones infinitas (pulso de los hotspots, cinta del anuncio) y el grano del `body::before`
+- ⏳ **Políticas y envíos configurables desde el panel** (pedido 2026-10-15): días de cambio (hoy 30 fijo en la ficha,
+  el inicio, el checkout y la ayuda), cómo pedir un cambio, prender/apagar apartados como "Arrepentimiento" (ojo: el
+  botón de arrepentimiento es obligatorio por la Res. SCI 424/2020 para tiendas online), envío gratis (sí/no y monto),
+  tarifas por zona y retiro en el taller. Hoy "Tienda y pagos" edita textos de ayuda, paquete, origen, remitente,
+  pagos y cupones
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)

@@ -527,7 +527,8 @@ export function buildApp(config: Config) {
       serveStatic({
         root: relative(process.cwd(), config.mediaDir),
         rewriteRequestPath: (p) => p.replace(/^\/media/, ""),
-        onFound: (_path, c) => c.header("Cache-Control", "public, max-age=86400"),
+        // las subidas llevan nombre nuevo (UUID): una URL nunca cambia de contenido
+        onFound: (_path, c) => c.header("Cache-Control", "public, max-age=31536000, immutable"),
       }),
     )
     .get("/health", (c) => c.json({ ok: true }))

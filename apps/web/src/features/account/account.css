@@ -8,7 +8,7 @@
 .side nav a { display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-radius: 14px; font-size: 14.5px; font-weight: 500; transition: background var(--t-fast); white-space: nowrap; }
 .side nav a:hover { background: var(--linen); }
 .side nav a[aria-current="true"] { background: var(--cacao); color: var(--paper); }
-.side nav a .count { margin-left: auto; font-size: 12px; opacity: .6; }
+.side nav a .count { margin-left: auto; font-size: 12px; opacity: .7; }
 .panel { display: none; min-width: 0; }
 .panel.is-on { display: block; animation: msgIn .5s var(--ease) both; }
 .panel-head { margin-bottom: 28px; }

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { preconnect } from "react-dom";
+import { API_URL } from "@/lib/api";
 import { OPEN_GRAPH } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 import "swiper/css";
@@ -48,6 +50,8 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // las fotos vienen de la API (/media): la conexión se abre antes de que el HTML las pida
+  preconnect(API_URL);
   return (
     <html
       lang="es-AR"

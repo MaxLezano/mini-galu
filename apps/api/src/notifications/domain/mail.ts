@@ -33,8 +33,8 @@ const C = {
   linen: "#F4EDE3",
   cacao: "#3A2A22",
   cacao2: "#6E5A4E",
-  canela: "#B0643E",
-  salvia: "#5F6E52",
+  canela: "#A95E3A",
+  salvia: "#57654B",
   line: "#E6DCCF",
 };
 
@@ -305,7 +305,7 @@ export type GiftcardMailData = {
 const CARD_BG: Record<string, [string, string]> = {
   cacao: [C.cacao, C.linen],
   rosa: ["#E8C6BF", C.cacao],
-  salvia: ["#5F6E52", C.linen],
+  salvia: ["#57654B", C.linen],
   lino: ["#EADFD0", C.cacao],
 };
 

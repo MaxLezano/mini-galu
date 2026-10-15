@@ -440,7 +440,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
           <div className="pick-bar">
             <div className="pick-thumbs">
               {[...picked.values()].slice(0, 5).map(({ product }) => (
-                <img key={product.slug} src={imageThumb(cover(product))} alt="" />
+                <img loading="lazy" key={product.slug} src={imageThumb(cover(product))} alt="" />
               ))}
             </div>
             <span id="pick-n">

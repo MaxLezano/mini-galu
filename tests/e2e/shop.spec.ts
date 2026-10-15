@@ -76,3 +76,24 @@ test("sin modelo en la API, Galú responde por reglas con el stock real", async 
   await expect(page.locator(".galu-body")).toContainText(/En talle 2 tengo \d+ modelos/);
   await expect(page.locator(".galu-body .mini-card").first()).toBeVisible();
 });
+
+test("con el mouse, las sugerencias de Galú se arrastran de costado sin mandarse", async ({ page }) => {
+  test.skip(test.info().project.name === "celular", "en táctil desplaza el navegador");
+  await page.goto("/?static"); // sin la entrada animada del panel: la caja de las sugerencias queda quieta
+  await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  const sugs = page.locator(".galu-sugs");
+  await expect(sugs.locator(".chip").first()).toBeVisible();
+  const msgs = await page.locator(".galu-body .msg").count();
+  const box = await sugs.boundingBox();
+  if (!box) throw new Error("sin sugerencias");
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width - 40, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 140, y, { steps: 8 });
+  await page.mouse.up();
+  expect(await sugs.evaluate((el) => el.scrollLeft)).toBeGreaterThan(50);
+  await expect(page.locator(".galu-body .msg")).toHaveCount(msgs);
+  // un click común sigue mandando la sugerencia
+  await sugs.locator(".chip").first().click();
+  await expect(page.locator(".galu-body .msg")).not.toHaveCount(msgs);
+});

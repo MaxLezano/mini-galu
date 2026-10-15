@@ -6,6 +6,7 @@ import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useFavorites } from "@/features/favorites/favorites-store";
 import { autoReveal, drawCraft, heroOnCardClick, measuringTape, observeReveal, releaseHero, sewSeams } from "./craft";
+import { dragScroll } from "./drag-scroll";
 import { useUi } from "./ui-store";
 
 /** Monta los detalles de taller en cada página y los reengancha cuando se agrega contenido (filtros, Galú…). */
@@ -20,6 +21,7 @@ export function CraftEffects() {
     // favoritos del navegador y, si hay sesión, los de la cuenta (se suman al ingresar)
     void Promise.resolve(useFavorites.persist.rehydrate()).then(() => useAccount.getState().load());
     const stopTape = measuringTape();
+    const stopDrag = dragScroll();
     const measureQuick = (e: Event) => {
       const c = (e.target as Element | null)?.closest?.(".p-card.arch") as HTMLElement | null;
       const q = c?.querySelector<HTMLElement>(".p-quick");
@@ -30,6 +32,7 @@ export function CraftEffects() {
     document.addEventListener("click", heroOnCardClick);
     return () => {
       stopTape();
+      stopDrag();
       document.removeEventListener("pointerover", measureQuick);
       document.removeEventListener("focusin", measureQuick);
       document.removeEventListener("click", heroOnCardClick);

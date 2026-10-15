@@ -213,7 +213,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
             {receipt.items.map((i) => (
               <div className="s-item" key={`${i.name}-${i.size}`}>
                 <span className="ph">
-                  <img src={imageThumb(i.imageUrl)} alt="" />
+                  <img loading="lazy" src={imageThumb(i.imageUrl)} alt="" />
                   <span className="q">{i.qty}</span>
                 </span>
                 <span>

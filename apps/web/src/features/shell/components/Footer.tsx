@@ -36,7 +36,7 @@ export function Footer() {
           </div>
         </div>
         <div>
-          <h5>Tienda</h5>
+          <h2 className="ft-h">Tienda</h2>
           <ul>
             <li>
               <Link href="/catalogo">Catálogo</Link>
@@ -56,7 +56,7 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <h5>Ayuda</h5>
+          <h2 className="ft-h">Ayuda</h2>
           <ul>
             <li>
               <Link href="/seguimiento">Seguir mi pedido</Link>
@@ -78,7 +78,7 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <h5>Cartas del taller</h5>
+          <h2 className="ft-h">Cartas del taller</h2>
           <p style={{ opacity: 0.75, fontSize: 14, margin: "0 0 14px" }}>
             Enterate de los lanzamientos antes que en Instagram. Una carta por mes, prometido.
           </p>

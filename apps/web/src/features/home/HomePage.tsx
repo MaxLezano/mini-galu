@@ -321,7 +321,7 @@ function ChatDemo({ rebeca, samanta }: { rebeca?: ProductSummary; samanta?: Prod
       </div>
       <div className="msg cards">
         <div className="mini-card">
-          <img src={imageThumb(cover(rebeca))} alt="" />
+          <img loading="lazy" src={imageThumb(cover(rebeca))} alt="" />
           <div>
             <b>{rebeca.name}</b>
             <div className="stock">{t2 > 0 ? `${t2} en stock · talle 2` : "Sin stock en talle 2"}</div>
@@ -331,7 +331,7 @@ function ChatDemo({ rebeca, samanta }: { rebeca?: ProductSummary; samanta?: Prod
           </div>
         </div>
         <div className="mini-card">
-          <img src={imageThumb(cover(samanta))} alt="" />
+          <img loading="lazy" src={imageThumb(cover(samanta))} alt="" />
           <div>
             <b>{samanta.name.replace("Vestido ", "")}</b>
             <div className="stock">Desde talle {samanta.variants.find((v) => v.stock > 0)?.size ?? "—"}</div>

@@ -60,6 +60,7 @@ export function Lookbook({
                   </button>
                   <div className="hot-pop">
                     <img
+                      loading="lazy"
                       src={imageThumb(s.imageUrl)}
                       alt=""
                       style={{ objectPosition: s.objectPosition ?? undefined }}

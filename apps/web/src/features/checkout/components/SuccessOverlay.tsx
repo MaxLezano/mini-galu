@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Foco } from "@/ui/atoms/Foco";
 
-const COLORS = ["#E8C6BF", "#B0643E", "#8B9A7C", "#A3302B", "#EADFD0"];
+const COLORS = ["#E8C6BF", "#A95E3A", "#8B9A7C", "#A3302B", "#EADFD0"];
 
 type Confetti = { left: number; color: string; duration: number; delay: number; rotate: number };
 

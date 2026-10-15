@@ -76,7 +76,7 @@ export function WishlistPanel({ nenas, selected, origin, onSelect, onRemove, onA
               {selected.wishlist.length ? (
                 selected.wishlist.map((w) => (
                   <div className="wish-item" key={w.id}>
-                    {w.imageUrl ? <img src={imageThumb(w.imageUrl)} alt="" /> : <span />}
+                    {w.imageUrl ? <img loading="lazy" src={imageThumb(w.imageUrl)} alt="" /> : <span />}
                     <div>
                       <b>{w.name}</b>
                       <span className="muted" style={{ fontSize: 13 }}>

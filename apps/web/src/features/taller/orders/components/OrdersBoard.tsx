@@ -44,10 +44,10 @@ type Props = {
 };
 
 function DraggableCard({ order, props }: { order: AdminOrderSummary; props: CardProps }) {
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: order.number });
+  const { setNodeRef, listeners, isDragging } = useDraggable({ id: order.number });
   return (
     <div style={{ opacity: isDragging ? 0.35 : 1 }}>
-      <OrderCard {...props} order={order} dragRef={setNodeRef} dragProps={{ ...attributes, ...listeners }} />
+      <OrderCard {...props} order={order} dragRef={setNodeRef} dragProps={listeners} />
     </div>
   );
 }

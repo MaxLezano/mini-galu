@@ -69,7 +69,7 @@ export function CartDrawer() {
             lines.map((l, i) => (
               <div className="line-item" key={`${l.slug}-${l.size}`}>
                 <Link href={`/producto/${l.slug}`} onClick={close}>
-                  <img src={imageThumb(l.imageUrl)} alt="" />
+                  <img loading="lazy" src={imageThumb(l.imageUrl)} alt={l.name} />
                 </Link>
                 <div>
                   <h4>{l.name}</h4>

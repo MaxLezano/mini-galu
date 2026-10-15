@@ -97,7 +97,7 @@ export function ReviewsBand({ rating, reviews }: { rating: Rating; reviews: Feat
       <Stars label="5 estrellas" />
       <q>{r.body}</q>
       <footer>
-        {r.product.imageUrl && <img src={imageThumb(r.product.imageUrl)} alt="" />}
+        {r.product.imageUrl && <img loading="lazy" src={imageThumb(r.product.imageUrl)} alt="" />}
         <div>
           <b>{r.author}</b>
           <span className="muted">

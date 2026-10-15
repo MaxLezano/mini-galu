@@ -78,7 +78,7 @@ export function OrderSummary({
             lines.map((l) => (
               <div className="s-item" key={`${l.slug}-${l.size}`}>
                 <span className="ph">
-                  <img src={imageThumb(l.imageUrl)} alt="" />
+                  <img loading="lazy" src={imageThumb(l.imageUrl)} alt="" />
                   <span className="q">{l.qty}</span>
                 </span>
                 <span>

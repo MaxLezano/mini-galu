@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 import { ToastHost } from "@/features/shell/components/ToastHost";
+import { dragScroll } from "@/features/shell/drag-scroll";
 import { adminApi } from "@/lib/admin-api";
 import { relativeWhen } from "@/lib/date";
 import { Foco } from "@/ui/atoms/Foco";
@@ -79,7 +80,11 @@ export function AdminShell({ session, children }: { session: AdminSession; child
 
   useEffect(() => {
     document.body.classList.add("adm-body");
-    return () => document.body.classList.remove("adm-body");
+    const stopDrag = dragScroll();
+    return () => {
+      document.body.classList.remove("adm-body");
+      stopDrag();
+    };
   }, []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: cierra el menú al navegar
   useEffect(() => setSideOpen(false), [pathname]);

@@ -44,7 +44,9 @@ export function WishlistPublic({ slug, list, products }: Props) {
             const mine = picked.some((g) => g.itemId === i.id);
             return (
               <article className={`wl-item ${i.gifted ? "is-gifted" : ""}`} key={i.id} data-wish={i.slug}>
-                <Link href={`/producto/${i.slug}`}>{i.imageUrl && <img src={imageThumb(i.imageUrl)} alt="" />}</Link>
+                <Link href={`/producto/${i.slug}`}>
+                  {i.imageUrl && <img loading="lazy" src={imageThumb(i.imageUrl)} alt="" />}
+                </Link>
                 <div>
                   <b>{i.name}</b>
                   <span className="muted">

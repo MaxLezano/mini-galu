@@ -26,7 +26,7 @@ export function AccountOrders({ orders }: { orders: AccountOrder[] }) {
           <div className="order" key={o.number}>
             <div className="ph">
               {o.items.slice(0, 3).map((i) => (
-                <img key={`${i.slug}-${i.size}`} src={imageThumb(i.imageUrl)} alt="" />
+                <img loading="lazy" key={`${i.slug}-${i.size}`} src={imageThumb(i.imageUrl)} alt="" />
               ))}
             </div>
             <div>

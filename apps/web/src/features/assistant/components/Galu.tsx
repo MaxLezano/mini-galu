@@ -30,7 +30,7 @@ function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (
   return (
     <div className="mini-card">
       <Link href={`/producto/${p.slug}`}>
-        <img src={imageThumb(cover(p))} alt={p.name} />
+        <img loading="lazy" src={imageThumb(cover(p))} alt={p.name} />
       </Link>
       <div>
         <b>{p.name}</b>

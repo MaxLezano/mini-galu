@@ -130,7 +130,7 @@ export function LaunchDrop({ launch, avatars }: { launch: Launch; avatars: strin
           <div className="avatars">
             <span>
               {avatars.map((a) => (
-                <img key={a} src={imageThumb(a)} alt="" />
+                <img loading="lazy" key={a} src={imageThumb(a)} alt="" />
               ))}
             </span>
             {signups} personas ya se anotaron

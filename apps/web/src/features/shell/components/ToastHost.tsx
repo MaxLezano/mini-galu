@@ -11,7 +11,7 @@ export function ToastHost() {
     <div className={`toast ${t ? "is-on" : ""}`} id="toast" role="status" aria-live="polite">
       {t &&
         (t.image ? (
-          <img src={imageThumb(t.image)} alt="" />
+          <img loading="lazy" src={imageThumb(t.image)} alt="" />
         ) : (
           <span className="ico">{t.icon ?? <Check className="i-sm" />}</span>
         ))}

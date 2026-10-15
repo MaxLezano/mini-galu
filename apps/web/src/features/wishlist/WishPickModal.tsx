@@ -65,7 +65,7 @@ export function WishPickModal({ product, size }: { product: ProductSummary; size
     >
       <div className="modal-body" style={{ display: "grid", gap: 14 }}>
         <div className="wp-item">
-          <img src={imageThumb(cover(product))} alt="" />
+          <img loading="lazy" src={imageThumb(cover(product))} alt="" />
           <span>
             <b>{product.name}</b>
             <small>
