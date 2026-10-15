@@ -3,6 +3,7 @@ import { Check, Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { cover, totalStock } from "@/lib/product";
+import { Picture } from "@/ui/atoms/Picture";
 
 /** Modo lista de cumple (catalogo.html?lista=…): la tarjeta se elige con un toque, con su talle. */
 export type CardPick = {
@@ -32,6 +33,9 @@ export type ProductCardProps = {
   onQuickToggle: () => void;
   onAdd: (size: Size, image: HTMLImageElement | null) => void;
 };
+
+/** Ancho de la tarjeta: 2 columnas en el celular, 3 en escritorio (más en pantallas grandes). */
+const CARD_SIZES = "(max-width: 700px) 50vw, (max-width: 1800px) 30vw, 20vw";
 
 /** Presentacional: misma estructura y clases que `card()` en design/mockups/assets/js/app.js. */
 export function ProductCard({
@@ -82,8 +86,8 @@ export function ProductCard({
     >
       <div className="p-frame">
         <Link className="p-media" href={href} aria-label={p.name}>
-          <img src={cover(p)} alt={p.name} loading="lazy" />
-          {second && <img className="alt" src={second.url} alt="" loading="lazy" />}
+          <Picture src={cover(p)} alt={p.name} loading="lazy" sizes={CARD_SIZES} />
+          {second && <Picture className="alt" src={second.url} alt="" loading="lazy" sizes={CARD_SIZES} />}
         </Link>
         <div className="tags">{tag}</div>
         <button

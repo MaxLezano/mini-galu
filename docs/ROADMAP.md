@@ -82,7 +82,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   etiqueta, accesorio, talles y stock con medidas, guardar borrador / publicar
 - ✅ Volvió un talle: al cargar stock de un talle con anotadas, el editor lo avisa y la API publica `StockReplenished`
   (el envío del aviso es la fase 6)
-- 🟡 Fotos: se guardan como se suben → recorte 3:4 y AVIF/WebP en varios tamaños (sharp) en la fase 9
+- 🟡 Fotos: ✅ AVIF/WebP en varios tamaños (sharp, ver fase 9) · ⏳ recorte 3:4 al subir
 - ✅ Resumen del día y notificaciones (campana) → fase 4
 - ✅ `admin-lanzamientos`: crear/editar/programar/borrar borradores, "usar de base", portada (elegir o subir), prendas,
   cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las
@@ -261,7 +261,12 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Menú de cuenta del header (mockup `app.js` · `pop-user`): saludo con las nenas y su talle, Mis nenas, Mis pedidos
   (pill "N en camino" o "N en preparación"), Favoritos (cantidad), Lista de cumple, Gift cards (saldo de las activas;
   lleva a la pestaña de la cuenta), Mis datos y Salir. Se pide el resumen al abrirlo; en Mi cuenta solo cambia de pestaña
-- ⏳ a11y AA, Lighthouse ≥ 90, imágenes AVIF/WebP con `srcset` (sharp), View Transitions
+- ✅ Imágenes AVIF/WebP con `srcset`: al subir una foto, `ResponsiveImageStorage` (decorador del `ImageStorage`) guarda
+  variantes de 320, 640, 960, 1440 y 1920 px en AVIF y WebP con sharp (orientación EXIF, sin agrandar, sin metadatos);
+  las que faltan (fotos del seed o subidas antes) se generan la primera vez que se piden a `/media`. Los nombres
+  (`a.webp` → `a@640.avif`) salen de `contracts/media.ts`; la tienda usa `ui/atoms/Picture` (`<picture>` con `sizes`)
+  en las fotos grandes y `imageThumb` (WebP de 320) en las miniaturas. El hero baja de 207 KB a 61 KB
+- ⏳ a11y AA, Lighthouse ≥ 90, View Transitions
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)

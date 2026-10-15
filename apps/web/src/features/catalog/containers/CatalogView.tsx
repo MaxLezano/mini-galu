@@ -5,6 +5,7 @@ import {
   type Collection,
   formatARS,
   GARMENT_SIZES,
+  imageThumb,
   OCCASIONS,
   type ProductSummary,
   type Size,
@@ -34,6 +35,7 @@ import { ApiRequestError, api } from "@/lib/api";
 import { cover } from "@/lib/product";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { Foco } from "@/ui/atoms/Foco";
+import { Picture } from "@/ui/atoms/Picture";
 import { activeFilterCount, type CatalogState, defaultPickSize, toQuery, toUrl } from "../catalog-state";
 import { CatalogFilters, type FilterNena } from "../components/CatalogFilters";
 import { ProductCardContainer } from "./ProductCardContainer";
@@ -438,7 +440,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
           <div className="pick-bar">
             <div className="pick-thumbs">
               {[...picked.values()].slice(0, 5).map(({ product }) => (
-                <img key={product.slug} src={cover(product)} alt="" />
+                <img key={product.slug} src={imageThumb(cover(product))} alt="" />
               ))}
             </div>
             <span id="pick-n">
@@ -510,7 +512,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
               products.flatMap((p) =>
                 p.images.slice(0, 2).map((im) => (
                   <Link key={im.url} className="lb-item" href={`/producto/${p.slug}`}>
-                    <img src={im.url} alt={p.name} loading="lazy" />
+                    <Picture src={im.url} alt={p.name} loading="lazy" sizes="(max-width: 760px) 50vw, 33vw" />
                     <div className="cap">
                       <b>{p.name}</b>
                       <span>{formatARS(p.priceCents)}</span>

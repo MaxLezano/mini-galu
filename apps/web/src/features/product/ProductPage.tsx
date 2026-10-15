@@ -8,6 +8,7 @@ import { Stars } from "@/ui/atoms/Stars";
 import { Gallery } from "./components/Gallery";
 import { ProductInfo } from "./containers/ProductInfo";
 import "./product.css";
+import { Picture } from "@/ui/atoms/Picture";
 
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
 const monthFmt = new Intl.DateTimeFormat("es-AR", { month: "long", timeZone: "America/Argentina/Buenos_Aires" });
@@ -35,7 +36,7 @@ export function ProductPage({ product: p, launchAt }: { product: ProductDetail; 
 
       <section className="bg-linen hem-top section">
         <div className="wrap story">
-          <img src={cover(p, 2)} alt="" data-reveal="mask" loading="lazy" />
+          <Picture src={cover(p, 2)} alt="" data-reveal="mask" loading="lazy" sizes="(max-width: 900px) 100vw, 50vw" />
           <div>
             <span className="eyebrow">Cómo se hizo</span>
             <h2 className="display h2" style={{ margin: "16px 0 20px" }}>

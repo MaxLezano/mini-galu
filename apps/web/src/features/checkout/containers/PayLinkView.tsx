@@ -1,6 +1,6 @@
 "use client";
 
-import { type CheckoutConfig, formatARS, type OrderReceipt, type PayResult } from "@mini-galu/contracts";
+import { type CheckoutConfig, formatARS, imageThumb, type OrderReceipt, type PayResult } from "@mini-galu/contracts";
 import { ChevronDown, Info, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -213,7 +213,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
             {receipt.items.map((i) => (
               <div className="s-item" key={`${i.name}-${i.size}`}>
                 <span className="ph">
-                  <img src={i.imageUrl} alt="" />
+                  <img src={imageThumb(i.imageUrl)} alt="" />
                   <span className="q">{i.qty}</span>
                 </span>
                 <span>

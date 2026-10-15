@@ -1,6 +1,6 @@
 "use client";
 
-import { formatARS, type ProductSummary } from "@mini-galu/contracts";
+import { formatARS, imageThumb, type ProductSummary } from "@mini-galu/contracts";
 import { ArrowRight, MessageCircleHeart, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -133,7 +133,7 @@ export function SearchOverlay() {
                   const av = sizesIn(p);
                   return (
                     <Link key={p.slug} className="so-item" href={`/producto/${p.slug}`} onClick={close}>
-                      <img src={cover(p)} alt="" loading="lazy" />
+                      <img src={imageThumb(cover(p))} alt="" loading="lazy" />
                       <span>
                         <b>{p.name}</b>
                         <small>{formatARS(p.priceCents)}</small>

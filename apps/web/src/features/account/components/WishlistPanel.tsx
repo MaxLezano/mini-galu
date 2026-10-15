@@ -1,6 +1,6 @@
 "use client";
 
-import { type AccountChild, formatARS } from "@mini-galu/contracts";
+import { type AccountChild, formatARS, imageThumb } from "@mini-galu/contracts";
 import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
@@ -76,7 +76,7 @@ export function WishlistPanel({ nenas, selected, origin, onSelect, onRemove, onA
               {selected.wishlist.length ? (
                 selected.wishlist.map((w) => (
                   <div className="wish-item" key={w.id}>
-                    {w.imageUrl ? <img src={w.imageUrl} alt="" /> : <span />}
+                    {w.imageUrl ? <img src={imageThumb(w.imageUrl)} alt="" /> : <span />}
                     <div>
                       <b>{w.name}</b>
                       <span className="muted" style={{ fontSize: 13 }}>

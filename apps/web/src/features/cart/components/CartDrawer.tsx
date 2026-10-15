@@ -1,6 +1,6 @@
 "use client";
 
-import { FREE_SHIPPING_FROM_CENTS, formatARS } from "@mini-galu/contracts";
+import { FREE_SHIPPING_FROM_CENTS, formatARS, imageThumb } from "@mini-galu/contracts";
 import { ArrowRight, Minus, Plus, Truck, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -69,7 +69,7 @@ export function CartDrawer() {
             lines.map((l, i) => (
               <div className="line-item" key={`${l.slug}-${l.size}`}>
                 <Link href={`/producto/${l.slug}`} onClick={close}>
-                  <img src={l.imageUrl} alt="" />
+                  <img src={imageThumb(l.imageUrl)} alt="" />
                 </Link>
                 <div>
                   <h4>{l.name}</h4>

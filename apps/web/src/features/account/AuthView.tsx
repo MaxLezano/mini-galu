@@ -12,6 +12,7 @@ import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { useAccount } from "./account-store";
 import { PasswordInput } from "./components/PasswordInput";
 import "./auth.css";
+import { Picture } from "@/ui/atoms/Picture";
 
 type Tab = "ingresar" | "crear";
 
@@ -128,7 +129,7 @@ export function AuthView({ photo }: { photo: { url: string; alt: string } | null
   return (
     <main className="auth">
       <div className="auth-media">
-        {photo && <img src={photo.url} alt={photo.alt} />}
+        {photo && <Picture src={photo.url} alt={photo.alt} sizes="(max-width: 900px) 100vw, 50vw" />}
         <div className="quote">
           <p>Guardamos el talle de tus nenas para mostrarte lo que les queda.</p>
           <span className="hand">— Gaby, desde el taller</span>

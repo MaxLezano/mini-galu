@@ -1,11 +1,12 @@
 "use client";
 
-import type { ProductDetail } from "@mini-galu/contracts";
+import { imageThumb, type ProductDetail } from "@mini-galu/contracts";
 import { ZoomIn } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Swiper as SwiperType } from "swiper";
 import { FreeMode, Pagination, Thumbs } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Picture } from "@/ui/atoms/Picture";
 
 /** Galería con miniaturas verticales, contador y zoom que sigue al mouse. */
 export function Gallery({ product: p }: { product: ProductDetail }) {
@@ -29,7 +30,7 @@ export function Gallery({ product: p }: { product: ProductDetail }) {
       >
         {p.images.map((im) => (
           <SwiperSlide key={im.url}>
-            <img src={im.url} alt="" />
+            <img src={imageThumb(im.url)} alt="" />
           </SwiperSlide>
         ))}
       </Swiper>
@@ -58,7 +59,13 @@ export function Gallery({ product: p }: { product: ProductDetail }) {
         >
           {p.images.map((im, i) => (
             <SwiperSlide key={im.url}>
-              <img src={im.url} alt={`${p.name}, foto ${i + 1}`} loading={i ? "lazy" : undefined} />
+              <Picture
+                src={im.url}
+                alt={`${p.name}, foto ${i + 1}`}
+                loading={i ? "lazy" : undefined}
+                fetchPriority={i ? undefined : "high"}
+                sizes="(max-width: 900px) 100vw, 55vw"
+              />
             </SwiperSlide>
           ))}
         </Swiper>

@@ -1,6 +1,6 @@
 "use client";
 
-import { type AccountChild, formatARS, type ProductSummary } from "@mini-galu/contracts";
+import { type AccountChild, formatARS, imageThumb, type ProductSummary } from "@mini-galu/contracts";
 import { ListChecks, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -65,7 +65,7 @@ export function WishPickModal({ product, size }: { product: ProductSummary; size
     >
       <div className="modal-body" style={{ display: "grid", gap: 14 }}>
         <div className="wp-item">
-          <img src={cover(product)} alt="" />
+          <img src={imageThumb(cover(product))} alt="" />
           <span>
             <b>{product.name}</b>
             <small>

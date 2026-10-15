@@ -1,4 +1,4 @@
-import { formatARS, GARMENT_SIZES, sizeLabel } from "@mini-galu/contracts";
+import { formatARS, GARMENT_SIZES, imageThumb, sizeLabel } from "@mini-galu/contracts";
 import Link from "next/link";
 import { dayMonth } from "@/lib/date";
 import { cover } from "@/lib/product";
@@ -76,7 +76,7 @@ export function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
             {feat.map((p) => (
               <Link key={p.slug} href={`/producto/${p.slug}`} className="mf-card" onClick={onNavigate}>
                 <span className="mf-img">
-                  <img src={cover(p)} alt="" loading="lazy" />
+                  <img src={imageThumb(cover(p))} alt="" loading="lazy" />
                 </span>
                 <b>{p.name}</b>
                 <small>{formatARS(p.priceCents)}</small>

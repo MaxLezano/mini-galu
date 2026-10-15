@@ -1,6 +1,6 @@
 "use client";
 
-import { type AssistantMessage, formatARS, type ProductSummary, type Size } from "@mini-galu/contracts";
+import { type AssistantMessage, formatARS, imageThumb, type ProductSummary, type Size } from "@mini-galu/contracts";
 import { SendHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,7 +30,7 @@ function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (
   return (
     <div className="mini-card">
       <Link href={`/producto/${p.slug}`}>
-        <img src={cover(p)} alt={p.name} />
+        <img src={imageThumb(cover(p))} alt={p.name} />
       </Link>
       <div>
         <b>{p.name}</b>

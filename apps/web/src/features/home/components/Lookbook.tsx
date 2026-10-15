@@ -1,9 +1,10 @@
 "use client";
 
-import { formatARS, type LookbookSpot, type ProductSummary } from "@mini-galu/contracts";
+import { formatARS, imageThumb, type LookbookSpot, type ProductSummary } from "@mini-galu/contracts";
 import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, useEffect, useState } from "react";
+import { Picture } from "@/ui/atoms/Picture";
 
 /** Lookbook con "+" en cada foto: la ficha de la prenda se abre hacia arriba. */
 export function Lookbook({
@@ -39,7 +40,8 @@ export function Lookbook({
           const soon = p?.status === "draft";
           return (
             <figure key={s.imageUrl} data-reveal="mask" style={{ "--d": `${i * 0.15}s` } as CSSProperties}>
-              <img
+              <Picture
+                sizes="(max-width: 760px) 100vw, 50vw"
                 src={s.imageUrl}
                 alt={s.alt}
                 style={{ objectPosition: s.objectPosition ?? undefined }}
@@ -57,7 +59,11 @@ export function Lookbook({
                     <Plus />
                   </button>
                   <div className="hot-pop">
-                    <img src={s.imageUrl} alt="" style={{ objectPosition: s.objectPosition ?? undefined }} />
+                    <img
+                      src={imageThumb(s.imageUrl)}
+                      alt=""
+                      style={{ objectPosition: s.objectPosition ?? undefined }}
+                    />
                     <div>
                       {soon && (
                         <span className="label-tag is-dark" style={{ marginBottom: 6 }}>

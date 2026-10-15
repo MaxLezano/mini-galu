@@ -1,6 +1,6 @@
 "use client";
 
-import { formatARS, type ProductSummary, type PublicWishlist, type Size } from "@mini-galu/contracts";
+import { formatARS, imageThumb, type ProductSummary, type PublicWishlist, type Size } from "@mini-galu/contracts";
 import { Gift } from "lucide-react";
 import Link from "next/link";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
@@ -44,7 +44,7 @@ export function WishlistPublic({ slug, list, products }: Props) {
             const mine = picked.some((g) => g.itemId === i.id);
             return (
               <article className={`wl-item ${i.gifted ? "is-gifted" : ""}`} key={i.id} data-wish={i.slug}>
-                <Link href={`/producto/${i.slug}`}>{i.imageUrl && <img src={i.imageUrl} alt="" />}</Link>
+                <Link href={`/producto/${i.slug}`}>{i.imageUrl && <img src={imageThumb(i.imageUrl)} alt="" />}</Link>
                 <div>
                   <b>{i.name}</b>
                   <span className="muted">

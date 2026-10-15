@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContactChannel, Launch } from "@mini-galu/contracts";
+import { type ContactChannel, imageThumb, type Launch } from "@mini-galu/contracts";
 import { BellRing, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
@@ -8,6 +8,7 @@ import { ApiRequestError, api } from "@/lib/api";
 import { longDate } from "@/lib/date";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Emphasis } from "@/ui/atoms/Emphasis";
+import { Picture } from "@/ui/atoms/Picture";
 
 function useCountdown(target: string) {
   const [parts, setParts] = useState<string[] | null>(null);
@@ -43,7 +44,14 @@ export function LaunchDrop({ launch, avatars }: { launch: Launch; avatars: strin
     <section className="section wrap" id="lanzamiento">
       <div className="drop" data-reveal="">
         <div className="drop-media">
-          {launch.coverUrl && <img src={launch.coverUrl} alt={`Colección ${launch.title}`} loading="lazy" />}
+          {launch.coverUrl && (
+            <Picture
+              src={launch.coverUrl}
+              alt={`Colección ${launch.title}`}
+              loading="lazy"
+              sizes="(max-width: 900px) 100vw, 50vw"
+            />
+          )}
           {launch.coverNote && <span className="hand">{launch.coverNote}</span>}
         </div>
         <div className="drop-body">
@@ -122,7 +130,7 @@ export function LaunchDrop({ launch, avatars }: { launch: Launch; avatars: strin
           <div className="avatars">
             <span>
               {avatars.map((a) => (
-                <img key={a} src={a} alt="" />
+                <img key={a} src={imageThumb(a)} alt="" />
               ))}
             </span>
             {signups} personas ya se anotaron

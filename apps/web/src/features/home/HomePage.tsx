@@ -1,4 +1,4 @@
-import type { HomeContent, ProductSummary } from "@mini-galu/contracts";
+import { type HomeContent, imageThumb, type ProductSummary } from "@mini-galu/contracts";
 import {
   ArrowRight,
   Check,
@@ -23,6 +23,7 @@ import { Lookbook } from "./components/Lookbook";
 import { Rail } from "./components/Rail";
 import { ReviewsBand } from "./components/ReviewsBand";
 import "./home.css";
+import { Picture } from "@/ui/atoms/Picture";
 
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
 
@@ -40,7 +41,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
     <main>
       {/* HERO */}
       <section className="hero">
-        <img src={home.hero.imageUrl} alt={home.hero.imageAlt} fetchPriority="high" />
+        <Picture src={home.hero.imageUrl} alt={home.hero.imageAlt} fetchPriority="high" sizes="100vw" />
         <div className="wrap hero-inner">
           <div className="split">
             <span className="eyebrow">{home.hero.eyebrow}</span>
@@ -125,7 +126,8 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
                 <div className="arch">
                   {soon && <span className="soon">Próximamente</span>}
                   {c.coverUrl && (
-                    <img
+                    <Picture
+                      sizes="(max-width: 760px) 100vw, 33vw"
                       src={c.coverUrl}
                       alt={c.label}
                       loading="lazy"
@@ -156,10 +158,20 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
         <div className="wrap taller">
           <div className="taller-media">
             <div className="a" data-reveal="mask">
-              <img src={img("maddie", 2)} alt="Detalle de bordado del Set Maddie" loading="lazy" />
+              <Picture
+                src={img("maddie", 2)}
+                alt="Detalle de bordado del Set Maddie"
+                loading="lazy"
+                sizes="(max-width: 900px) 70vw, 30vw"
+              />
             </div>
             <div className="b" data-reveal="" style={d(0.3)}>
-              <img src={img("romantico-rojo", 2)} alt="Set Romántico Rojo" loading="lazy" />
+              <Picture
+                src={img("romantico-rojo", 2)}
+                alt="Set Romántico Rojo"
+                loading="lazy"
+                sizes="(max-width: 900px) 45vw, 18vw"
+              />
             </div>
             <span className="hand note" data-reveal="" style={d(0.6)}>
               hecho con amor ♡
@@ -255,7 +267,7 @@ export function HomePage({ home, products }: { home: HomeContent; products: Prod
         <div className="ig">
           {home.instagram.imageUrls.map((u, i) => (
             <a key={u} href={home.instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
-              <img src={u} alt="" loading="lazy" />
+              <Picture src={u} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
               <BrandIcon name="instagram" />
             </a>
           ))}
@@ -309,7 +321,7 @@ function ChatDemo({ rebeca, samanta }: { rebeca?: ProductSummary; samanta?: Prod
       </div>
       <div className="msg cards">
         <div className="mini-card">
-          <img src={cover(rebeca)} alt="" />
+          <img src={imageThumb(cover(rebeca))} alt="" />
           <div>
             <b>{rebeca.name}</b>
             <div className="stock">{t2 > 0 ? `${t2} en stock · talle 2` : "Sin stock en talle 2"}</div>
@@ -319,7 +331,7 @@ function ChatDemo({ rebeca, samanta }: { rebeca?: ProductSummary; samanta?: Prod
           </div>
         </div>
         <div className="mini-card">
-          <img src={cover(samanta)} alt="" />
+          <img src={imageThumb(cover(samanta))} alt="" />
           <div>
             <b>{samanta.name.replace("Vestido ", "")}</b>
             <div className="stock">Desde talle {samanta.variants.find((v) => v.stock > 0)?.size ?? "—"}</div>

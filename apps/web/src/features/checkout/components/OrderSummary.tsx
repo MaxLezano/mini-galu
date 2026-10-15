@@ -1,4 +1,4 @@
-import { type CardPlans, type CartLine, formatARS, type Quote } from "@mini-galu/contracts";
+import { type CardPlans, type CartLine, formatARS, imageThumb, type Quote } from "@mini-galu/contracts";
 import { ChevronDown, Gift, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -78,7 +78,7 @@ export function OrderSummary({
             lines.map((l) => (
               <div className="s-item" key={`${l.slug}-${l.size}`}>
                 <span className="ph">
-                  <img src={l.imageUrl} alt="" />
+                  <img src={imageThumb(l.imageUrl)} alt="" />
                   <span className="q">{l.qty}</span>
                 </span>
                 <span>

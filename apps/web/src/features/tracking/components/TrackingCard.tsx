@@ -1,4 +1,4 @@
-import { formatARS, ORDER_STATUSES, type PublicTracking } from "@mini-galu/contracts";
+import { formatARS, imageThumb, ORDER_STATUSES, type PublicTracking } from "@mini-galu/contracts";
 import { ExternalLink, MessageCircleHeart } from "lucide-react";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
@@ -73,7 +73,7 @@ export function TrackingCard({ t, onAskGalu }: { t: PublicTracking; onAskGalu: (
           <div className="pkg">
             {t.items.map((i) => (
               <Link key={`${i.slug}-${i.size}`} href={`/producto/${i.slug}`}>
-                {i.imageUrl && <img src={i.imageUrl} alt="" />}
+                {i.imageUrl && <img src={imageThumb(i.imageUrl)} alt="" />}
                 <span>
                   <b>{i.name}</b>
                   <br />

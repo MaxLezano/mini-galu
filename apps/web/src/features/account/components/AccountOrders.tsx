@@ -1,4 +1,4 @@
-import { type AccountOrder, formatARS, ORDER_STATUSES, type OrderStatus } from "@mini-galu/contracts";
+import { type AccountOrder, formatARS, imageThumb, ORDER_STATUSES, type OrderStatus } from "@mini-galu/contracts";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
 import { Embroidery } from "@/ui/atoms/Embroidery";
@@ -26,7 +26,7 @@ export function AccountOrders({ orders }: { orders: AccountOrder[] }) {
           <div className="order" key={o.number}>
             <div className="ph">
               {o.items.slice(0, 3).map((i) => (
-                <img key={`${i.slug}-${i.size}`} src={i.imageUrl} alt="" />
+                <img key={`${i.slug}-${i.size}`} src={imageThumb(i.imageUrl)} alt="" />
               ))}
             </div>
             <div>

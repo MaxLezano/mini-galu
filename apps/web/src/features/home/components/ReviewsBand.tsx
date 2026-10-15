@@ -1,6 +1,6 @@
 "use client";
 
-import type { FeaturedReview, Rating } from "@mini-galu/contracts";
+import { type FeaturedReview, imageThumb, type Rating } from "@mini-galu/contracts";
 import { useEffect, useRef } from "react";
 import { isStill } from "@/features/shell/craft";
 import { Stars } from "@/ui/atoms/Stars";
@@ -97,7 +97,7 @@ export function ReviewsBand({ rating, reviews }: { rating: Rating; reviews: Feat
       <Stars label="5 estrellas" />
       <q>{r.body}</q>
       <footer>
-        {r.product.imageUrl && <img src={r.product.imageUrl} alt="" />}
+        {r.product.imageUrl && <img src={imageThumb(r.product.imageUrl)} alt="" />}
         <div>
           <b>{r.author}</b>
           <span className="muted">

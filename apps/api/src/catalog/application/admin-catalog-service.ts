@@ -76,7 +76,7 @@ export class AdminCatalogService {
     return this.get(slug);
   }
 
-  /** Sube una foto de producto. TODO(fase 9): recorte 3:4 y AVIF/WebP en varios tamaños con sharp. */
+  /** Sube una foto de producto (las variantes AVIF/WebP las guarda ResponsiveImageStorage). TODO(fase 9 · catalog): recorte 3:4. */
   async uploadImage(
     file: { type: string; bytes: Uint8Array },
     folder: "products" | "content" = "products",

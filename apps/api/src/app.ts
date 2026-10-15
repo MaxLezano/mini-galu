@@ -106,6 +106,9 @@ import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
+import { mediaVariantsOnDemand } from "./shared/media/media-variants";
+import { ResponsiveImageStorage } from "./shared/media/responsive-image-storage";
+import { SharpResizer } from "./shared/media/sharp-resizer";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
 import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
@@ -126,7 +129,9 @@ import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rat
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
 export function buildApp(config: Config) {
   const db = createDb(config.databaseUrl);
-  const storage = new LocalDiskImageStorage(config.publicUrl, config.mediaDir);
+  const disk = new LocalDiskImageStorage(config.publicUrl, config.mediaDir);
+  const resizer = new SharpResizer();
+  const storage = new ResponsiveImageStorage(disk, resizer);
   const events = new EventBus();
   const auth = createAuth(db, {
     publicUrl: config.publicUrl,
@@ -516,6 +521,7 @@ export function buildApp(config: Config) {
   const app = new Hono()
     .use(logger())
     .use("*", cors({ origin: config.webOrigin, credentials: true }))
+    .use("/media/*", mediaVariantsOnDemand(config.mediaDir, disk, resizer))
     .use(
       "/media/*",
       serveStatic({
