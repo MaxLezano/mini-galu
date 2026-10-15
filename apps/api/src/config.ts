@@ -6,7 +6,7 @@ import type { AndreaniConfig } from "./shipping/infrastructure/andreani/andreani
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_PORT: z.coerce.number().int().default(4000),
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string({ error: "falta (postgres://…)" }).min(1, "falta (postgres://…)"),
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
   MEDIA_DIR: z.string().default("./storage/media"),
   /** URL pública de la API (para armar las URLs de imágenes). */
@@ -75,14 +75,66 @@ export type Config = {
   assistant: { kind: "claude"; apiKey: string; model: string } | { kind: "ollama"; url: string; model: string } | null;
 };
 
+/** El entorno no alcanza para arrancar: lleva todos los problemas juntos para arreglarlos de una vez. */
+export class ConfigError extends Error {
+  constructor(readonly problems: string[]) {
+    super(`Configuración inválida:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
+    this.name = "ConfigError";
+  }
+}
+
 export function loadConfig(): Config {
   // en local la API corre desde apps/api; el .env vive en la raíz del monorepo
   const rootEnv = resolve(process.cwd(), "../../.env");
   if (!process.env.DATABASE_URL && existsSync(rootEnv)) process.loadEnvFile(rootEnv);
-  const env = EnvSchema.parse(process.env);
-  if (env.NODE_ENV === "production" && !env.BETTER_AUTH_SECRET) throw new Error("Falta BETTER_AUTH_SECRET");
-  if (env.NODE_ENV === "production" && !(env.MP_ACCESS_TOKEN && env.MP_PUBLIC_KEY && env.MP_WEBHOOK_SECRET))
-    throw new Error("Faltan las credenciales de Mercado Pago (MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET)");
+  return parseConfig(process.env);
+}
+
+const isHttps = (url: string | undefined) => !!url && /^https:\/\/[^/]/.test(url);
+const missing = (vars: Record<string, string | undefined>) =>
+  Object.entries(vars)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+
+/** Lo que producción necesita sí o sí (en local todo tiene un valor por defecto o un simulador). */
+function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
+  const problems: string[] = [];
+  if (!env.BETTER_AUTH_SECRET) problems.push("Falta BETTER_AUTH_SECRET (generalo con `openssl rand -base64 32`)");
+  else if (env.BETTER_AUTH_SECRET.length < 32) problems.push("BETTER_AUTH_SECRET tiene que tener 32 caracteres o más");
+  const mp = missing({
+    MP_ACCESS_TOKEN: env.MP_ACCESS_TOKEN,
+    MP_PUBLIC_KEY: env.MP_PUBLIC_KEY,
+    MP_WEBHOOK_SECRET: env.MP_WEBHOOK_SECRET,
+  });
+  if (mp.length) problems.push(`Faltan las credenciales de Mercado Pago (${mp.join(", ")})`);
+  if (!isHttps(env.PUBLIC_API_URL)) problems.push("PUBLIC_API_URL tiene que ser la URL pública de la API con https://");
+  if (!isHttps(env.WEB_ORIGIN)) problems.push("WEB_ORIGIN tiene que ser la URL de la tienda con https://");
+  if (/^(localhost|127\.0\.0\.1)$/.test(env.SMTP_HOST))
+    problems.push("SMTP_HOST apunta a Mailpit (localhost): configurá el SMTP de producción");
+  else if (!(env.SMTP_USER && env.SMTP_PASS)) problems.push("Faltan SMTP_USER y SMTP_PASS");
+  const andreani = missing({
+    ANDREANI_USER: env.ANDREANI_USER,
+    ANDREANI_PASSWORD: env.ANDREANI_PASSWORD,
+    ANDREANI_CLIENT: env.ANDREANI_CLIENT,
+    ANDREANI_CONTRACT_DOMICILIO: env.ANDREANI_CONTRACT_DOMICILIO,
+    ANDREANI_CONTRACT_SUCURSAL: env.ANDREANI_CONTRACT_SUCURSAL,
+  });
+  // sin ninguna, envíos simulados; con algunas, seguro es un error de carga
+  if (andreani.length && andreani.length < 5) problems.push(`Andreani a medias: faltan ${andreani.join(", ")}`);
+  if (!env.GOOGLE_CLIENT_ID !== !env.GOOGLE_CLIENT_SECRET)
+    problems.push("Google a medias: van GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET juntos");
+  return problems;
+}
+
+export function parseConfig(source: Record<string, string | undefined>): Config {
+  const parsed = EnvSchema.safeParse(source);
+  if (!parsed.success)
+    throw new ConfigError(parsed.error.issues.map((i) => `${i.path.join(".") || "entorno"}: ${i.message}`));
+  const env = parsed.data;
+  if (env.NODE_ENV === "production") {
+    const problems = productionProblems(env);
+    if (problems.length) throw new ConfigError(problems);
+  }
   return {
     env: env.NODE_ENV,
     port: env.API_PORT,

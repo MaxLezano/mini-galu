@@ -45,6 +45,8 @@ jobs:
       - run: pnpm test
       - name: Base de datos (migraciones + seed)
         run: pnpm db:migrate && pnpm db:seed
+      - name: Build de la API (el mismo bundle que va a producción; los e2e corren contra él)
+        run: pnpm --filter @mini-galu/api build
       - run: pnpm exec playwright install --with-deps chromium
       - name: E2E (celular y escritorio)
         run: pnpm test:e2e

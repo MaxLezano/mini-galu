@@ -24,6 +24,7 @@ pnpm lint           # Biome (pnpm lint:fix para arreglar)
 pnpm typecheck && pnpm test      # tipos + Vitest en todos los paquetes
 pnpm test:e2e       # Playwright (celular y escritorio); necesita la base con seed
 pnpm shots <url> <nombre> [anchos]   # capturas 375/820/1440/2560 para comparar con los mockups
+pnpm --filter @mini-galu/api build   # bundle de producción (dist/main.js + dist/migrate.js)
 pnpm db:generate    # después de tocar packages/db/src/schema → nueva migración (no editar migraciones viejas)
 ```
 

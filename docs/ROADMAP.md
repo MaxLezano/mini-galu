@@ -305,7 +305,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   de base de la ayuda siguen las políticas; si Gaby editó esas páginas, el panel le avisa que las revise
 - ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); el de **arrepentimiento** en Cambios queda
   bloqueado ("Obligatorio": Ley 24.240 y Res. SCI 424/2020) y la API no deja guardar la página sin él visible
-- ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
+- ✅ **Build de la API**: `pnpm --filter @mini-galu/api build` (esbuild, `apps/api/build.mjs`) arma `dist/main.js` con
+  los paquetes del monorepo adentro (`sharp` queda afuera, es nativo) y `dist/migrate.js` con las migraciones copiadas
+  en `dist/drizzle` (no necesita el monorepo para migrar). `start` corre el bundle con node; los e2e (local sin
+  `pnpm dev` y CI) usan ese mismo bundle
+- ✅ **Validación del entorno**: la API no arranca con la configuración rota y dice todo lo que falta de una vez. En
+  producción exige `BETTER_AUTH_SECRET` (32+), Mercado Pago completo, `PUBLIC_API_URL` y `WEB_ORIGIN` con https, SMTP
+  que no sea Mailpit y con usuario/clave, y avisa de Andreani o Google cargados a medias (`config.test.ts`)
+- ⏳ Mails con Resend · fotos en R2/S3 · Docker + Render/Fly + Vercel + Neon · guía de deploy
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,

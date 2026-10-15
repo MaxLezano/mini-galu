@@ -16,7 +16,12 @@ export default defineConfig({
     { name: "escritorio", use: { viewport: { width: 1440, height: 900 } } },
   ],
   webServer: [
-    { command: "pnpm --filter @mini-galu/api start", url: "http://localhost:4000/health", reuseExistingServer: true },
+    // la API corre con el mismo bundle que va a producción (si no hay una levantada con pnpm dev)
+    {
+      command: "pnpm --filter @mini-galu/api build && pnpm --filter @mini-galu/api start",
+      url: "http://localhost:4000/health",
+      reuseExistingServer: true,
+    },
     {
       command: "pnpm --filter @mini-galu/web dev",
       url: "http://localhost:3000",

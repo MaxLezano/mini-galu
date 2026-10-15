@@ -1,8 +1,15 @@
 import { serve } from "@hono/node-server";
 import { buildApp } from "./app";
-import { loadConfig } from "./config";
+import { type Config, ConfigError, loadConfig } from "./config";
 
-const config = loadConfig();
+let config: Config;
+try {
+  config = loadConfig();
+} catch (err) {
+  if (!(err instanceof ConfigError)) throw err;
+  console.error(`✗ ${err.message}`);
+  process.exit(1);
+}
 const { app, db, scheduler } = buildApp(config);
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
