@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
-/** Puerto de imágenes. Local: disco (apps/api/storage/media). Prod: Cloudinary o R2 (PLAN §3). */
+/** Puerto de imágenes. Local: disco (apps/api/storage/media). Prod: bucket R2/S3 (`S3ImageStorage`). */
 export interface ImageStorage {
   /** URL pública de una ruta guardada (ej. "products/maddie-1.webp"); sus variantes siguen `imageVariant` (contracts). */
   url(path: string): string;

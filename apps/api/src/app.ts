@@ -116,6 +116,7 @@ import { RateLimiter } from "./shared/http/rate-limit";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { mediaVariantsOnDemand } from "./shared/media/media-variants";
 import { ResponsiveImageStorage } from "./shared/media/responsive-image-storage";
+import { S3ImageStorage } from "./shared/media/s3-image-storage";
 import { SharpResizer } from "./shared/media/sharp-resizer";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
@@ -142,7 +143,8 @@ export function buildApp(config: Config) {
   const db = createDb(config.databaseUrl);
   const disk = new LocalDiskImageStorage(config.publicUrl, config.mediaDir);
   const resizer = new SharpResizer();
-  const storage = new ResponsiveImageStorage(disk, resizer);
+  // con bucket (producción) las fotos van a R2/S3; si no, al disco y las sirve /media
+  const storage = new ResponsiveImageStorage(config.s3 ? new S3ImageStorage(config.s3) : disk, resizer);
   const events = new EventBus();
   const auth = createAuth(db, {
     publicUrl: config.publicUrl,

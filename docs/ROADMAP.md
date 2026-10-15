@@ -316,7 +316,14 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   por la API de Resend (`ResendMailer`, sin SDK); sin la clave, SMTP (Mailpit en local y CI). Reintenta ante el
   límite por segundo (429, respeta `retry-after`) y fallas de Resend; un error de datos (dominio sin verificar) no se
   reintenta. En producción alcanza con Resend o un SMTP con credenciales. ⏳ Verificar el dominio en Resend (DNS)
-- ⏳ Fotos en R2/S3 · Docker + Render/Fly + Vercel + Neon · guía de deploy
+- ✅ **Fotos en R2/S3**: con `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` y
+  `MEDIA_PUBLIC_URL` (`S3_REGION`, por defecto `auto` para R2) las fotos del panel y sus variantes AVIF/WebP se suben
+  al bucket (`S3ImageStorage`, firma SigV4 propia sin SDK, probada con el ejemplo de AWS; `Content-Type` y cache
+  `immutable`; reintenta fallas 5xx) y la tienda las baja de su dominio público; sin bucket, disco y `/media` como
+  antes. En producción el bucket es obligatorio (el disco del servidor se pierde al redeployar).
+  `pnpm --filter @mini-galu/api media:upload [carpeta…]` sube las fotos que ya están en disco (seed o subidas antes)
+  con sus variantes, sin tocar la base (las rutas no cambian). La web abre la conexión a `NEXT_PUBLIC_MEDIA_URL`
+- ⏳ Docker + Render/Fly + Vercel + Neon · guía de deploy
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,

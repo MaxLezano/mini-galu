@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
+import type { S3StorageConfig } from "./shared/media/s3-image-storage";
 import type { AndreaniConfig } from "./shipping/infrastructure/andreani/andreani-client";
 
 const EnvSchema = z.object({
@@ -9,6 +10,14 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string({ error: "falta (postgres://…)" }).min(1, "falta (postgres://…)"),
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
   MEDIA_DIR: z.string().default("./storage/media"),
+  /** Fotos en un bucket S3 (Cloudflare R2 en producción). Sin estas variables, en el disco (MEDIA_DIR). */
+  S3_ENDPOINT: z.string().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default("auto"),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  /** Dominio público del bucket (R2: dominio propio o r2.dev), de donde la tienda baja las fotos. */
+  MEDIA_PUBLIC_URL: z.string().optional(),
   /** URL pública de la API (para armar las URLs de imágenes). */
   PUBLIC_API_URL: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
@@ -59,6 +68,8 @@ export type Config = {
   databaseUrl: string;
   webOrigin: string;
   mediaDir: string;
+  /** Con bucket, las fotos se suben ahí; si no, quedan en `mediaDir` y las sirve la API en /media. */
+  s3: S3StorageConfig | null;
   publicUrl: string;
   authSecret: string;
   mercadoPago: {
@@ -100,6 +111,16 @@ const missing = (vars: Record<string, string | undefined>) =>
     .filter(([, v]) => !v)
     .map(([k]) => k);
 
+const missingS3 = (env: z.infer<typeof EnvSchema>) =>
+  missing({
+    S3_ENDPOINT: env.S3_ENDPOINT,
+    S3_BUCKET: env.S3_BUCKET,
+    S3_ACCESS_KEY_ID: env.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: env.S3_SECRET_ACCESS_KEY,
+    MEDIA_PUBLIC_URL: env.MEDIA_PUBLIC_URL,
+  });
+const S3_VARS = 5;
+
 /** Lo que producción necesita sí o sí (en local todo tiene un valor por defecto o un simulador). */
 function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   const problems: string[] = [];
@@ -119,6 +140,14 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   } else if (/^(localhost|127\.0\.0\.1)$/.test(env.SMTP_HOST))
     problems.push("Los mails apuntan a Mailpit (localhost): cargá RESEND_API_KEY (o un SMTP de producción)");
   else if (!(env.SMTP_USER && env.SMTP_PASS)) problems.push("Faltan SMTP_USER y SMTP_PASS");
+  const s3 = missingS3(env);
+  if (s3.length === S3_VARS)
+    problems.push(
+      "Las fotos irían al disco del servidor y se pierden al redeployar: cargá el bucket (S3_*, MEDIA_PUBLIC_URL)",
+    );
+  else if (s3.length) problems.push(`Bucket de fotos a medias: faltan ${s3.join(", ")}`);
+  else if (!isHttps(env.MEDIA_PUBLIC_URL))
+    problems.push("MEDIA_PUBLIC_URL tiene que ser el dominio público del bucket con https://");
   const andreani = missing({
     ANDREANI_USER: env.ANDREANI_USER,
     ANDREANI_PASSWORD: env.ANDREANI_PASSWORD,
@@ -148,6 +177,17 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
     databaseUrl: env.DATABASE_URL,
     webOrigin: env.WEB_ORIGIN,
     mediaDir: resolve(process.cwd(), env.MEDIA_DIR),
+    s3:
+      env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.MEDIA_PUBLIC_URL
+        ? {
+            endpoint: env.S3_ENDPOINT,
+            bucket: env.S3_BUCKET,
+            region: env.S3_REGION,
+            accessKeyId: env.S3_ACCESS_KEY_ID,
+            secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+            publicUrl: env.MEDIA_PUBLIC_URL,
+          }
+        : null,
     publicUrl: env.PUBLIC_API_URL ?? `http://localhost:${env.API_PORT}`,
     authSecret: env.BETTER_AUTH_SECRET || DEV_AUTH_SECRET,
     mercadoPago:

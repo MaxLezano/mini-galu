@@ -13,6 +13,11 @@ const production = {
   PUBLIC_API_URL: "https://api.minigalu.com.ar",
   WEB_ORIGIN: "https://minigalu.com.ar",
   RESEND_API_KEY: "re_clave",
+  S3_ENDPOINT: "https://cuenta.r2.cloudflarestorage.com",
+  S3_BUCKET: "fotos",
+  S3_ACCESS_KEY_ID: "id",
+  S3_SECRET_ACCESS_KEY: "secreto",
+  MEDIA_PUBLIC_URL: "https://fotos.minigalu.com.ar",
 };
 
 function problemsOf(env: Record<string, string | undefined>): string[] {
@@ -31,6 +36,7 @@ describe("parseConfig", () => {
     expect(config.env).toBe("development");
     expect(config.mercadoPago).toBeNull();
     expect(config.andreani).toBeNull();
+    expect(config.s3).toBeNull();
     expect(config.mail).toMatchObject({ kind: "smtp", host: "localhost", port: 1025 });
     expect(config.requireAdmin2fa).toBe(false);
   });
@@ -44,6 +50,7 @@ describe("parseConfig", () => {
     expect(config.publicUrl).toBe("https://api.minigalu.com.ar");
     expect(config.mercadoPago?.webhookSecret).toBe("secreto");
     expect(config.requireAdmin2fa).toBe(true);
+    expect(config.s3).toMatchObject({ bucket: "fotos", region: "auto", publicUrl: "https://fotos.minigalu.com.ar" });
     expect(config.mail).toEqual({ kind: "resend", apiKey: "re_clave", from: "Mini Galú <hola@minigalu.com.ar>" });
   });
 
@@ -67,6 +74,7 @@ describe("parseConfig", () => {
       expect.stringContaining("PUBLIC_API_URL"),
       expect.stringContaining("WEB_ORIGIN"),
       expect.stringContaining("Mailpit"),
+      expect.stringContaining("se pierden al redeployar"),
     ]);
   });
 
@@ -83,6 +91,15 @@ describe("parseConfig", () => {
       expect.stringContaining("32 caracteres"),
       expect.stringContaining("PUBLIC_API_URL"),
       expect.stringContaining("SMTP_USER y SMTP_PASS"),
+    ]);
+  });
+
+  it("en producción pide el bucket de fotos completo y con dominio https", () => {
+    expect(problemsOf({ ...production, S3_SECRET_ACCESS_KEY: undefined })).toEqual([
+      expect.stringContaining("faltan S3_SECRET_ACCESS_KEY"),
+    ]);
+    expect(problemsOf({ ...production, MEDIA_PUBLIC_URL: "http://fotos.minigalu.com.ar" })).toEqual([
+      expect.stringContaining("MEDIA_PUBLIC_URL"),
     ]);
   });
 

@@ -50,8 +50,8 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // las fotos vienen de la API (/media): la conexión se abre antes de que el HTML las pida
-  preconnect(API_URL);
+  // las fotos vienen de la API (/media) o del bucket en producción: la conexión se abre antes de que el HTML las pida
+  preconnect(process.env.NEXT_PUBLIC_MEDIA_URL || API_URL);
   return (
     <html
       lang="es-AR"
