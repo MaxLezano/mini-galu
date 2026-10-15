@@ -12,11 +12,13 @@ import {
 } from "@mini-galu/contracts";
 import { ConflictError } from "../../shared/domain/errors";
 import { argentinaNow, nextBirthday } from "../domain/birthday";
+import { LAUNCH_NOTICE_MINUTES, launchHour } from "../domain/launch-notice";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
   Birthdays,
   IdleCarts,
+  LaunchSignups,
   LowStock,
   Messenger,
   OrderFacts,
@@ -35,6 +37,8 @@ const IDLE_CART_MAX_DAYS = 7;
 export type AutomationLinks = {
   tracking: (orderNumber: string) => string;
   product: (slug: string) => string;
+  /** El lanzamiento en la home (cuenta regresiva y adelanto). */
+  launch: string;
   /** Catálogo filtrado por talle. */
   catalog: (size: string) => string;
   /** La bolsa de la cuenta (pasa por ingresar si no hay sesión). */
@@ -60,6 +64,7 @@ export class AutomationService {
     private readonly kids: Birthdays,
     private readonly suggestions: Suggestions,
     private readonly carts: IdleCarts,
+    private readonly launches: LaunchSignups,
     private readonly links: AutomationLinks,
     private readonly clock: () => Date = () => new Date(),
   ) {}
@@ -279,6 +284,69 @@ export class AutomationService {
           now,
         );
     }
+  }
+
+  /**
+   * Falta una hora (o menos, si se programó sobre la hora) para un lanzamiento con "Avisar a los anotados" prendido:
+   * mail a cada anotado, una vez, con las prendas que salen. Lo corre el programador cada minuto; si ya salió (o se
+   * publicó antes), no se avisa.
+   */
+  async launchNotices(): Promise<number> {
+    if (!(await this.isOn("lanzamiento"))) return 0;
+    const now = this.clock();
+    const url = this.links.launch;
+    let n = 0;
+    for (const l of await this.launches.startingBetween(
+      now,
+      new Date(now.getTime() + LAUNCH_NOTICE_MINUTES * 60_000),
+    )) {
+      const waiting = await this.launches.pending(l.id);
+      if (!waiting.length) continue;
+      const hora = launchHour(l.startsAt);
+      const body = await this.text("lanzamiento", { lanzamiento: l.title, hora, link_lanzamiento: url });
+      const mails = waiting.filter((w) => w.channel === "email");
+      for (const w of mails) {
+        await this.messenger.message({
+          to: w.contact,
+          subject: `${l.title} sale hoy a las ${hora} ♡`,
+          eyebrow: "Sale en un rato · antes que en Instagram",
+          name: null,
+          body,
+          cta: { label: "Ver el adelanto", url },
+          number: null,
+          products: l.products.slice(0, 3),
+        });
+        // de a uno: si un mail falla, los que ya salieron no se repiten en el próximo minuto
+        await this.launches.markNotified([w.id], now);
+        await this.runs.add(
+          {
+            rule: "lanzamiento",
+            subject: l.title,
+            detail: `Aviso por mail a ${w.contact}`,
+            channel: "mail",
+            status: "ok",
+            contact: w.contact.toLowerCase(),
+          },
+          now,
+        );
+        n++;
+      }
+      const wa = waiting.length - mails.length;
+      const key = `lanzamiento-wa:${l.id}`;
+      if (wa && !(await this.runs.exists("lanzamiento", key)))
+        await this.runs.add(
+          {
+            rule: "lanzamiento",
+            subject: l.title,
+            detail: `${wa} ${wa === 1 ? "anotado" : "anotados"} por WhatsApp sin avisar: WhatsApp todavía no está conectado`,
+            channel: "whatsapp",
+            status: "warn",
+            subjectKey: key,
+          },
+          now,
+        );
+    }
+    return n;
   }
 
   /** Talles que quedaron en 1: aviso en el panel, una vez. Lo corre el programador. */

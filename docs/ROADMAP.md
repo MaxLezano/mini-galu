@@ -89,8 +89,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ `admin-lanzamientos`: crear/editar/programar/borrar borradores, "usar de base", portada (elegir o subir), prendas,
   cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las
   prendas a la hora indicada (scheduler cada 60 s)
-- ⏳ Lanzamientos: envío del aviso a anotados 1 h antes → fase 6; "visitas al adelanto" → fase 9 (Umami);
-  "favoritos" → fase 8; "vendidas el primer día" → fase 4
+- ✅ Lanzamientos: aviso a los anotados 1 h antes (regla "Aviso de lanzamiento" de Automatizaciones, ver fase 6)
+- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami); "favoritos" → fase 8; "vendidas el primer día" → fase 4
 - ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
   próximo lanzamiento
 - ✅ `admin-tienda`: Mercado Pago y cupones (fase 3); envíos, horarios de retiro y paquete (fase 5); gift cards (fase 8)
@@ -187,6 +187,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   horario · pedido de reseña a los 3 días de entregado · volvió un talle (mail a los anotados, en orden) · link de
   pago sin pagar (24 h) · stock bajo (aviso en el panel)
 - ✅ Mails con el marco del taller (Mailpit en local); cada aviso queda en el historial del pedido
+- ✅ Aviso de lanzamiento (regla nueva: el mockup solo tenía el interruptor "Avisar a los anotados 1 hora antes" en
+  el editor del lanzamiento): falta 1 h (o menos, si se programó sobre la hora) para un lanzamiento programado con el
+  aviso prendido y sin publicar → mail a cada anotado de la home, una vez, con la hora, hasta 3 prendas con foto y el
+  link al adelanto; el mensaje se edita y la regla se pausa como las otras. Los anotados por WhatsApp quedan esperando
+  (un aviso en el registro)
 - 🟡 WhatsApp Business: "sin conectar" hasta tener las credenciales de Meta (los anotados solo por WhatsApp quedan
   esperando) · ✅ Resend en producción (fase 10)
 - ✅ Se acerca un cumple: 15 días antes del cumple de cada nena de "Mis nenas" (con talle), mail con 3 prendas

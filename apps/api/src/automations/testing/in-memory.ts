@@ -6,6 +6,7 @@ import type {
   ChildBirthday,
   IdleCart,
   IdleCarts,
+  LaunchSignups,
   LowStock,
   Messenger,
   NewRun,
@@ -14,6 +15,7 @@ import type {
   RunLog,
   Suggestion,
   Suggestions,
+  UpcomingLaunch,
   WaitingContact,
   Waitlist,
 } from "../application/ports";
@@ -160,5 +162,19 @@ export class MemoryIdleCarts implements IdleCarts {
   list: IdleCart[] = [];
   async between(from: Date, to: Date) {
     return this.list.filter((c) => c.updatedAt >= from && c.updatedAt <= to);
+  }
+}
+
+export class MemoryLaunchSignups implements LaunchSignups {
+  launches: UpcomingLaunch[] = [];
+  signups: (WaitingContact & { launchId: string; notifiedAt: Date | null })[] = [];
+  async startingBetween(from: Date, to: Date) {
+    return this.launches.filter((l) => l.startsAt >= from && l.startsAt <= to);
+  }
+  async pending(launchId: string) {
+    return this.signups.filter((s) => s.launchId === launchId && !s.notifiedAt);
+  }
+  async markNotified(ids: string[], at: Date) {
+    for (const s of this.signups) if (ids.includes(s.id)) s.notifiedAt = at;
   }
 }

@@ -21,10 +21,12 @@ import type {
   Birthdays,
   IdleCart,
   IdleCarts,
+  LaunchSignups,
   LowStock,
   NewRun,
   RuleOverrides,
   RunLog,
+  UpcomingLaunch,
   Waitlist,
 } from "../application/ports";
 
@@ -146,6 +148,77 @@ export class DrizzleWaitlist implements Waitlist {
   async markNotified(ids: string[], at: Date) {
     if (!ids.length) return;
     await this.db.update(s.waitlistEntries).set({ notifiedAt: at }).where(inArray(s.waitlistEntries.id, ids));
+  }
+}
+
+/** Anotados a los lanzamientos ("avisame cuando salga" de la home). */
+export class DrizzleLaunchSignups implements LaunchSignups {
+  constructor(
+    private readonly db: Db,
+    private readonly imageUrl: (path: string) => string,
+    private readonly productUrl: (slug: string) => string,
+  ) {}
+
+  async startingBetween(from: Date, to: Date): Promise<UpcomingLaunch[]> {
+    const launches = await this.db
+      .select({ id: s.launches.id, title: s.launches.title, startsAt: s.launches.startsAt })
+      .from(s.launches)
+      .where(
+        and(
+          eq(s.launches.status, "scheduled"),
+          eq(s.launches.notifyBefore, true),
+          isNull(s.launches.publishedAt),
+          gte(s.launches.startsAt, from),
+          lte(s.launches.startsAt, to),
+        ),
+      );
+    if (!launches.length) return [];
+    const cover = sql<string | null>`(
+      select ${s.productImages.path} from ${s.productImages}
+      where ${s.productImages.productId} = ${s.products.id}
+      order by ${s.productImages.position} limit 1)`;
+    const products = await this.db
+      .select({
+        launchId: s.launchProducts.launchId,
+        slug: s.products.slug,
+        name: s.products.name,
+        priceCents: s.products.priceCents,
+        imagePath: cover,
+      })
+      .from(s.launchProducts)
+      .innerJoin(s.products, eq(s.products.id, s.launchProducts.productId))
+      .where(
+        inArray(
+          s.launchProducts.launchId,
+          launches.map((l) => l.id),
+        ),
+      )
+      .orderBy(asc(s.launchProducts.position));
+    return launches.map((l) => ({
+      ...l,
+      // en el mail van solo las que tienen foto
+      products: products
+        .filter((p) => p.launchId === l.id && p.imagePath)
+        .map((p) => ({
+          name: p.name,
+          priceCents: p.priceCents,
+          imageUrl: this.imageUrl(p.imagePath as string),
+          url: this.productUrl(p.slug),
+        })),
+    }));
+  }
+
+  async pending(launchId: string) {
+    return this.db
+      .select({ id: s.launchSignups.id, channel: s.launchSignups.channel, contact: s.launchSignups.contact })
+      .from(s.launchSignups)
+      .where(and(eq(s.launchSignups.launchId, launchId), isNull(s.launchSignups.notifiedAt)))
+      .orderBy(s.launchSignups.createdAt);
+  }
+
+  async markNotified(ids: string[], at: Date) {
+    if (!ids.length) return;
+    await this.db.update(s.launchSignups).set({ notifiedAt: at }).where(inArray(s.launchSignups.id, ids));
   }
 }
 

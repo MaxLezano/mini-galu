@@ -35,6 +35,7 @@ import {
   DrizzleAutomationSettings,
   DrizzleBirthdays,
   DrizzleIdleCarts,
+  DrizzleLaunchSignups,
   DrizzleLowStock,
   DrizzleRunLog,
   DrizzleWaitlist,
@@ -452,7 +453,13 @@ export function buildApp(config: Config) {
       (path) => storage.url(path),
       (slug) => `${config.webOrigin}/producto/${slug}`,
     ),
+    new DrizzleLaunchSignups(
+      db,
+      (path) => storage.url(path),
+      (slug) => `${config.webOrigin}/producto/${slug}`,
+    ),
     {
+      launch: `${config.webOrigin}/#lanzamiento`,
       tracking: (n) => `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(n)}`,
       product: (slug) => `${config.webOrigin}/producto/${slug}`,
       catalog: (size) => `${config.webOrigin}/catalogo?talle=${encodeURIComponent(size)}`,
@@ -612,6 +619,7 @@ export function buildApp(config: Config) {
   const scheduler = new IntervalScheduler();
   if (config.env !== "test") {
     scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
+    scheduler.every(60, "avisar lanzamientos", () => automations.launchNotices());
     scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
     scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
     scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());

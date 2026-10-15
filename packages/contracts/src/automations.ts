@@ -76,6 +76,15 @@ export const AUTOMATION_RULES = {
     vars: ["talle", "prenda", "link_producto"],
     phase: null,
   },
+  lanzamiento: {
+    title: "Aviso de lanzamiento",
+    when: "falta 1 hora para un lanzamiento con el aviso prendido",
+    does: ["Avisa a los anotados antes que en Instagram", "Les muestra las prendas que salen"],
+    channels: ["mail", "whatsapp"],
+    message: "Hola! {lanzamiento} sale hoy a las {hora}, antes que en Instagram. Mirá el adelanto: {link_lanzamiento}",
+    vars: ["lanzamiento", "hora", "link_lanzamiento"],
+    phase: null,
+  },
   link_sin_pagar: {
     title: "Link de pago sin pagar",
     when: "pasan 24 h desde que mandaste un link de pago",
@@ -131,6 +140,9 @@ export const AUTOMATION_SAMPLE: Record<string, string> = {
   link_catalogo: "minigalu.com.ar/catalogo?talle=6",
   taller: "Villa Crespo",
   horario: "Te esperamos el Jue 8 · 10 a 13 h.",
+  lanzamiento: "Otoño en el taller",
+  hora: "19 h",
+  link_lanzamiento: "minigalu.com.ar/#lanzamiento",
 };
 
 /** "{nombre}" → valor; lo que no se conoce queda como está (se ve en la vista previa). */

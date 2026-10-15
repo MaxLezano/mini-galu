@@ -91,6 +91,18 @@ export interface Waitlist {
   markNotified(ids: string[], at: Date): Promise<void>;
 }
 
+/** Un lanzamiento programado con el aviso prendido, y las prendas que salen (con foto). */
+export type UpcomingLaunch = { id: string; title: string; startsAt: Date; products: Suggestion[] };
+
+/** Anotados a un lanzamiento ("avisame cuando salga" de la home). */
+export interface LaunchSignups {
+  /** Programados, con el aviso prendido y sin publicar, que salen entre esas fechas. */
+  startingBetween(from: Date, to: Date): Promise<UpcomingLaunch[]>;
+  /** Anotados sin avisar, en el orden en que se anotaron. */
+  pending(launchId: string): Promise<WaitingContact[]>;
+  markNotified(ids: string[], at: Date): Promise<void>;
+}
+
 /** Talles publicados con una sola unidad. */
 export interface LowStock {
   list(): Promise<{ key: string; label: string }[]>;

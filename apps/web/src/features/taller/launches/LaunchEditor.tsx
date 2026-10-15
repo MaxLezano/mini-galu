@@ -349,7 +349,7 @@ export function LaunchEditor({ open, launch, copy = false, products, collections
                 />
               </label>
               <label className="switch">
-                Avisar a los anotados 1 hora antes <small className="muted">(fase 6)</small>
+                Avisar a los anotados 1 hora antes
                 <input
                   className="tog"
                   type="checkbox"

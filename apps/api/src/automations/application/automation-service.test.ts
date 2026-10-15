@@ -5,6 +5,7 @@ import {
   MemoryAutomationSettings,
   MemoryBirthdays,
   MemoryIdleCarts,
+  MemoryLaunchSignups,
   MemoryLowStock,
   MemoryMessenger,
   MemoryRunLog,
@@ -32,6 +33,7 @@ let lowStock: MemoryLowStock;
 let kids: MemoryBirthdays;
 let suggestions: MemorySuggestions;
 let carts: MemoryIdleCarts;
+let launches: MemoryLaunchSignups;
 let auto: AutomationService;
 
 beforeEach(() => {
@@ -63,6 +65,7 @@ beforeEach(() => {
   kids = new MemoryBirthdays();
   suggestions = new MemorySuggestions();
   carts = new MemoryIdleCarts();
+  launches = new MemoryLaunchSignups();
   auto = new AutomationService(
     settings,
     runs,
@@ -73,7 +76,9 @@ beforeEach(() => {
     kids,
     suggestions,
     carts,
+    launches,
     {
+      launch: "http://web/#lanzamiento",
       tracking: (n) => `http://web/seguimiento?pedido=${n}`,
       product: (s) => `http://web/producto/${s}`,
       catalog: (size) => `http://web/catalogo?talle=${size}`,
@@ -176,7 +181,7 @@ describe("automatizaciones", () => {
   it("enviarme una prueba: todos los mensajes activos con datos de ejemplo", async () => {
     await auto.update("despachado", { on: false });
     const n = await auto.test("gaby@minigalu.com.ar");
-    expect(n).toBe(7); // pago, entregado, listo para retirar, volvió un talle, link, bolsa y cumple (despachado pausado)
+    expect(n).toBe(8); // pago, entregado, listo para retirar, volvió un talle, lanzamiento, link, bolsa y cumple
     expect(messenger.sent.every((m) => m.to === "gaby@minigalu.com.ar" && m.subject?.startsWith("[Prueba]"))).toBe(
       true,
     );
@@ -327,6 +332,72 @@ describe("automatizaciones", () => {
       await auto.update("bolsa_abandonada", { on: false });
       expect(await auto.idleCarts()).toBe(0);
       expect(messenger.sent).toEqual([]);
+    });
+  });
+
+  describe("aviso de lanzamiento", () => {
+    const prenda = (n: number) => ({
+      name: `Vestido ${n}`,
+      priceCents: 4_500_000,
+      imageUrl: `http://media/${n}.webp`,
+      url: `http://web/producto/vestido-${n}`,
+    });
+    const anotar = (id: string, channel: "email" | "whatsapp", contact: string, launchId = "l1") =>
+      launches.signups.push({ id, launchId, channel, contact, notifiedAt: null });
+
+    beforeEach(() => {
+      // sale a las 19 (Argentina): son las 18:10
+      now = new Date("2026-10-20T18:10:00-03:00");
+      launches.launches.push({
+        id: "l1",
+        title: "Otoño en el taller",
+        startsAt: new Date("2026-10-20T19:00:00-03:00"),
+        products: [1, 2, 3, 4].map(prenda),
+      });
+      anotar("s1", "email", "Ana@gmail.com");
+      anotar("s2", "email", "bea@gmail.com");
+      anotar("s3", "whatsapp", "+5491155550000");
+    });
+
+    it("falta una hora: mail a cada anotado con la hora y 3 prendas, una sola vez; WhatsApp queda esperando", async () => {
+      expect(await auto.launchNotices()).toBe(2);
+      expect(messenger.sent.map((m) => m.to)).toEqual(["Ana@gmail.com", "bea@gmail.com"]);
+      expect(messenger.sent[0]).toMatchObject({
+        subject: "Otoño en el taller sale hoy a las 19 h ♡",
+        body: "Hola! Otoño en el taller sale hoy a las 19 h, antes que en Instagram. Mirá el adelanto: http://web/#lanzamiento",
+      });
+      expect(messenger.sent[0]?.products?.map((p) => p.name)).toEqual(["Vestido 1", "Vestido 2", "Vestido 3"]);
+      expect(runs.list.filter((r) => r.channel === "mail").map((r) => r.contact)).toEqual([
+        "ana@gmail.com",
+        "bea@gmail.com",
+      ]);
+      expect(runs.list.find((r) => r.channel === "whatsapp")).toMatchObject({
+        status: "warn",
+        detail: "1 anotado por WhatsApp sin avisar: WhatsApp todavía no está conectado",
+      });
+
+      // el próximo minuto no repite nada; quien se anota después sí recibe el suyo
+      now = new Date(now.getTime() + 60_000);
+      anotar("s4", "email", "caro@gmail.com");
+      expect(await auto.launchNotices()).toBe(1);
+      expect(messenger.sent.map((m) => m.to)).toEqual(["Ana@gmail.com", "bea@gmail.com", "caro@gmail.com"]);
+      expect(runs.list.filter((r) => r.channel === "whatsapp")).toHaveLength(1);
+    });
+
+    it("no antes de la hora previa, ni después de salir, ni con la regla pausada; el mensaje se puede editar", async () => {
+      now = new Date("2026-10-20T17:59:00-03:00");
+      expect(await auto.launchNotices()).toBe(0);
+      now = new Date("2026-10-20T19:01:00-03:00");
+      expect(await auto.launchNotices()).toBe(0);
+
+      now = new Date("2026-10-20T18:30:00-03:00");
+      await auto.update("lanzamiento", { on: false });
+      expect(await auto.launchNotices()).toBe(0);
+      expect(messenger.sent).toEqual([]);
+
+      await auto.update("lanzamiento", { on: true, message: "{lanzamiento} a las {hora} ♡" });
+      expect(await auto.launchNotices()).toBe(2);
+      expect(messenger.sent[0]?.body).toBe("Otoño en el taller a las 19 h ♡");
     });
   });
 });
