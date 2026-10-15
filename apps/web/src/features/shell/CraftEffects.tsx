@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useFavorites } from "@/features/favorites/favorites-store";
-import { autoReveal, drawCraft, measuringTape, observeReveal, sewSeams } from "./craft";
+import { autoReveal, drawCraft, heroOnCardClick, measuringTape, observeReveal, releaseHero, sewSeams } from "./craft";
 import { useUi } from "./ui-store";
 
 /** Monta los detalles de taller en cada página y los reengancha cuando se agrega contenido (filtros, Galú…). */
@@ -27,10 +27,12 @@ export function CraftEffects() {
     };
     document.addEventListener("pointerover", measureQuick, { passive: true });
     document.addEventListener("focusin", measureQuick);
+    document.addEventListener("click", heroOnCardClick);
     return () => {
       stopTape();
       document.removeEventListener("pointerover", measureQuick);
       document.removeEventListener("focusin", measureQuick);
+      document.removeEventListener("click", heroOnCardClick);
     };
   }, []);
 
@@ -40,6 +42,7 @@ export function CraftEffects() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: se rearma en cada navegación
   useEffect(() => {
+    releaseHero();
     const cleanups: (() => void)[] = [];
     const run = () => {
       autoReveal();

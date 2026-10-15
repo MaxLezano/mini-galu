@@ -4,7 +4,8 @@
 
 
 /* Sin @view-transition { navigation: auto } (del mockup): en la app solo actuaba al entrar o recargar y Chrome
-   mostraba un recuadro oscuro mientras capturaba la pantalla. Las transiciones entre páginas van con React (fase 9). */
+   mostraba un recuadro oscuro mientras capturaba la pantalla. Entre páginas anima React (<ViewTransition> en el
+   template.tsx, ver features/shell/PageTransition.tsx) con las mismas animaciones (.vt-page, abajo). */
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
@@ -591,8 +592,10 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
 .stars svg { width: 14px; height: 14px; fill: currentColor; }
 
 /* ---------- View transitions ---------- */
-::view-transition-old(root) { animation: .35s var(--ease) both vtOut; }
-::view-transition-new(root) { animation: .6s var(--ease) both vtIn; }
+::view-transition-old(root), ::view-transition-old(.vt-page) { animation: .35s var(--ease) both vtOut; }
+::view-transition-new(root), ::view-transition-new(.vt-page) { animation: .6s var(--ease) both vtIn; }
+/* los clics durante la animación llegan a la página nueva */
+::view-transition { pointer-events: none; }
 ::view-transition-group(product-hero) { animation-duration: .7s; animation-timing-function: var(--ease); }
 ::view-transition-image-pair(product-hero) { isolation: auto; }
 ::view-transition-group(site-header) { animation: none; }
@@ -600,6 +603,11 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
 html.vt-local::view-transition-old(root), html.vt-local::view-transition-new(root) { animation: none; }
 @keyframes vtOut { to { opacity: 0; transform: scale(.985); filter: blur(4px); } }
 @keyframes vtIn { from { opacity: 0; transform: translateY(18px); } }
+/* ?static (capturas) y movimiento reducido: la página cambia de una */
+html.static::view-transition-group(*), html.static::view-transition-old(*), html.static::view-transition-new(*) { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

@@ -242,3 +242,28 @@ export function bumpBadge() {
   void b.offsetWidth;
   b.classList.add("bump");
 }
+
+const HERO = "product-hero";
+
+/**
+ * La foto de la tarjeta "viaja" a la ficha (mockup app.js · `[data-vt]`): al tocar la foto o el nombre, esa foto
+ * toma el nombre que tiene la primera foto de la ficha (product.css). La ficha actual lo suelta, porque dos
+ * elementos con el mismo nombre cancelan la transición.
+ */
+export function heroOnCardClick(e: MouseEvent) {
+  // (Link ya hizo preventDefault para navegar del lado del cliente; las tarjetas de la lista de cumple no navegan)
+  const link = (e.target as Element | null)?.closest?.(".p-card:not(.pickable) :is(.p-media, .p-name a)");
+  const img = link?.closest(".p-card")?.querySelector<HTMLImageElement>(".p-media img:not(.alt)");
+  if (!img || isStill()) return;
+  releaseHero();
+  for (const x of $$<HTMLImageElement>(".pdp-main img")) x.style.viewTransitionName = "none";
+  img.style.viewTransitionName = HERO;
+}
+
+/** Después de navegar: la tarjeta que quedó montada (Galú, buscador) vuelve a no tener nombre. */
+export function releaseHero() {
+  for (const el of $$(`[style*="view-transition-name"]`)) {
+    if (el.style.viewTransitionName === HERO || (el.closest(".pdp-main") && el.style.viewTransitionName === "none"))
+      el.style.viewTransitionName = "";
+  }
+}

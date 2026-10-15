@@ -266,7 +266,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   las que faltan (fotos del seed o subidas antes) se generan la primera vez que se piden a `/media`. Los nombres
   (`a.webp` → `a@640.avif`) salen de `contracts/media.ts`; la tienda usa `ui/atoms/Picture` (`<picture>` con `sizes`)
   en las fotos grandes y `imageThumb` (WebP de 320) en las miniaturas. El hero baja de 207 KB a 61 KB
-- ⏳ a11y AA, Lighthouse ≥ 90, View Transitions
+- ✅ View Transitions (mockup `@view-transition` + `[data-vt]`): al navegar, la página que se va se desenfoca y la
+  nueva sube (`<ViewTransition>` de React en el `template.tsx` de la tienda y del panel, `features/shell/PageTransition`);
+  el header queda quieto. Al tocar la foto o el nombre de una tarjeta, la foto viaja a la primera de la ficha
+  (`product-hero`, se nombra al hacer clic y se suelta al llegar). Sin animación con `prefers-reduced-motion` o `?static`
+- ⏳ a11y AA, Lighthouse ≥ 90
 - ⏳ Vercel + Render/Fly + Neon; build de la API (hoy corre con `tsx`)
 
 ## Ideas para después (de IDEAS.md)
