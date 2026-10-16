@@ -142,6 +142,9 @@ export function LaunchesAdmin({ initial, products, collections, startNew = false
               <span>
                 <b>{l.products.length}</b>prendas
               </span>
+              <span title="Clientes con cuenta: en el adelanto, el corazón pide ingresar">
+                <b>{l.favorites}</b>favoritos
+              </span>
               <span>
                 <b>{d ?? "–"}</b>días
               </span>

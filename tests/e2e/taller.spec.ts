@@ -137,6 +137,8 @@ test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
   await ready(page);
   // el que ya salió (seed) muestra lo que se vendió en sus primeras 24 h
   await expect(page.locator(".ln", { hasText: "Verano 2027" })).toContainText(/\d+ vendidas el primer día/);
+  // el próximo cuenta los favoritos de sus prendas (con cuenta)
+  await expect(page.locator(".ln-count")).toContainText(/\d+favoritos/);
   await page.getByRole("button", { name: "Nuevo lanzamiento" }).click();
   const modal = page.getByRole("dialog", { name: "Lanzamiento" });
   await modal.getByLabel("Nombre").fill("Prueba e2e 99");

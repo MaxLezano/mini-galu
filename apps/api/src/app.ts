@@ -62,7 +62,7 @@ import type { ProductPublisher } from "./content/application/launch-ports";
 import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
 import { DrizzleHelpRepository } from "./content/infrastructure/drizzle-help-repository";
-import { DrizzleLaunchSales } from "./content/infrastructure/drizzle-launch-sales";
+import { DrizzleLaunchMetrics } from "./content/infrastructure/drizzle-launch-metrics";
 import { adminHomeRoutes } from "./content/infrastructure/http/admin-home-routes";
 import { adminLaunchesRoutes } from "./content/infrastructure/http/admin-launches-routes";
 import { contentRoutes } from "./content/infrastructure/http/content-routes";
@@ -240,7 +240,7 @@ export function buildApp(config: Config) {
     publisher,
     storage,
     events,
-    new DrizzleLaunchSales(db),
+    new DrizzleLaunchMetrics(db),
   );
 
   // checkout: bolsa → pedido (reserva stock) → pago

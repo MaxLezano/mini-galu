@@ -3,7 +3,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../shared/doma
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { firstDayWindow, isDueForPublish, launchState } from "../domain/launch";
-import type { AdminLaunchRepository, LaunchRecord, LaunchSales, ProductPublisher } from "./launch-ports";
+import type { AdminLaunchRepository, LaunchMetrics, LaunchRecord, ProductPublisher } from "./launch-ports";
 
 /** Lanzamientos desde el panel: crear, programar, editar y publicar las prendas a la hora indicada. */
 export class AdminLaunchesService {
@@ -12,7 +12,7 @@ export class AdminLaunchesService {
     private readonly publisher: ProductPublisher,
     private readonly storage: ImageStorage,
     private readonly events: EventBus,
-    private readonly sales: LaunchSales,
+    private readonly metrics: LaunchMetrics,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
@@ -78,6 +78,7 @@ export class AdminLaunchesService {
 
   private async present(l: LaunchRecord): Promise<AdminLaunch> {
     const state = launchState(l.status, l.startsAt, l.publishedAt, this.now());
+    const slugs = l.products.map((p) => p.slug);
     return {
       id: l.id,
       title: l.title,
@@ -100,16 +101,13 @@ export class AdminLaunchesService {
       state,
       publishedAt: l.publishedAt?.toISOString() ?? null,
       signups: l.signups,
-      soldFirstDay: state === "past" ? await this.soldFirstDay(l) : null,
+      favorites: await this.metrics.favorites(slugs),
+      soldFirstDay: state === "past" ? await this.soldFirstDay(l, slugs) : null,
     };
   }
 
-  private soldFirstDay(l: LaunchRecord) {
+  private soldFirstDay(l: LaunchRecord, slugs: string[]) {
     const { from, to } = firstDayWindow(l.startsAt, l.publishedAt);
-    return this.sales.unitsSold(
-      l.products.map((p) => p.slug),
-      from,
-      to,
-    );
+    return this.metrics.unitsSold(slugs, from, to);
   }
 }

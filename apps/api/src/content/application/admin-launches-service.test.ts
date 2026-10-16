@@ -4,7 +4,7 @@ import { ConflictError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { AdminLaunchesService } from "./admin-launches-service";
-import type { AdminLaunchRepository, LaunchRecord, LaunchSales, ProductPublisher } from "./launch-ports";
+import type { AdminLaunchRepository, LaunchMetrics, LaunchRecord, ProductPublisher } from "./launch-ports";
 
 const storage: ImageStorage = { url: (p) => `http://api/media/${p}`, save: async (p) => p };
 const NOW = new Date("2026-10-07T12:00:00-03:00");
@@ -85,9 +85,12 @@ let events: DomainEvent[];
 let service: AdminLaunchesService;
 /** Ventas pagas: prenda, unidades y cuándo se pagó. */
 let sales: { slug: string; qty: number; paidAt: Date }[];
-const salesReader: LaunchSales = {
+/** Favoritos guardados: cliente y prenda. */
+let favs: { userId: string; slug: string }[];
+const metrics: LaunchMetrics = {
   unitsSold: async (slugs, from, to) =>
     sales.filter((x) => slugs.includes(x.slug) && x.paidAt >= from && x.paidAt < to).reduce((n, x) => n + x.qty, 0),
+  favorites: async (slugs) => favs.filter((f) => slugs.includes(f.slug)).length,
 };
 
 beforeEach(() => {
@@ -95,6 +98,7 @@ beforeEach(() => {
   clock = NOW;
   published = [];
   sales = [];
+  favs = [];
   events = [];
   const bus = new EventBus();
   bus.on("LaunchPublished", (e) => {
@@ -106,7 +110,7 @@ beforeEach(() => {
       return { published: slugs, skipped: [] };
     },
   };
-  service = new AdminLaunchesService(repo, publisher, storage, bus, salesReader, () => clock);
+  service = new AdminLaunchesService(repo, publisher, storage, bus, metrics, () => clock);
 });
 
 describe("AdminLaunchesService", () => {
@@ -157,6 +161,17 @@ describe("AdminLaunchesService", () => {
     await service.publishDue();
     clock = new Date("2026-10-20T10:00:00-03:00");
     expect((await service.get("l1")).soldFirstDay).toBe(4);
+  });
+
+  it("cuenta los favoritos de las prendas del lanzamiento", async () => {
+    await service.create(input({ productSlugs: ["corazon-pana", "elsa"] }));
+    favs = [
+      { userId: "u1", slug: "corazon-pana" },
+      { userId: "u1", slug: "elsa" },
+      { userId: "u2", slug: "elsa" },
+      { userId: "u2", slug: "otra" }, // no es del lanzamiento
+    ];
+    expect((await service.get("l1")).favorites).toBe(3);
   });
 
   it("solo se borran borradores", async () => {

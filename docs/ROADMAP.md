@@ -92,7 +92,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Lanzamientos: aviso a los anotados 1 h antes (regla "Aviso de lanzamiento" de Automatizaciones, ver fase 6)
 - ✅ Lanzamientos: "vendidas el primer día" en los que ya salieron (unidades de pedidos pagos en las 24 h desde que
   se publicó; sin cancelados ni reembolsados)
-- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami); "favoritos" → fase 8
+- ✅ Lanzamientos: "favoritos" del próximo (veces que guardaron sus prendas). En el adelanto la ficha muestra el
+  corazón al lado de "Avisame cuando salga" y pide ingresar o crear cuenta, así cada favorito queda en el servidor;
+  en "Mi cuenta" la prenda aparece recién cuando sale
+- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami)
 - ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
   próximo lanzamiento
 - ✅ `admin-tienda`: Mercado Pago y cupones (fase 3); envíos, horarios de retiro y paquete (fase 5); gift cards (fase 8)

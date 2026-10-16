@@ -110,6 +110,31 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
   await expect(page.locator("#favs")).toContainText("Moño Verde Largo");
 });
 
+test("adelanto de un lanzamiento: el favorito pide cuenta y queda guardado en ella", async ({ page }) => {
+  // corazon-pana es un borrador del seed: se ve por link como adelanto
+  await page.goto("/producto/corazon-pana");
+  await expect(page.locator(".soon-box")).toBeVisible();
+  await page.locator(".soon-box").getByRole("button", { name: "Guardar en favoritos" }).click();
+  await expect(page).toHaveURL(/\/ingresar\?volver=%2Fproducto%2Fcorazon-pana/);
+
+  await page.getByRole("tab", { name: "Crear cuenta" }).click();
+  const auth = page.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Ana");
+  await auth.getByLabel("Apellido").fill("Adelanto");
+  await auth.getByLabel("Email").fill(`adelanto-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`);
+  await auth.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/producto\/corazon-pana$/);
+
+  const fav = page.locator(".soon-box").getByRole("button", { name: "Guardar en favoritos" });
+  await fav.click();
+  await expect(fav).toHaveAttribute("aria-pressed", "true");
+  // queda en la cuenta (el taller lo cuenta); en "Mi cuenta" se lista recién cuando sale
+  await expect
+    .poll(async () => (await (await page.request.get("http://localhost:4000/me")).json()).favorites)
+    .toContain("corazon-pana");
+});
+
 test("lista de cumple: se arma desde la prenda, la familia la abre sin cuenta y lo regalado queda marcado", async ({
   page,
   browser,

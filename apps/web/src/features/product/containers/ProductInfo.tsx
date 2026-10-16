@@ -207,9 +207,25 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
             Este modelo sale con el lanzamiento {p.collection.name}
             {launchAt ? `, el ${longDate(launchAt)}` : ""}.
           </b>
-          <button type="button" className="btn" onClick={() => askNotify(null)}>
-            Avisame cuando salga <BellRing />
-          </button>
+          <div className="buy">
+            <button type="button" className="btn" onClick={() => askNotify(null)}>
+              Avisame cuando salga <BellRing />
+            </button>
+            {/* en el adelanto el favorito va a la cuenta (así el taller lo cuenta): sin sesión, a ingresar y vuelve */}
+            <button
+              type="button"
+              className={`fav-big fav ${isFav ? "is-on" : ""}`}
+              aria-label="Guardar en favoritos"
+              aria-pressed={isFav}
+              onClick={async (e) => {
+                const el = e.currentTarget;
+                if (await useAccount.getState().signedIn()) toggleFav(p.slug, el);
+                else router.push(`/ingresar?volver=${encodeURIComponent(`/producto/${p.slug}`)}`);
+              }}
+            >
+              <Heart />
+            </button>
+          </div>
         </div>
       ) : (
         <>

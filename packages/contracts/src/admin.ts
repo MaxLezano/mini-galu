@@ -109,6 +109,8 @@ export const AdminLaunchSchema = z.object({
   state: LaunchStateSchema,
   publishedAt: z.string().nullable(),
   signups: z.number().int(),
+  /** Veces que guardaron sus prendas en favoritos (con cuenta). */
+  favorites: z.number().int(),
   /** Unidades vendidas en las primeras 24 h (solo los que ya salieron; null si no salió). */
   soldFirstDay: z.number().int().nullable(),
 });

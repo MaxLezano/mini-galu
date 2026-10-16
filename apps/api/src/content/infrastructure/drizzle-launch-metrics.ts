@@ -1,7 +1,7 @@
 import { and, type Db, eq, gte, inArray, lt, notInArray, schema as s, sql } from "@mini-galu/db";
-import type { LaunchSales } from "../application/launch-ports";
+import type { LaunchMetrics } from "../application/launch-ports";
 
-export class DrizzleLaunchSales implements LaunchSales {
+export class DrizzleLaunchMetrics implements LaunchMetrics {
   constructor(private readonly db: Db) {}
 
   async unitsSold(slugs: string[], from: Date, to: Date) {
@@ -18,6 +18,16 @@ export class DrizzleLaunchSales implements LaunchSales {
           notInArray(s.orders.status, ["cancelado", "reembolsado"]),
         ),
       );
+    return r?.n ?? 0;
+  }
+
+  async favorites(slugs: string[]) {
+    if (!slugs.length) return 0;
+    const [r] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(s.favorites)
+      .innerJoin(s.products, eq(s.products.id, s.favorites.productId))
+      .where(inArray(s.products.slug, slugs));
     return r?.n ?? 0;
   }
 }
