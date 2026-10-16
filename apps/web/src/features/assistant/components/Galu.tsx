@@ -8,12 +8,23 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useShellData } from "@/features/shell/shell-context";
 import { useUi } from "@/features/shell/ui-store";
+import { ApiRequestError, api } from "@/lib/api";
 import { cover, sizesIn, stockOf } from "@/lib/product";
 import { SITE } from "@/lib/site";
 import { Foco } from "@/ui/atoms/Foco";
-import { answer, contextSuggestions, DEFAULT_SUGGESTIONS, type GaluReply, greeting } from "../galu-engine";
+import {
+  answer,
+  contextSuggestions,
+  DEFAULT_SUGGESTIONS,
+  type GaluReply,
+  greeting,
+  orderNotFound,
+  orderReply,
+  orderUnavailable,
+} from "../galu-engine";
 import { boldSegments } from "../galu-sse";
 import { askGalu, GaluOffline } from "../galu-stream";
+import { orderCodeIn } from "../order-code";
 
 type MsgBody =
   | { role: "me" | "bot" | "typing"; content?: ReactNode }
@@ -120,8 +131,17 @@ export function Galu() {
         offline.current = true;
       }
     }
-    await new Promise((r) => setTimeout(r, 650 + Math.random() * 450));
-    const out: GaluReply[] = answer(q, products, ctx, policies);
+    const code = orderCodeIn(q);
+    const [out]: [GaluReply[], unknown] = await Promise.all([
+      code
+        ? api
+            .track(code)
+            .then(orderReply, (e: unknown) =>
+              e instanceof ApiRequestError && e.status === 404 ? orderNotFound(code) : orderUnavailable(code),
+            )
+        : answer(q, products, ctx, policies),
+      new Promise((r) => setTimeout(r, 650 + Math.random() * 450)),
+    ]);
     setMsgs((l) => [
       ...l.filter((m) => m.id !== typingId),
       ...out.map((r) =>

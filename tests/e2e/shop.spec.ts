@@ -88,6 +88,56 @@ test("sin modelo en la API, Galú responde por reglas con el stock real", async 
   await expect(page.locator(".galu-body .mini-card").first()).toBeVisible();
 });
 
+test("sin modelo en la API, Galú busca el pedido por su número", async ({ page }) => {
+  await page.route("**/assistant/chat", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),
+  );
+  await page.route("**/tracking/MG-1042", (route) =>
+    route.fulfill({
+      json: {
+        number: "MG-1042",
+        status: "en_camino",
+        shippingMethod: "domicilio",
+        createdAt: "2026-10-10T12:00:00Z",
+        paidAt: "2026-10-10T12:05:00Z",
+        totalCents: 5_000_000,
+        items: [],
+        destination: "Palermo, CABA",
+        recipient: "Lucía F.",
+        shipment: { carrier: "Andreani", trackingNumber: "360000123456789", url: null },
+        stops: [
+          { title: "Pedido confirmado", detail: "", done: true },
+          { title: "En camino", detail: "", done: true },
+          { title: "Entregado", detail: "", done: false },
+        ],
+        log: [{ title: "En tránsito", detail: "Centro de distribución", at: "2026-10-12T09:00:00Z" }],
+        payUrl: null,
+      },
+    }),
+  );
+  await page.route("**/tracking/MG-9999", (route) =>
+    route.fulfill({ status: 404, json: { error: { code: "not_found", message: "No encontramos ese pedido" } } }),
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  const msg = page.getByLabel("Mensaje");
+  await msg.fill("¿Dónde está mi pedido?");
+  await msg.press("Enter");
+  await expect(page.locator(".galu-body")).toContainText("Pasame el número de tu pedido");
+  await msg.fill("mg 1042");
+  await msg.press("Enter");
+  const found = page.locator(".galu-body .msg.bot").last();
+  await expect(found).toContainText("Tu pedido #MG-1042 está en camino: Llega en 2 a 3 días.");
+  await expect(found).toContainText("Último movimiento: En tránsito. Lo que sigue: Entregado.");
+  await expect(found.getByRole("link", { name: "Ver el seguimiento" })).toHaveAttribute(
+    "href",
+    "/seguimiento?pedido=MG-1042",
+  );
+  await msg.fill("9999");
+  await msg.press("Enter");
+  await expect(page.locator(".galu-body .msg.bot").last()).toContainText("No encontré el pedido MG-9999");
+});
+
 test("con el mouse, las sugerencias de Galú se arrastran de costado sin mandarse", async ({ page }) => {
   test.skip(test.info().project.name === "celular", "en táctil desplaza el navegador");
   await page.goto("/?static"); // sin la entrada animada del panel: la caja de las sugerencias queda quieta

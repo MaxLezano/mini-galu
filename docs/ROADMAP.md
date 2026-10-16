@@ -33,7 +33,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Toast con foto de la prenda
 - ✅ Detalles de taller: aguja que cose los dobladillos, cinta métrica, prenda que vuela a la bolsa, etiquetas que se balancean, pespuntes al hover, puntadas al guardar favorito, moños que se atan, bordados que florecen, textura de lino
 - ✅ `prefers-reduced-motion` y `?static` apagan todas las animaciones
-- 🟡 View Transitions entre páginas: CSS listo; en Next falta habilitar `<ViewTransition>` (foto que viaja de la tarjeta a la ficha) → fase 9
+- ✅ View Transitions entre páginas, con la foto que viaja de la tarjeta a la ficha (ver fase 9)
 - ✅ Popover de cuenta ("Hola, Lucía", nenas, pedidos en camino, saldo gift card): ver fase 9
 
 ### Home (`index.html`)
@@ -70,7 +70,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 ### Galú (demo con reglas sobre el stock real)
 - ✅ Moño flotante con pista, panel, sugerencias, saludo contextual en la ficha, tarjetas con "Agregar"
 - ✅ Responde talles, stock, precios, cuotas, envíos, ocasiones, regalos, colores, presupuesto, a medida
-- 🟡 "¿Dónde está mi pedido?": pide el número → con pedidos reales en la fase 5
+- ✅ "¿Dónde está mi pedido?": sin modelo, Galú detecta el número en el mensaje (MG-1042, "mg 1042", "#1042", solo el
+  número o el de Andreani) y responde con el estado real del seguimiento público (`/tracking/:code`) y el link
 - ✅ LLM + tools (fase 7) · ✅ "enseñale" desde el panel (fase 7)
 
 ### Panel del taller (fase 2)
@@ -150,7 +151,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   por "en camino"); cada cambio publica `OrderStatusChanged` (las automatizaciones avisarán en la fase 6)
 - ✅ Plantillas de WhatsApp (pago recibido, despachado, listo para retirar, pedir reseña, libre) que abren wa.me
 - ✅ Canal de cada pedido (web, Instagram, WhatsApp, Galú) en la base; hoy todo entra por la web
-- 🟡 "Generar etiqueta Andreani" y seguimiento → fase 5 (hoy: "Marcar listo para despachar" / "Marcar entregado")
+- ✅ "Generar etiqueta Andreani" y seguimiento (ver fase 5)
 - 🟡 "Te queda después de la comisión de MP": no se estima (sería un dato inventado)
 - ✅ Resumen (`/taller`, el panel abre acá): tareas del día, ventas del mes contra el anterior, pedidos y clientes que
   vuelven, ticket promedio, ventas por semana / por mes (barras, tooltip, tabla, mejor período, promedio y

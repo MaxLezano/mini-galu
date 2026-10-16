@@ -4,12 +4,15 @@ import {
   formatARS,
   freeShippingFrom,
   GARMENT_SIZES,
+  ORDER_STATUSES,
   type ProductSummary,
+  type PublicTracking,
   type Size,
   type StorePolicies,
 } from "@mini-galu/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { headline } from "@/features/tracking/tracking-view";
 import { sizesIn, stockOf, stripAccents, totalStock } from "@/lib/product";
 import { SITE } from "@/lib/site";
 
@@ -63,6 +66,44 @@ export function greeting(ctx: ProductSummary | null): ReactNode {
       Te ayudo a encontrar talle, ver stock, elegir un regalo o seguir tu pedido.
     </>
   );
+}
+
+const trackLink = (number: string, label = "Ver el seguimiento") => (
+  <Link className="link" href={`/seguimiento?pedido=${encodeURIComponent(number)}`}>
+    {label}
+  </Link>
+);
+
+/** Galú por reglas con el pedido real (`GET /tracking/:code`, el mismo seguimiento público, sin calle ni apellido). */
+export function orderReply(t: PublicTracking): GaluReply[] {
+  const [before, strong, after] = headline(t.status, t.shippingMethod);
+  const last = t.log[0];
+  const next = t.stops.find((s) => !s.done);
+  return [
+    text(
+      <>
+        Tu pedido <b>#{t.number}</b> está <b>{ORDER_STATUSES[t.status].short.toLowerCase()}</b>: {before}
+        {strong}
+        {after}.{last ? ` Último movimiento: ${last.title}.` : ""}
+        {next && t.status !== "entregado" ? ` Lo que sigue: ${next.title}.` : ""} {trackLink(t.number)}
+      </>,
+    ),
+  ];
+}
+
+export function orderNotFound(code: string): GaluReply[] {
+  return [
+    text(
+      <>
+        No encontré el pedido <b>{code}</b>. Revisá el número (está en el mail de la compra y empieza con <b>MG-</b>) o{" "}
+        {WA()}.
+      </>,
+    ),
+  ];
+}
+
+export function orderUnavailable(code: string): GaluReply[] {
+  return [text(<>Ahora no puedo buscarlo. Probá en {trackLink(code, "Seguir mi pedido")} en un ratito.</>)];
 }
 
 /** Edad → talle (talle 4 ≈ 4 años; los impares suben al par siguiente). */
