@@ -149,10 +149,13 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Resumen (`/taller`, el panel abre acá): tareas del día, ventas del mes contra el anterior, pedidos y clientes que
   vuelven, ticket promedio, ventas por semana / por mes (barras, tooltip, tabla, mejor período, promedio y
   proyección), últimos pedidos, próximo lanzamiento, stock para revisar y "lo que se hizo solo" (historial real)
-- 🟡 En el resumen: "preguntas que Galú no supo" y "charlas con Galú" → fase 7; link a Automatizaciones → fase 6
+- ✅ En el resumen: "preguntas que Galú no supo" (lleva a Enseñale) y "Charlas con Galú" de 7 días con el % que
+  termina en compra (`GET /admin/assistant/overview`); link a Automatizaciones
 - ✅ Contadores en el menú (pedidos para preparar, productos con la última unidad), campana de novedades (pedidos
   nuevos, links sin pagar, última unidad; "marcar como leídas") y búsqueda global con pedidos y productos ("/")
-- 🟡 Búsqueda de clientes → fase 8; "Galú no supo responder" en la campana → fase 7
+- ✅ "Galú no supo responder" en la campana (las 3 más preguntadas; vuelve a sonar si la preguntan otra vez) y
+  contador de pendientes en "Galú" del menú
+- 🟡 Búsqueda de clientes → fase 8
 - ✅ Links de pago: venta por Instagram/WhatsApp cargada en el panel (prendas, cliente, entrega); el pedido queda
   "esperando pago" con el stock reservado 72 h y el cliente paga en `/pagar/MG-…?t=…` con el mismo Brick del
   checkout. Copiar link o mandarlo por WhatsApp; "Reenviar link de pago" como siguiente paso; recordatorio por mail
@@ -222,7 +225,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   tildes ni signos); lo que Gaby responde (`AssistantFact`) entra en las instrucciones de Galú y se puede olvidar
 - ✅ Ajustes: derivar a WhatsApp, ofrecer gift card sin talle, solo prendas con stock (búsquedas y tarjetas) y tono
 - 🟡 Las charlas por reglas (sin modelo) no se guardan; "Pidieron aviso de talle" no se mide (el aviso se pide en
-  la ficha, no en la charla) y quedó "Le enseñaste" en su lugar; sin contador de pendientes en el menú
+  la ficha, no en la charla) y quedó "Le enseñaste" en su lugar
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)
 - ✅ Modelo de datos: `user` (nombre y apellido separados, email verificado, foto, rol, teléfono E.164 + país,

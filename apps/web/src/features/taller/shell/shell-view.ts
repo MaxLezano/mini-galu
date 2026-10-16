@@ -1,4 +1,4 @@
-import type { AdminOrderSummary, AdminProduct } from "@mini-galu/contracts";
+import { type AdminOrderSummary, type AdminProduct, type PendingQuestion, questionKey } from "@mini-galu/contracts";
 import { stripAccents } from "../../../lib/product";
 
 /** Números del menú: pedidos para preparar y productos con algún talle a punto de agotarse (admin.js). */
@@ -12,7 +12,7 @@ export function navCounts(orders: AdminOrderSummary[], products: AdminProduct[])
 export type Notice = {
   /** Identifica la novedad para "Marcar como leídas" (cambia si cambia lo que avisa). */
   key: string;
-  kind: "pedido" | "sin_pagar" | "stock" | "arrepentimiento";
+  kind: "pedido" | "sin_pagar" | "galu" | "stock" | "arrepentimiento";
   title: string;
   text: string;
   /** ISO: cuándo pasó (los avisos de stock no tienen fecha). */
@@ -21,8 +21,13 @@ export type Notice = {
   href?: string;
 };
 
-/** La campana: bajas pedidas, pedidos nuevos, links de pago sin pagar y talles con la última unidad. */
-export function notices(orders: AdminOrderSummary[], products: AdminProduct[], money: (c: number) => string): Notice[] {
+/** La campana: bajas pedidas, pedidos nuevos, links de pago sin pagar, lo que Galú no supo y talles con la última unidad. */
+export function notices(
+  orders: AdminOrderSummary[],
+  products: AdminProduct[],
+  money: (c: number) => string,
+  pending: PendingQuestion[] = [],
+): Notice[] {
   // botón de arrepentimiento: queda en la campana mientras el pedido siga en el tablero (no cancelado)
   const bajas = orders
     .filter((o) => o.revocation)
@@ -54,6 +59,15 @@ export function notices(orders: AdminOrderSummary[], products: AdminProduct[], m
       at: o.createdAt,
       order: o.number,
     }));
+  // las más preguntadas primero; si la vuelven a preguntar, vuelve a sonar
+  const galu = pending.slice(0, 3).map<Notice>((q) => ({
+    key: `galu:${questionKey(q.question)}:${q.times}`,
+    kind: "galu",
+    title: "Galú no supo responder",
+    text: `“${q.question}”${q.times > 1 ? ` · ${q.times} veces` : ""}`,
+    at: q.lastAt,
+    href: "/taller/galu",
+  }));
   const stock = products
     .filter((p) => p.status === "published")
     .flatMap((p) => p.variants.filter((v) => v.stock === 1).map((v) => ({ p, size: v.size })))
@@ -66,7 +80,7 @@ export function notices(orders: AdminOrderSummary[], products: AdminProduct[], m
       at: null,
       href: `/taller/productos?editar=${p.slug}`,
     }));
-  return [...bajas, ...nuevos, ...sinPagar, ...stock];
+  return [...bajas, ...nuevos, ...sinPagar, ...galu, ...stock];
 }
 
 /** Búsqueda global: pedidos por número, cliente o ciudad; productos por nombre. */

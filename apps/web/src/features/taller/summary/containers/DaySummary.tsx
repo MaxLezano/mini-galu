@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminDaySummary, AdminLaunch, AdminOrderSummary } from "@mini-galu/contracts";
+import type { AdminDaySummary, AdminLaunch, AdminOrderSummary, AssistantOverview } from "@mini-galu/contracts";
 import { ListChecks } from "lucide-react";
 import { useState } from "react";
 import { useUi } from "@/features/shell/ui-store";
@@ -20,6 +20,7 @@ type Props = {
   orders: AdminOrderSummary[];
   low: LowStockRow[];
   launch: AdminLaunch | null;
+  galu: AssistantOverview;
   /** Lo que depende del reloj se calcula una sola vez en el servidor (no cambia al hidratar). */
   today: {
     title: string;
@@ -33,7 +34,7 @@ type Props = {
 };
 
 /** Resumen del día — design/mockups/admin.html */
-export function DaySummary({ summary, orders, low, launch, today, name }: Props) {
+export function DaySummary({ summary, orders, low, launch, galu, today, name }: Props) {
   const { openModal, closeModal } = useUi();
   const mounted = useMounted();
   const [picking, setPicking] = useState<AdminOrderSummary[]>([]);
@@ -66,8 +67,8 @@ export function DaySummary({ summary, orders, low, launch, today, name }: Props)
         </div>
       </div>
 
-      <TodoGrid todo={summary.todo} />
-      <Kpis month={summary.month} current={today.month} previous={today.prevMonth} />
+      <TodoGrid todo={summary.todo} unanswered={galu.pending.length} />
+      <Kpis month={summary.month} current={today.month} previous={today.prevMonth} galu={galu} />
 
       <div className="cols-2">
         <SalesChart

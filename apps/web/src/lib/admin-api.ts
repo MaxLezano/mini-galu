@@ -12,6 +12,7 @@ import type {
   AdminProduct,
   AdminShipping,
   AssistantFactInput,
+  AssistantOverview,
   AssistantSettings,
   AutomationKey,
   Collection,
@@ -124,6 +125,7 @@ export const adminApi = {
   testAutomations: (email: string) =>
     adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
   newsletter: () => adminRequest<AdminNewsletter>("/admin/newsletter"),
+  assistantOverview: () => adminRequest<AssistantOverview>("/admin/assistant/overview"),
   assistantSettings: (s: AssistantSettings) =>
     adminRequest<AdminAssistant>("/admin/assistant/settings", { method: "PUT", body: JSON.stringify(s) }),
   teachAssistant: (f: AssistantFactInput) =>

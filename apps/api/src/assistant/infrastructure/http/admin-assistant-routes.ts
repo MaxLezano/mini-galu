@@ -7,6 +7,7 @@ import type { AssistantAdminService } from "../../application/assistant-admin-se
 export function adminAssistantRoutes(admin: AssistantAdminService) {
   return new Hono()
     .get("/", async (c) => c.json(await admin.admin()))
+    .get("/overview", async (c) => c.json(await admin.overview()))
     .put("/settings", async (c) =>
       c.json(await admin.updateSettings(parse(AssistantSettingsSchema, await c.req.json()))),
     )

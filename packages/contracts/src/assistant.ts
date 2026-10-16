@@ -118,6 +118,14 @@ export type AdminAssistant = {
   settings: AssistantSettings;
 };
 
+/** Galú en el resumen, la campana y el menú del panel: charlas de los últimos 7 días y lo que no supo responder. */
+export type AssistantOverview = {
+  chats: number;
+  /** Cuántas de esas charlas terminaron en un pedido pagado. */
+  bought: number;
+  pending: PendingQuestion[];
+};
+
 /* ------------------------------------------------------------------ talle por edad y altura */
 
 /**

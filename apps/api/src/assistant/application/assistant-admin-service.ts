@@ -3,6 +3,7 @@ import {
   type AdminConversation,
   ASSISTANT_DEFAULT_SETTINGS,
   type AssistantFactInput,
+  type AssistantOverview,
   type AssistantSettings,
   questionKey,
 } from "@mini-galu/contracts";
@@ -16,6 +17,9 @@ const WINDOW_DAYS = 7;
 /** Lista de conversaciones: las de los últimos 30 días, hasta 40. */
 const LIST_DAYS = 30;
 const LIST_LIMIT = 40;
+
+const pendingQuestions = (rows: { id: string; question: string; at: Date }[]) =>
+  groupPending(rows).map(({ ids: _, ...p }) => p);
 
 /**
  * Galú en el panel (admin-galu.html): qué le preguntan, lo que no supo responder, lo que Gaby le enseña y sus ajustes.
@@ -49,10 +53,20 @@ export class AssistantAdminService {
         unanswered: rows.filter((r) => r.at >= since).length,
       },
       conversations: conversations.map((c) => this.conversation(c)),
-      pending: groupPending(rows).map(({ ids: _, ...p }) => p),
+      pending: pendingQuestions(rows),
       facts,
       settings,
     };
+  }
+
+  /** Lo justo para el resumen, la campana y el menú (se pide cada minuto: sin las conversaciones). */
+  async overview(): Promise<AssistantOverview> {
+    const now = this.clock().getTime();
+    const [current, rows] = await Promise.all([
+      this.memory.log.stats(new Date(now - WINDOW_DAYS * DAY), null),
+      this.memory.log.unanswered(new Date(now - LIST_DAYS * DAY)),
+    ]);
+    return { chats: current.chats, bought: current.bought, pending: pendingQuestions(rows) };
   }
 
   /** Le enseña una respuesta; las veces que se preguntó lo mismo dejan de estar pendientes. */

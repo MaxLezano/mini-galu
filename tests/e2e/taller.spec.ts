@@ -270,6 +270,10 @@ test("resumen: el pedido pagado aparece para preparar, en los últimos y en lo q
   await expect(page.locator("#todo .todo").first()).toContainText("pedidos para preparar");
   await expect(page.locator("#recent")).toContainText(`#${number} · Pedido Panel`);
   await expect(page.locator("#feed")).toContainText(`#${number}`);
+  await expect(page.getByRole("link", { name: "Automatizaciones", exact: true }).last()).toHaveAttribute(
+    "href",
+    "/taller/automatizaciones",
+  );
   await page.getByRole("button", { name: "12 meses" }).click();
   await expect(page.getByRole("heading", { name: "Ventas por mes" })).toBeVisible();
   // del resumen se abre el detalle del pedido
@@ -563,6 +567,25 @@ test("clientes: la cuenta con su nena aparece con el cumple cerca y la nota qued
   await expect(
     page.getByRole("complementary", { name: "Ficha del cliente" }).getByLabel("Notas del taller"),
   ).toHaveValue("Prefiere retirar en el taller");
+});
+
+test("galú en el resumen, el menú y la campana: lo que no supo responder lleva a Enseñale", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller");
+  await ready(page);
+  // charlas demo del seed: "comunión a medida" (2 veces) y "envíos al exterior" esperan respuesta
+  await expect(page.locator(".kpis")).toContainText("Charlas con Galú");
+  await expect(page.getByRole("navigation", { name: "Panel" }).getByRole("link", { name: /Galú\s*\d+/ })).toBeVisible();
+  await page.getByRole("button", { name: /Notificaciones/ }).click();
+  await expect(page.locator("#notif")).toContainText("Galú no supo responder");
+  await expect(page.locator("#notif")).toContainText("comunión a medida");
+  await page.keyboard.press("Escape");
+  await page
+    .locator("#todo")
+    .getByRole("link", { name: /preguntas que Galú no supo/ })
+    .click();
+  await expect(page).toHaveURL(/\/taller\/galu$/);
+  await expect(page.locator("#teach .q")).toContainText("comunión a medida");
 });
 
 test("galú: ver una charla, enseñarle una respuesta, olvidarla y cambiar un ajuste", async ({ page }) => {

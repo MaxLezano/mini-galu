@@ -43,13 +43,14 @@ const PAY_SHORT = {
   giftcard: "Gift card",
 } as const;
 
-/** "Para hacer hoy": cada tarjeta lleva a los pedidos de ese paso. */
-export function TodoGrid({ todo }: { todo: AdminDaySummary["todo"] }) {
+/** "Para hacer hoy": cada tarjeta lleva a los pedidos de ese paso (y la de Galú, a "Enseñale"). */
+export function TodoGrid({ todo, unanswered }: { todo: AdminDaySummary["todo"]; unanswered: number }) {
   const items: [LucideIcon, number, string, string, boolean?][] = [
     [Scissors, todo.toPrepare, "pedidos para preparar", "/taller/pedidos", true],
     [Truck, todo.toShip, "para despachar", "/taller/pedidos"],
     [Store, todo.toPickup, "para retirar en el taller", "/taller/pedidos"],
     [Hourglass, todo.awaitingPayment, "links de pago sin pagar", "/taller/pedidos"],
+    [MessageCircleQuestionMark, unanswered, "preguntas que Galú no supo", "/taller/galu"],
   ];
   return (
     <section aria-label="Para hacer hoy">
@@ -63,14 +64,6 @@ export function TodoGrid({ todo }: { todo: AdminDaySummary["todo"] }) {
             <span>{text}</span>
           </Link>
         ))}
-        {/* TODO(fase 7 · assistant): preguntas que Galú no supo responder */}
-        <div className="todo" aria-disabled="true" title="Llega en la fase 7">
-          <span className="ic">
-            <MessageCircleQuestionMark className="i-sm" />
-          </span>
-          <b>—</b>
-          <span>preguntas que Galú no supo · fase 7</span>
-        </div>
       </div>
     </section>
   );
@@ -86,10 +79,13 @@ export function Kpis({
   month,
   current,
   previous,
+  galu,
 }: {
   month: AdminDaySummary["month"];
   current: string;
   previous: string;
+  /** Charlas con Galú de los últimos 7 días y cuántas terminaron en compra. */
+  galu: { chats: number; bought: number };
 }) {
   const pct = pctChange(month.salesCents, month.prevSalesCents);
   const ticketDiff = month.avgTicketCents - month.prevAvgTicketCents;
@@ -126,13 +122,18 @@ export function Kpis({
           <small className="muted">sin comparación con {previous}</small>
         )}
       </div>
-      {/* TODO(fase 7 · assistant): charlas con Galú y cuántas terminan en compra */}
       <div className="kpi">
         <span>
           <MessageCircleHeart className="i-sm" /> Charlas con Galú
         </span>
-        <b>—</b>
-        <small className="muted">Llega en la fase 7</small>
+        <b>{galu.chats}</b>
+        {galu.chats ? (
+          <small className={galu.bought ? "up" : "muted"}>
+            {Math.round((galu.bought / galu.chats) * 100)}% terminan en compra · 7 días
+          </small>
+        ) : (
+          <small className="muted">ninguna en los últimos 7 días</small>
+        )}
       </div>
     </div>
   );
@@ -288,7 +289,9 @@ export function AutoFeed({ items, when }: { items: AutoActivity[]; when: (iso: s
     <section className="box">
       <div className="box-head">
         <h2>Lo que se hizo solo</h2>
-        {/* TODO(fase 6 · automations): link a Automatizaciones cuando exista la pantalla */}
+        <Link className="link" href="/taller/automatizaciones" style={{ fontSize: 13 }}>
+          Automatizaciones
+        </Link>
       </div>
       <div className="feed" id="feed">
         {items.length ? (

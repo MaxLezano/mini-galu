@@ -14,6 +14,7 @@ import type {
   AdminProduct,
   AdminSession,
   AdminShipping,
+  AssistantOverview,
   Collection,
   HelpPage,
 } from "@mini-galu/contracts";
@@ -60,6 +61,7 @@ export const adminServer = {
   shipping: () => serverRequest<AdminShipping>("/admin/shipping"),
   automations: () => serverRequest<AdminAutomations>("/admin/automations"),
   assistant: () => serverRequest<AdminAssistant>("/admin/assistant"),
+  assistantOverview: () => serverRequest<AssistantOverview>("/admin/assistant/overview"),
   newsletter: () => serverRequest<AdminNewsletter>("/admin/newsletter"),
   customers: () => serverRequest<AdminCustomers>("/admin/customers"),
   coupons: () => serverRequest<AdminCoupon[]>("/admin/coupons"),

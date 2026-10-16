@@ -8,11 +8,12 @@ export const metadata: Metadata = { title: "Resumen" };
 
 /** Mockup: design/mockups/admin.html */
 export default async function Page() {
-  const [summary, orders, launches, products, session] = await Promise.all([
+  const [summary, orders, launches, products, galu, session] = await Promise.all([
     adminServer.summary(),
     adminServer.orders(),
     adminServer.launches(),
     adminServer.products(),
+    adminServer.assistantOverview(),
     getAdminSession(),
   ]);
   const now = new Date();
@@ -25,6 +26,7 @@ export default async function Page() {
       orders={orders}
       low={lowStock(products)}
       launch={launch}
+      galu={galu}
       name={session?.name.split(" ")[0] ?? ""}
       today={{
         title: dayTitle(iso),

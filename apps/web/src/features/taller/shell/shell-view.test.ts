@@ -59,6 +59,38 @@ describe("armazón del panel", () => {
     expect(n[2]?.href).toBe("/taller/productos?editar=maddie");
   });
 
+  it("la campana avisa lo que Galú no supo responder (hasta 3) y vuelve a sonar si lo preguntan otra vez", () => {
+    const q = (question: string, times: number) => ({ question, times, lastAt: "2026-10-14T10:00:00Z" });
+    const pending = [
+      q("¿Hacen a medida?", 2),
+      q("¿Tienen talle 12?", 1),
+      q("¿Envían a Chile?", 1),
+      q("¿Y a Uruguay?", 1),
+    ];
+    const galu = notices(orders, products, String, pending).filter((x) => x.kind === "galu");
+    expect(galu).toHaveLength(3);
+    expect(galu[0]).toEqual({
+      key: "galu:hacen a medida:2",
+      kind: "galu",
+      title: "Galú no supo responder",
+      text: "“¿Hacen a medida?” · 2 veces",
+      at: "2026-10-14T10:00:00Z",
+      href: "/taller/galu",
+    });
+    expect(galu[1]?.text).toBe("“¿Tienen talle 12?”");
+    const [again] = notices(orders, products, String, [q("¿hacen a medida?", 3)]).filter((x) => x.kind === "galu");
+    expect(again?.key).not.toBe(galu[0]?.key);
+    // van después de los pedidos y antes del stock
+    expect(notices(orders, products, String, pending).map((x) => x.kind)).toEqual([
+      "pedido",
+      "sin_pagar",
+      "galu",
+      "galu",
+      "galu",
+      "stock",
+    ]);
+  });
+
   it("busca pedidos por número, cliente o ciudad (sin tildes) y productos por nombre", () => {
     expect(searchAll("1002", orders, products).orders.map((o) => o.number)).toEqual(["MG-1002"]);
     expect(searchAll("mendez", orders, products).orders.map((o) => o.number)).toEqual(["MG-1002"]);

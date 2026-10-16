@@ -109,6 +109,8 @@ describe("Galú guarda las charlas para el panel", () => {
     expect(panel.stats.unanswered).toBe(2);
     expect(panel.conversations.map((c) => c.outcome)).toEqual(["sin_respuesta", "sin_respuesta"]);
     expect(panel.conversations[0]?.messages[1]?.unanswered).toMatch(/medida/);
+    // el resumen, la campana y el menú usan la versión corta
+    expect(await admin.overview()).toEqual({ chats: 2, bought: 0, pending: panel.pending });
   });
 
   it("enseñarle: la respuesta entra en sus instrucciones y la pregunta deja de estar pendiente", async () => {
@@ -189,6 +191,7 @@ describe("Galú guarda las charlas para el panel", () => {
       tone: "calido",
     });
     expect(panel.provider).toBe("guion");
+    expect(await admin.overview()).toEqual({ chats: 2, bought: 1, pending: [] });
   });
 });
 

@@ -1,21 +1,23 @@
 "use client";
 
-import type { AdminOrderSummary, AdminProduct } from "@mini-galu/contracts";
+import type { AdminOrderSummary, AdminProduct, AssistantOverview } from "@mini-galu/contracts";
 import { useCallback, useEffect, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { PANEL_CHANGED } from "./panel-events";
 
 const READ_KEY = "mg-taller-leidas";
 
-/** Pedidos y productos para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar algo y cada minuto. */
+/** Pedidos, productos y lo pendiente de Galú para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar algo y cada minuto. */
 export function usePanelData(pathname: string) {
   const [orders, setOrders] = useState<AdminOrderSummary[] | null>(null);
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
+  const [galu, setGalu] = useState<AssistantOverview | null>(null);
   const [read, setRead] = useState<Set<string>>(new Set());
 
   const reload = useCallback(() => {
     adminApi.orders().then(setOrders, () => {});
     adminApi.products().then(setProducts, () => {});
+    adminApi.assistantOverview().then(setGalu, () => {});
   }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: recarga al navegar entre pantallas
@@ -42,5 +44,5 @@ export function usePanelData(pathname: string) {
     } catch {}
   };
 
-  return { orders, products, read, markRead };
+  return { orders, products, galu, read, markRead };
 }
