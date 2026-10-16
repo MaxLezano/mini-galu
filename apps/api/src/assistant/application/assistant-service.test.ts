@@ -1,8 +1,15 @@
-import type { AssistantEvent, PublicTracking } from "@mini-galu/contracts";
+import type { AssistantEvent, InstallmentPlan, PublicTracking } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
 import { makeProduct } from "../../catalog/testing/fixtures";
 import { MAX_TOOL_ROUNDS } from "../domain/conversation";
-import { FixedShipping, MemoryOrders, memoryAssistant, memoryCatalog, ScriptedLlm } from "../testing/in-memory";
+import {
+  FixedInstallments,
+  FixedShipping,
+  MemoryOrders,
+  memoryAssistant,
+  memoryCatalog,
+  ScriptedLlm,
+} from "../testing/in-memory";
 import { AssistantService } from "./assistant-service";
 import { assistantTools } from "./tools";
 
@@ -44,10 +51,16 @@ const pedido: PublicTracking = {
   payUrl: null,
 };
 
-function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
+function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0], plan?: InstallmentPlan) {
   const llm = new ScriptedLlm(steps);
   const catalog = memoryCatalog([samanta, cleo, borrador]);
-  const tools = assistantTools({ catalog, orders: new MemoryOrders([pedido]), shipping: new FixedShipping() });
+  const payments = new FixedInstallments(plan);
+  const tools = assistantTools({
+    catalog,
+    orders: new MemoryOrders([pedido]),
+    shipping: new FixedShipping(),
+    payments,
+  });
   const svc = new AssistantService(
     llm,
     tools,
@@ -62,7 +75,7 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
     }),
     memoryAssistant(),
   );
-  return { llm, svc };
+  return { llm, svc, payments };
 }
 
 async function ask(svc: AssistantService, text: string, productSlug?: string) {
@@ -105,6 +118,7 @@ describe("Galú responde con tools sobre el stock real", () => {
       "talle_para",
       "seguir_pedido",
       "cotizar_envio",
+      "cuotas",
       "no_lo_se",
     ]);
   });
@@ -191,6 +205,44 @@ describe("Galú responde con tools sobre el stock real", () => {
     expect(quote.codigo_postal).toBe("1414");
     expect(quote.opciones[0]).toMatchObject({ costo: "$8.500" });
     expect(quote.opciones[2]).toMatchObject({ costo: "gratis" });
+  });
+
+  it("cuotas: el plan real de Mercado Pago por prenda o por monto, sin prometer las que no hay", async () => {
+    const { llm, svc, payments } = setup([
+      {
+        toolCalls: [
+          { name: "cuotas", input: { prenda: "el Samanta" } },
+          { name: "cuotas", input: { monto: "60000", prenda: null } },
+          { name: "cuotas", input: { prenda: "corazon-pana" } },
+          { name: "cuotas", input: {} },
+        ],
+      },
+      { text: "El Samanta va en 3 cuotas sin interés de $15.000." },
+    ]);
+    await ask(svc, "¿En cuántas cuotas puedo pagar el Samanta?");
+    const results = llm.calls[1]?.turns.at(-1);
+    if (results?.role !== "tool") throw new Error("faltan resultados");
+    expect(JSON.parse(results.results[0]?.content ?? "")).toMatchObject({
+      prenda: "Vestido Samanta",
+      monto: "$45.000",
+      sin_interes: { cuotas: 3, de: "$15.000" },
+      hasta_cuotas: 12,
+      resumen: "3 cuotas sin interés de $15.000",
+    });
+    expect(JSON.parse(results.results[1]?.content ?? "")).toMatchObject({ monto: "$60.000" });
+    expect(results.results[2]?.content).toContain("No encontré");
+    expect(results.results[3]?.content).toContain("Necesito la prenda o el monto");
+    expect(payments.asked).toEqual([45_000_00, 60_000_00]);
+
+    const sinPlan = setup([{ toolCalls: [{ name: "cuotas", input: { monto: 30000 } }] }, { text: "Un pago." }], {
+      interestFree: 1,
+      max: 1,
+    });
+    await ask(sinPlan.svc, "¿cuotas?");
+    const r = sinPlan.llm.calls[1]?.turns.at(-1);
+    if (r?.role !== "tool") throw new Error("faltan resultados");
+    expect(JSON.parse(r.results[0]?.content ?? "")).toMatchObject({ sin_interes: "no hay", hasta_cuotas: 1 });
+    expect(r.results[0]?.content).toContain("Solo en un pago");
   });
 
   it("corta las rondas de tools: la última vuelta va sin tools y tiene que contestar", async () => {

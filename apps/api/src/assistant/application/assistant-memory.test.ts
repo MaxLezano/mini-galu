@@ -4,7 +4,14 @@ import { describe, expect, it } from "vitest";
 import { makeProduct } from "../../catalog/testing/fixtures";
 import { NotFoundError } from "../../shared/domain/errors";
 import { groupPending } from "../domain/teaching";
-import { FixedShipping, MemoryOrders, memoryAssistant, memoryCatalog, ScriptedLlm } from "../testing/in-memory";
+import {
+  FixedInstallments,
+  FixedShipping,
+  MemoryOrders,
+  memoryAssistant,
+  memoryCatalog,
+  ScriptedLlm,
+} from "../testing/in-memory";
 import { AssistantAdminService } from "./assistant-admin-service";
 import { AssistantService } from "./assistant-service";
 import type { ChatOwner } from "./ports";
@@ -31,7 +38,12 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
   const llm = new ScriptedLlm(steps);
   const catalog = memoryCatalog([samanta, agotado]);
   const memory = memoryAssistant();
-  const tools = assistantTools({ catalog, orders: new MemoryOrders(), shipping: new FixedShipping() });
+  const tools = assistantTools({
+    catalog,
+    orders: new MemoryOrders(),
+    shipping: new FixedShipping(),
+    payments: new FixedInstallments(),
+  });
   const svc = new AssistantService(
     llm,
     tools,

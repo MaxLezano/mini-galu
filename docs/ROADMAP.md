@@ -131,8 +131,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Resumen del checkout con la cuota elegida: con los primeros dígitos de la tarjeta se consulta su plan (cuota,
   total con interés y CFT) y al elegir las cuotas en el Brick el resumen muestra cuánto se paga. El SDK no avisa la
   cuota elegida: se lee del radio `installments` del formulario (si Mercado Pago lo cambia, se ve el plan completo)
-- 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
-  real en la fase 7
+- ✅ Galú consulta el plan real (tool `cuotas`, por prenda o monto, con el tope del panel) y solo promete cuotas sin
+  interés si Mercado Pago las confirma · 🟡 el megamenú y Galú sin modelo (reglas) siguen genéricos
 - ✅ "Tus datos" sin sesión: "Continuar con Google" (si la API tiene Google configurado), "¿Tenés cuenta? Ingresá" y
   "o como invitada"; al volver, la bolsa de invitada se suma a la de la cuenta y se completan datos y dirección
   predeterminada (fase 8) · ✅ gift card en el checkout (fase 8)
@@ -219,7 +219,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   producción (`ANTHROPIC_API_KEY`, por defecto `claude-haiku-5-5`); sin ninguno, la tienda responde por reglas como antes
 - ✅ Tools sobre los casos de uso: `buscar_prendas` (talle, ocasión, color, precio, texto), `ver_prenda` (por slug o
   nombre; sin borradores), `talle_para` (edad/altura, la misma calculadora de la ficha), `seguir_pedido` (sin calle ni
-  apellido) y `cotizar_envio`; el modelo no inventa datos y las prendas consultadas salen como tarjetas con "Agregar"
+  apellido), `cotizar_envio` y `cuotas` (plan real de Mercado Pago); el modelo no inventa datos y las prendas
+  consultadas salen como tarjetas con "Agregar"
 - ✅ Respuesta por SSE (`POST /assistant/chat`): el texto aparece de a pedazos; sabe qué ficha se está mirando; límite
   de 30 preguntas cada 10 min por IP y 500 caracteres por mensaje
 - 🟡 pgvector → con 11 prendas alcanzan los filtros del catálogo; se suma si crece el catálogo o para buscar en lo que

@@ -6,7 +6,14 @@ import { makeProduct } from "../../../catalog/testing/fixtures";
 import { onError } from "../../../shared/http/errors";
 import { AssistantService } from "../../application/assistant-service";
 import { assistantTools } from "../../application/tools";
-import { FixedShipping, MemoryOrders, memoryAssistant, memoryCatalog, ScriptedLlm } from "../../testing/in-memory";
+import {
+  FixedInstallments,
+  FixedShipping,
+  MemoryOrders,
+  memoryAssistant,
+  memoryCatalog,
+  ScriptedLlm,
+} from "../../testing/in-memory";
 import { assistantRoutes } from "./assistant-routes";
 
 const CONV = "7d1f2a4e-0b6c-4c39-9a52-5f7f8d3c1a01";
@@ -16,7 +23,12 @@ function app(owner: CartVars["Variables"]["cartOwner"]) {
   const catalog = memoryCatalog([makeProduct({ slug: "samanta" })]);
   const svc = new AssistantService(
     new ScriptedLlm([{ text: "¡Hola!" }, { text: "¡Hola!" }]),
-    assistantTools({ catalog, orders: new MemoryOrders(), shipping: new FixedShipping() }),
+    assistantTools({
+      catalog,
+      orders: new MemoryOrders(),
+      shipping: new FixedShipping(),
+      payments: new FixedInstallments(),
+    }),
     catalog,
     async () => ({
       workshop: "Villa Crespo",

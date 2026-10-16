@@ -603,6 +603,9 @@ export function buildApp(config: Config) {
       catalog: assistantCatalog,
       orders: { track: (number) => notFoundAsNull(shipments.track(number, null)) },
       shipping: { options: (cp) => shipping.options(cp, 0) },
+      payments: {
+        installments: async (cents) => (await payments.installments([cents]))[cents] ?? { interestFree: 1, max: 1 },
+      },
     }),
     assistantCatalog,
     async () => {

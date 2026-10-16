@@ -4,6 +4,7 @@ import type {
   AssistantFactInput,
   AssistantSettings,
   CatalogQuery,
+  InstallmentPlan,
   ProductDetail,
   ProductSummary,
   PublicTracking,
@@ -34,6 +35,11 @@ export interface AssistantOrders {
 /** Cotización de envío por código postal. */
 export interface AssistantShipping {
   options(postalCode: string): Promise<ShippingOptions>;
+}
+
+/** Cuotas de Mercado Pago para un monto en centavos (con el tope de cuotas del panel). */
+export interface AssistantPayments {
+  installments(cents: number): Promise<InstallmentPlan>;
 }
 
 /* ---------------------------------------------------------------- memoria (admin-galu.html) */

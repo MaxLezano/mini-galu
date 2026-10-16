@@ -2,6 +2,8 @@ import {
   CatalogQuerySchema,
   formatARS,
   GARMENT_SIZES,
+  installment,
+  installmentsLabel,
   OCCASIONS,
   type Occasion,
   ORDER_STATUSES,
@@ -15,7 +17,7 @@ import {
 } from "@mini-galu/contracts";
 import { z } from "zod";
 import type { ToolSpec } from "../domain/conversation";
-import type { AssistantCatalog, AssistantOrders, AssistantShipping } from "./ports";
+import type { AssistantCatalog, AssistantOrders, AssistantPayments, AssistantShipping } from "./ports";
 
 /** Lo que devuelve una tool: el texto para el modelo y, si hay, las prendas para mostrar como tarjetas. */
 export type ToolOutput = { content: string; products?: ProductSummary[]; size?: Size | null };
@@ -68,6 +70,7 @@ export function assistantTools(deps: {
   catalog: AssistantCatalog;
   orders: AssistantOrders;
   shipping: AssistantShipping;
+  payments: AssistantPayments;
 }) {
   const findProduct = async (ref: string) => {
     const bySlug = await deps.catalog.product(ref.trim().toLowerCase());
@@ -205,6 +208,36 @@ export function assistantTools(deps: {
               detalle: x.detail,
               costo: x.cents == null ? null : x.cents === 0 ? "gratis" : formatARS(x.cents),
             })),
+          }),
+        };
+      },
+    }),
+    tool({
+      name: "cuotas",
+      description:
+        "Cuotas con tarjeta de crédito (Mercado Pago) para una prenda o un monto: cuántas sin interés y hasta cuántas en total.",
+      input: z.object({
+        prenda: opt(z.string().min(1).max(80)).describe("Slug o nombre de la prenda"),
+        monto: optNumber(z.number().positive().max(10_000_000)).describe("Monto en pesos, si no es una prenda"),
+      }),
+      async run(i) {
+        const p = i.prenda ? await findProduct(i.prenda) : null;
+        if (i.prenda && !p) return { content: JSON.stringify({ error: `No encontré la prenda "${i.prenda}"` }) };
+        const cents = p ? p.priceCents : i.monto ? Math.round(i.monto * 100) : null;
+        if (!cents) return { content: JSON.stringify({ error: "Necesito la prenda o el monto" }) };
+        const plan = await deps.payments.installments(cents);
+        return {
+          content: JSON.stringify({
+            ...(p ? { prenda: p.name } : {}),
+            monto: formatARS(cents),
+            sin_interes:
+              plan.interestFree > 1
+                ? { cuotas: plan.interestFree, de: formatARS(installment(cents, plan.interestFree)) }
+                : "no hay",
+            hasta_cuotas: plan.max,
+            resumen:
+              installmentsLabel(plan, cents, formatARS) ?? "Solo en un pago (crédito, débito o dinero en cuenta)",
+            nota: "Las cuotas con interés dependen del banco: el total exacto se ve al cargar la tarjeta en el checkout.",
           }),
         };
       },

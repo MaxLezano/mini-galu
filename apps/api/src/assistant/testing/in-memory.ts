@@ -2,6 +2,7 @@ import type {
   AssistantFact,
   AssistantFactInput,
   AssistantSettings,
+  InstallmentPlan,
   PublicTracking,
   ShippingOptions,
 } from "@mini-galu/contracts";
@@ -13,6 +14,7 @@ import type {
   AssistantCatalog,
   AssistantMemory,
   AssistantOrders,
+  AssistantPayments,
   AssistantSettingsStore,
   AssistantShipping,
   ChatOwner,
@@ -64,6 +66,16 @@ export class MemoryOrders implements AssistantOrders {
   constructor(private readonly orders: PublicTracking[] = []) {}
   async track(number: string) {
     return this.orders.find((o) => o.number === number.trim().toUpperCase()) ?? null;
+  }
+}
+
+/** Mercado Pago de mentira: el plan es fijo y guarda los montos consultados. */
+export class FixedInstallments implements AssistantPayments {
+  asked: number[] = [];
+  constructor(private readonly plan: InstallmentPlan = { interestFree: 3, max: 12 }) {}
+  async installments(cents: number) {
+    this.asked.push(cents);
+    return this.plan;
   }
 }
 
