@@ -1,4 +1,10 @@
-import { type AdminOrderSummary, type AdminProduct, type PendingQuestion, questionKey } from "@mini-galu/contracts";
+import {
+  type AdminCustomer,
+  type AdminOrderSummary,
+  type AdminProduct,
+  type PendingQuestion,
+  questionKey,
+} from "@mini-galu/contracts";
 import { stripAccents } from "../../../lib/product";
 
 /** Números del menú: pedidos para preparar y productos con algún talle a punto de agotarse (admin.js). */
@@ -83,14 +89,20 @@ export function notices(
   return [...bajas, ...nuevos, ...sinPagar, ...galu, ...stock];
 }
 
-/** Búsqueda global: pedidos por número, cliente o ciudad; productos por nombre. */
-export function searchAll(q: string, orders: AdminOrderSummary[], products: AdminProduct[]) {
+/** Búsqueda global: pedidos por número, cliente o ciudad; clientes por nombre o mail; productos por nombre. */
+export function searchAll(
+  q: string,
+  orders: AdminOrderSummary[],
+  products: AdminProduct[],
+  customers: AdminCustomer[] = [],
+) {
   const t = stripAccents(q.trim());
-  if (!t) return { orders: [], products: [] };
+  if (!t) return { orders: [], customers: [], products: [] };
   return {
     orders: orders
       .filter((o) => stripAccents(`${o.number} ${o.customer.name} ${o.customer.city ?? ""}`).includes(t))
       .slice(0, 4),
+    customers: customers.filter((c) => stripAccents(`${c.name} ${c.email}`).includes(t)).slice(0, 3),
     products: products.filter((p) => stripAccents(`${p.name} ${p.slug}`).includes(t)).slice(0, 4),
   };
 }

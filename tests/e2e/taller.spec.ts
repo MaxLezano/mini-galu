@@ -560,13 +560,23 @@ test("clientes: la cuenta con su nena aparece con el cumple cerca y la nota qued
   await ficha.getByLabel("Notas del taller").blur();
   await expect(page.getByText("Nota guardada")).toBeVisible();
 
+  // la ficha queda en la URL (?cliente=): al recargar se vuelve a abrir con la nota
   await page.reload();
   await ready(page);
-  await page.getByLabel("Buscar cliente").fill(email);
-  await page.locator("table.t tbody tr", { hasText: "Ana Prueba" }).click();
   await expect(
     page.getByRole("complementary", { name: "Ficha del cliente" }).getByLabel("Notas del taller"),
   ).toHaveValue("Prefiere retirar en el taller");
+
+  // la búsqueda global ("/") encuentra al cliente desde cualquier pantalla y abre su ficha
+  await page.goto("/taller");
+  await ready(page);
+  await page.locator("#gsearch").fill(email);
+  await page
+    .locator("#search-pop")
+    .getByRole("button", { name: /Ana Prueba/ })
+    .click();
+  await expect(page).toHaveURL(/\/taller\/clientes\?cliente=/);
+  await expect(page.getByRole("complementary", { name: "Ficha del cliente" })).toContainText("Ana Prueba");
 });
 
 test("galú en el resumen, el menú y la campana: lo que no supo responder lleva a Enseñale", async ({ page }) => {

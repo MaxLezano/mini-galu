@@ -2,6 +2,7 @@
 
 import type { AdminCustomerDetail, AdminCustomers } from "@mini-galu/contracts";
 import { Baby, Cake, Download, Info, Repeat, Search, Users } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -20,7 +21,12 @@ export function CustomersAdmin({ initial }: { initial: AdminCustomers }) {
   const mounted = useMounted();
   const [filter, setFilter] = useState<CustomerFilter>("all");
   const [q, setQ] = useState("");
-  const [openEmail, setOpenEmail] = useState<string | null>(null);
+  // la ficha se abre por URL (?cliente=mail) para que la búsqueda global y "atrás" funcionen
+  const router = useRouter();
+  const pathname = usePathname();
+  const openEmail = useSearchParams().get("cliente");
+  const openCustomer = (email: string | null) =>
+    router.push(email ? `${pathname}?cliente=${encodeURIComponent(email)}` : pathname, { scroll: false });
   const [detail, setDetail] = useState<AdminCustomerDetail | null>(null);
   const [note, setNote] = useState("");
 
@@ -131,7 +137,7 @@ export function CustomersAdmin({ initial }: { initial: AdminCustomers }) {
               />
             </label>
           </div>
-          <CustomersTable customers={list} sinceLabel={sinceLabel} onOpen={setOpenEmail} />
+          <CustomersTable customers={list} sinceLabel={sinceLabel} onOpen={openCustomer} />
         </section>
       </main>
       <CustomerDrawer
@@ -141,7 +147,7 @@ export function CustomersAdmin({ initial }: { initial: AdminCustomers }) {
         note={note}
         onNote={setNote}
         onSaveNote={saveNote}
-        onClose={() => setOpenEmail(null)}
+        onClose={() => openCustomer(null)}
       />
     </>
   );

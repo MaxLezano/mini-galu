@@ -1,24 +1,42 @@
 "use client";
 
-import type { AdminOrderSummary, AdminProduct, AssistantOverview } from "@mini-galu/contracts";
-import { useCallback, useEffect, useState } from "react";
+import type { AdminCustomer, AdminOrderSummary, AdminProduct, AssistantOverview } from "@mini-galu/contracts";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { PANEL_CHANGED } from "./panel-events";
 
 const READ_KEY = "mg-taller-leidas";
 
-/** Pedidos, productos y lo pendiente de Galú para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar algo y cada minuto. */
+/**
+ * Pedidos, productos y lo pendiente de Galú para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar
+ * algo y cada minuto. Los clientes solo los usa la búsqueda: se piden la primera vez que se la abre.
+ */
 export function usePanelData(pathname: string) {
   const [orders, setOrders] = useState<AdminOrderSummary[] | null>(null);
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
   const [galu, setGalu] = useState<AssistantOverview | null>(null);
+  const [customers, setCustomers] = useState<AdminCustomer[] | null>(null);
   const [read, setRead] = useState<Set<string>>(new Set());
+  const wantsCustomers = useRef(false);
 
+  const loadCustomers = useCallback(() => {
+    adminApi.customers().then(
+      (c) => setCustomers(c.customers),
+      () => {},
+    );
+  }, []);
   const reload = useCallback(() => {
     adminApi.orders().then(setOrders, () => {});
     adminApi.products().then(setProducts, () => {});
     adminApi.assistantOverview().then(setGalu, () => {});
-  }, []);
+    if (wantsCustomers.current) loadCustomers();
+  }, [loadCustomers]);
+  /** La búsqueda se abrió: desde ahora los clientes se recargan con lo demás. */
+  const needCustomers = useCallback(() => {
+    if (wantsCustomers.current) return;
+    wantsCustomers.current = true;
+    loadCustomers();
+  }, [loadCustomers]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: recarga al navegar entre pantallas
   useEffect(reload, [pathname]);
@@ -44,5 +62,5 @@ export function usePanelData(pathname: string) {
     } catch {}
   };
 
-  return { orders, products, galu, read, markRead };
+  return { orders, products, customers, needCustomers, galu, read, markRead };
 }

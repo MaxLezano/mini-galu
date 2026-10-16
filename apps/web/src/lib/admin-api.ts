@@ -3,6 +3,7 @@ import type {
   AdminAutomations,
   AdminCoupon,
   AdminCustomerDetail,
+  AdminCustomers,
   AdminHome,
   AdminLaunch,
   AdminNewsletter,
@@ -132,6 +133,7 @@ export const adminApi = {
     adminRequest<AdminAssistant>("/admin/assistant/facts", { method: "POST", body: JSON.stringify(f) }),
   forgetAssistantFact: (id: string) =>
     adminRequest<AdminAssistant>(`/admin/assistant/facts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  customers: () => adminRequest<AdminCustomers>("/admin/customers"),
   customer: (email: string) => adminRequest<AdminCustomerDetail>(`/admin/customers/${encodeURIComponent(email)}`),
   saveCustomerNote: (email: string, note: string) =>
     adminRequest<null>(`/admin/customers/${encodeURIComponent(email)}/note`, {

@@ -1,4 +1,4 @@
-import type { AdminOrderSummary, AdminProduct } from "@mini-galu/contracts";
+import type { AdminCustomer, AdminOrderSummary, AdminProduct } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
 import { navCounts, notices, searchAll } from "./shell-view";
 
@@ -96,6 +96,18 @@ describe("armazón del panel", () => {
     expect(searchAll("mendez", orders, products).orders.map((o) => o.number)).toEqual(["MG-1002"]);
     expect(searchAll("rosario", orders, products).orders).toHaveLength(1);
     expect(searchAll("samanta", orders, products).products.map((p) => p.slug)).toEqual(["samanta"]);
-    expect(searchAll("  ", orders, products)).toEqual({ orders: [], products: [] });
+    expect(searchAll("  ", orders, products)).toEqual({ orders: [], customers: [], products: [] });
+  });
+
+  it("busca clientes por nombre o mail, sin acentos", () => {
+    const customers = [
+      { email: "lucia@ejemplo.com", name: "Lucía Fernández", city: "CABA" },
+      { email: "sofi.mendez@ejemplo.com", name: "Sofía Méndez", city: "Rosario" },
+    ] as AdminCustomer[];
+    expect(searchAll("lucia", orders, products, customers).customers.map((c) => c.email)).toEqual([
+      "lucia@ejemplo.com",
+    ]);
+    expect(searchAll("sofi.mendez@", orders, products, customers).customers).toHaveLength(1);
+    expect(searchAll("lucia", orders, products).customers).toEqual([]);
   });
 });

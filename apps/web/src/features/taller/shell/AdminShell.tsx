@@ -67,7 +67,7 @@ export function AdminShell({ session, children }: { session: AdminSession; child
   const pathname = usePathname();
   const router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
-  const { orders, products, galu, read, markRead } = usePanelData(pathname);
+  const { orders, products, customers, needCustomers, galu, read, markRead } = usePanelData(pathname);
   const counts = {
     ...(orders && products ? navCounts(orders, products) : { pedidos: 0, stock: 0 }),
     galu: galu?.pending.length ?? 0,
@@ -157,7 +157,10 @@ export function AdminShell({ session, children }: { session: AdminSession; child
             <GlobalSearch
               orders={orders}
               products={products}
+              customers={customers}
+              onFocus={needCustomers}
               onOrder={openOrder}
+              onCustomer={(email) => router.push(`/taller/clientes?cliente=${encodeURIComponent(email)}`)}
               onProduct={(slug) => router.push(`/taller/productos?editar=${slug}`)}
             />
             <span className="spacer" />

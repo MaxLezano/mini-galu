@@ -155,7 +155,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   nuevos, links sin pagar, última unidad; "marcar como leídas") y búsqueda global con pedidos y productos ("/")
 - ✅ "Galú no supo responder" en la campana (las 3 más preguntadas; vuelve a sonar si la preguntan otra vez) y
   contador de pendientes en "Galú" del menú
-- 🟡 Búsqueda de clientes → fase 8
+- ✅ Búsqueda de clientes en la búsqueda global (por nombre o mail; se piden al abrirla) → abre la ficha en
+  `/taller/clientes?cliente=…` (la ficha queda en la URL: "atrás" y recargar funcionan)
 - ✅ Links de pago: venta por Instagram/WhatsApp cargada en el panel (prendas, cliente, entrega); el pedido queda
   "esperando pago" con el stock reservado 72 h y el cliente paga en `/pagar/MG-…?t=…` con el mismo Brick del
   checkout. Copiar link o mandarlo por WhatsApp; "Reenviar link de pago" como siguiente paso; recordatorio por mail
