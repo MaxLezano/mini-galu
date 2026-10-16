@@ -4,6 +4,8 @@ import {
   formatARS,
   freeShippingFrom,
   GARMENT_SIZES,
+  type InstallmentPlan,
+  installment,
   ORDER_STATUSES,
   type ProductSummary,
   type PublicTracking,
@@ -106,16 +108,41 @@ export function orderUnavailable(code: string): GaluReply[] {
   return [text(<>Ahora no puedo buscarlo. Probá en {trackLink(code, "Seguir mi pedido")} en un ratito.</>)];
 }
 
+/** Plan de cuotas real de Mercado Pago para un monto (null si no responde: no se promete nada). */
+export type InstallmentsLookup = (cents: number) => Promise<InstallmentPlan | null>;
+
+/** Cuotas para una prenda con el plan real: "sin interés" solo si Mercado Pago lo confirma para todos los bancos. */
+function cuotasFor(p: ProductSummary, plan: InstallmentPlan | null): ReactNode {
+  if (!plan) return " Con tarjeta de crédito ves las cuotas de tu banco al pagar.";
+  if (plan.interestFree > 1)
+    return (
+      <>
+        {" "}
+        Lo podés pagar en <b>{plan.interestFree} cuotas sin interés</b> de{" "}
+        <b>{formatARS(installment(p.priceCents, plan.interestFree))}</b>.
+      </>
+    );
+  if (plan.max > 1)
+    return (
+      <>
+        {" "}
+        Con tarjeta de crédito, hasta <b>{plan.max} cuotas</b> con Mercado Pago (el interés depende de tu banco).
+      </>
+    );
+  return " Con tarjeta de crédito va en un pago.";
+}
+
 /** Edad → talle (talle 4 ≈ 4 años; los impares suben al par siguiente). */
 const ageToSize = (age: number): Size =>
   age <= 1 ? "12m" : (String(Math.max(2, Math.min(10, age + (age % 2)))) as Size);
 
-export function answer(
+export async function answer(
   raw: string,
   products: ProductSummary[],
   ctx: ProductSummary | null,
   policies: StorePolicies = DEFAULT_POLICIES,
-): GaluReply[] {
+  installments: InstallmentsLookup = async () => null,
+): Promise<GaluReply[]> {
   const q = stripAccents(raw);
   const live = products.filter((p) => p.status === "published");
   const named = live.find(
@@ -156,6 +183,18 @@ export function answer(
       ),
     ];
   }
+  const cuotas = /cuotas/.test(q) ? (target ?? ctx) : null;
+  if (cuotas) {
+    return [
+      text(
+        <>
+          El <b>{cuotas.name}</b> está <b>{formatARS(cuotas.priceCents)}</b>.
+          {cuotasFor(cuotas, await installments(cuotas.priceCents))}
+        </>,
+      ),
+      ...cards([cuotas]),
+    ];
+  }
   if (/cuotas|como pago|pagar|tarjeta|mercado pago|debito|credito/.test(q) && !(target && /cuanto|sale/.test(q))) {
     return [
       text(
@@ -172,8 +211,8 @@ export function answer(
       text(
         <>
           El <b>{target.name}</b> está <b>{formatARS(target.priceCents)}</b>
-          {off && target.compareAtCents ? ` (antes ${formatARS(target.compareAtCents)})` : ""}. Con tarjeta de crédito
-          lo podés pagar en cuotas.
+          {off && target.compareAtCents ? ` (antes ${formatARS(target.compareAtCents)})` : ""}.
+          {cuotasFor(target, await installments(target.priceCents))}
         </>,
       ),
       ...cards([target]),

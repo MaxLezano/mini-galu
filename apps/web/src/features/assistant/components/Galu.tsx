@@ -35,6 +35,13 @@ type Msg = MsgBody & { id: number };
 
 let mid = 0;
 
+/** El plan real de Mercado Pago para un monto (el mismo endpoint de las tarjetas del catálogo). */
+const installmentsFor = (cents: number) =>
+  api.installments([cents]).then(
+    (plans) => plans[cents] ?? null,
+    () => null,
+  );
+
 function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (p: ProductSummary, s: Size) => void }) {
   const s = size && stockOf(p, size) ? size : sizesIn(p)[0];
   const n = s ? stockOf(p, s) : 0;
@@ -139,7 +146,7 @@ export function Galu() {
             .then(orderReply, (e: unknown) =>
               e instanceof ApiRequestError && e.status === 404 ? orderNotFound(code) : orderUnavailable(code),
             )
-        : answer(q, products, ctx, policies),
+        : answer(q, products, ctx, policies, installmentsFor),
       new Promise((r) => setTimeout(r, 650 + Math.random() * 450)),
     ]);
     setMsgs((l) => [

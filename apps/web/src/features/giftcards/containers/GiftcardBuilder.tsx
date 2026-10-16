@@ -1,10 +1,11 @@
 "use client";
 
-import { GIFTCARD_AMOUNTS, GIFTCARD_DESIGNS, type GiftcardDesign } from "@mini-galu/contracts";
+import { creditCuotas, GIFTCARD_AMOUNTS, GIFTCARD_DESIGNS, type GiftcardDesign } from "@mini-galu/contracts";
 import { Info, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { useAccount } from "@/features/account/account-store";
+import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { toast } from "@/features/shell/ui-store";
 import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
@@ -29,6 +30,7 @@ export function GiftcardBuilder() {
   const mounted = useMounted();
   const [f, setF] = useState<GiftcardForm>(EMPTY_GIFTCARD);
   const [busy, setBusy] = useState(false);
+  const cuotas = creditCuotas(useInstallmentPlan(f.amount * 100));
   const accountStatus = useAccount((s) => s.status);
   const set = (patch: Partial<GiftcardForm>) => setF((x) => ({ ...x, ...patch }));
   const setBuyer = (patch: Partial<GiftcardForm["buyer"]>) => setF((x) => ({ ...x, buyer: { ...x.buyer, ...patch } }));
@@ -290,7 +292,7 @@ export function GiftcardBuilder() {
           <BrandIcon name="mercadopago" className="i-sm" /> {busy ? "Armando…" : "Pagar con Mercado Pago"}
         </button>
         <small className="muted" style={{ textAlign: "center" }}>
-          Tarjeta de crédito (hasta 6 cuotas), débito o dinero en cuenta.
+          Tarjeta de crédito{cuotas ? ` (${cuotas})` : ""}, débito o dinero en cuenta.
         </small>
       </aside>
     </div>

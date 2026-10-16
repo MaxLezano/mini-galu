@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { installmentsLabel } from "./checkout";
+import { creditCuotas, installmentsLabel } from "./checkout";
 import { discountPercent, formatARS, installment } from "./money";
 
 describe("money", () => {
@@ -22,6 +22,10 @@ describe("money", () => {
       "Hasta 12 cuotas con Mercado Pago",
     );
     expect(installmentsLabel({ interestFree: 1, max: 1 }, 39_000_00, formatARS)).toBeNull();
+    expect(creditCuotas({ interestFree: 6, max: 12 })).toBe("6 cuotas sin interés");
+    expect(creditCuotas({ interestFree: 1, max: 12 })).toBe("hasta 12 cuotas");
+    expect(creditCuotas({ interestFree: 1, max: 1 })).toBeNull();
+    expect(creditCuotas(null)).toBeNull();
   });
 
   it("calcula el descuento contra el precio anterior", () => {

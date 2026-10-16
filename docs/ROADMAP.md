@@ -134,7 +134,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   total con interés y CFT) y al elegir las cuotas en el Brick el resumen muestra cuánto se paga. El SDK no avisa la
   cuota elegida: se lee del radio `installments` del formulario (si Mercado Pago lo cambia, se ve el plan completo)
 - ✅ Galú consulta el plan real (tool `cuotas`, por prenda o monto, con el tope del panel) y solo promete cuotas sin
-  interés si Mercado Pago las confirma · 🟡 el megamenú y Galú sin modelo (reglas) siguen genéricos
+  interés si Mercado Pago las confirma · ✅ Galú sin modelo (reglas) también: "¿cuánto sale…?" y "¿en cuántas
+  cuotas…?" responden con el plan de la prenda (o la ficha que se mira) · ✅ "Envíos, cambios y pagos" de la ficha y
+  la gift card dicen las cuotas reales del monto (sin plan, no prometen cuotas). La home queda genérica ("Pagás en
+  cuotas"); el megamenú no habla de cuotas
 - ✅ "Tus datos" sin sesión: "Continuar con Google" (si la API tiene Google configurado), "¿Tenés cuenta? Ingresá" y
   "o como invitada"; al volver, la bolsa de invitada se suma a la de la cuenta y se completan datos y dirección
   predeterminada (fase 8) · ✅ gift card en el checkout (fase 8)

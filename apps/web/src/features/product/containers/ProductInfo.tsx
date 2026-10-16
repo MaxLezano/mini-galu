@@ -2,6 +2,7 @@
 
 import {
   type ContactChannel,
+  creditCuotas,
   discountPercent,
   formatARS,
   installmentsLabel,
@@ -103,6 +104,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const shipped = policies.methods.domicilio || policies.methods.sucursal;
   const plan = useInstallmentPlan(p.priceCents);
   const cuotas = plan ? installmentsLabel(plan, p.priceCents, formatARS) : null;
+  const credit = creditCuotas(plan);
   const { openModal, closeModal, openGalu } = useUi();
   const draft = p.status === "draft";
   const only = p.variants.length === 1 && sizesIn(p).length === 1 ? sizesIn(p)[0] : undefined;
@@ -455,7 +457,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
           </summary>
           <div>
             {shippingText(policies)} Cambios de talle dentro de los {policies.exchangeDays} días. Pagás con Mercado Pago
-            sin salir de la web: tarjeta de crédito (hasta 6 cuotas sin interés), débito o dinero en cuenta.
+            sin salir de la web: tarjeta de crédito{credit ? ` (${credit})` : ""}, débito o dinero en cuenta.
           </div>
         </details>
       </div>

@@ -88,6 +88,24 @@ test("sin modelo en la API, Galú responde por reglas con el stock real", async 
   await expect(page.locator(".galu-body .mini-card").first()).toBeVisible();
 });
 
+test("sin modelo en la API, Galú dice las cuotas reales de Mercado Pago para la prenda", async ({ page }) => {
+  await page.route("**/assistant/chat", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),
+  );
+  // el plan lo fija el test: Mercado Pago confirma 3 sin interés para cualquier monto
+  await page.route("**/checkout/installments?*", (route) => {
+    const amounts = new URL(route.request().url()).searchParams.get("amounts")?.split(",") ?? [];
+    return route.fulfill({ json: Object.fromEntries(amounts.map((a) => [a, { interestFree: 3, max: 12 }])) });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  await page.getByLabel("Mensaje").fill("¿en cuántas cuotas puedo pagar el Samanta?");
+  await page.getByLabel("Mensaje").press("Enter");
+  const reply = page.locator(".galu-body .msg.bot").last();
+  await expect(reply).toContainText(/Samanta Plumeti está .+ Lo podés pagar en 3 cuotas sin interés de .+\./);
+  await expect(page.locator(".galu-body .mini-card")).toHaveCount(1);
+});
+
 test("sin modelo en la API, Galú busca el pedido por su número", async ({ page }) => {
   await page.route("**/assistant/chat", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),

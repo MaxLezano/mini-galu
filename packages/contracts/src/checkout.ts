@@ -311,6 +311,14 @@ export function installmentsLabel(plan: InstallmentPlan, cents: Cents, money: (c
   return null;
 }
 
+/** "tarjeta de crédito (…)" en los textos de pago: sin plan (o en un pago) no se promete nada. */
+export function creditCuotas(plan: InstallmentPlan | null): string | null {
+  if (!plan) return null;
+  if (plan.interestFree > 1) return `${plan.interestFree} cuotas sin interés`;
+  if (plan.max > 1) return `hasta ${plan.max} cuotas`;
+  return null;
+}
+
 export type AdminPayments = {
   settings: PaymentSettings;
   gateway: CheckoutConfig["gateway"];
