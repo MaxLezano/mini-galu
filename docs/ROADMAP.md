@@ -90,7 +90,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   cuenta regresiva en la home, texto para redes con copiar, vista previa, `?nuevo` abre el editor; la API publica sola las
   prendas a la hora indicada (scheduler cada 60 s)
 - ✅ Lanzamientos: aviso a los anotados 1 h antes (regla "Aviso de lanzamiento" de Automatizaciones, ver fase 6)
-- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami); "favoritos" → fase 8; "vendidas el primer día" → fase 4
+- ✅ Lanzamientos: "vendidas el primer día" en los que ya salieron (unidades de pedidos pagos en las 24 h desde que
+  se publicó; sin cancelados ni reembolsados)
+- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami); "favoritos" → fase 8
 - ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
   próximo lanzamiento
 - ✅ `admin-tienda`: Mercado Pago y cupones (fase 3); envíos, horarios de retiro y paquete (fase 5); gift cards (fase 8)

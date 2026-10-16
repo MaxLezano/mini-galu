@@ -1,7 +1,20 @@
 "use client";
 
 import type { AdminLaunch, AdminProduct, Collection } from "@mini-galu/contracts";
-import { Calendar, CalendarCheck, Copy, Eye, FilePen, House, Pencil, Plus, Shirt, Trash2, Users } from "lucide-react";
+import {
+  Calendar,
+  CalendarCheck,
+  Copy,
+  Eye,
+  FilePen,
+  House,
+  Pencil,
+  Plus,
+  Shirt,
+  ShoppingBag,
+  Trash2,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "@/features/shell/ui-store";
@@ -136,6 +149,11 @@ export function LaunchesAdmin({ initial, products, collections, startNew = false
           )}
           {l.state === "past" && (
             <div className="meta" style={{ marginTop: 6 }}>
+              {l.soldFirstDay !== null && (
+                <span>
+                  <ShoppingBag className="i-sm" /> {l.soldFirstDay} vendidas el primer día
+                </span>
+              )}
               <span>
                 <Users className="i-sm" /> {l.signups} anotados
               </span>

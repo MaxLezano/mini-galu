@@ -4,7 +4,7 @@ import { ConflictError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { AdminLaunchesService } from "./admin-launches-service";
-import type { AdminLaunchRepository, LaunchRecord, ProductPublisher } from "./launch-ports";
+import type { AdminLaunchRepository, LaunchRecord, LaunchSales, ProductPublisher } from "./launch-ports";
 
 const storage: ImageStorage = { url: (p) => `http://api/media/${p}`, save: async (p) => p };
 const NOW = new Date("2026-10-07T12:00:00-03:00");
@@ -83,11 +83,18 @@ let clock: Date;
 let published: string[][];
 let events: DomainEvent[];
 let service: AdminLaunchesService;
+/** Ventas pagas: prenda, unidades y cuándo se pagó. */
+let sales: { slug: string; qty: number; paidAt: Date }[];
+const salesReader: LaunchSales = {
+  unitsSold: async (slugs, from, to) =>
+    sales.filter((x) => slugs.includes(x.slug) && x.paidAt >= from && x.paidAt < to).reduce((n, x) => n + x.qty, 0),
+};
 
 beforeEach(() => {
   repo = new MemoryRepo();
   clock = NOW;
   published = [];
+  sales = [];
   events = [];
   const bus = new EventBus();
   bus.on("LaunchPublished", (e) => {
@@ -99,7 +106,7 @@ beforeEach(() => {
       return { published: slugs, skipped: [] };
     },
   };
-  service = new AdminLaunchesService(repo, publisher, storage, bus, () => clock);
+  service = new AdminLaunchesService(repo, publisher, storage, bus, salesReader, () => clock);
 });
 
 describe("AdminLaunchesService", () => {
@@ -133,6 +140,23 @@ describe("AdminLaunchesService", () => {
     expect((await service.get("l1")).state).toBe("past");
 
     expect(await service.publishDue()).toEqual([]); // idempotente
+  });
+
+  it("cuenta las unidades vendidas en las primeras 24 h de un lanzamiento que ya salió", async () => {
+    await service.create(input({ productSlugs: ["corazon-pana", "elsa"] }));
+    sales = [
+      { slug: "corazon-pana", qty: 2, paidAt: new Date("2026-10-18T09:00:00-03:00") }, // antes de salir
+      { slug: "corazon-pana", qty: 3, paidAt: new Date("2026-10-18T11:00:00-03:00") },
+      { slug: "elsa", qty: 1, paidAt: new Date("2026-10-19T09:00:00-03:00") },
+      { slug: "otra", qty: 4, paidAt: new Date("2026-10-18T12:00:00-03:00") }, // no es del lanzamiento
+      { slug: "elsa", qty: 5, paidAt: new Date("2026-10-19T10:30:00-03:00") }, // ya pasó el primer día
+    ];
+    expect((await service.get("l1")).soldFirstDay).toBeNull(); // todavía no salió
+
+    clock = new Date("2026-10-18T10:00:30-03:00");
+    await service.publishDue();
+    clock = new Date("2026-10-20T10:00:00-03:00");
+    expect((await service.get("l1")).soldFirstDay).toBe(4);
   });
 
   it("solo se borran borradores", async () => {

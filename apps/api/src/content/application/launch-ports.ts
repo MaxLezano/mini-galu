@@ -30,6 +30,11 @@ export interface AdminLaunchRepository {
   markPublished(id: string, at: Date): Promise<void>;
 }
 
+/** Ventas de prendas en un rango: unidades de pedidos pagos (sin cancelados ni reembolsados). */
+export interface LaunchSales {
+  unitsSold(slugs: string[], from: Date, to: Date): Promise<number>;
+}
+
 /** Publica prendas a través del módulo de catálogo (que valida, por ejemplo, que tengan foto). */
 export interface ProductPublisher {
   publish(slugs: string[]): Promise<{ published: string[]; skipped: { slug: string; reason: string }[] }>;

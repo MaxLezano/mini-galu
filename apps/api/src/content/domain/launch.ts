@@ -19,6 +19,12 @@ export function isDueForPublish(
   return l.status === "scheduled" && l.autoPublish && !l.publishedAt && l.startsAt <= now;
 }
 
+/** El "primer día" de un lanzamiento: las 24 h desde que salió (o desde la hora programada si se publicó a mano). */
+export function firstDayWindow(startsAt: Date, publishedAt: Date | null): { from: Date; to: Date } {
+  const from = publishedAt ?? startsAt;
+  return { from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000) };
+}
+
 /** Texto sugerido para redes (mockup admin-lanzamientos). */
 export function suggestSocialText(title: string, teaser: string, when: string): string {
   return `✿ ${title} ✿ ${teaser} Sale ${when} en minigalu.com.ar. Anotate y te avisamos 1 hora antes 🎀`;

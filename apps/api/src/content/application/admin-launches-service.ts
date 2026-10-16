@@ -2,8 +2,8 @@ import type { AdminLaunch, LaunchInput } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
-import { isDueForPublish, launchState } from "../domain/launch";
-import type { AdminLaunchRepository, LaunchRecord, ProductPublisher } from "./launch-ports";
+import { firstDayWindow, isDueForPublish, launchState } from "../domain/launch";
+import type { AdminLaunchRepository, LaunchRecord, LaunchSales, ProductPublisher } from "./launch-ports";
 
 /** Lanzamientos desde el panel: crear, programar, editar y publicar las prendas a la hora indicada. */
 export class AdminLaunchesService {
@@ -12,12 +12,13 @@ export class AdminLaunchesService {
     private readonly publisher: ProductPublisher,
     private readonly storage: ImageStorage,
     private readonly events: EventBus,
+    private readonly sales: LaunchSales,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
   async list(): Promise<AdminLaunch[]> {
-    const all = await this.repo.findAll();
-    return all.map((l) => this.present(l)).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    const all = await Promise.all((await this.repo.findAll()).map((l) => this.present(l)));
+    return all.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   }
 
   async get(id: string): Promise<AdminLaunch> {
@@ -75,7 +76,8 @@ export class AdminLaunchesService {
     return l;
   }
 
-  private present(l: LaunchRecord): AdminLaunch {
+  private async present(l: LaunchRecord): Promise<AdminLaunch> {
+    const state = launchState(l.status, l.startsAt, l.publishedAt, this.now());
     return {
       id: l.id,
       title: l.title,
@@ -95,9 +97,19 @@ export class AdminLaunchesService {
       notifyBefore: l.notifyBefore,
       autoPublish: l.autoPublish,
       socialText: l.socialText,
-      state: launchState(l.status, l.startsAt, l.publishedAt, this.now()),
+      state,
       publishedAt: l.publishedAt?.toISOString() ?? null,
       signups: l.signups,
+      soldFirstDay: state === "past" ? await this.soldFirstDay(l) : null,
     };
+  }
+
+  private soldFirstDay(l: LaunchRecord) {
+    const { from, to } = firstDayWindow(l.startsAt, l.publishedAt);
+    return this.sales.unitsSold(
+      l.products.map((p) => p.slug),
+      from,
+      to,
+    );
   }
 }
