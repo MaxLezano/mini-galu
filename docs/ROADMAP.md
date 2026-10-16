@@ -34,7 +34,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Detalles de taller: aguja que cose los dobladillos, cinta métrica, prenda que vuela a la bolsa, etiquetas que se balancean, pespuntes al hover, puntadas al guardar favorito, moños que se atan, bordados que florecen, textura de lino
 - ✅ `prefers-reduced-motion` y `?static` apagan todas las animaciones
 - 🟡 View Transitions entre páginas: CSS listo; en Next falta habilitar `<ViewTransition>` (foto que viaja de la tarjeta a la ficha) → fase 9
-- 🟡 Popover de cuenta ("Hola, Lucía", nenas, pedidos en camino, saldo gift card): hoy muestra "Ingresar" → fase 8
+- ✅ Popover de cuenta ("Hola, Lucía", nenas, pedidos en camino, saldo gift card): ver fase 9
 
 ### Home (`index.html`)
 - ✅ Hero con título editable (`*énfasis*`), Ken Burns, sello giratorio, CTA a Galú
@@ -130,7 +130,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   cuota elegida: se lee del radio `installments` del formulario (si Mercado Pago lo cambia, se ve el plan completo)
 - 🟡 Megamenú y Galú ya no mencionan cuotas sin interés (el mockup las mostraba fijas); Galú podría consultar el plan
   real en la fase 7
-- ⏳ "Continuar con Google" y datos guardados → fase 8 · gift card como saldo → fase 8
+- ✅ "Tus datos" sin sesión: "Continuar con Google" (si la API tiene Google configurado), "¿Tenés cuenta? Ingresá" y
+  "o como invitada"; al volver, la bolsa de invitada se suma a la de la cuenta y se completan datos y dirección
+  predeterminada (fase 8) · ✅ gift card en el checkout (fase 8)
 - ✅ Mail "Recibimos tu pago" (Mailpit en local) · ⏳ WhatsApp → fase 6 · ✅ pedidos en el panel (fase 4)
 
 ## Fase 4 · Panel de pedidos (`admin.html`, `admin-pedidos.html`) · terminada

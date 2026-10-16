@@ -173,3 +173,36 @@ test("bolsa abandonada: el link del recordatorio lleva a ingresar y de ahí al c
   await expect(page.locator(".s-item")).toContainText("Moño Verde Largo");
   await context.clearCookies();
 });
+
+test("checkout como invitada: ingresar desde 'Tus datos' vuelve al checkout con la bolsa y los datos de la cuenta", async ({
+  page,
+  context,
+}) => {
+  const email = `datos-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+  await page.goto("/ingresar?crear");
+  const auth = page.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Lucía");
+  await auth.getByLabel("Apellido").fill("Guardada");
+  await auth.getByLabel("Email").fill(email);
+  await auth.getByLabel("Contraseña", { exact: true }).fill("Clave.Segura1");
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/cuenta/);
+  await context.clearCookies();
+
+  // sin sesión: la bolsa es de invitada
+  await addBow(page);
+  const step = page.getByRole("region", { name: "Tus datos" });
+  await expect(step.getByLabel("Email")).toHaveValue("");
+  await step.getByRole("link", { name: "Ingresá" }).click();
+  await expect(page).toHaveURL(/\/ingresar/);
+  await page.locator("main.auth").getByLabel("Email").fill(email);
+  await page.locator("main.auth").getByLabel("Contraseña", { exact: true }).fill("Clave.Segura1");
+  await page.getByRole("button", { name: "Ingresar", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/checkout/);
+  await expect(step.getByLabel("Email")).toHaveValue(email);
+  await expect(step.getByLabel("Apellido")).toHaveValue("Guardada");
+  await expect(step.getByRole("link", { name: "Ingresá" })).toHaveCount(0);
+  await expect(page.locator(".s-item")).toContainText("Moño Verde Largo");
+  await context.clearCookies();
+});

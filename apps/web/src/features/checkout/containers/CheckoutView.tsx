@@ -36,6 +36,7 @@ import {
   shippingSummary,
   toShippingInput,
 } from "../checkout-form";
+import { GuestAccess } from "../components/GuestAccess";
 import { OrderSummary } from "../components/OrderSummary";
 import { SimulatedBrick, type SimulatedCard } from "../components/SimulatedBrick";
 import { StepCard, Stepper } from "../components/Steps";
@@ -95,6 +96,23 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       })
       .catch(() => {});
   }, [accountStatus]);
+
+  // invitada: Google solo si la API lo tiene configurado; vuelve al checkout con la bolsa y sus datos
+  const [google, setGoogle] = useState(false);
+  useEffect(() => {
+    if (accountStatus !== "guest") return;
+    accountApi.options().then(
+      (o) => setGoogle(o.google),
+      () => setGoogle(false),
+    );
+  }, [accountStatus]);
+  const withGoogle = async () => {
+    try {
+      location.assign((await accountApi.google(`${location.origin}/checkout`)).url);
+    } catch {
+      toast("No pudimos conectar con Google, probá de nuevo", { icon: <Info className="i-sm" /> });
+    }
+  };
   const [options, setOptions] = useState<ShippingOptions | null>(null);
   const [coupon, setCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
@@ -436,7 +454,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
               summary={contactSummary}
               onEdit={step > 1 ? () => go(1) : undefined}
             >
-              {/* TODO(fase 8 · cuenta): "Continuar con Google" y datos guardados de la cuenta */}
+              {accountStatus === "guest" && (
+                <GuestAccess google={google} onGoogle={withGoogle} loginHref="/ingresar?volver=%2Fcheckout" />
+              )}
               <div className="field">
                 <label htmlFor="f-email">Email</label>
                 <input
