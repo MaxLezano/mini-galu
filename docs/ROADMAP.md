@@ -63,7 +63,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Precio, descuento, 6 cuotas, favoritos, chips "Preguntale a Galú" contextuales
 - ✅ Detalles, tela y cuidados, envíos; "Cómo se hizo"; reseñas con distribución y % de "talle justo"; completá el look
 - ✅ Barra fija en celular (Galú y contacto suben para no taparla)
-- 🟡 Calculá tu envío: estimación local como el mockup → cotización Andreani real en la fase 5
+- ✅ Calculá tu envío: cotiza con la API (Andreani si está conectado; si no, la tabla del panel) la bolsa más la
+  prenda, con la sucursal que atiende el CP; si la API no responde, estima con la tabla local
 - ✅ Sumar a una lista de cumple (elegir la nena; sin sesión, a ingresar y vuelve)
 
 ### Galú (demo con reglas sobre el stock real)

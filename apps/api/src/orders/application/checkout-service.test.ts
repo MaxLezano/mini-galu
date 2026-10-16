@@ -82,6 +82,14 @@ describe("CheckoutService", () => {
     expect((await checkout.receipt(placed.number, placed.accessToken)).branchLabel).toContain("Caballito");
   });
 
+  it("cotiza el envío de la bolsa más la prenda que se está mirando (envío gratis incluido)", async () => {
+    const domicilio = async (extra?: number) =>
+      (await checkout.shippingOptions(guest, "1414", extra)).options.find((o) => o.method === "domicilio")?.cents;
+    expect(await domicilio()).toBeGreaterThan(0);
+    expect(await domicilio(90_000_00)).toBe(0);
+    expect((await checkout.shippingOptions(guest, undefined, 90_000_00)).options[0]?.cents).toBeNull();
+  });
+
   it("cotiza envío por CP y aplica el cupón sin cortar la compra si no sirve", async () => {
     await coupons.create({
       code: "OTONO10",

@@ -56,9 +56,10 @@ export class CheckoutService {
     private readonly newToken: () => string = () => randomBytes(18).toString("base64url"),
   ) {}
 
-  async shippingOptions(owner: CartOwner | null, postalCode?: string): Promise<ShippingOptions> {
+  /** `extraCents`: lo que se suma a la bolsa para cotizar (la ficha cotiza "la bolsa + esta prenda"). */
+  async shippingOptions(owner: CartOwner | null, postalCode?: string, extraCents = 0): Promise<ShippingOptions> {
     const view = await this.cart.view(owner);
-    return this.shipping.options(postalCode, view.subtotalCents);
+    return this.shipping.options(postalCode, view.subtotalCents + extraCents);
   }
 
   async quote(owner: CartOwner | null, req: QuoteRequest): Promise<Quote> {

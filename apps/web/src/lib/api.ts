@@ -108,7 +108,14 @@ export const api = {
   checkoutConfig: () => request<CheckoutConfig>("/checkout/config"),
   installments: (amounts: number[]) =>
     request<Record<number, InstallmentPlan>>(`/checkout/installments?amounts=${amounts.join(",")}`),
-  shipping: (cp?: string) => request<ShippingOptions>(`/checkout/shipping${cp ? `?cp=${encodeURIComponent(cp)}` : ""}`),
+  /** `extra`: centavos que se suman a la bolsa para cotizar (la prenda de la ficha). */
+  shipping: (cp?: string, extra?: number) => {
+    const q = new URLSearchParams();
+    if (cp) q.set("cp", cp);
+    if (extra) q.set("extra", String(extra));
+    const qs = q.toString();
+    return request<ShippingOptions>(`/checkout/shipping${qs ? `?${qs}` : ""}`);
+  },
   quote: (body: QuoteRequest) => request<Quote>("/checkout/quote", { method: "POST", body: JSON.stringify(body) }),
   placeOrder: (body: PlaceOrderInput) =>
     request<PlacedOrder>("/checkout/orders", { method: "POST", body: JSON.stringify(body) }),

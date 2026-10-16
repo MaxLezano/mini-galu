@@ -7,6 +7,8 @@ import {
   installmentsLabel,
   type ProductDetail,
   qualifiesForFreeShipping,
+  type ShippingMethod,
+  type ShippingOptions,
   type Size,
   type StorePolicies,
   sizeAge,
@@ -49,9 +51,20 @@ import { formatMeasures, recommendSize } from "../size-advisor";
 
 type Quote = { label: string; detail: string; cents: number | null }[];
 
+const SHIP_LABEL: Record<ShippingMethod, string> = {
+  domicilio: "Andreani a domicilio",
+  sucursal: "Andreani a sucursal",
+  taller: "Retiro en el taller",
+};
+
+/** La cotización de la API (Andreani si está conectado; si no, la tabla por zona) con los títulos del mockup. */
+function quoteFrom({ options }: ShippingOptions): Quote {
+  return options.map((o) => ({ label: SHIP_LABEL[o.method], detail: o.detail, cents: o.cents }));
+}
+
 /**
- * Estimación con la tabla por zona del panel (las mismas tarifas que usa el checkout sin Andreani; con Andreani
- * conectado, el checkout cotiza con Andreani). Solo las formas de entrega prendidas.
+ * Respaldo si la API no responde: la tabla por zona del panel (las mismas tarifas que usa el checkout sin Andreani).
+ * Solo las formas de entrega prendidas.
  */
 function estimateShipping(policies: StorePolicies, cp: string, subtotalCents: number): Quote {
   const q = zoneQuote(policies, cp);
@@ -99,6 +112,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const [age, setAge] = useState(5);
   const [height, setHeight] = useState(112);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoting, setQuoting] = useState(false);
   const [mbar, setMbar] = useState(false);
   const sizesRef = useRef<HTMLDivElement>(null);
   const addRef = useRef<HTMLButtonElement>(null);
@@ -328,10 +342,17 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
             </span>
           </div>
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               const cp = String(new FormData(e.currentTarget).get("cp") ?? "").trim() || "1414";
-              setQuote(estimateShipping(policies, cp, cartTotal(lines) + p.priceCents));
+              setQuoting(true);
+              try {
+                setQuote(quoteFrom(await api.shipping(cp, p.priceCents)));
+              } catch {
+                setQuote(estimateShipping(policies, cp, cartTotal(lines) + p.priceCents));
+              } finally {
+                setQuoting(false);
+              }
             }}
           >
             <input
@@ -342,7 +363,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
               placeholder="Código postal (ej. 1414)"
               aria-label="Código postal"
             />
-            <button type="submit" className="btn btn-sm">
+            <button type="submit" className="btn btn-sm" disabled={quoting} aria-busy={quoting}>
               Calcular
             </button>
           </form>

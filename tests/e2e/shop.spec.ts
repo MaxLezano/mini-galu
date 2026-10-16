@@ -24,6 +24,17 @@ test("agregar a la bolsa desde la ficha abre la bolsa con la prenda", async ({ p
   await expect(drawer.locator(".line-item")).toContainText("Talle 6");
 });
 
+test("calculá tu envío cotiza con la API la bolsa más la prenda", async ({ page }) => {
+  await page.goto("/producto/maddie");
+  await page.getByLabel("Código postal").fill("1414");
+  const asked = page.waitForRequest((r) => /\/checkout\/shipping\?cp=1414&extra=\d+/.test(r.url()));
+  await page.getByRole("button", { name: "Calcular" }).click();
+  await asked;
+  const res = page.locator(".ship-res");
+  await expect(res).toContainText("Andreani a domicilio");
+  await expect(res).toContainText("Andreani a sucursal");
+});
+
 test("un talle agotado ofrece anotarse en la lista de espera", async ({ page }) => {
   await page.goto("/producto/samanta");
   await page.getByRole("radio", { name: /Talle 6, sin stock/ }).click();

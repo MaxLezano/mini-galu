@@ -9,8 +9,14 @@ import type { CheckoutService } from "../../application/checkout-service";
 export function checkoutRoutes(checkout: CheckoutService) {
   return new Hono<CartVars>()
     .get("/shipping", async (c) => {
-      const cp = parse(z.object({ cp: z.string().trim().max(10).optional() }), c.req.query()).cp;
-      return c.json(await checkout.shippingOptions(c.get("cartOwner"), cp || undefined));
+      const { cp, extra } = parse(
+        z.object({
+          cp: z.string().trim().max(10).optional(),
+          extra: z.coerce.number().int().min(0).max(100_000_000).default(0),
+        }),
+        c.req.query(),
+      );
+      return c.json(await checkout.shippingOptions(c.get("cartOwner"), cp || undefined, extra));
     })
     .post("/quote", async (c) =>
       c.json(await checkout.quote(c.get("cartOwner"), parse(QuoteRequestSchema, await c.req.json()))),
