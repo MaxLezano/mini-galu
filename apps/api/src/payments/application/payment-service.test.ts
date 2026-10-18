@@ -5,7 +5,7 @@ import {
   DEFAULT_PAYMENT_SETTINGS,
   PlaceOrderInputSchema,
 } from "@mini-galu/contracts";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CartService } from "../../cart/application/cart-service";
 import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
 import { CouponService } from "../../coupons/application/coupon-service";
@@ -30,6 +30,7 @@ let orders: MemoryOrders;
 let gateway: SimulatedGateway;
 let settings: PaymentSettingsStore & { value: typeof DEFAULT_PAYMENT_SETTINGS };
 let recorded: GatewayPayment[];
+let nets: [string, number][];
 let events: DomainEvent[];
 let service: PaymentService;
 let number: string;
@@ -74,9 +75,14 @@ beforeEach(async () => {
     },
   };
   recorded = [];
+  nets = [];
   service = new PaymentService(
     gateway,
-    { record: async (_o, _p, p) => void recorded.push(p), markRefunded: async () => {} },
+    {
+      record: async (_o, _p, p) => void recorded.push(p),
+      markRefunded: async () => {},
+      saveNet: async (_p, id, cents) => void nets.push([id, cents]),
+    },
     settings,
     new OrderPayments(orders, cart, coupons, bus),
     bus,
@@ -163,6 +169,27 @@ describe("PaymentService", () => {
     await expect(
       service.webhook({ type: "payment", dataId: "1", requestId: "r", signature: "" }),
     ).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+});
+
+describe("PaymentService.netReceived", () => {
+  it("guarda lo que acreditó el proveedor después de la comisión", async () => {
+    gateway.netReceived = async () => 9_590_00;
+    expect(await service.netReceived("simulado", "SIM-1")).toBe(9_590_00);
+    expect(nets).toEqual([["SIM-1", 9_590_00]]);
+  });
+
+  it("sin dato del proveedor, de otro proveedor o si no responde: nada (no se estima)", async () => {
+    expect(await service.netReceived("simulado", "SIM-1")).toBeNull();
+    gateway.netReceived = async () => 1;
+    expect(await service.netReceived("mercadopago", "ORD1")).toBeNull();
+    gateway.netReceived = async () => {
+      throw new Error("timeout");
+    };
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await service.netReceived("simulado", "SIM-1")).toBeNull();
+    quiet.mockRestore();
+    expect(nets).toEqual([]);
   });
 });
 

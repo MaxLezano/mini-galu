@@ -165,4 +165,18 @@ export class PaymentService {
     await this.settings.save(s);
     return this.admin();
   }
+
+  /**
+   * "Te queda" del detalle del pedido: lo que acreditó el proveedor después de su comisión. Se pregunta una vez y
+   * se guarda; si no lo informa todavía (o no responde), no se muestra nada en vez de estimarlo.
+   */
+  async netReceived(provider: string, paymentId: string): Promise<number | null> {
+    if (provider !== this.gateway.kind) return null;
+    const cents = await this.gateway.netReceived(paymentId).catch((e) => {
+      console.error("[pagos] no se pudo consultar el neto:", e);
+      return null;
+    });
+    if (cents !== null) await this.payments.saveNet(provider, paymentId, cents);
+    return cents;
+  }
 }

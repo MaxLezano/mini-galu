@@ -210,6 +210,8 @@ export const payments = pgTable(
     method: paymentMethod(),
     installments: integer(),
     amountCents: integer().notNull(),
+    /** Lo que acredita el proveedor después de su comisión (se le pregunta la primera vez que se abre el pedido). */
+    netCents: integer(),
     raw: jsonb(),
     ...stamps,
   },

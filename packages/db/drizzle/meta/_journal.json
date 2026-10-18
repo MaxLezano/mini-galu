@@ -134,6 +134,13 @@
       "when": 1792086718120,
       "tag": "0018_order_revocations",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792366968366,
+      "tag": "0019_payment_net",
+      "breakpoints": true
     }
   ]
 }

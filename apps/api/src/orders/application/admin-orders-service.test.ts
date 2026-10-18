@@ -83,6 +83,34 @@ describe("AdminOrdersService", () => {
     await expect(admin.detail("MG-9999")).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("'Te queda': pregunta lo que acreditó Mercado Pago solo si no lo sabe y el pago sigue aprobado", async () => {
+    const asked: string[] = [];
+    const withNet = new AdminOrdersService(
+      orders,
+      storage,
+      new EventBus(),
+      () => null,
+      () => "",
+      undefined,
+      undefined,
+      async (p) => {
+        asked.push(p.reference);
+        return 9_590_00;
+      },
+    );
+    const a = await place("a");
+    await pay(a.orderId);
+    expect((await withNet.detail(a.number)).payment).toBeNull();
+    const mp = { provider: "mercadopago", reference: "ORD1", status: "processed", paidByCustomerCents: null };
+    orders.payments.set(a.orderId, { ...mp, netCents: null });
+    expect((await withNet.detail(a.number)).payment?.netCents).toBe(9_590_00);
+    orders.payments.set(a.orderId, { ...mp, netCents: 9_500_00 });
+    expect((await withNet.detail(a.number)).payment?.netCents).toBe(9_500_00);
+    orders.payments.set(a.orderId, { ...mp, status: "refunded", netCents: null });
+    expect((await withNet.detail(a.number)).payment?.netCents).toBeNull();
+    expect(asked).toEqual(["ORD1"]);
+  });
+
   it("mueve de estado, deja historial y avisa con un evento", async () => {
     const a = await place("a");
     await pay(a.orderId);

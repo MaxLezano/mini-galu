@@ -7,7 +7,7 @@ import { formatOrderNumber, parseOrderNumber } from "../domain/order";
 import { refundPlan } from "../domain/refund";
 import { monthKpis, monthlySales, monthStart, weeklySales } from "../domain/stats";
 import type { OrderRefunds } from "./order-refunds";
-import type { AdminOrderRepository, OrderRecord } from "./ports";
+import type { AdminOrderRepository, OrderPayment, OrderRecord } from "./ports";
 
 /** Panel del taller: tablero de pedidos, detalle, mover de estado y notas (admin-pedidos.html). */
 export class AdminOrdersService {
@@ -22,6 +22,8 @@ export class AdminOrdersService {
     private readonly clock: () => Date = () => new Date(),
     /** Qué se devolvería si se reintegra (lo sabe OrderRefunds: la gift card comprada no tiene que estar usada). */
     private readonly refunds: Pick<OrderRefunds, "plan"> = { plan: async (o, p) => refundPlan(o, !!p) },
+    /** Lo que acreditó el proveedor después de su comisión (lo pregunta el módulo de pagos y lo guarda). */
+    private readonly netReceived: (p: OrderPayment) => Promise<number | null> = async () => null,
   ) {}
 
   async list(): Promise<AdminOrderSummary[]> {
@@ -31,7 +33,10 @@ export class AdminOrdersService {
   async detail(number: string): Promise<AdminOrderDetail> {
     const o = await this.find(number);
     const [events, payment] = await Promise.all([this.orders.events(o.id), this.orders.approvedPayment(o.id)]);
-    const refund = await this.refunds.plan(o, payment);
+    const [refund, netCents] = await Promise.all([
+      this.refunds.plan(o, payment),
+      payment && payment.netCents === null && payment.status !== "refunded" ? this.netReceived(payment) : null,
+    ]);
     return {
       ...this.card(o),
       email: o.email,
@@ -51,7 +56,7 @@ export class AdminOrdersService {
         o.status === "esperando_pago" && o.channel !== "web"
           ? this.payUrl(formatOrderNumber(o.number), o.accessToken)
           : null,
-      payment,
+      payment: payment && { ...payment, netCents: payment.netCents ?? netCents },
       events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
       refund,
     };

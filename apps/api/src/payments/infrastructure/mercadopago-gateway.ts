@@ -31,6 +31,9 @@ type MpPayment = {
   installments: number | null;
   transaction_amount: number;
   external_reference: string | null;
+  transaction_details?: { net_received_amount?: number };
+  /** Un pago de la API de Orders lleva acá el id de su orden (`ORDER_MP`). */
+  point_of_interaction?: { references?: { id: string; type: string }[] };
 };
 
 const METHOD: Record<string, PaymentMethod> = {
@@ -176,6 +179,30 @@ export class MercadoPagoGateway implements PaymentGateway {
       console.error("[pagos] no se pudo reintegrar:", e);
       throw new RefundRejected(refundError(e));
     }
+  }
+
+  /**
+   * Neto acreditado (`transaction_details.net_received_amount`). La API de Orders no lo informa: se busca el pago
+   * aprobado de la orden en la de Payments por `external_reference` (el pedido) y su referencia `ORDER_MP` (probado
+   * en el sandbox: $10.000 con tarjeta → 9.590).
+   */
+  async netReceived(paymentId: string) {
+    let p: MpPayment | undefined;
+    if (paymentId.startsWith("ORD")) {
+      const order = await this.call<MpOrder>(`/v1/orders/${encodeURIComponent(paymentId)}`);
+      if (!order.external_reference) return null;
+      const found = await this.call<{ results: MpPayment[] }>(
+        `/v1/payments/search?external_reference=${encodeURIComponent(order.external_reference)}`,
+      );
+      const approved = found.results.filter((r) => r.status === "approved");
+      p =
+        approved.find((r) => r.point_of_interaction?.references?.some((x) => x.id === paymentId)) ??
+        (approved.length === 1 ? approved[0] : undefined);
+    } else {
+      p = await this.call<MpPayment>(`/v1/payments/${encodeURIComponent(paymentId)}`);
+    }
+    const net = p?.status === "approved" ? p.transaction_details?.net_received_amount : undefined;
+    return typeof net === "number" ? Math.round(net * 100) : null;
   }
 
   /**

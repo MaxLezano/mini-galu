@@ -29,7 +29,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Menú móvil completo
 - ✅ Bolsa lateral: cantidades con tope de stock, quitar, barra de envío gratis ($90.000), vacía con bordado
 - ✅ Contacto: barra lateral en escritorio / botón desplegable en celular
-- ✅ Footer con newsletter (🟡 la suscripción se guarda en la fase 6), medios de pago, Andreani
+- ✅ Footer con newsletter (la suscripción se guarda: "Cartas del taller", fase 6), medios de pago, Andreani
 - ✅ Toast con foto de la prenda
 - ✅ Detalles de taller: aguja que cose los dobladillos, cinta métrica, prenda que vuela a la bolsa, etiquetas que se balancean, pespuntes al hover, puntadas al guardar favorito, moños que se atan, bordados que florecen, textura de lino
 - ✅ `prefers-reduced-motion` y `?static` apagan todas las animaciones
@@ -155,7 +155,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Plantillas de WhatsApp (pago recibido, despachado, listo para retirar, pedir reseña, libre) que abren wa.me
 - ✅ Canal de cada pedido (web, Instagram, WhatsApp, Galú) en la base; hoy todo entra por la web
 - ✅ "Generar etiqueta Andreani" y seguimiento (ver fase 5)
-- 🟡 "Te queda después de la comisión de MP": no se estima (sería un dato inventado)
+- ✅ "Te queda (después de la comisión de MP)" en el pago del detalle: el neto real que acreditó Mercado Pago, no un
+  estimado. La API de Orders no lo informa: se busca el pago aprobado de la orden en la de Payments
+  (`external_reference` + referencia `ORDER_MP`; dinero en cuenta lo trae en el pago). Se pregunta la primera vez que
+  se abre el pedido y queda en `payments.net_cents`; sin dato (simulado, reintegrado o MP no responde) no se muestra.
+  Probado en el sandbox: $10.000 con tarjeta → $9.590
 - ✅ Resumen (`/taller`, el panel abre acá): tareas del día, ventas del mes contra el anterior, pedidos y clientes que
   vuelven, ticket promedio, ventas por semana / por mes (barras, tooltip, tabla, mejor período, promedio y
   proyección), últimos pedidos, próximo lanzamiento, stock para revisar y "lo que se hizo solo" (historial real)
@@ -171,8 +175,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   "esperando pago" con el stock reservado 72 h y el cliente paga en `/pagar/MG-…?t=…` con el mismo Brick del
   checkout. Copiar link o mandarlo por WhatsApp; "Reenviar link de pago" como siguiente paso; recordatorio por mail
   a las 24 h (una vez) y a las 72 h el stock vuelve a la tienda
-- 🟡 Recordatorio por WhatsApp → fase 6 · links que crea Galú → fase 7 · reembolsar desde el panel → fase 10 (hoy un
-  pago sin stock queda marcado en el historial y en "lo que se hizo solo")
+- 🟡 Recordatorio por WhatsApp: espera las credenciales de Meta (fase 6) · links que crea Galú: no está en los
+  mockups · reembolsar desde el panel: hecho (fase 10, "Reintegro desde el panel")
 
 ## Fase 5 · Envíos (`seguimiento.html`) · terminada
 - ✅ FakeAndreani: número de seguimiento, etiqueta PDF 10×15 (marcada de prueba) y eventos que avanzan con el reloj
@@ -190,8 +194,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ AndreaniGateway + AndreaniRates (API REST: login, alta de orden v2, etiqueta PDF, trazas v3 y tarifas) con tests;
   se activan con `ANDREANI_*` en el `.env` · `pnpm andreani:check` · ⏳ probarlo contra QA cuando Andreani dé las
   credenciales
-- 🟡 Envío gratis desde un monto, formas de entrega y horarios de retiro editables → fase 10 · sucursal en un mapa →
-  más adelante
+- ✅ Envío gratis desde un monto, formas de entrega y horarios de retiro editables: hecho en la fase 10 ("Entregas y
+  cambios desde el panel") · 🟡 sucursal en un mapa → más adelante (hoy se elige de la lista de sucursales del CP)
 - 🟡 Interruptor "Avisos por WhatsApp" en el seguimiento y aviso de despacho → fase 6 · "Probá con" del mockup era
   solo demo
 

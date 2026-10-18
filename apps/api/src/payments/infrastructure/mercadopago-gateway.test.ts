@@ -107,6 +107,55 @@ describe("MercadoPagoGateway (API de Orders)", () => {
   });
 });
 
+describe("MercadoPagoGateway.netReceived", () => {
+  /** Pago de la API de Payments como lo devolvió el sandbox para una orden de $10.000 con tarjeta. */
+  const payment = (id: number, status: string, order: string | null, net = 9590) => ({
+    id,
+    status,
+    status_detail: "accredited",
+    payment_type_id: "credit_card",
+    installments: 1,
+    transaction_amount: 10000,
+    external_reference: "pedido-1",
+    transaction_details: { net_received_amount: net },
+    point_of_interaction: { references: order ? [{ id: order, type: "ORDER_MP" }] : [] },
+  });
+
+  it("de una orden busca su pago aprobado en la API de Payments (la de Orders no informa el neto)", async () => {
+    const f = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify(order("processed", "accredited"))))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            results: [
+              payment(1, "rejected", "ORDTST01", 0),
+              payment(2, "approved", "ORDOTRA", 1),
+              payment(3, "approved", "ORDTST01"),
+            ],
+          }),
+        ),
+      );
+    expect(await mp.netReceived("ORDTST01")).toBe(9_590_00);
+    expect(f.mock.calls[1]?.[0]).toBe("https://api.mercadopago.com/v1/payments/search?external_reference=pedido-1");
+  });
+
+  it("si no encuentra el pago aprobado de la orden, no lo adivina", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify(order("processed", "accredited"))))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ results: [payment(2, "approved", "ORDA"), payment(3, "approved", "ORDB")] })),
+      );
+    expect(await mp.netReceived("ORDTST01")).toBeNull();
+  });
+
+  it("dinero en cuenta: el neto viene en el pago", async () => {
+    const f = respond(200, payment(123, "approved", null, 425.5));
+    expect(await mp.netReceived("123")).toBe(425_50);
+    expect(f.mock.calls[0]?.[0]).toBe("https://api.mercadopago.com/v1/payments/123");
+  });
+});
+
 describe("MercadoPagoGateway.installments", () => {
   const plan = (free: number[], all: number[]) => ({
     payer_costs: all.map((n) => ({ installments: n, installment_rate: free.includes(n) ? 0 : 20 })),

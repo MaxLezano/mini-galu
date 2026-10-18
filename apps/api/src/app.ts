@@ -292,6 +292,7 @@ export function buildApp(config: Config) {
     (number, token) => config.webOrigin + payPath(number, token),
     undefined,
     orderRefunds,
+    (p) => payments.netReceived(p.provider, p.reference),
   );
   const paymentLinks = new PaymentLinks(
     variants,

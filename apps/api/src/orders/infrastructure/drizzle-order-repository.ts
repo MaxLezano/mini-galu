@@ -116,6 +116,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       reference: p.providerPaymentId,
       status: p.status,
       paidByCustomerCents: Number.isFinite(paid) && paid > 0 ? Math.round(paid * 100) : null,
+      netCents: p.netCents,
     };
   }
 

@@ -105,6 +105,8 @@ export type OrderPayment = {
   status: string;
   /** Lo que pagó el cliente (con el interés de las cuotas): null si el proveedor no lo informa. */
   paidByCustomerCents: number | null;
+  /** Lo que acreditó el proveedor después de su comisión: null si todavía no se sabe. */
+  netCents: number | null;
 };
 
 /** Lo que necesita el panel del taller (tablero, detalle, mover de estado). */

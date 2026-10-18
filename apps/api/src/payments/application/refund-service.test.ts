@@ -66,6 +66,7 @@ async function paid(over: Partial<NewOrder> = {}, payment = true) {
       reference: "sim-1",
       status: "approved",
       paidByCustomerCents: null,
+      netCents: null,
     });
   return { id: r.id, number: `MG-${r.number}` };
 }
@@ -88,7 +89,7 @@ beforeEach(() => {
   service = () =>
     new RefundService(
       gateway,
-      { record: async () => {}, markRefunded: async (_p, id) => void refunded.push(id) },
+      { record: async () => {}, markRefunded: async (_p, id) => void refunded.push(id), saveNet: async () => {} },
       new OrderRefunds(orders, giftcards, bus),
       () => "k",
     );
@@ -180,6 +181,7 @@ describe("reintegro desde el panel", () => {
       reference: "sim-9",
       status: "approved",
       paidByCustomerCents: null,
+      netCents: null,
     });
     await service().refund(`MG-${r.number}`, { restock: true, reason: "" });
     expect(calls[0]?.paymentId).toBe("sim-9");

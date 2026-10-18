@@ -76,6 +76,11 @@ export class SimulatedGateway implements PaymentGateway {
     return { pending: false };
   }
 
+  /** Sin cuenta no hay comisión real: no se inventa lo que queda. */
+  async netReceived(): Promise<number | null> {
+    return null;
+  }
+
   verifyWebhook() {
     return false;
   }

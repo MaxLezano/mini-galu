@@ -63,6 +63,8 @@ export interface PaymentGateway {
    * `pending`: el proveedor lo tomó pero sigue procesándolo. Si no se puede, falla con `RefundRejected`.
    */
   refund(req: { paymentId: string; idempotencyKey: string }): Promise<{ pending: boolean }>;
+  /** Lo que acreditó el proveedor de un pago aprobado, después de su comisión (null si no lo informa todavía). */
+  netReceived(paymentId: string): Promise<number | null>;
   /** Firma `x-signature` del webhook. */
   verifyWebhook(n: { dataId: string; requestId: string; signature: string }): boolean;
 }
@@ -72,6 +74,8 @@ export interface PaymentRepository {
   record(orderId: string, provider: string, p: GatewayPayment): Promise<void>;
   /** El pago se devolvió desde el panel. */
   markRefunded(provider: string, paymentId: string): Promise<void>;
+  /** Guarda lo que acreditó el proveedor, para no volver a preguntarlo. */
+  saveNet(provider: string, paymentId: string, cents: number): Promise<void>;
 }
 
 /** El proveedor no pudo devolver la plata; el mensaje es para el taller. */

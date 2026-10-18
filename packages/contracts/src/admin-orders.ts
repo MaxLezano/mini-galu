@@ -81,6 +81,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
     status: string;
     /** Lo que pagó el cliente (con el interés de las cuotas, si eligió cuotas con interés). */
     paidByCustomerCents: Cents | null;
+    /** "Te queda": lo que acreditó Mercado Pago después de su comisión (null si no lo informa). */
+    netCents: Cents | null;
   } | null;
   events: AdminOrderEvent[];
   /** Lo que se puede devolver de este pedido (null si no hay nada para reintegrar). */

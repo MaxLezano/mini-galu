@@ -442,6 +442,17 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                       </dd>
                     </>
                   )}
+                  {o.payment?.netCents != null && (
+                    <>
+                      <dt>Te queda</dt>
+                      <dd>
+                        {formatARS(o.payment.netCents)}{" "}
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          (después de la comisión de MP)
+                        </span>
+                      </dd>
+                    </>
+                  )}
                   {o.payment && (
                     <>
                       <dt>Operación MP</dt>

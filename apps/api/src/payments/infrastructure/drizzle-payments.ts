@@ -26,6 +26,13 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       .set({ status: "refunded" })
       .where(and(eq(s.payments.provider, provider), eq(s.payments.providerPaymentId, paymentId)));
   }
+
+  async saveNet(provider: string, paymentId: string, cents: number) {
+    await this.db
+      .update(s.payments)
+      .set({ netCents: cents })
+      .where(and(eq(s.payments.provider, provider), eq(s.payments.providerPaymentId, paymentId)));
+  }
 }
 
 const KEY = "payments";
