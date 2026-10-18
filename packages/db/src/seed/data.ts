@@ -331,10 +331,19 @@ export const productReviews: [string, string, Size, string][] = [
   ["Muy buena atención", "Valeria G.", "8", "Le pregunté a Galú por el talle y acertó. Lo volvería a comprar."],
 ];
 
+/** Un día a las 10 (hora de Buenos Aires) dentro de `days` días desde que se corre el seed. */
+function at10In(days: number) {
+  const day = new Date(Date.now() + days * 86_400_000).toLocaleDateString("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+  return `${day}T10:00:00-03:00`;
+}
+
 export const launch = {
   title: "Otoño · Invierno 26",
   collection: "otono-invierno-26",
-  startsAt: "2026-10-18T10:00:00-03:00",
+  /** Siempre por venir: con una fecha fija, el seed se quedaba sin próximo lanzamiento al pasar ese día. */
+  startsAt: at10In(30),
   teaser:
     "Pana, escocés y lanas suaves. Salen pocas por talle: los anotados reciben el aviso una hora antes que en Instagram.",
   cover: "hero-otono",
