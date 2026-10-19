@@ -243,7 +243,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ "Pidieron aviso de talle": la tool `avisar_talle` anota el email o WhatsApp en la lista de espera del talle
   agotado (el mismo caso de uso que la ficha); el KPI cuenta los avisos de 7 días, la charla queda "Pidió aviso" y
   muestra "Quedó en la lista de espera"
-- 🟡 Las charlas por reglas (sin modelo) no se guardan
+- ✅ Las charlas por reglas (sin modelo, o con la API caída a mitad de la charla) se guardan igual
+  (`POST /assistant/log`, a nombre de la cuenta o la bolsa): texto plano de la respuesta + nombres de las tarjetas, y
+  lo que no supo va a "Enseñale" (lo enseñado lo usa recién con un modelo)
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)
 - ✅ Modelo de datos: `user` (nombre y apellido separados, email verificado, foto, rol, teléfono E.164 + país,

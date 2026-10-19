@@ -1,4 +1,5 @@
-import { AssistantChatSchema, type AssistantEvent } from "@mini-galu/contracts";
+import { AssistantChatSchema, type AssistantEvent, AssistantRulesLogSchema } from "@mini-galu/contracts";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { type CartVars, ensureOwner } from "../../../cart/infrastructure/http/cart-owner";
@@ -9,7 +10,7 @@ import type { ChatOwner } from "../../application/ports";
 
 /**
  * /assistant — Galú en la tienda. POST /chat responde por SSE (eventos AssistantEvent).
- * Sin modelo configurado responde 503 y la tienda usa las respuestas por reglas.
+ * Sin modelo configurado responde 503 y la tienda usa las respuestas por reglas; POST /log guarda esas charlas.
  * Con `cartOwner` adelante, la charla queda a nombre de la cuenta o de la bolsa (para saber si terminó en compra).
  */
 export function assistantRoutes(
@@ -27,12 +28,7 @@ export function assistantRoutes(
           { error: { code: "too_many_requests", message: "Muchas preguntas seguidas: probá en unos minutos" } },
           429,
         );
-      let owner: ChatOwner = { userId: null, cartToken: null };
-      if (req.conversationId && c.get("cartOwner") !== undefined) {
-        // la invitada sin bolsa recibe su cookie acá: si después compra, la charla cuenta como venta
-        const o = ensureOwner(c, secure);
-        owner = "userId" in o ? { userId: o.userId, cartToken: null } : { userId: null, cartToken: o.token };
-      }
+      const owner = req.conversationId ? ownerOf(c, secure) : NOBODY;
       return streamSSE(c, async (stream) => {
         const send = (e: AssistantEvent) => stream.writeSSE({ event: e.type, data: JSON.stringify(e) });
         try {
@@ -42,5 +38,24 @@ export function assistantRoutes(
           await send({ type: "error", message: "Galú no está disponible ahora" });
         }
       });
+    })
+    .post("/log", async (c) => {
+      const req = parse(AssistantRulesLogSchema, await c.req.json());
+      if (!limiter.take(clientIp(c)))
+        return c.json(
+          { error: { code: "too_many_requests", message: "Muchas preguntas seguidas: probá en unos minutos" } },
+          429,
+        );
+      await assistant.logRules(req, ownerOf(c, secure));
+      return c.body(null, 204);
     });
+}
+
+const NOBODY: ChatOwner = { userId: null, cartToken: null };
+
+/** La cuenta o la bolsa de la charla; la invitada sin bolsa recibe su cookie acá (si después compra, cuenta como venta). */
+function ownerOf(c: Context<CartVars>, secure: boolean): ChatOwner {
+  if (c.get("cartOwner") === undefined) return NOBODY;
+  const o = ensureOwner(c, secure);
+  return "userId" in o ? { userId: o.userId, cartToken: null } : { userId: null, cartToken: o.token };
 }

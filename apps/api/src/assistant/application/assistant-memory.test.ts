@@ -76,7 +76,7 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
     );
     return events;
   };
-  return { llm, memory, admin, ask, catalog, later: (ms: number) => (now = new Date(now.getTime() + ms)) };
+  return { llm, svc, memory, admin, ask, catalog, later: (ms: number) => (now = new Date(now.getTime() + ms)) };
 }
 
 describe("Galú guarda las charlas para el panel", () => {
@@ -123,6 +123,40 @@ describe("Galú guarda las charlas para el panel", () => {
     expect(panel.conversations[0]?.messages[1]?.unanswered).toMatch(/medida/);
     // el resumen, la campana y el menú usan la versión corta
     expect(await admin.overview()).toEqual({ chats: 2, bought: 0, pending: panel.pending });
+  });
+
+  it("sin modelo, la tienda manda lo que respondió por reglas: queda igual y lo que no supo va a 'Enseñale'", async () => {
+    const { svc, admin } = setup([]);
+    await svc.logRules(
+      {
+        conversationId: CONV,
+        question: "¿Qué hay en talle 4?",
+        answer: "En talle 4 tengo 1 modelo.",
+        unanswered: false,
+      },
+      { userId: "u1", cartToken: null },
+    );
+    await svc.logRules({
+      conversationId: CONV,
+      productSlug: "samanta",
+      question: "¿Hacen comunión a medida?",
+      answer: "Eso todavía no lo sé.",
+      unanswered: true,
+    });
+    const panel = await admin.admin();
+    expect(panel.conversations).toMatchObject([
+      {
+        id: CONV,
+        outcome: "sin_respuesta",
+        messages: [
+          { role: "user", text: "¿Qué hay en talle 4?", unanswered: null },
+          { role: "assistant", text: "En talle 4 tengo 1 modelo.", unanswered: null },
+          { role: "user", text: "¿Hacen comunión a medida?", unanswered: null },
+          { role: "assistant", text: "Eso todavía no lo sé.", unanswered: "¿Hacen comunión a medida?" },
+        ],
+      },
+    ]);
+    expect(panel.pending).toEqual([{ question: "¿Hacen comunión a medida?", times: 1, lastAt: NOW.toISOString() }]);
   });
 
   it("enseñarle: la respuesta entra en sus instrucciones y la pregunta deja de estar pendiente", async () => {

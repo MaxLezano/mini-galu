@@ -46,14 +46,24 @@ function app(owner: CartVars["Variables"]["cartOwner"]) {
     c.set("userId", owner && "userId" in owner ? owner.userId : null);
     await next();
   });
-  const http = new Hono().use("/assistant/chat", owned).route("/assistant", assistantRoutes(svc)).onError(onError);
+  const http = new Hono()
+    .use("/assistant/chat", owned)
+    .use("/assistant/log", owned)
+    .route("/assistant", assistantRoutes(svc))
+    .onError(onError);
   const chat = (body: unknown) =>
     http.request("/assistant/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-  return { memory, chat };
+  const log = (body: unknown) =>
+    http.request("/assistant/log", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  return { memory, chat, log };
 }
 
 describe("POST /assistant/chat", () => {
@@ -84,5 +94,23 @@ describe("POST /assistant/chat", () => {
     const { chat } = app(null);
     const res = await chat({ messages: [{ role: "user", text: "hola" }], conversationId: "no-es-uuid" });
     expect(res.status).toBe(422);
+  });
+});
+
+describe("POST /assistant/log (charlas por reglas)", () => {
+  it("guarda la pregunta y la respuesta a nombre de la bolsa (la invitada recibe su cookie)", async () => {
+    const { memory, log } = app(null);
+    const res = await log({ conversationId: CONV, question: "¿Talle 6?", answer: "En talle 6 tengo 2 modelos." });
+    expect(res.status).toBe(204);
+    const token = res.headers.get("set-cookie")?.split(";")[0]?.split("=")[1];
+    expect(token).toBeTruthy();
+    expect(memory.log.conversations).toMatchObject([{ id: CONV, owner: { userId: null, cartToken: token } }]);
+  });
+
+  it("sin id de charla o con una pregunta vacía se rechaza", async () => {
+    const { memory, log } = app({ userId: "u1" });
+    expect((await log({ question: "hola", answer: "Hola" })).status).toBe(422);
+    expect((await log({ conversationId: CONV, question: " ", answer: "Hola" })).status).toBe(422);
+    expect(memory.log.conversations).toEqual([]);
   });
 });

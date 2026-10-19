@@ -84,8 +84,31 @@ test("sin modelo en la API, Galú responde por reglas con el stock real", async 
   await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
   await page.getByLabel("Mensaje").fill("¿qué hay en talle 2?");
   await page.getByLabel("Mensaje").press("Enter");
+  const saved = page.waitForResponse("**/assistant/log");
   await expect(page.locator(".galu-body")).toContainText(/En talle 2 tengo \d+ modelos/);
   await expect(page.locator(".galu-body .mini-card").first()).toBeVisible();
+  // la charla queda en el panel igual que con el modelo (la API real la guarda)
+  const first = await saved;
+  expect(first.status()).toBe(204);
+  const body = first.request().postDataJSON();
+  expect(body).toMatchObject({
+    conversationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    question: "¿qué hay en talle 2?",
+    answer: expect.stringMatching(/^En talle 2 tengo \d+ modelos/),
+    unanswered: false,
+  });
+
+  // lo que no sabe va a "Enseñale", en la misma charla (no llega a la API: no pisa las preguntas demo del panel)
+  await page.route("**/assistant/log", (route) => route.fulfill({ status: 204 }));
+  const unknown = page.waitForRequest("**/assistant/log");
+  await page.getByLabel("Mensaje").fill("¿hacen arreglos de ruedo?");
+  await page.getByLabel("Mensaje").press("Enter");
+  await expect(page.locator(".galu-body .msg.bot").last()).toContainText("Eso todavía no lo sé");
+  expect((await unknown).postDataJSON()).toMatchObject({
+    conversationId: body.conversationId,
+    question: "¿hacen arreglos de ruedo?",
+    unanswered: true,
+  });
 });
 
 test("sin modelo en la API, Galú dice las cuotas reales de Mercado Pago para la prenda", async ({ page }) => {

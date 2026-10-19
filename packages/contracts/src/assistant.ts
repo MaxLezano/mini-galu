@@ -32,6 +32,20 @@ export const AssistantChatSchema = z.object({
 });
 export type AssistantChat = z.infer<typeof AssistantChatSchema>;
 
+/**
+ * Una pregunta que la tienda respondió por reglas (sin modelo en la API): se guarda igual para el panel.
+ * `unanswered`: Galú no supo responder (va a "Enseñale").
+ */
+export const AssistantRulesLogSchema = z.object({
+  conversationId: z.uuid(),
+  productSlug: z.string().max(80).optional(),
+  question: z.string().trim().min(1).max(ASSISTANT_MAX_CHARS),
+  answer: z.string().trim().min(1).max(4000),
+  unanswered: z.boolean().default(false),
+});
+export type AssistantRulesLog = z.input<typeof AssistantRulesLogSchema>;
+export type AssistantRulesLogRequest = z.output<typeof AssistantRulesLogSchema>;
+
 /** Lo que llega por SSE mientras Galú responde (POST /assistant/chat). */
 export type AssistantEvent =
   | { type: "text"; delta: string }
@@ -113,7 +127,7 @@ export type AdminConversation = {
 export type PendingQuestion = { question: string; times: number; lastAt: string };
 
 export type AdminAssistant = {
-  /** "claude" · "ollama" · null (responde por reglas y no guarda las charlas). */
+  /** "claude" · "ollama" · null (la tienda responde por reglas; las charlas se guardan igual). */
   provider: string | null;
   stats: {
     chats: number;

@@ -673,6 +673,7 @@ export function buildApp(config: Config) {
     .route("/policies", policiesRoutes(policies))
     .route("/giftcards", giftcardRoutes(giftcards))
     .use("/assistant/chat", cartOwner(auth, cart, secure))
+    .use("/assistant/log", cartOwner(auth, cart, secure))
     .route("/assistant", assistantRoutes(assistant, { secure }))
     .route("/me", accountRoutes(auth, customers))
     .route("/lists", wishlistRoutes(customers))

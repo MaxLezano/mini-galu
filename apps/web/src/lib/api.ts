@@ -1,5 +1,6 @@
 import type {
   ApiError,
+  AssistantRulesLog,
   CardPaymentInput,
   CardPlans,
   CartItemInput,
@@ -125,6 +126,8 @@ export const api = {
   wishlist: (slug: string) => request<PublicWishlist>(`/lists/${encodeURIComponent(slug)}`),
   subscribe: (email: string, source: "footer" | "cuenta" | "registro" = "footer") =>
     request<null>("/newsletter", { method: "POST", body: JSON.stringify({ email, source }) }),
+  /** Galú por reglas: la pregunta y la respuesta quedan en el panel (`/taller/galu`). */
+  galuLog: (body: AssistantRulesLog) => request<null>("/assistant/log", { method: "POST", body: JSON.stringify(body) }),
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
   /** Botón de arrepentimiento: pide la baja de un pedido (sin cuenta). */
   revoke: (input: RevocationInput) =>

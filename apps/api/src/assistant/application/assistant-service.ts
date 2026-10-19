@@ -2,6 +2,7 @@ import {
   ASSISTANT_DEFAULT_SETTINGS,
   type AssistantChat,
   type AssistantEvent,
+  type AssistantRulesLogRequest,
   CatalogQuerySchema,
   type ProductSummary,
   type Size,
@@ -132,6 +133,22 @@ export class AssistantService {
         { unanswered, sizeAlert },
         askedAt,
       );
+  }
+
+  /**
+   * La tienda respondió por reglas (sin modelo o con la API caída a mitad de la charla): la pregunta y la respuesta
+   * quedan en el panel igual que las del modelo; si no la supo, la pregunta va a "Enseñale".
+   */
+  async logRules(req: AssistantRulesLogRequest, owner: ChatOwner = NOBODY): Promise<void> {
+    await this.remember(
+      req.conversationId,
+      owner,
+      req.productSlug,
+      req.question,
+      req.answer,
+      { unanswered: req.unanswered ? req.question.slice(0, 300) : null, sizeAlert: null },
+      this.clock(),
+    );
   }
 
   /** Guarda la pregunta y la respuesta (si falla, la charla sigue: el panel pierde ese par y nada más). */

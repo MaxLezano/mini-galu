@@ -1,6 +1,13 @@
 "use client";
 
-import { type AssistantMessage, formatARS, imageThumb, type ProductSummary, type Size } from "@mini-galu/contracts";
+import {
+  ASSISTANT_MAX_CHARS,
+  type AssistantMessage,
+  formatARS,
+  imageThumb,
+  type ProductSummary,
+  type Size,
+} from "@mini-galu/contracts";
 import { SendHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +31,7 @@ import {
 } from "../galu-engine";
 import { boldSegments } from "../galu-sse";
 import { askGalu, GaluOffline } from "../galu-stream";
+import { replyText } from "../galu-text";
 import { orderCodeIn } from "../order-code";
 
 type MsgBody =
@@ -85,6 +93,9 @@ export function Galu() {
   const offline = useRef(false);
   // id de la charla (para el panel del taller): uno por apertura de la página
   const conversationId = useRef<string | null>(null);
+  // randomUUID solo existe en https o localhost: sin él, la charla no se guarda y Galú responde igual
+  const chatId = () =>
+    (conversationId.current ??= typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null);
   const input = useRef<HTMLInputElement>(null);
   const ctxSlug = pathname.startsWith("/producto/") ? decodeURIComponent(pathname.split("/")[2] ?? "") : null;
   const ctx = products.find((p) => p.slug === ctxSlug) ?? null;
@@ -106,9 +117,7 @@ export function Galu() {
     const chat = [...history.current, { role: "user" as const, text: q }];
     const answerId = ++mid;
     let text = "";
-    // randomUUID solo existe en https o localhost: sin él, la charla no se guarda y Galú responde igual
-    conversationId.current ??= typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null;
-    const chatReq = { messages: chat, productSlug: ctx?.slug, conversationId: conversationId.current ?? undefined };
+    const chatReq = { messages: chat, productSlug: ctx?.slug, conversationId: chatId() ?? undefined };
     await askGalu(chatReq, (e) => {
       if (e.type === "text") {
         text += e.delta;
@@ -149,6 +158,19 @@ export function Galu() {
         : answer(q, products, ctx, policies, installmentsFor),
       new Promise((r) => setTimeout(r, 650 + Math.random() * 450)),
     ]);
+    const id = chatId();
+    const said = replyText(out);
+    // si no se pudo guardar, la charla sigue: el panel pierde ese par y nada más
+    if (id && said)
+      void api
+        .galuLog({
+          conversationId: id,
+          productSlug: ctx?.slug,
+          question: q.slice(0, ASSISTANT_MAX_CHARS),
+          answer: said.slice(0, 4000),
+          unanswered: out.some((r) => r.kind === "text" && r.unanswered),
+        })
+        .catch(() => {});
     setMsgs((l) => [
       ...l.filter((m) => m.id !== typingId),
       ...out.map((r) =>

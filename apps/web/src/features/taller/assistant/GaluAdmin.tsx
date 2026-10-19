@@ -94,8 +94,9 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
           </p>
           {!data.provider && (
             <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
-              <span className="pill-status st-warn">Sin modelo</span> La tienda responde por reglas y no guarda las
-              charlas: configurá <code>ANTHROPIC_API_KEY</code> u <code>OLLAMA_URL</code> en la API.
+              <span className="pill-status st-warn">Sin modelo</span> La tienda responde por reglas: las charlas se
+              guardan igual, pero lo que le enseñes lo usa recién con un modelo (configurá{" "}
+              <code>ANTHROPIC_API_KEY</code> u <code>OLLAMA_URL</code> en la API).
             </p>
           )}
         </div>

@@ -24,7 +24,8 @@ import { SITE } from "@/lib/site";
  * tiene modelo configurado (CI, local sin Ollama) o no responde, con la misma forma (textos + tarjetas).
  */
 export type GaluReply =
-  | { kind: "text"; content: ReactNode }
+  /** `unanswered`: no supo responder (la pregunta va a "Enseñale" en el panel). */
+  | { kind: "text"; content: ReactNode; unanswered?: boolean }
   | { kind: "cards"; products: ProductSummary[]; size?: Size };
 
 const text = (content: ReactNode): GaluReply => ({ kind: "text", content });
@@ -398,13 +399,16 @@ export async function answer(
   }
   if (/hola|buenas|hey|buen dia/.test(q))
     return [text("¡Hola! ¿Para quién estás buscando? Contame la edad y la ocasión y te armo opciones.")];
-  // TODO(fase 7): registrar la pregunta sin respuesta para que Gaby le enseñe (AssistantFact)
   return [
-    text(
-      <>
-        Eso todavía no lo sé. Puedo ayudarte con <b>talles, stock, precios, envíos</b> o a <b>elegir un look</b>. Para
-        otras consultas, {WA()}.
-      </>,
-    ),
+    {
+      kind: "text",
+      unanswered: true,
+      content: (
+        <>
+          Eso todavía no lo sé. Puedo ayudarte con <b>talles, stock, precios, envíos</b> o a <b>elegir un look</b>. Para
+          otras consultas, {WA()}.
+        </>
+      ),
+    },
   ];
 }
