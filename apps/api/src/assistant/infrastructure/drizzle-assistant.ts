@@ -56,6 +56,7 @@ export class DrizzleConversationLog implements ConversationLog {
           role: m.role,
           text: m.text,
           unanswered: m.unanswered,
+          sizeAlert: m.sizeAlert,
           createdAt: new Date(at.getTime() + i),
         })),
       );
@@ -107,6 +108,7 @@ export class DrizzleConversationLog implements ConversationLog {
             text: m.text,
             unanswered: m.unanswered,
             taught: !!m.taughtAt,
+            sizeAlert: m.sizeAlert,
           })),
       };
     });
@@ -127,6 +129,14 @@ export class DrizzleConversationLog implements ConversationLog {
       if (o) bought.set(o.number, o.totalCents);
     }
     return { chats: convs.length, bought: bought.size, boughtCents: [...bought.values()].reduce((a, b) => a + b, 0) };
+  }
+
+  async sizeAlerts(since: Date) {
+    const [row] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(s.assistantMessages)
+      .where(and(isNotNull(s.assistantMessages.sizeAlert), gte(s.assistantMessages.createdAt, since)));
+    return row?.n ?? 0;
   }
 
   async unanswered(since: Date) {

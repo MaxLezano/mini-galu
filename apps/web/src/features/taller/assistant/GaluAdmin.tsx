@@ -7,14 +7,7 @@ import {
   formatARS,
   questionKey,
 } from "@mini-galu/contracts";
-import {
-  BookOpenCheck,
-  Check,
-  MessageCircleHeart,
-  MessageCircleQuestion,
-  MessagesSquare,
-  ShoppingBag,
-} from "lucide-react";
+import { BellRing, Check, MessageCircleHeart, MessageCircleQuestion, MessagesSquare, ShoppingBag } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -132,10 +125,10 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
         </div>
         <div className="kpi">
           <span>
-            <BookOpenCheck className="i-sm" /> Le enseñaste
+            <BellRing className="i-sm" /> Pidieron aviso de talle
           </span>
-          <b>{data.facts.length}</b>
-          <small className="muted">{data.facts.length === 1 ? "respuesta guardada" : "respuestas guardadas"}</small>
+          <b>{s.sizeAlerts}</b>
+          <small className="muted">pasan a la lista de espera</small>
         </div>
         <div className="kpi">
           <span>

@@ -116,6 +116,7 @@ describe("Galú responde con tools sobre el stock real", () => {
       "buscar_prendas",
       "ver_prenda",
       "talle_para",
+      "avisar_talle",
       "seguir_pedido",
       "cotizar_envio",
       "cuotas",

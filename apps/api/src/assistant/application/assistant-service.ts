@@ -74,6 +74,7 @@ export class AssistantService {
     // las tarjetas son las prendas de la última consulta de prendas (la más cercana a lo que se respondió)
     let cards: { products: ProductSummary[]; size: Size | null } | null = null;
     let unanswered: string | null = null;
+    let sizeAlert: string | null = null;
     let answer = "";
     const onText = (delta: string) => {
       if (!delta) return;
@@ -106,10 +107,12 @@ export class AssistantService {
           isError: true,
           products: undefined,
           size: undefined,
+          sizeAlert: undefined,
         }));
         const shown = settings.onlyInStock
           ? r.products?.filter((p) => p.variants.some((v) => v.stock > 0))
           : r.products;
+        if (!r.isError && r.sizeAlert) sizeAlert = r.sizeAlert;
         if (shown?.length) cards = { products: shown.slice(0, MAX_CARDS), size: r.size ?? null };
         results.push({ id: call.id, name: call.name, content: r.content, isError: r.isError });
       }
@@ -120,7 +123,15 @@ export class AssistantService {
     if (cards?.products.length) await emit({ type: "products", ...cards });
     await emit({ type: "done" });
     if (req.conversationId)
-      await this.remember(req.conversationId, owner, req.productSlug, question, answer, unanswered, askedAt);
+      await this.remember(
+        req.conversationId,
+        owner,
+        req.productSlug,
+        question,
+        answer,
+        { unanswered, sizeAlert },
+        askedAt,
+      );
   }
 
   /** Guarda la pregunta y la respuesta (si falla, la charla sigue: el panel pierde ese par y nada más). */
@@ -130,15 +141,15 @@ export class AssistantService {
     productSlug: string | undefined,
     question: string,
     answer: string,
-    unanswered: string | null,
+    marks: { unanswered: string | null; sizeAlert: string | null },
     askedAt: Date,
   ) {
     await this.memory.log
       .append(
         { id, owner, productSlug: productSlug ?? null },
         [
-          { role: "user", text: question, unanswered: null },
-          { role: "assistant", text: answer.trim(), unanswered },
+          { role: "user", text: question, unanswered: null, sizeAlert: null },
+          { role: "assistant", text: answer.trim(), ...marks },
         ],
         askedAt,
       )

@@ -32,6 +32,8 @@ export const assistantMessages = pgTable(
     text: text().notNull(),
     /** Galú no supo responder: la pregunta, resumida por el modelo (va a "Enseñale"). */
     unanswered: text(),
+    /** Galú anotó un aviso de talle en la lista de espera: "Vestido Samanta · talle 6". */
+    sizeAlert: text(),
     /** Cuándo Gaby le enseñó la respuesta (deja de estar pendiente). */
     taughtAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

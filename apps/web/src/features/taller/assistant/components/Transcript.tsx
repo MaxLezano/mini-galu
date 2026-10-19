@@ -1,6 +1,6 @@
 import { type AdminConversation, formatARS } from "@mini-galu/contracts";
-import { Receipt } from "lucide-react";
-import { OUTCOME, pendingIn } from "../galu-view";
+import { BellRing, Receipt } from "lucide-react";
+import { OUTCOME, pendingIn, sizeAlertsIn } from "../galu-view";
 
 type Props = {
   conversation: AdminConversation | null;
@@ -45,6 +45,14 @@ export function Transcript({ conversation: c, when, onTeach }: Props) {
             Enseñarle la respuesta
           </button>
         )}
+        {sizeAlertsIn(c).map((a) => (
+          <div className="t-result" key={a}>
+            <BellRing className="i-sm" />
+            <span>
+              Quedó en la lista de espera: <b>{a}</b>
+            </span>
+          </div>
+        ))}
         {c.order && (
           <div className="t-result">
             <Receipt className="i-sm" />

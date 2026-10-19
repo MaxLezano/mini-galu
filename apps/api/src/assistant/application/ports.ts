@@ -9,6 +9,7 @@ import type {
   ProductSummary,
   PublicTracking,
   ShippingOptions,
+  WaitlistRequest,
 } from "@mini-galu/contracts";
 import type { ChatTurn, ToolCall, ToolSpec } from "../domain/conversation";
 
@@ -25,6 +26,8 @@ export interface LlmProvider {
 export interface AssistantCatalog {
   search(query: CatalogQuery): Promise<ProductSummary[]>;
   product(slug: string): Promise<ProductDetail | null>;
+  /** "Avisame cuando vuelva": anota el contacto en la lista de espera del talle. */
+  joinWaitlist(req: WaitlistRequest): Promise<{ created: boolean; position: number }>;
 }
 
 /** Seguimiento público de un pedido (sin la calle ni el apellido). */
@@ -47,7 +50,12 @@ export interface AssistantPayments {
 /** Quién charla: la cuenta o la bolsa de invitada (para saber si después compró). */
 export type ChatOwner = { userId: string | null; cartToken: string | null };
 
-export type NewChatMessage = { role: "user" | "assistant"; text: string; unanswered: string | null };
+export type NewChatMessage = {
+  role: "user" | "assistant";
+  text: string;
+  unanswered: string | null;
+  sizeAlert: string | null;
+};
 
 /** Una charla guardada, con el pedido pagado que vino después (si hubo). */
 export type ConversationRecord = Omit<AdminConversation, "outcome" | "order"> & {
@@ -65,6 +73,8 @@ export interface ConversationLog {
   recent(since: Date, limit: number): Promise<ConversationRecord[]>;
   /** Charlas que empezaron desde `from` (y antes de `to`, si hay) y cuántas terminaron en un pedido pagado. */
   stats(from: Date, to: Date | null): Promise<{ chats: number; bought: number; boughtCents: number }>;
+  /** Avisos de talle que anotó Galú desde `since`. */
+  sizeAlerts(since: Date): Promise<number>;
   /** Preguntas que no supo responder y nadie le enseñó todavía. */
   unanswered(since: Date): Promise<{ id: string; question: string; at: Date }[]>;
   markTaught(messageIds: string[], at: Date): Promise<void>;

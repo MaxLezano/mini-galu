@@ -214,6 +214,7 @@ await db.transaction(async (tx) => {
         role: m.role,
         text: m.text,
         unanswered: m.unanswered ?? null,
+        sizeAlert: m.sizeAlert ?? null,
         createdAt: new Date(at.getTime() + i * 30_000),
       })),
     );

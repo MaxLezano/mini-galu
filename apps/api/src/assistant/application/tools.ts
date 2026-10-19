@@ -1,5 +1,6 @@
 import {
   CatalogQuerySchema,
+  ContactSchema,
   formatARS,
   GARMENT_SIZES,
   installment,
@@ -19,8 +20,11 @@ import { z } from "zod";
 import type { ToolSpec } from "../domain/conversation";
 import type { AssistantCatalog, AssistantOrders, AssistantPayments, AssistantShipping } from "./ports";
 
-/** Lo que devuelve una tool: el texto para el modelo y, si hay, las prendas para mostrar como tarjetas. */
-export type ToolOutput = { content: string; products?: ProductSummary[]; size?: Size | null };
+/**
+ * Lo que devuelve una tool: el texto para el modelo y, si hay, las prendas para mostrar como tarjetas y el aviso de
+ * talle que quedó anotado (para el panel).
+ */
+export type ToolOutput = { content: string; products?: ProductSummary[]; size?: Size | null; sizeAlert?: string };
 
 type Tool<S extends z.ZodType> = {
   name: string;
@@ -169,6 +173,40 @@ export function assistantTools(deps: {
             talle,
             nota: `Cada modelo tiene su tabla de medidas en la ficha. Talles disponibles: ${GARMENT_SIZES.join(", ")}`,
           }),
+        };
+      },
+    }),
+    tool({
+      name: "avisar_talle",
+      description:
+        "Anota a quien escribe en la lista de espera de una prenda agotada en un talle: le avisamos por email o WhatsApp cuando vuelva. Pedile el contacto antes; solo para talles sin stock.",
+      input: z.object({
+        prenda: z.string().min(1).max(80).describe("Slug o nombre de la prenda"),
+        talle: z.preprocess((v) => (typeof v === "number" ? String(v) : v), z.enum(SIZES)).describe("Talle agotado"),
+        canal: z.enum(["email", "whatsapp"]).describe("Por dónde avisarle"),
+        contacto: z.coerce.string().min(1).max(120).describe("El email o el número de WhatsApp que dio"),
+      }),
+      async run(i) {
+        const p = await findProduct(i.prenda);
+        if (!p) return { content: JSON.stringify({ error: `No encontré la prenda "${i.prenda}"` }) };
+        const contact = ContactSchema.safeParse({ channel: i.canal, contact: i.contacto });
+        if (!contact.success)
+          return {
+            content: JSON.stringify({
+              error: `${i.canal === "email" ? "Ese email" : "Ese WhatsApp"} no parece válido: pedíselo de nuevo`,
+            }),
+          };
+        const r = await deps.catalog.joinWaitlist({ slug: p.slug, size: i.talle, ...contact.data });
+        return {
+          content: JSON.stringify({
+            prenda: p.name,
+            talle: i.talle,
+            anotada: true,
+            ya_estaba: !r.created,
+            lugar_en_la_lista: r.position,
+            aviso: i.canal === "email" ? "Le llega un mail cuando vuelva" : "Le llega un WhatsApp cuando vuelva",
+          }),
+          sizeAlert: `${p.name} · talle ${i.talle}`,
         };
       },
     }),

@@ -610,6 +610,11 @@ test("galú: ver una charla, enseñarle una respuesta, olvidarla y cambiar un aj
   await expect(teach.locator(".q")).toContainText("2 veces");
   await page.locator("#convs .conv", { hasText: "bautismo" }).click();
   await expect(page.locator("#transcript")).toContainText("Vestido Rebeca");
+  // el aviso de talle que anotó Galú: estado "Pidió aviso" y cuenta en el KPI
+  await expect(page.locator(".kpis")).toContainText(/Pidieron aviso de talle\s*[1-9]/);
+  await page.locator("#convs .conv", { hasText: "set rojo en talle 6" }).click();
+  await expect(page.locator("section:has(#transcript) .box-head .pill-status")).toContainText("Pidió aviso");
+  await expect(page.locator("#transcript .t-result")).toContainText("Set Romántico Rojo · talle 6");
   await page.locator("#convs .conv", { hasText: "envíos al exterior" }).click();
   await page.getByRole("button", { name: "Enseñarle la respuesta" }).click();
   await expect(teach.locator(".q")).toContainText("envíos al exterior");

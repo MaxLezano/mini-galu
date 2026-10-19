@@ -1,6 +1,6 @@
 import type { AdminConversation } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
-import { boughtPercent, firstQuestion, pendingIn, weekChange } from "./galu-view";
+import { boughtPercent, firstQuestion, pendingIn, sizeAlertsIn, weekChange } from "./galu-view";
 
 const conv = (messages: AdminConversation["messages"]): AdminConversation => ({
   id: "c",
@@ -27,13 +27,23 @@ describe("panel de Galú", () => {
 
   it("primera pregunta y lo que falta enseñarle", () => {
     const c = conv([
-      { role: "user", text: "¿a medida?", unanswered: null, taught: false },
-      { role: "assistant", text: "No sé", unanswered: "¿Hacen a medida?", taught: true },
-      { role: "user", text: "¿al exterior?", unanswered: null, taught: false },
-      { role: "assistant", text: "No sé", unanswered: "¿Envían al exterior?", taught: false },
+      { role: "user", text: "¿a medida?", unanswered: null, taught: false, sizeAlert: null },
+      { role: "assistant", text: "No sé", unanswered: "¿Hacen a medida?", taught: true, sizeAlert: null },
+      { role: "user", text: "¿al exterior?", unanswered: null, taught: false, sizeAlert: null },
+      { role: "assistant", text: "No sé", unanswered: "¿Envían al exterior?", taught: false, sizeAlert: null },
     ]);
     expect(firstQuestion(c)).toBe("¿a medida?");
     expect(pendingIn(c)).toBe("¿Envían al exterior?");
     expect(pendingIn(conv([]))).toBeNull();
+  });
+
+  it("los avisos de talle anotados en la charla, sin repetir", () => {
+    const aviso = { role: "assistant", text: "¡Listo!", unanswered: null, taught: false } as const;
+    const c = conv([
+      { ...aviso, sizeAlert: "Vestido Samanta · talle 6" },
+      { ...aviso, sizeAlert: null },
+      { ...aviso, sizeAlert: "Vestido Samanta · talle 6" },
+    ]);
+    expect(sizeAlertsIn(c)).toEqual(["Vestido Samanta · talle 6"]);
   });
 });

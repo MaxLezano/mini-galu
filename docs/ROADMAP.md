@@ -240,8 +240,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ "Enseñale": la tool `no_lo_se` anota lo que no sabe; las preguntas pendientes se agrupan (mismas palabras sin
   tildes ni signos); lo que Gaby responde (`AssistantFact`) entra en las instrucciones de Galú y se puede olvidar
 - ✅ Ajustes: derivar a WhatsApp, ofrecer gift card sin talle, solo prendas con stock (búsquedas y tarjetas) y tono
-- 🟡 Las charlas por reglas (sin modelo) no se guardan; "Pidieron aviso de talle" no se mide (el aviso se pide en
-  la ficha, no en la charla) y quedó "Le enseñaste" en su lugar
+- ✅ "Pidieron aviso de talle": la tool `avisar_talle` anota el email o WhatsApp en la lista de espera del talle
+  agotado (el mismo caso de uso que la ficha); el KPI cuenta los avisos de 7 días, la charla queda "Pidió aviso" y
+  muestra "Quedó en la lista de espera"
+- 🟡 Las charlas por reglas (sin modelo) no se guardan
 
 ## Fase 8 · Cuenta (`cuenta.html`, `ingresar.html`, `giftcards.html`, `admin-clientes.html`)
 - ✅ Modelo de datos: `user` (nombre y apellido separados, email verificado, foto, rol, teléfono E.164 + país,

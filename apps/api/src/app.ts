@@ -591,6 +591,7 @@ export function buildApp(config: Config) {
       const p = await notFoundAsNull(catalog.detail(slug));
       return p?.status === "published" ? p : null;
     },
+    joinWaitlist: (req) => catalog.joinWaitlist(req),
   };
   // lo que Gaby le enseña, sus ajustes y las charlas (admin-galu.html)
   const assistantMemory = {

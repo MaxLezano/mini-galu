@@ -76,7 +76,7 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
     );
     return events;
   };
-  return { llm, memory, admin, ask, later: (ms: number) => (now = new Date(now.getTime() + ms)) };
+  return { llm, memory, admin, ask, catalog, later: (ms: number) => (now = new Date(now.getTime() + ms)) };
 }
 
 describe("Galú guarda las charlas para el panel", () => {
@@ -183,6 +183,55 @@ describe("Galú guarda las charlas para el panel", () => {
     expect(llm.calls.at(-1)?.system).toContain("wa.me");
   });
 
+  it("anota el aviso de talle en la lista de espera y el panel lo cuenta como 'Pidió aviso'", async () => {
+    const pedir = (contacto: string, canal = "email") => ({
+      toolCalls: [{ name: "avisar_talle", input: { prenda: "rebeca", talle: 2, canal, contacto } }],
+    });
+    const { admin, ask, llm, catalog } = setup([
+      pedir("no-es-un-mail"),
+      { text: "Pasame un mail válido" },
+      pedir("vale@mail.com"),
+      { text: "¡Listo! Te avisamos" },
+      {
+        toolCalls: [
+          { name: "avisar_talle", input: { prenda: "samanta", talle: "4", canal: "email", contacto: "vale@mail.com" } },
+        ],
+      },
+      { text: "Hay stock" },
+    ]);
+    await ask("avisame del Rebeca en 2: no-es-un-mail");
+    expect(llm.calls[1]?.turns.at(-1)).toMatchObject({
+      role: "tool",
+      results: [{ content: expect.stringContaining("no parece válido") }],
+    });
+    expect((await admin.admin()).stats.sizeAlerts).toBe(0);
+
+    await ask("vale@mail.com", OTHER);
+    expect(llm.calls[3]?.turns.at(-1)).toMatchObject({
+      results: [{ isError: false, content: expect.stringContaining('"lugar_en_la_lista":1') }],
+    });
+    // queda en la lista de espera de verdad: una segunda vez no la duplica
+    expect(
+      await catalog.joinWaitlist({ slug: "rebeca", size: "2", channel: "email", contact: "vale@mail.com" }),
+    ).toEqual({
+      created: false,
+      position: 1,
+    });
+
+    // con stock no se anota: el caso de uso lo rechaza y no cuenta
+    await ask("¿y el Samanta en 4?", "2b2c3d4e-5f60-4a71-8b92-a3b4c5d6e7f9");
+    expect(llm.calls[5]?.turns.at(-1)).toMatchObject({
+      results: [{ isError: true, content: expect.stringContaining("Hay stock") }],
+    });
+
+    const panel = await admin.admin();
+    expect(panel.stats.sizeAlerts).toBe(1);
+    const c = panel.conversations.find((x) => x.id === OTHER);
+    expect(c?.outcome).toBe("aviso");
+    expect(c?.messages.find((m) => m.role === "assistant")?.sizeAlert).toBe("Vestido Rebeca · talle 2");
+    expect(panel.conversations.find((x) => x.id === CONV)?.outcome).toBeNull();
+  });
+
   it("terminó en compra si se pagó un pedido de esa cuenta o bolsa; los KPIs comparan con la semana anterior", async () => {
     const { admin, ask, memory, later } = setup([{ text: "a" }, { text: "b" }, { text: "c" }]);
     await ask("hola", OTHER);
@@ -191,7 +240,14 @@ describe("Galú guarda las charlas para el panel", () => {
     await ask("¿talle 4?", "2b2c3d4e-5f60-4a71-8b92-a3b4c5d6e7f9");
     memory.log.orders.set(CONV, { number: 1044, totalCents: 55_900_00 });
     const panel = await admin.admin();
-    expect(panel.stats).toEqual({ chats: 2, chatsBefore: 1, bought: 1, boughtCents: 55_900_00, unanswered: 0 });
+    expect(panel.stats).toEqual({
+      chats: 2,
+      chatsBefore: 1,
+      bought: 1,
+      boughtCents: 55_900_00,
+      unanswered: 0,
+      sizeAlerts: 0,
+    });
     expect(panel.conversations.find((c) => c.id === CONV)).toMatchObject({
       outcome: "compra",
       order: { number: "MG-1044", totalCents: 55_900_00 },

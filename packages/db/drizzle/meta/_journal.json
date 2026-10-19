@@ -141,6 +141,13 @@
       "when": 1792366968366,
       "tag": "0019_payment_net",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792370601640,
+      "tag": "0020_assistant_size_alert",
+      "breakpoints": true
     }
   ]
 }

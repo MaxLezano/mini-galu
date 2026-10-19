@@ -85,8 +85,11 @@ export type AssistantFactInput = z.infer<typeof AssistantFactInputSchema>;
 
 export type AssistantFact = AssistantFactInput & { id: string; createdAt: string };
 
-/** compra: terminó en un pedido pagado · sin_respuesta: algo no lo supo (y todavía no se lo enseñaron). */
-export type ConversationOutcome = "compra" | "sin_respuesta";
+/**
+ * compra: terminó en un pedido pagado · sin_respuesta: algo no lo supo (y todavía no se lo enseñaron) ·
+ * aviso: pidió que le avisen cuando vuelva un talle (quedó en la lista de espera).
+ */
+export type ConversationOutcome = "compra" | "sin_respuesta" | "aviso";
 
 export type AdminConversation = {
   id: string;
@@ -96,7 +99,14 @@ export type AdminConversation = {
   lastAt: string;
   outcome: ConversationOutcome | null;
   order: { number: string; totalCents: number } | null;
-  messages: { role: "user" | "assistant"; text: string; unanswered: string | null; taught: boolean }[];
+  messages: {
+    role: "user" | "assistant";
+    text: string;
+    unanswered: string | null;
+    taught: boolean;
+    /** "Vestido Samanta · talle 6": Galú la anotó en la lista de espera. */
+    sizeAlert: string | null;
+  }[];
 };
 
 /** Una pregunta que Galú no supo responder y nadie le enseñó todavía. */
@@ -111,6 +121,8 @@ export type AdminAssistant = {
     bought: number;
     boughtCents: number;
     unanswered: number;
+    /** Avisos de talle que anotó Galú en la lista de espera. */
+    sizeAlerts: number;
   };
   conversations: AdminConversation[];
   pending: PendingQuestion[];

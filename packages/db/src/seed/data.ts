@@ -458,13 +458,14 @@ export const demoCoupons = [
 
 /**
  * Charlas con Galú (admin-galu.html), **demo**: muestran el panel antes de que haya charlas reales.
- * `ago` en minutos antes del seed; `unanswered` marca lo que no supo (va a "Enseñale").
+ * `ago` en minutos antes del seed; `unanswered` marca lo que no supo (va a "Enseñale") y `sizeAlert`, el aviso de talle
+ * que anotó en la lista de espera.
  */
 export const demoConversations: {
   id: string;
   ago: number;
   productSlug?: string;
-  messages: { role: "user" | "assistant"; text: string; unanswered?: string }[];
+  messages: { role: "user" | "assistant"; text: string; unanswered?: string; sizeAlert?: string }[];
 }[] = [
   {
     id: "00000000-0000-4000-8000-0000000ca001",
@@ -523,6 +524,24 @@ export const demoConversations: {
         role: "assistant",
         text: "No lo sé todavía: ¿le escribís a Gaby por WhatsApp?",
         unanswered: "¿Hacen envíos al exterior?",
+      },
+    ],
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000ca006",
+    ago: 60 * 24 * 4,
+    productSlug: "romantico-rojo",
+    messages: [
+      { role: "user", text: "El set rojo en talle 6 cuándo vuelve?" },
+      {
+        role: "assistant",
+        text: "No queda talle 6 del Set Romántico Rojo por ahora. ¿Te aviso por mail o WhatsApp cuando vuelva?",
+      },
+      { role: "user", text: "Sí porfa, a mi mail: mama.demo@ejemplo.com" },
+      {
+        role: "assistant",
+        text: "¡Listo! Te anoté: cuando vuelva el talle 6 te llega un mail.",
+        sizeAlert: "Set Romántico Rojo · talle 6",
       },
     ],
   },

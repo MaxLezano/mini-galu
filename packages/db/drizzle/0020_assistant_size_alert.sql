@@ -1,0 +1,1 @@
+ALTER TABLE "assistant_messages" ADD COLUMN "size_alert" text;

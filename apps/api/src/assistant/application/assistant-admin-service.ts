@@ -35,13 +35,14 @@ export class AssistantAdminService {
   async admin(): Promise<AdminAssistant> {
     const now = this.clock().getTime();
     const since = new Date(now - WINDOW_DAYS * DAY);
-    const [current, before, conversations, rows, facts, settings] = await Promise.all([
+    const [current, before, conversations, rows, facts, settings, sizeAlerts] = await Promise.all([
       this.memory.log.stats(since, null),
       this.memory.log.stats(new Date(now - 2 * WINDOW_DAYS * DAY), since),
       this.memory.log.recent(new Date(now - LIST_DAYS * DAY), LIST_LIMIT),
       this.memory.log.unanswered(new Date(now - LIST_DAYS * DAY)),
       this.memory.facts.list(),
       this.settings(),
+      this.memory.log.sizeAlerts(since),
     ]);
     return {
       provider: this.provider(),
@@ -51,6 +52,7 @@ export class AssistantAdminService {
         bought: current.bought,
         boughtCents: current.boughtCents,
         unanswered: rows.filter((r) => r.at >= since).length,
+        sizeAlerts,
       },
       conversations: conversations.map((c) => this.conversation(c)),
       pending: pendingQuestions(rows),
@@ -99,7 +101,7 @@ export class AssistantAdminService {
     return {
       ...c,
       order: c.order ? { number: this.formatOrderNumber(c.order.number), totalCents: c.order.totalCents } : null,
-      outcome: c.order ? "compra" : pending ? "sin_respuesta" : null,
+      outcome: c.order ? "compra" : pending ? "sin_respuesta" : c.messages.some((m) => m.sizeAlert) ? "aviso" : null,
     };
   }
 }

@@ -59,6 +59,7 @@ export function memoryCatalog(products: Product[]): AssistantCatalog {
       const p = await svc.detail(slug).catch(() => null);
       return p?.status === "published" ? p : null;
     },
+    joinWaitlist: (req) => svc.joinWaitlist(req),
   };
 }
 
@@ -124,7 +125,13 @@ export class MemoryConversationLog implements ConversationLog {
         order: this.orders.get(c.id) ?? null,
         messages: this.messages
           .filter((m) => m.conversationId === c.id)
-          .map((m) => ({ role: m.role, text: m.text, unanswered: m.unanswered, taught: !!m.taughtAt })),
+          .map((m) => ({
+            role: m.role,
+            text: m.text,
+            unanswered: m.unanswered,
+            taught: !!m.taughtAt,
+            sizeAlert: m.sizeAlert,
+          })),
       }));
   }
 
@@ -136,6 +143,10 @@ export class MemoryConversationLog implements ConversationLog {
       bought: orders.length,
       boughtCents: orders.reduce((s, o) => s + o.totalCents, 0),
     };
+  }
+
+  async sizeAlerts(since: Date) {
+    return this.messages.filter((m) => m.sizeAlert && m.at >= since).length;
   }
 
   async unanswered(since: Date) {
