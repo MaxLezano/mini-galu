@@ -1,0 +1,17 @@
+/* Reseñas del panel (sin mockup): mismas cajas, números y chips que admin-clientes.html */
+.adm-rv-list { display: grid; }
+.adm-rv { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px; align-items: start; padding: 16px 0; border-top: 1.5px dashed var(--line-2); }
+.adm-rv:first-child { border-top: 0; padding-top: 0; }
+.adm-rv img { width: 64px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; display: block; }
+.adm-rv img.is-product { opacity: .55; }
+.adm-rv-body { display: grid; gap: 6px; min-width: 0; }
+.adm-rv-body p { margin: 0; font-size: 14.5px; }
+.adm-rv-top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.adm-rv-meta { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 12.5px; }
+.adm-rv-meta a { text-decoration: underline; text-underline-offset: 3px; }
+.adm-rv-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 300px; }
+@media (max-width: 720px) {
+  .adm-rv { grid-template-columns: 56px minmax(0, 1fr); }
+  .adm-rv img { width: 56px; }
+  .adm-rv-actions { grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
+}

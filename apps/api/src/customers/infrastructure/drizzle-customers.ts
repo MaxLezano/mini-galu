@@ -257,6 +257,8 @@ export class DrizzleCustomerOrders implements CustomerOrders {
     private readonly db: Db,
     private readonly storage: ImageStorage,
     private readonly formatNumber: (n: number) => string,
+    /** Dónde reseña las prendas de un pedido entregado. */
+    private readonly reviewPath: (number: string, token: string) => string,
   ) {}
 
   async wishGift(orderId: string) {
@@ -292,6 +294,7 @@ export class DrizzleCustomerOrders implements CustomerOrders {
     return rows.map((o) => ({
       number: this.formatNumber(o.number),
       status: o.status,
+      reviewPath: o.status === "entregado" ? this.reviewPath(this.formatNumber(o.number), o.accessToken) : null,
       createdAt: o.createdAt.toISOString(),
       totalCents: o.totalCents,
       items: items

@@ -28,6 +28,8 @@ import type {
   PublicWishlist,
   Quote,
   QuoteRequest,
+  ReviewableItem,
+  ReviewableOrder,
   ShippingOptions,
   Size,
   StorePolicies,
@@ -50,7 +52,8 @@ export class ApiRequestError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
+    // con FormData (fotos) el navegador pone el content-type con su boundary
+    headers: init?.body instanceof FormData ? init.headers : { "content-type": "application/json", ...init?.headers },
     // la bolsa y el checkout viajan con la cookie de invitada (mg_cart)
     credentials: "include",
     // stock y precios cambian: nada de cache en el server de Next
@@ -133,6 +136,14 @@ export const api = {
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),
+  reviewOrder: (number: string, t: string) =>
+    request<ReviewableOrder>(`/reviews/${encodeURIComponent(number)}?t=${encodeURIComponent(t)}`),
+  /** Estrellas, texto, talle y la foto (opcional) en un FormData: rating, body, fit, photo. */
+  submitReview: (number: string, t: string, itemId: string, form: FormData) =>
+    request<ReviewableItem>(
+      `/reviews/${encodeURIComponent(number)}/items/${encodeURIComponent(itemId)}?t=${encodeURIComponent(t)}`,
+      { method: "POST", body: form },
+    ),
   receipt: (number: string, t: string) =>
     request<OrderReceipt>(`/checkout/orders/${encodeURIComponent(number)}?t=${encodeURIComponent(t)}`),
   payCard: (number: string, t: string, card: CardPaymentInput) =>

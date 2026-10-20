@@ -9,6 +9,9 @@ import type {
 } from "../application/ports";
 import type { Product, Review } from "../domain/product";
 
+/** Las estrellas y la cantidad salen solo de las reseñas que se muestran. */
+const PUBLISHED = eq(s.reviews.status, "publicada");
+
 export class DrizzleProductRepository implements ProductRepository {
   constructor(protected readonly db: Db) {}
 
@@ -25,20 +28,19 @@ export class DrizzleProductRepository implements ProductRepository {
     const rows = await this.db
       .select()
       .from(s.reviews)
-      .where(and(eq(s.reviews.productId, productId), eq(s.reviews.approved, true)))
-      .orderBy(asc(s.reviews.createdAt));
-    return rows
-      .filter((r) => r.title) // las reseñas sin título son las cortas de la home
-      .map((r) => ({
-        author: r.author,
-        city: r.city,
-        rating: r.rating,
-        title: r.title,
-        body: r.body,
-        size: r.size as Size | null,
-        fit: r.fit as Fit | null,
-        createdAt: r.createdAt,
-      }));
+      .where(and(eq(s.reviews.productId, productId), PUBLISHED))
+      .orderBy(desc(s.reviews.createdAt));
+    return rows.map((r) => ({
+      author: r.author,
+      city: r.city,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      size: r.size as Size | null,
+      fit: r.fit as Fit | null,
+      photoPath: r.photoPath,
+      createdAt: r.createdAt,
+    }));
   }
 
   async findCollections(): Promise<CollectionRow[]> {
@@ -71,13 +73,14 @@ export class DrizzleProductRepository implements ProductRepository {
         city: s.reviews.city,
         body: s.reviews.body,
         rating: s.reviews.rating,
+        photoPath: s.reviews.photoPath,
         productId: s.products.id,
         slug: s.products.slug,
         name: s.products.name,
       })
       .from(s.reviews)
       .innerJoin(s.products, eq(s.products.id, s.reviews.productId))
-      .where(and(eq(s.reviews.approved, true), eq(s.reviews.rating, 5), eq(s.reviews.title, "")))
+      .where(and(PUBLISHED, eq(s.reviews.featured, true)))
       .orderBy(desc(s.reviews.createdAt))
       .limit(limit);
     if (!rows.length) return [];
@@ -98,6 +101,7 @@ export class DrizzleProductRepository implements ProductRepository {
       city: r.city,
       body: r.body,
       rating: r.rating,
+      photoPath: r.photoPath,
       product: { slug: r.slug, name: r.name, imagePath: covers.find((c) => c.productId === r.productId)?.path ?? null },
     }));
   }
@@ -106,7 +110,7 @@ export class DrizzleProductRepository implements ProductRepository {
     const [r] = await this.db
       .select({ average: avg(s.reviews.rating), count: count() })
       .from(s.reviews)
-      .where(eq(s.reviews.approved, true));
+      .where(PUBLISHED);
     return { average: r?.average ? Math.round(Number(r.average) * 10) / 10 : 0, count: r?.count ?? 0 };
   }
 
@@ -129,7 +133,7 @@ export class DrizzleProductRepository implements ProductRepository {
       this.db
         .select({ productId: s.reviews.productId, average: avg(s.reviews.rating), count: count() })
         .from(s.reviews)
-        .where(and(inArray(s.reviews.productId, ids), eq(s.reviews.approved, true)))
+        .where(and(inArray(s.reviews.productId, ids), PUBLISHED))
         .groupBy(s.reviews.productId),
     ]);
 

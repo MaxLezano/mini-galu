@@ -121,6 +121,27 @@ describe("AdminOrdersService", () => {
     await expect(admin.move(a.number, "esperando_pago")).rejects.toBeInstanceOf(ConflictError);
   });
 
+  it("entregado: el detalle trae el link para que el cliente deje su reseña", async () => {
+    const withReview = new AdminOrdersService(
+      orders,
+      storage,
+      new EventBus(),
+      () => null,
+      () => "",
+      undefined,
+      undefined,
+      undefined,
+      (n, t) => `http://web/resena/${n}?t=${t}`,
+    );
+    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const a = await place("a", { method: "taller", pickupSlot: slot });
+    await pay(a.orderId);
+    expect((await withReview.detail(a.number)).reviewUrl).toBeNull();
+    await withReview.move(a.number, "listo");
+    const d = await withReview.move(a.number, "entregado");
+    expect(d.reviewUrl).toMatch(new RegExp(`^http://web/resena/${a.number}\\?t=.+`));
+  });
+
   it("no mueve un pedido sin pagar ni manda a 'en camino' un retiro en el taller", async () => {
     const a = await place("a");
     await expect(admin.move(a.number, "preparando")).rejects.toThrow("no está pagado");

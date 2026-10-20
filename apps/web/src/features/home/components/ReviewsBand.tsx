@@ -94,10 +94,12 @@ export function ReviewsBand({ rating, reviews }: { rating: Rating; reviews: Feat
   const avg = rating.average.toFixed(1).replace(".", ",");
   const card = (r: FeaturedReview, hidden: boolean, k: number) => (
     <article className="review" aria-hidden={hidden || undefined} key={`${hidden ? "b" : "a"}${k}`}>
-      <Stars label="5 estrellas" />
+      <Stars n={r.rating} />
       <q>{r.body}</q>
       <footer>
-        {r.product.imageUrl && <img loading="lazy" src={imageThumb(r.product.imageUrl)} alt="" />}
+        {(r.photoUrl ?? r.product.imageUrl) && (
+          <img loading="lazy" src={imageThumb(r.photoUrl ?? r.product.imageUrl ?? "")} alt="" />
+        )}
         <div>
           <b>{r.author}</b>
           <span className="muted">

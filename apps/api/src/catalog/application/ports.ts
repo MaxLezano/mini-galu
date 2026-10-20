@@ -15,10 +15,12 @@ export interface ProductRepository {
   findPublished(): Promise<Product[]>;
   /** Por slug, incluye borradores (la ficha de un lanzamiento se puede ver antes de salir). */
   findBySlug(slug: string): Promise<Product | null>;
+  /** Las publicadas, las más nuevas primero. */
   findReviews(productId: string): Promise<Review[]>;
   findCollections(): Promise<CollectionRow[]>;
-  /** Reseñas cortas para la home (las más recientes de 5 estrellas) con su prenda. */
+  /** Las que Gaby eligió para la home (publicadas, las más recientes primero) con su prenda. */
   findFeaturedReviews(limit: number): Promise<FeaturedReviewRow[]>;
+  /** Promedio y cantidad de todas las publicadas. */
   reviewStats(): Promise<{ average: number; count: number }>;
 }
 
@@ -27,6 +29,7 @@ export type FeaturedReviewRow = {
   city: string | null;
   body: string;
   rating: number;
+  photoPath: string | null;
   product: { slug: string; name: string; imagePath: string | null };
 };
 

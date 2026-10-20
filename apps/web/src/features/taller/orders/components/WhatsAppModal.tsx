@@ -12,7 +12,7 @@ type Props = {
   order: AdminOrderDetail | null;
   template: TemplateKey;
   /** Datos para completar las plantillas. */
-  vars: { seguimiento: string; taller: string; horario: string; link: string; vence: string };
+  vars: { seguimiento: string; taller: string; horario: string; link: string; vence: string; resena: string };
 };
 
 /** Escribirle al cliente por WhatsApp con plantillas (admin.js → openWA). Se abre WhatsApp con el texto listo. */

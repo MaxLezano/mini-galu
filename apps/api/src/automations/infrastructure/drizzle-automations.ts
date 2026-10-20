@@ -258,6 +258,7 @@ export class DrizzleAutomationOrders implements AutomationOrders {
       email: o.email,
       shippingMethod: o.shippingMethod,
       pickupLabel: o.pickupSlot ? this.pickupLabel(o.pickupSlot) : null,
+      accessToken: o.accessToken,
     };
   }
 

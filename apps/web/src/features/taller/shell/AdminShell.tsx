@@ -13,6 +13,7 @@ import {
   MessageCircleHeart,
   ShieldCheck,
   Shirt,
+  Star,
   Store,
   Users,
   Workflow,
@@ -32,7 +33,13 @@ import { navCounts, notices } from "./shell-view";
 import { usePanelData } from "./use-panel-data";
 import "./shell.css";
 
-type NavItem = { href: string; icon: LucideIcon; label: string; phase?: string; count?: "pedidos" | "stock" | "galu" };
+type NavItem = {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  phase?: string;
+  count?: "pedidos" | "stock" | "galu" | "resenas";
+};
 
 /** Secciones del panel (mockup admin.js). Las que todavía no existen muestran en qué fase llegan. */
 const NAV: [string, NavItem[]][] = [
@@ -49,6 +56,7 @@ const NAV: [string, NavItem[]][] = [
     [
       { href: "/taller/productos", icon: Shirt, label: "Productos", count: "stock" },
       { href: "/taller/clientes", icon: Users, label: "Clientes" },
+      { href: "/taller/resenas", icon: Star, label: "Reseñas", count: "resenas" },
       { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú", count: "galu" },
     ],
   ],
@@ -67,10 +75,11 @@ export function AdminShell({ session, children }: { session: AdminSession; child
   const pathname = usePathname();
   const router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
-  const { orders, products, customers, needCustomers, galu, read, markRead } = usePanelData(pathname);
+  const { orders, products, customers, needCustomers, galu, pendingReviews, read, markRead } = usePanelData(pathname);
   const counts = {
     ...(orders && products ? navCounts(orders, products) : { pedidos: 0, stock: 0 }),
     galu: galu?.pending.length ?? 0,
+    resenas: pendingReviews,
   };
   const items = orders && products ? notices(orders, products, formatARS, galu?.pending) : [];
   // ya en Pedidos se abre el detalle ahí mismo; desde otra pantalla se navega

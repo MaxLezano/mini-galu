@@ -62,7 +62,7 @@ export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
   },
   resena: {
     title: "Pedir reseña",
-    body: "Hola {nombre}! ¿Cómo le quedó? Si nos mandás una foto nos alegra el día ♡",
+    body: "Hola {nombre}! ¿Cómo le quedó? Si nos dejás una reseña con una foto nos alegra el día ♡ {resena}",
   },
   libre: { title: "Mensaje libre", body: "Hola {nombre}! " },
 };
@@ -86,10 +86,13 @@ export function fillTemplate(
     horario: string;
     link: string;
     vence: string;
+    /** Link para dejar la reseña (pedido entregado). */
+    resena?: string;
   },
 ): string {
   return body
     .replaceAll("{link}", v.link)
+    .replaceAll("{resena}", v.resena ?? "")
     .replaceAll("{vence}", v.vence)
     .replaceAll("{nombre}", v.nombre)
     .replaceAll("{pedido}", v.pedido)

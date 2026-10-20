@@ -46,6 +46,8 @@ export type AutomationLinks = {
   site: string;
   /** "Villa Crespo, CABA" */
   workshop: string;
+  /** Donde se reseñan las prendas del pedido (con su token, sin cuenta). */
+  review: (orderNumber: string, token: string) => string;
 };
 
 /**
@@ -198,7 +200,7 @@ export class AutomationService {
           subject: "¿Cómo le quedó? ♡",
           eyebrow: `Pedido #${o.number} · entregado`,
           body: await this.text("entregado", this.vars(o)),
-          cta: { label: "Ver la tienda", url: this.links.site },
+          cta: { label: "Dejar mi reseña", url: this.links.review(o.number, o.accessToken) },
           logTitle: "Pedido de reseña enviado",
         },
         `resena:${id}`,

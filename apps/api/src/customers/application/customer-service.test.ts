@@ -38,7 +38,7 @@ const addr = (over: object = {}) =>
 
 describe("mi cuenta", () => {
   it("pedidos por cuenta y por el mismo mail (los hechos sin ingresar también aparecen)", async () => {
-    const o = { status: "nuevo", createdAt: "", totalCents: 1, items: [] };
+    const o = { status: "nuevo", createdAt: "", totalCents: 1, items: [], reviewPath: null };
     orders.list.push(
       { ...o, number: "MG-1", userId: "u1", email: "otro@x.co" },
       { ...o, number: "MG-2", userId: null, email: "lucia@gmail.com" },

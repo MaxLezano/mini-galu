@@ -94,6 +94,8 @@ export const ReviewSchema = z.object({
   body: z.string(),
   size: SizeSchema.nullable(),
   fit: FitSchema.nullable(),
+  /** Foto que subió el cliente. */
+  photoUrl: z.string().nullable(),
   createdAt: z.string(),
 });
 export type Review = z.infer<typeof ReviewSchema>;

@@ -396,12 +396,17 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   pasos en [DEPLOY.md](DEPLOY.md). Plan gratis de Render duerme la API (frena las tareas programadas): Starter para abrir
 
 ## Próximas tareas (pedidas por Gaby, sin mockup)
-- ⏳ **Reseñas reales**. Hoy las de la home y la ficha son demo del seed y no hay cómo dejar una.
-  - El cliente deja la reseña desde el mail "¿Cómo le quedó? ♡" (sale cuando el pedido está entregado) o desde
-    Mi cuenta → Mis pedidos, por cada prenda de un pedido entregado.
-  - En el taller, un panel para administrarlas: aprobarlas u ocultarlas y catalogarlas, para que la tienda las
-    muestre con un filtro.
-  - Las estrellas y la cantidad (home y ficha) se calculan solo con las reseñas que se muestran.
+- ✅ **Reseñas reales** (módulo `reviews`). `/resena/MG-xxxx?t=…` (token del pedido, sin cuenta): por cada prenda
+  de un pedido entregado, estrellas, texto, talle (opcional) y una foto (opcional; se vuelve a codificar en WebP
+  sin metadatos: nada de GPS). Una por prenda; firma "Lucía F." y la ciudad del envío a domicilio. Se llega desde
+  el botón "Dejar mi reseña" del mail "¿Cómo le quedó? ♡", Mi cuenta → pedidos ("Dejar reseña") y el WhatsApp
+  "Pedir reseña" del detalle del pedido en el panel (lleva el link). Llegan **para revisar**; en `/taller/resenas`
+  (número en el menú) Gaby las publica u oculta y elige las de **"Lo que dicen las familias"** (solo publicadas;
+  ocultarla la saca del inicio). Ficha, home y estrellas de las tarjetas cuentan solo las publicadas; la foto del
+  cliente se ve en la ficha y en la cinta de la home (si no subió, la de la prenda). Las del seed siguen siendo demo
+  (publicadas; las cortas, en el inicio). ⏳ Incentivar a que dejen reseñas (cupón `RESENA10` del mockup): después
+- ⚠️ `transiciones.spec` en celular falla a veces contra `next dev` (la ficha no llega a la View Transition en
+  5 s); pasa al repetirlo.
 - ⏳ **Suscriptores** (sección nueva del panel, solo para ver). Una tabla con 3 pestañas:
   - **Cartas del taller**: hoy solo hay número y CSV.
   - **Anotados a un lanzamiento**: hoy solo se ve el número.

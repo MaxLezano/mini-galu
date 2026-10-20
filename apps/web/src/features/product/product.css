@@ -111,6 +111,7 @@ table.meas tr.is-sel td { background: var(--rosa-l); color: var(--cacao); font-w
 .rv b { font: 400 19px/1.2 var(--f-display); }
 .rv .meta { font-size: 12.5px; color: var(--cacao-2); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .rv .fit { display: inline-flex; gap: 6px; align-items: center; padding: 3px 10px; border-radius: 999px; background: var(--salvia-l); color: var(--salvia-d); font-weight: 600; }
+.rv-ph { width: 88px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; }
 .look-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 2vw, 24px); }
 .mbar { display: none; }
 

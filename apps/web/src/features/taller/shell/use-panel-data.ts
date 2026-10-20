@@ -8,7 +8,7 @@ import { PANEL_CHANGED } from "./panel-events";
 const READ_KEY = "mg-taller-leidas";
 
 /**
- * Pedidos, productos y lo pendiente de Galú para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar
+ * Pedidos, productos, reseñas para revisar y lo pendiente de Galú para el menú, la campana y la búsqueda: se recargan al navegar, al cambiar
  * algo y cada minuto. Los clientes solo los usa la búsqueda: se piden la primera vez que se la abre.
  */
 export function usePanelData(pathname: string) {
@@ -16,6 +16,7 @@ export function usePanelData(pathname: string) {
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
   const [galu, setGalu] = useState<AssistantOverview | null>(null);
   const [customers, setCustomers] = useState<AdminCustomer[] | null>(null);
+  const [pendingReviews, setPendingReviews] = useState(0);
   const [read, setRead] = useState<Set<string>>(new Set());
   const wantsCustomers = useRef(false);
 
@@ -29,6 +30,10 @@ export function usePanelData(pathname: string) {
     adminApi.orders().then(setOrders, () => {});
     adminApi.products().then(setProducts, () => {});
     adminApi.assistantOverview().then(setGalu, () => {});
+    adminApi.reviews().then(
+      (r) => setPendingReviews(r.filter((x) => x.status === "pendiente").length),
+      () => {},
+    );
     if (wantsCustomers.current) loadCustomers();
   }, [loadCustomers]);
   /** La búsqueda se abrió: desde ahora los clientes se recargan con lo demás. */
@@ -62,5 +67,5 @@ export function usePanelData(pathname: string) {
     } catch {}
   };
 
-  return { orders, products, customers, needCustomers, galu, read, markRead };
+  return { orders, products, customers, needCustomers, galu, pendingReviews, read, markRead };
 }

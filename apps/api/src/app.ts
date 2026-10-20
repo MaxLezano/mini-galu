@@ -97,7 +97,7 @@ import { OrderRefunds } from "./orders/application/order-refunds";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
 import { Revocations } from "./orders/application/revocations";
-import { formatOrderNumber, payPath } from "./orders/domain/order";
+import { formatOrderNumber, parseOrderNumber, payPath } from "./orders/domain/order";
 import { DrizzleOrderRepository, DrizzleRevocations } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
@@ -117,6 +117,10 @@ import { SimulatedGateway } from "./payments/infrastructure/simulated-gateway";
 import { PoliciesService } from "./policies/application/policies-service";
 import { DrizzlePoliciesStore } from "./policies/infrastructure/drizzle-policies-store";
 import { adminPoliciesRoutes, policiesRoutes } from "./policies/infrastructure/http/policies-routes";
+import { ReviewService } from "./reviews/application/review-service";
+import { reviewPath } from "./reviews/domain/review";
+import { DrizzleReviews } from "./reviews/infrastructure/drizzle-reviews";
+import { adminReviewRoutes, reviewRoutes } from "./reviews/infrastructure/http/review-routes";
 import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
@@ -214,6 +218,7 @@ export function buildApp(config: Config) {
     events,
     new SharpCropper(),
   );
+  const reviews = new ReviewService(new DrizzleReviews(db, formatOrderNumber, parseOrderNumber), storage, resizer);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
   // políticas del panel (cambios, envío gratis, formas de entrega, tarifas, horarios): las leen envíos, ayuda, Galú y mails
   const policies = new PoliciesService(new DrizzlePoliciesStore(db));
@@ -301,6 +306,7 @@ export function buildApp(config: Config) {
     undefined,
     orderRefunds,
     (p) => payments.netReceived(p.provider, p.reference),
+    (number, token) => config.webOrigin + reviewPath(number, token),
   );
   const paymentLinks = new PaymentLinks(
     variants,
@@ -437,7 +443,7 @@ export function buildApp(config: Config) {
   );
   const customers = new CustomerService(
     new DrizzleCustomers(db, storage),
-    new DrizzleCustomerOrders(db, storage, formatOrderNumber),
+    new DrizzleCustomerOrders(db, storage, formatOrderNumber, reviewPath),
     newsletter,
     giftcards,
     undefined,
@@ -485,6 +491,7 @@ export function buildApp(config: Config) {
       bag: `${config.webOrigin}/ingresar?volver=%2Fcheckout`,
       site: config.webOrigin,
       workshop: `${WORKSHOP}, CABA`,
+      review: (n, t) => `${config.webOrigin}${reviewPath(n, t)}`,
     },
   );
   // la compra de una gift card no lleva los avisos de un pedido de prendas: le llega su código
@@ -697,6 +704,7 @@ export function buildApp(config: Config) {
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/policies", policiesRoutes(policies))
     .route("/giftcards", giftcardRoutes(giftcards))
+    .route("/reviews", reviewRoutes(reviews, new RateLimiter(secure ? 30 : 500, 10 * 60_000)))
     .use("/assistant/chat", cartOwner(auth, cart, secure))
     .use("/assistant/log", cartOwner(auth, cart, secure))
     .route("/assistant", assistantRoutes(assistant, { secure }))
@@ -712,6 +720,7 @@ export function buildApp(config: Config) {
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/orders", adminRefundRoutes(refunds))
     .route("/admin/coupons", adminCouponRoutes(coupons))
+    .route("/admin/reviews", adminReviewRoutes(reviews))
     .route("/admin/giftcards", adminGiftcardRoutes(giftcards))
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))

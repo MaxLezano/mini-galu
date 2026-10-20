@@ -74,6 +74,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
   internalNote: string | null;
   /** Link para pagar (pedidos por Instagram/WhatsApp que esperan el pago). */
   payUrl: string | null;
+  /** Entregado: dónde deja la reseña el cliente (va en el WhatsApp de "Pedir reseña"). */
+  reviewUrl: string | null;
   payment: {
     provider: string;
     /** Número de operación (Mercado Pago: ORD… o el id del pago). */

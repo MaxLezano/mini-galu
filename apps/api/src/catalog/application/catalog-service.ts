@@ -56,7 +56,11 @@ export class CatalogService {
     return {
       ...toSummary(p, this.storage),
       care: p.care,
-      reviews: reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+      reviews: reviews.map(({ photoPath, ...r }) => ({
+        ...r,
+        photoUrl: photoPath ? this.storage.url(photoPath) : null,
+        createdAt: r.createdAt.toISOString(),
+      })),
       ratingDistribution: ratingDistribution(reviews),
       fitJustoPercent: fitJustoPercent(reviews),
       completeTheLook: completeTheLook(p, all).map((x) => toSummary(x, this.storage)),
@@ -69,8 +73,9 @@ export class CatalogService {
     const [rows, rating] = await Promise.all([this.products.findFeaturedReviews(limit), this.products.reviewStats()]);
     return {
       rating,
-      featured: rows.map((r) => ({
+      featured: rows.map(({ photoPath, ...r }) => ({
         ...r,
+        photoUrl: photoPath ? this.storage.url(photoPath) : null,
         product: { ...r.product, imageUrl: r.product.imagePath ? this.storage.url(r.product.imagePath) : null },
       })),
     };

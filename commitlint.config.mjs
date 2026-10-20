@@ -20,6 +20,7 @@ export default {
         "automations",
         "customers",
         "giftcards",
+        "reviews",
         "assistant",
         "content",
         "taller",

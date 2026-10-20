@@ -50,6 +50,7 @@ beforeEach(() => {
     email: "lucia@gmail.com",
     shippingMethod: "domicilio",
     pickupLabel: null,
+    accessToken: "tok1",
   });
   orders.orders.set("o2", {
     id: "o2",
@@ -59,6 +60,7 @@ beforeEach(() => {
     email: "carla@gmail.com",
     shippingMethod: "taller",
     pickupLabel: "Jue 8 · 10 a 13 h",
+    accessToken: "tok2",
   });
   waitlist = new MemoryWaitlist();
   lowStock = new MemoryLowStock();
@@ -85,6 +87,7 @@ beforeEach(() => {
       bag: "http://web/ingresar?volver=%2Fcheckout",
       site: "http://web",
       workshop: "Villa Crespo, CABA",
+      review: (n, t) => `http://web/resena/${n}?t=${t}`,
     },
     () => now,
   );
@@ -130,6 +133,8 @@ describe("automatizaciones", () => {
     expect(await auto.askReviews()).toBe(1);
     expect(await auto.askReviews()).toBe(0);
     expect(messenger.sent[0]?.subject).toBe("¿Cómo le quedó? ♡");
+    // el botón lleva a reseñar las prendas del pedido, sin cuenta
+    expect(messenger.ctas[0]).toEqual({ label: "Dejar mi reseña", url: "http://web/resena/MG-1042?t=tok1" });
   });
 
   it("volvió un talle: mail a los anotados por mail; los de WhatsApp quedan esperando con un aviso", async () => {

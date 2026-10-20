@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@mini-galu/contracts";
+import { imageThumb, type ProductDetail } from "@mini-galu/contracts";
 import { Flower, HandHeart, PencilRuler, Ruler, Scissors } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -113,8 +113,11 @@ export function ProductPage({ product: p, launchAt }: { product: ProductDetail; 
               {p.reviews.map((r) => (
                 <article className="rv" key={`${r.author}-${r.createdAt}`}>
                   <Stars n={r.rating} />
-                  <b>{r.title}</b>
+                  {r.title && <b>{r.title}</b>}
                   <p style={{ margin: 0 }}>{r.body}</p>
+                  {r.photoUrl && (
+                    <img className="rv-ph" src={imageThumb(r.photoUrl)} alt={`Foto de ${r.author}`} loading="lazy" />
+                  )}
                   <div className="meta">
                     <span>{r.author}</span>
                     <span>·</span>

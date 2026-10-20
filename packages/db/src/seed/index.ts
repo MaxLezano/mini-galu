@@ -125,6 +125,7 @@ await db.transaction(async (tx) => {
           body,
           size: p.sizes[size] !== undefined ? size : (Object.keys(p.sizes)[0] ?? null),
           fit: "justo" as const,
+          status: "publicada" as const,
           createdAt: new Date(now - (k + 3) * 7 * 86_400_000),
         })),
       );
@@ -141,6 +142,8 @@ await db.transaction(async (tx) => {
       body,
       size,
       fit: "justo" as const,
+      status: "publicada" as const,
+      featured: true,
       createdAt: new Date(now - k * 86_400_000),
     })),
   );

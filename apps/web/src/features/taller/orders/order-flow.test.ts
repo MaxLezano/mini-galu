@@ -64,6 +64,19 @@ describe("order-flow", () => {
         vence: "jueves 16 de octubre · 22 h",
       }),
     ).toContain("#MG-1046: http://web/pagar/MG-1046?t=x Podés pagar");
+    expect(defaultTemplate({ status: "entregado", shippingMethod: "taller" })).toBe("resena");
+    expect(
+      fillTemplate(TEMPLATES.resena.body, {
+        nombre: "Lucía",
+        pedido: "MG-1001",
+        seguimiento: "",
+        taller: "",
+        horario: "",
+        link: "",
+        vence: "",
+        resena: "http://web/resena/MG-1001?t=x",
+      }),
+    ).toMatch(/reseña con una foto .+ http:\/\/web\/resena\/MG-1001\?t=x$/);
     expect(waLink("+5491155551234", "hola ✿")).toBe("https://wa.me/5491155551234?text=hola%20%E2%9C%BF");
   });
 

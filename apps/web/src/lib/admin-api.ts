@@ -11,6 +11,7 @@ import type {
   AdminOrderSummary,
   AdminPayments,
   AdminProduct,
+  AdminReview,
   AdminShipping,
   AssistantFactInput,
   AssistantOverview,
@@ -32,6 +33,7 @@ import type {
   ProductStatus,
   RefundInput,
   RefundResult,
+  ReviewModeration,
   SaveProductResult,
   ShipmentCreated,
   ShippingSettings,
@@ -122,6 +124,9 @@ export const adminApi = {
     adminRequest<AdminLaunch>(`/admin/content/launches/${id}`, { method: "PUT", body: JSON.stringify(input) }),
   deleteLaunch: (id: string) => adminRequest<null>(`/admin/content/launches/${id}`, { method: "DELETE" }),
   payments: () => adminRequest<AdminPayments>("/admin/payments"),
+  reviews: () => adminRequest<AdminReview[]>("/admin/reviews"),
+  moderateReview: (id: string, m: ReviewModeration) =>
+    adminRequest<AdminReview>(`/admin/reviews/${id}`, { method: "PATCH", body: JSON.stringify(m) }),
   updateAutomation: (key: AutomationKey, upd: { on?: boolean; message?: string }) =>
     adminRequest<AdminAutomations>(`/admin/automations/${key}`, { method: "PATCH", body: JSON.stringify(upd) }),
   testAutomations: (email: string) =>

@@ -1,4 +1,5 @@
 import { type AccountOrder, formatARS, imageThumb, ORDER_STATUSES, type OrderStatus } from "@mini-galu/contracts";
+import { Star } from "lucide-react";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
 import { Embroidery } from "@/ui/atoms/Embroidery";
@@ -37,9 +38,16 @@ export function AccountOrders({ orders }: { orders: AccountOrder[] }) {
             </div>
             <span className={`pill-status ${st.tone}`}>{st.short}</span>
             {o.status === "entregado" && o.items[0] ? (
-              <Link className="btn btn-sm btn-ghost" href={`/producto/${o.items[0].slug}`}>
-                Volver a comprar
-              </Link>
+              <div className="order-actions">
+                {o.reviewPath && (
+                  <Link className="btn btn-sm" href={o.reviewPath}>
+                    <Star className="i-sm" /> Dejar reseña
+                  </Link>
+                )}
+                <Link className="btn btn-sm btn-ghost" href={`/producto/${o.items[0].slug}`}>
+                  Volver a comprar
+                </Link>
+              </div>
             ) : (
               <Link className="btn btn-sm btn-ghost" href={`/seguimiento?pedido=${o.number}`}>
                 Seguir

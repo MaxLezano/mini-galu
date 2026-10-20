@@ -180,6 +180,8 @@ export type AccountOrder = {
   createdAt: string;
   totalCents: number;
   items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
+  /** Entregado: dónde dejar la reseña de sus prendas ("/resena/MG-1035?t=…"). */
+  reviewPath: string | null;
 };
 
 export type AccountOverview = {

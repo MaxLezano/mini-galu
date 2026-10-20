@@ -41,6 +41,8 @@ export const FeaturedReviewSchema = z.object({
   city: z.string().nullable(),
   body: z.string(),
   rating: z.number().int(),
+  /** Foto del cliente: si no subió, se ve la de la prenda. */
+  photoUrl: z.string().nullable(),
   product: z.object({ slug: z.string(), name: z.string(), imageUrl: z.string().nullable() }),
 });
 export type FeaturedReview = z.infer<typeof FeaturedReviewSchema>;

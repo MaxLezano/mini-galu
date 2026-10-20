@@ -38,6 +38,7 @@ export type Review = {
   body: string;
   size: Size | null;
   fit: Fit | null;
+  photoPath: string | null;
   createdAt: Date;
 };
 

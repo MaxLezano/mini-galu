@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { orderItems } from "./orders";
 
 const timestamps = {
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -26,6 +27,8 @@ const timestamps = {
 export const productStatus = pgEnum("product_status", ["draft", "published"]);
 export const contactChannel = pgEnum("contact_channel", ["whatsapp", "email"]);
 export const reviewFit = pgEnum("review_fit", ["justo", "grande", "chico"]);
+/** pendiente: la dejó un cliente y Gaby todavía no la vio · publicada: se ve en la ficha (y cuenta en las estrellas). */
+export const reviewStatus = pgEnum("review_status", ["pendiente", "publicada", "oculta"]);
 
 export const collections = pgTable("collections", {
   id: uuid().primaryKey().defaultRandom(),
@@ -133,12 +136,24 @@ export const reviews = pgTable(
     author: text().notNull(),
     city: text(),
     rating: smallint().notNull(),
-    title: text().notNull(),
+    /** Las que dejan los clientes no llevan título (el form pide estrellas, texto y foto). */
+    title: text().notNull().default(""),
     body: text().notNull(),
     size: text(),
     fit: reviewFit(),
-    approved: boolean().notNull().default(true),
+    /** Foto que subió el cliente (ImageStorage). */
+    photoPath: text(),
+    status: reviewStatus().notNull().default("pendiente"),
+    /** Gaby la eligió para "Lo que dicen las familias" (la cinta de la home). */
+    featured: boolean().notNull().default(false),
+    /** La prenda del pedido que se reseña (una reseña por prenda). Las del seed no tienen. */
+    orderItemId: uuid().references(() => orderItems.id, { onDelete: "set null" }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index().on(t.productId), check("rating_range", sql`${t.rating} BETWEEN 1 AND 5`)],
+  (t) => [
+    index().on(t.productId),
+    index().on(t.status),
+    uniqueIndex().on(t.orderItemId),
+    check("rating_range", sql`${t.rating} BETWEEN 1 AND 5`),
+  ],
 );

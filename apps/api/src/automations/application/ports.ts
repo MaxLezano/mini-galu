@@ -72,6 +72,8 @@ export type OrderFacts = {
   shippingMethod: ShippingMethod;
   /** "Jue 8 · 10 a 13 h" */
   pickupLabel: string | null;
+  /** Para los links al pedido sin cuenta (reseñas). */
+  accessToken: string;
 };
 
 /** Lo que las automatizaciones leen y anotan de los pedidos. */

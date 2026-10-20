@@ -24,6 +24,8 @@ export class AdminOrdersService {
     private readonly refunds: Pick<OrderRefunds, "plan"> = { plan: async (o, p) => refundPlan(o, !!p) },
     /** Lo que acreditó el proveedor después de su comisión (lo pregunta el módulo de pagos y lo guarda). */
     private readonly netReceived: (p: OrderPayment) => Promise<number | null> = async () => null,
+    /** Página de la tienda donde el cliente reseña las prendas (número + token). */
+    private readonly reviewUrl: (number: string, token: string) => string | null = () => null,
   ) {}
 
   async list(): Promise<AdminOrderSummary[]> {
@@ -56,6 +58,7 @@ export class AdminOrdersService {
         o.status === "esperando_pago" && o.channel !== "web"
           ? this.payUrl(formatOrderNumber(o.number), o.accessToken)
           : null,
+      reviewUrl: o.status === "entregado" ? this.reviewUrl(formatOrderNumber(o.number), o.accessToken) : null,
       payment: payment && { ...payment, netCents: payment.netCents ?? netCents },
       events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
       refund,

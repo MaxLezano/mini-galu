@@ -162,6 +162,20 @@
       "when": 1792474162755,
       "tag": "0022_cash_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792504796544,
+      "tag": "0023_review_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792504807479,
+      "tag": "0024_review_drop_approved",
+      "breakpoints": true
     }
   ]
 }

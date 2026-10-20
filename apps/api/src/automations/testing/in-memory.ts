@@ -88,6 +88,8 @@ export class MemoryMessenger implements Messenger {
     body: string;
     products?: Suggestion[];
   }[] = [];
+  /** Botón de cada mensaje (en el orden de `sent`). */
+  ctas: ({ label: string; url: string } | null)[] = [];
   constructor(private readonly emails: Map<string, string> = new Map()) {}
   async paymentApproved(orderId: string, intro: string) {
     const to = this.emails.get(orderId) ?? null;
@@ -97,7 +99,14 @@ export class MemoryMessenger implements Messenger {
   async paymentReminder(o: { email: string }, intro: string) {
     this.sent.push({ kind: "recordatorio", to: o.email, body: intro });
   }
-  async message(m: { to: string; subject: string; eyebrow: string; body: string; products?: Suggestion[] }) {
+  async message(m: {
+    to: string;
+    subject: string;
+    eyebrow: string;
+    body: string;
+    cta: { label: string; url: string } | null;
+    products?: Suggestion[];
+  }) {
     this.sent.push({
       kind: "mensaje",
       to: m.to,
@@ -105,6 +114,7 @@ export class MemoryMessenger implements Messenger {
       body: m.body,
       ...(m.products ? { eyebrow: m.eyebrow, products: m.products } : {}),
     });
+    this.ctas.push(m.cta);
   }
 }
 

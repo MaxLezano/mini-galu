@@ -342,6 +342,7 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
           horario: wo?.pickupLabel ? `Te esperamos el ${wo.pickupLabel}.` : "Coordinamos el horario por acá.",
           link: wo?.payUrl ?? "",
           vence: wo?.reservedUntil ? launchWhen(wo.reservedUntil) : "",
+          resena: wo?.reviewUrl ?? "",
         }}
       />
     </main>
