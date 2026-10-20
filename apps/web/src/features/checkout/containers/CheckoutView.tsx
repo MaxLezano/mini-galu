@@ -5,13 +5,14 @@ import {
   type CheckoutConfig,
   formatARS,
   installmentsLabel,
+  isAndreani,
+  isArranged,
   type OrderReceipt,
   type PayResult,
   type PlacedOrder,
   PROVINCES,
   type Quote,
   type ShippingOptions,
-  whatsappUrl,
 } from "@mini-galu/contracts";
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
@@ -572,37 +573,25 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                   />
                   <span>
                     <b>{o.label}</b>
-                    {o.method !== "taller" && <span className="carrier">ANDREANI</span>}
+                    {isAndreani(o.method) && <span className="carrier">ANDREANI</span>}
                     <small>{o.detail}</small>
                   </span>
-                  <span className="opt-price" style={o.cents === 0 ? { color: "var(--salvia-d)" } : undefined}>
-                    {o.cents === null ? "—" : o.cents === 0 ? "Gratis" : formatARS(o.cents)}
+                  <span
+                    className="opt-price"
+                    style={o.cents === 0 && !o.arranged ? { color: "var(--salvia-d)" } : undefined}
+                  >
+                    {o.arranged
+                      ? o.arranged.fromCents
+                        ? `Desde ${formatARS(o.arranged.fromCents)}`
+                        : "A coordinar"
+                      : o.cents === null
+                        ? "—"
+                        : o.cents === 0
+                          ? "Gratis"
+                          : formatARS(o.cents)}
                   </span>
                 </label>
               ))}
-              {options?.localDelivery && (
-                // la cadetería no se cobra en la web: el precio depende de la dirección y se coordina por WhatsApp
-                <div className="option is-info">
-                  <span>
-                    <b>{options.localDelivery.label}</b>
-                    <small>
-                      Lo coordinamos por WhatsApp según tu dirección (no se cobra acá).{" "}
-                      <a
-                        className="link"
-                        href={whatsappUrl(
-                          options.localDelivery.whatsapp,
-                          "¡Hola! Quiero coordinar un envío por cadete.",
-                        )}
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        Escribinos
-                      </a>
-                    </small>
-                  </span>
-                  <span className="opt-price">Desde {formatARS(options.localDelivery.fromCents)}</span>
-                </div>
-              )}
               {ship.method === "sucursal" && (
                 <div className="field">
                   <label htmlFor="f-branchId">¿En qué sucursal lo retirás?</label>
@@ -633,7 +622,19 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                   {err("branchId")}
                 </div>
               )}
-              {ship.method === "domicilio" && (
+              {isArranged(ship.method) && (
+                <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
+                  Cuando confirmes el pedido te escribimos por WhatsApp para{" "}
+                  {ship.method === "cadete"
+                    ? "coordinar el día y el costo del cadete"
+                    : "acordar cómo y por dónde mandarlo"}
+                  . El envío no se cobra acá.{" "}
+                  <a className="link" href={info.whatsapp} target="_blank" rel="noopener">
+                    Escribinos antes
+                  </a>
+                </p>
+              )}
+              {(ship.method === "domicilio" || isArranged(ship.method)) && (
                 <>
                   <div className="grid2">
                     <div className="field">
@@ -762,6 +763,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         quote={quote}
         installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
         pickup={ship.method === "taller"}
+        arranged={isArranged(ship.method)}
         cardPlans={step === 3 ? cardPlans : null}
         chosenInstallments={step === 3 ? chosenInstallments : null}
         couponBusy={couponBusy}
@@ -788,7 +790,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
           workshop={info.workshop}
           receipt={done}
           pickupLabel={slotLabel ?? null}
-          deliveryDetail={selected?.method !== "taller" ? (selected?.detail ?? null) : null}
+          deliveryDetail={selected && isAndreani(selected.method) ? selected.detail : null}
           still={isStill()}
         />
       )}

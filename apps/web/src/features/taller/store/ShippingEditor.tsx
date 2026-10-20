@@ -16,7 +16,7 @@ import { ApiRequestError } from "@/lib/api";
 const MODE: Record<AdminShipping["andreani"]["mode"], { title: string; text: string; pill: string; tone: string }> = {
   simulado: {
     title: "Andreani sin conectar",
-    text: "Modo simulado: cotiza con una tabla por zona y genera seguimientos de prueba. Cuando Andreani te dé las credenciales de la API (usuario, contraseña, cliente y contratos), se cargan en el .env de la API.",
+    text: "Modo simulado: precios y seguimientos de prueba (en la tienda publicada, Andreani no se ofrece hasta conectarlo). Cuando Andreani te dé las credenciales de la API (usuario, contraseña, cliente y contratos), se cargan en el .env de la API.",
     pill: "Simulado",
     tone: "st-muted",
   },

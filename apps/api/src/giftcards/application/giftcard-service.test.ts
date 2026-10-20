@@ -13,7 +13,7 @@ import { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
 import { FakeBranches } from "../../shipping/infrastructure/andreani-branches";
-import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { MemoryGiftcardMailer, MemoryGiftcards } from "../testing/in-memory";
 import { GiftcardService } from "./giftcard-service";
 
@@ -68,7 +68,7 @@ beforeEach(() => {
     checkById: (id: string) => giftcards.checkById(id),
     summary: (id: string) => giftcards.summary(id),
   };
-  const shipping = new ShippingService(new TableShippingRates(), clock, new FakeBranches());
+  const shipping = new ShippingService(new SimulatedAndreaniRates(), clock, new FakeBranches());
   const settle = (id: string) => payments.approved(id, { method: "giftcard", installments: 1 });
   checkout = new CheckoutService(cart, shipping, coupons, orders, storage, wallet, settle, clock);
   links = new PaymentLinks(

@@ -9,7 +9,7 @@ import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
 import { FakeBranches } from "../../shipping/infrastructure/andreani-branches";
-import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { MemoryOrders } from "../testing/in-memory";
 import { CheckoutService } from "./checkout-service";
 import { OrderPayments } from "./order-payments";
@@ -57,7 +57,7 @@ beforeEach(async () => {
   const couponService = new CouponService(coupons, clock);
   checkout = new CheckoutService(
     cart,
-    new ShippingService(new TableShippingRates(policies), clock, new FakeBranches(), policies),
+    new ShippingService(new SimulatedAndreaniRates(), clock, new FakeBranches(), policies),
     couponService,
     orders,
     storage,
@@ -130,6 +130,33 @@ describe("CheckoutService", () => {
     const r = await checkout.receipt("MG-1001", "tok");
     expect(r).toMatchObject({ status: "esperando_pago", firstName: "Lucía", shippingMethod: "domicilio" });
     await expect(checkout.receipt("MG-1001", "otro")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("envío a acordar y cadete: guardan la dirección y no cobran envío; el cadete solo en la ciudad del taller", async () => {
+    const dir = {
+      postalCode: "4000",
+      province: "Tucumán" as const,
+      street: "Laprida",
+      number: "580",
+      city: "San Miguel de Tucumán",
+    };
+    const p = await checkout.place(guest, null, order({ shipping: { method: "acordar", ...dir } }));
+    expect(p.totalCents).toBe(38_000_00);
+    expect(orders.items[0]).toMatchObject({
+      shippingMethod: "acordar",
+      shippingCents: 0,
+      shippingAddress: { street: "Laprida", city: "San Miguel de Tucumán" },
+    });
+    expect((await checkout.place(guest, null, order({ shipping: { method: "cadete", ...dir } }))).totalCents).toBe(
+      38_000_00,
+    );
+    await expect(
+      checkout.place(
+        guest,
+        null,
+        order({ shipping: { method: "cadete", ...dir, postalCode: "1414", province: "CABA" } }),
+      ),
+    ).rejects.toThrow("El cadete llega solo dentro de San Miguel de Tucumán");
   });
 
   it("si se vuelve a pedir desde la misma bolsa, el pedido anterior se cancela y devuelve el stock", async () => {

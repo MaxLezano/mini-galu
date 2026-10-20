@@ -32,6 +32,15 @@ export const whenLabel = (d: Date) =>
 const lastMove = (o: TrackedOrder, to: OrderStatus) => o.moves.filter((m) => m.to === to).at(-1)?.at ?? null;
 const carrierAt = (ev: CarrierEvent[], ...codes: CarrierCode[]) => ev.find((e) => codes.includes(e.code))?.at ?? null;
 
+/** Quién lo lleva: Andreani, el cadete o lo que se acordó por WhatsApp. */
+const CARRIER: Record<TrackedOrder["shippingMethod"], string> = {
+  domicilio: "Andreani",
+  sucursal: "Andreani",
+  acordar: "como lo acordamos",
+  cadete: "en cadete",
+  taller: "",
+};
+
 /** Los puntos del recorrido (como stopsFor() del mockup): envío en 5 pasos, retiro en el taller en 4. */
 export function trackingStops(o: TrackedOrder, ev: CarrierEvent[]): TrackingStop[] {
   const pickup = o.shippingMethod === "taller";
@@ -51,13 +60,9 @@ export function trackingStops(o: TrackedOrder, ev: CarrierEvent[]): TrackingStop
     : [
         ["Pagado", "Mercado Pago", o.paidAt],
         ["Preparando", "en el taller", prep],
-        ["Despachado", "Andreani", carrierAt(ev, "picked_up") ?? lastMove(o, "en_camino")],
+        ["Despachado", CARRIER[o.shippingMethod], carrierAt(ev, "picked_up") ?? lastMove(o, "en_camino")],
         ["En camino", "", carrierAt(ev, "in_transit", "hub")],
-        [
-          "Entregado",
-          o.status === "en_camino" ? "estimado en 2 a 3 días hábiles" : "",
-          carrierAt(ev, "delivered") ?? lastMove(o, "entregado"),
-        ],
+        ["Entregado", "", carrierAt(ev, "delivered") ?? lastMove(o, "entregado")],
       ];
   return stops.map(([title, detail, date], i) => ({
     title,

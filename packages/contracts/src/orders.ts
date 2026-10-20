@@ -25,6 +25,14 @@ export type PaymentMethod = keyof typeof PAYMENT_METHODS;
 export const SHIPPING_METHODS = {
   domicilio: "Andreani a domicilio",
   sucursal: "Andreani a sucursal",
+  /** El cliente y Gaby arreglan por WhatsApp cómo y por dónde se manda (no se cobra en la web). */
+  acordar: "Envío a acordar",
   taller: "Retiro en el taller",
+  /** Cadete propio en la ciudad del taller (no se cobra en la web: se coordina por WhatsApp). */
+  cadete: "Cadete",
 } as const;
+/** Las que despacha Andreani (etiqueta, seguimiento y cotización). */
+export const isAndreani = (m: ShippingMethod) => m === "domicilio" || m === "sucursal";
+/** Las que se coordinan por WhatsApp: el envío no se cobra en la web. */
+export const isArranged = (m: ShippingMethod) => m === "acordar" || m === "cadete";
 export type ShippingMethod = keyof typeof SHIPPING_METHODS;

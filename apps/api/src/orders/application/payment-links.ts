@@ -70,7 +70,7 @@ export class PaymentLinks {
     const branch = s ? await sucursalOf(this.shipping, s) : null;
     const subtotalCents = items.reduce((a, { v, qty }) => a + v.priceCents * qty, 0);
     const shippingCents = s
-      ? ((await this.shipping.cost(s.method, s.method === "taller" ? undefined : s.postalCode, subtotalCents)) ?? 0)
+      ? await this.shipping.charge(s.method, s.method === "taller" ? undefined : s.postalCode, subtotalCents)
       : 0;
     let giftcard: { id: string; code: string; balanceCents: number } | null = null;
     if (input.giftcardCode) {

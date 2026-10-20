@@ -1,14 +1,14 @@
 import {
   DEFAULT_POLICIES,
   freeShippingFrom,
-  type LocalDeliveryInfo,
+  isAndreani,
+  isArranged,
   localDeliveryFor,
   qualifiesForFreeShipping,
   type ShippingBranch,
   type ShippingMethod,
   type ShippingOption,
   type ShippingOptions,
-  type StorePolicies,
 } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
 import { branchAddress, branchesFor, branchName } from "../domain/branches";
@@ -44,32 +44,43 @@ export class ShippingService {
     return (await this.branches(postalCode)).find((b) => b.id === id) ?? null;
   }
 
-  /** Opciones para mostrar en el checkout (solo las formas de entrega prendidas en el panel). Sin CP, domicilio y sucursal quedan sin precio. */
+  /**
+   * Opciones para la ficha y el checkout, solo las prendidas en el panel: Andreani (si está conectado; sin CP, sin
+   * precio), envío a acordar, retiro en el taller y el cadete (solo si el CP es de la ciudad del taller).
+   */
   async options(postalCode: string | undefined, subtotalCents: number): Promise<ShippingOptions> {
     const p = await this.policies.get();
     const free = qualifiesForFreeShipping(p, subtotalCents);
-    const shipped = p.methods.domicilio || p.methods.sucursal;
+    const andreani = this.rates.available && (p.methods.domicilio || p.methods.sucursal);
     const [q, branches] =
-      postalCode && shipped
+      postalCode && andreani
         ? await Promise.all([this.rates.quote(postalCode), p.methods.sucursal ? this.branches(postalCode) : []])
         : [null, []];
     const near = branches[0];
+    // con CP y sin precio es que Andreani no respondió: se dice y se puede elegir otra forma de entrega
+    const pending = postalCode ? "Andreani no respondió: probá en un rato o elegí otra forma de entrega" : NO_CP;
     const options: ShippingOption[] = [];
-    if (p.methods.domicilio)
+    if (andreani && p.methods.domicilio)
       options.push({
         method: "domicilio",
         label: "Envío a domicilio",
-        detail: q?.domicilio.detail ?? "Poné tu código postal para calcularlo",
+        detail: q?.domicilio.detail ?? pending,
         cents: q ? (free ? 0 : q.domicilio.cents) : null,
       });
-    if (p.methods.sucursal)
+    if (andreani && p.methods.sucursal)
       options.push({
         method: "sucursal",
         label: "Retiro en sucursal",
-        detail: near
-          ? `Sucursal ${near.name} · ${near.address}`
-          : (q?.sucursal.detail ?? "Poné tu código postal para calcularlo"),
+        detail: near ? `Sucursal ${near.name} · ${near.address}` : (q?.sucursal.detail ?? pending),
         cents: q ? (free ? 0 : q.sucursal.cents) : null,
+      });
+    if (p.methods.acordar)
+      options.push({
+        method: "acordar",
+        label: "Acordar envío",
+        detail: "Te escribimos por WhatsApp y vemos juntos cómo y por dónde mandarlo",
+        cents: 0,
+        arranged: { fromCents: null },
       });
     if (p.methods.taller)
       options.push({
@@ -78,21 +89,42 @@ export class ShippingService {
         detail: `${p.workshop.city} · elegís día y horario`,
         cents: 0,
       });
+    const local = postalCode ? localDeliveryFor(p, postalCode) : null;
+    if (local)
+      options.push({
+        method: "cadete",
+        label: `Cadete en ${p.workshop.city}`,
+        detail: "Lo coordinamos por WhatsApp según tu dirección",
+        cents: 0,
+        arranged: { fromCents: local.fromCents },
+      });
     return {
       options,
       pickupSlots: p.methods.taller ? pickupSlots(this.clock(), p.pickupHours) : [],
       workshop: p.workshop.city,
-      localDelivery: postalCode ? localDelivery(p, postalCode) : null,
       branches,
     };
   }
 
-  /** Costo de envío para cerrar el pedido (en centavos). */
+  /**
+   * Costo de envío en centavos (null si todavía no se puede saber). Envío a acordar y cadete no se cobran en la web
+   * (se arreglan por WhatsApp); Andreani, lo que cotiza Andreani.
+   */
   async cost(method: ShippingMethod, postalCode: string | undefined, subtotalCents: number): Promise<number | null> {
-    if (method === "taller") return 0;
+    if (method === "taller" || isArranged(method)) return 0;
     if (!postalCode) return null;
     if (qualifiesForFreeShipping(await this.policies.get(), subtotalCents)) return 0;
-    return (await this.rates.quote(postalCode))[method].cents;
+    return (await this.rates.quote(postalCode))?.[method].cents ?? null;
+  }
+
+  /** El costo para cerrar un pedido: si Andreani no cotizó, no se cobra un envío inventado (se elige otra entrega). */
+  async charge(method: ShippingMethod, postalCode: string | undefined, subtotalCents: number): Promise<number> {
+    const cents = await this.cost(method, postalCode, subtotalCents);
+    if (cents === null)
+      throw new ValidationError(
+        "Andreani no pudo cotizar el envío ahora: probá en un rato o elegí otra forma de entrega",
+      );
+    return cents;
   }
 
   /** Desde qué monto el envío es gratis (null: no hay). */
@@ -100,17 +132,19 @@ export class ShippingService {
     return freeShippingFrom(await this.policies.get());
   }
 
-  /** Para un pedido nuevo: la forma de entrega tiene que estar prendida y la franja de retiro, ofrecerse. */
-  async checkDelivery(s: { method: ShippingMethod; pickupSlot?: string | null }): Promise<void> {
+  /**
+   * Para un pedido nuevo: la forma de entrega tiene que estar prendida (Andreani, además, conectado), el cadete llegar
+   * a ese CP y la franja de retiro, ofrecerse.
+   */
+  async checkDelivery(s: { method: ShippingMethod; pickupSlot?: string | null; postalCode?: string }): Promise<void> {
     const p = await this.policies.get();
-    if (!p.methods[s.method]) throw new ValidationError("Esa forma de entrega ya no está disponible, elegí otra");
+    const off = !p.methods[s.method] || (isAndreani(s.method) && !this.rates.available);
+    if (off) throw new ValidationError("Esa forma de entrega ya no está disponible, elegí otra");
+    if (s.method === "cadete" && !localDeliveryFor(p, s.postalCode ?? ""))
+      throw new ValidationError(`El cadete llega solo dentro de ${p.workshop.city}: elegí otra forma de entrega`);
     if (s.method === "taller" && !isValidSlot(s.pickupSlot ?? "", this.clock(), p.pickupHours))
       throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
   }
 }
 
-/** La cadetería de la ciudad del taller: se muestra con su precio desde y se coordina por WhatsApp. */
-function localDelivery(p: StorePolicies, postalCode: string): LocalDeliveryInfo | null {
-  const d = localDeliveryFor(p, postalCode);
-  return d && { label: `Cadete en ${p.workshop.city}`, fromCents: d.fromCents, whatsapp: p.contact.whatsapp };
-}
+const NO_CP = "Poné tu código postal para calcularlo";

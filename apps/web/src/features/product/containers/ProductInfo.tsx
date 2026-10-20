@@ -3,19 +3,16 @@
 import {
   type ContactChannel,
   creditCuotas,
+  deliverySummary,
   discountPercent,
   formatARS,
   installmentsLabel,
-  localDeliveryFor,
   type ProductDetail,
-  qualifiesForFreeShipping,
   type ShippingMethod,
   type ShippingOptions,
   type Size,
-  type StorePolicies,
   sizeAge,
   whatsappUrl,
-  zoneQuote,
 } from "@mini-galu/contracts";
 import {
   Bell,
@@ -35,7 +32,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/features/account/account-store";
 import { contextSuggestions } from "@/features/assistant/galu-engine";
-import { cartTotal, useCart } from "@/features/cart/cart-store";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
@@ -52,67 +48,25 @@ import { Stars } from "@/ui/atoms/Stars";
 import { Modal } from "@/ui/organisms/Modal";
 import { formatMeasures, recommendSize } from "../size-advisor";
 
-/** Una fila del cálculo de envío; `from`: es un precio desde (la cadetería), con el link para coordinarlo. */
+/** Una fila del cálculo de envío; `from`: se coordina por WhatsApp (envío a acordar o cadete), con su link. */
 type Quote = { label: string; detail: string; cents: number | null; from?: { href: string } }[];
-
-/** La cadetería de la ciudad del taller: "Desde $3.000" y se coordina por WhatsApp. */
-const localRow = (label: string, fromCents: number, whatsapp: string): Quote[number] => ({
-  label,
-  detail: "Lo coordinamos por WhatsApp según tu dirección",
-  cents: fromCents,
-  from: { href: whatsappUrl(whatsapp, "¡Hola! Quiero coordinar un envío por cadete.") },
-});
 
 const SHIP_LABEL: Record<ShippingMethod, string> = {
   domicilio: "Andreani a domicilio",
   sucursal: "Andreani a sucursal",
+  acordar: "Acordar envío",
   taller: "Retiro en el taller",
+  cadete: "Cadete",
 };
 
-/** La cotización de la API (Andreani si está conectado; si no, la tabla por zona) con los títulos del mockup. */
-function quoteFrom({ options, localDelivery: local }: ShippingOptions): Quote {
-  const rows: Quote = options.map((o) => ({ label: SHIP_LABEL[o.method], detail: o.detail, cents: o.cents }));
-  return local ? [...rows, localRow(local.label, local.fromCents, local.whatsapp)] : rows;
-}
-
-/**
- * Respaldo si la API no responde: la tabla por zona del panel (las mismas tarifas que usa el checkout sin Andreani).
- * Solo las formas de entrega prendidas.
- */
-function estimateShipping(policies: StorePolicies, cp: string, subtotalCents: number): Quote {
-  const q = zoneQuote(policies, cp);
-  const free = qualifiesForFreeShipping(policies, subtotalCents);
-  const { methods } = policies;
-  return [
-    methods.domicilio && {
-      label: "Andreani a domicilio",
-      detail: q.domicilio.detail,
-      cents: free ? 0 : q.domicilio.cents,
-    },
-    methods.sucursal && {
-      label: "Andreani a sucursal",
-      detail: "Retirás en la sucursal más cercana",
-      cents: free ? 0 : q.sucursal.cents,
-    },
-    methods.taller && {
-      label: "Retiro en el taller",
-      detail: `${policies.workshop.city} · elegís día y horario`,
-      cents: 0,
-    },
-    (() => {
-      const local = localDeliveryFor(policies, cp);
-      return local
-        ? localRow(`Cadete en ${policies.workshop.city}`, local.fromCents, policies.contact.whatsapp)
-        : false;
-    })(),
-  ].filter((o): o is Quote[number] => !!o && o !== true);
-}
-
-/** "Envíos a todo el país con Andreani (domicilio o sucursal) o retiro gratis por el taller." según lo prendido. */
-function shippingText({ methods, workshop }: StorePolicies): string {
-  const how = [methods.domicilio && "domicilio", methods.sucursal && "sucursal"].filter(Boolean).join(" o ");
-  if (!how) return `Retiro gratis por el taller de ${workshop.city}.`;
-  return `Envíos a todo el país con Andreani (${how})${methods.taller ? " o retiro gratis por el taller" : ""}.`;
+/** La cotización de la API (Andreani con sus precios, envío a acordar, retiro y cadete) con los títulos del mockup. */
+function quoteFrom({ options }: ShippingOptions, whatsapp: string): Quote {
+  return options.map((o) => ({
+    label: o.method === "cadete" ? o.label : SHIP_LABEL[o.method],
+    detail: o.detail,
+    cents: o.arranged ? o.arranged.fromCents : o.cents,
+    ...(o.arranged && { from: { href: whatsappUrl(whatsapp, "¡Hola! Quiero coordinar un envío.") } }),
+  }));
 }
 
 /** Columna de compra de la ficha (mockup producto.html → .info). */
@@ -121,9 +75,10 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const addToCart = useAddToCart();
   const toggleFav = useToggleFavorite();
   const isFav = useIsFavorite(p.slug);
-  const lines = useCart((s) => s.lines);
   const { policies } = useShellData();
   const shipped = policies.methods.domicilio || policies.methods.sucursal;
+  // el cálculo por código postal sirve para Andreani, el envío a acordar y el cadete
+  const quotable = shipped || policies.methods.acordar || policies.methods.cadete;
   const plan = useInstallmentPlan(p.priceCents);
   const cuotas = plan ? installmentsLabel(plan, p.priceCents, formatARS) : null;
   const credit = creditCuotas(plan);
@@ -359,7 +314,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
         </div>
       </div>
 
-      {shipped && (
+      {quotable && (
         <div className="ship">
           <div className="row">
             <b style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
@@ -376,9 +331,15 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
               if (!cp) return e.currentTarget.querySelector("input")?.focus();
               setQuoting(true);
               try {
-                setQuote(quoteFrom(await api.shipping(cp, p.priceCents)));
+                setQuote(quoteFrom(await api.shipping(cp, p.priceCents), policies.contact.whatsapp));
               } catch {
-                setQuote(estimateShipping(policies, cp, cartTotal(lines) + p.priceCents));
+                setQuote([
+                  {
+                    label: "No pudimos calcular el envío",
+                    detail: "Probá de nuevo en un ratito o elegí la entrega en el checkout",
+                    cents: null,
+                  },
+                ]);
               } finally {
                 setQuoting(false);
               }
@@ -413,7 +374,17 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
                     )}
                   </small>
                 </span>
-                <b>{o.from && o.cents ? `Desde ${formatARS(o.cents)}` : o.cents ? formatARS(o.cents) : "Gratis"}</b>
+                <b>
+                  {o.from
+                    ? o.cents
+                      ? `Desde ${formatARS(o.cents)}`
+                      : "A coordinar"
+                    : o.cents === null
+                      ? "—"
+                      : o.cents
+                        ? formatARS(o.cents)
+                        : "Gratis"}
+                </b>
               </div>
             ))}
           </div>
@@ -493,8 +464,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
             Envíos, cambios y pagos <ChevronDown />
           </summary>
           <div>
-            {shippingText(policies)} Cambios de talle dentro de los {policies.exchangeDays} días. Pagás con Mercado Pago
-            sin salir de la web: tarjeta de crédito{credit ? ` (${credit})` : ""}, débito o dinero en cuenta.
+            {deliverySummary(policies)} Cambios de talle dentro de los {policies.exchangeDays} días. Pagás con Mercado
+            Pago sin salir de la web: tarjeta de crédito{credit ? ` (${credit})` : ""}, débito o dinero en cuenta.
           </div>
         </details>
       </div>

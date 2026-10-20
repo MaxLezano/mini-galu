@@ -2,7 +2,6 @@ import type { ShippingSettings } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
 import type { NewShipment } from "../../application/ports";
 import { MemoryShippingSettings } from "../../testing/in-memory";
-import { TableShippingRates } from "../table-shipping-rates";
 import { AndreaniClient } from "./andreani-client";
 import { AndreaniGateway, AndreaniRates } from "./andreani-gateway";
 
@@ -116,7 +115,7 @@ describe("Andreani (API REST)", () => {
     expect(new Headers(calls[1]?.init?.headers).get("accept")).toBe("application/pdf");
   });
 
-  it("cotiza con el contrato de cada entrega y, si Andreani falla, usa la tabla por zona", async () => {
+  it("cotiza con el contrato de cada entrega y, si Andreani falla, no hay precio", async () => {
     const store = new MemoryShippingSettings();
     await store.save({ ...settings, package: "caja_chica" });
     const { calls, fetcher } = fakeAndreani({
@@ -126,28 +125,22 @@ describe("Andreani (API REST)", () => {
           tarifaConIva: { total: new URL(c.url).searchParams.get("contrato") === "400006709" ? "7041.21" : "5200" },
         }),
     });
-    const table = new TableShippingRates();
-    const rates = new AndreaniRates(
-      new AndreaniClient({ env: "qa", user: "u", password: "p" }, fetcher),
-      cfg,
-      store,
-      table,
-    );
+    const rates = new AndreaniRates(new AndreaniClient({ env: "qa", user: "u", password: "p" }, fetcher), cfg, store);
     const q = await rates.quote("1414");
-    expect(q.domicilio.cents).toBe(704_121);
-    expect(q.sucursal.cents).toBe(520_000);
+    expect(q?.domicilio.cents).toBe(704_121);
+    expect(q?.sucursal.cents).toBe(520_000);
     const params = new URL(calls[1]?.url ?? "").searchParams;
     expect(params.get("cliente")).toBe("CL0001");
     expect(params.get("bultos[0][kilos]")).toBe("1");
     expect(params.get("bultos[0][volumen]")).toBe(String(25 * 20 * 8));
 
     const down = fakeAndreani({ "GET /login": login, "GET /v1/tarifas": () => json({}, 500) });
-    const fallback = new AndreaniRates(
+    // si Andreani no cotiza no hay precio: no se inventa uno
+    const failing = new AndreaniRates(
       new AndreaniClient({ env: "qa", user: "u", password: "p" }, down.fetcher),
       cfg,
       store,
-      table,
     );
-    expect(await fallback.quote("1414")).toEqual(await table.quote("1414"));
+    expect(await failing.quote("1414")).toBeNull();
   });
 });

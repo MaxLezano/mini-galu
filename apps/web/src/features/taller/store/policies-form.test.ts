@@ -3,16 +3,16 @@ import { describe, expect, it } from "vitest";
 import { fromForm, toForm } from "./policies-form";
 
 const delivery = () => {
-  const { exchangeDays, freeShipping, methods, zones, localDelivery, pickupHours } = DEFAULT_POLICIES;
-  return { exchangeDays, freeShipping, methods, zones, localDelivery, pickupHours };
+  const { exchangeDays, freeShipping, methods, localDelivery, pickupHours } = DEFAULT_POLICIES;
+  return { exchangeDays, freeShipping, methods, localDelivery, pickupHours };
 };
 
 describe("policies-form", () => {
   it("ida y vuelta sin perder nada (y solo manda lo de entregas)", () => {
     const f = toForm(DEFAULT_POLICIES);
     expect(f.freeFrom).toBe("90.000");
-    expect(f.local).toEqual({ enabled: true, cps: "4000", from: "3.000" });
-    expect(f.zones[0]).toMatchObject({ title: "Tucumán", cps: "4000-4199", domicilio: "5.900" });
+    expect(f.methods).toEqual({ domicilio: true, sucursal: true, acordar: true, taller: true, cadete: true });
+    expect(f.local).toEqual({ cps: "4000", from: "3.000" });
     expect(f.pickup[1]).toBe("10 a 13, 16 a 19");
     expect(f.pickup[0]).toBe("");
     expect(fromForm(f, DEFAULT_POLICIES)).toEqual({ policies: delivery() });
@@ -26,10 +26,7 @@ describe("policies-form", () => {
         exchangeDays: "15",
         freeEnabled: true,
         freeFrom: "$120000",
-        zones: f.zones.map((z, i) =>
-          i === 0 ? { ...z, title: "Gran Tucumán", cps: "4000 a 4199, 4107", domicilio: "6.500", sucursal: "4500" } : z,
-        ),
-        local: { enabled: true, cps: "4000", from: "$ 3.500" },
+        local: { cps: "4000, 4107-4109", from: "$ 3.500" },
         pickup: ["", "9-12", "", "", "", "", ""],
       },
       DEFAULT_POLICIES,
@@ -37,21 +34,9 @@ describe("policies-form", () => {
     expect("policies" in r && r.policies).toMatchObject({
       exchangeDays: 15,
       freeShipping: { enabled: true, fromCents: 120_000_00 },
-      localDelivery: { fromCents: 3_500_00 },
+      localDelivery: { cps: "4000, 4107-4109", fromCents: 3_500_00 },
       pickupHours: [[], [[9, 12]], [], [], [], [], []],
     });
-    expect("policies" in r && r.policies.zones[0]).toMatchObject({
-      title: "Gran Tucumán",
-      cps: "4000 a 4199, 4107",
-      domicilioCents: 6_500_00,
-      sucursalCents: 4_500_00,
-    });
-  });
-
-  it("la última zona es el resto del país: no guarda códigos postales", () => {
-    const f = toForm(DEFAULT_POLICIES);
-    const r = fromForm({ ...f, zones: f.zones.map((z, i) => (i === 2 ? { ...z, cps: "9000" } : z)) }, DEFAULT_POLICIES);
-    expect("policies" in r && r.policies.zones[2]?.cps).toBe("");
   });
 
   it("dice qué campo corregir", () => {
@@ -60,20 +45,18 @@ describe("policies-form", () => {
       field: "pol-pickup-1",
     });
     expect(fromForm({ ...f, exchangeDays: "" }, DEFAULT_POLICIES)).toMatchObject({ field: "pol-days" });
-    expect(
-      fromForm({ ...f, zones: f.zones.map((z, i) => (i === 1 ? { ...z, sucursal: "" } : z)) }, DEFAULT_POLICIES),
-    ).toEqual({ field: "pol-zone-1-sucursal", message: "Poné el precio a sucursal" });
-    expect(
-      fromForm({ ...f, zones: f.zones.map((z, i) => (i === 0 ? { ...z, cps: "Tucumán" } : z)) }, DEFAULT_POLICIES),
-    ).toEqual({ field: "pol-zone-0-cps", message: "Escribí los códigos postales así: 4000-4199, 4700" });
-    expect(fromForm({ ...f, local: { ...f.local, cps: "" } }, DEFAULT_POLICIES)).toMatchObject({
+    expect(fromForm({ ...f, local: { ...f.local, cps: "Tucumán" } }, DEFAULT_POLICIES)).toEqual({
       field: "pol-local-cps",
+      message: "Escribí los códigos postales así: 4000-4199, 4700",
     });
-    expect(fromForm({ ...f, methods: { domicilio: false, sucursal: false, taller: false } }, DEFAULT_POLICIES)).toEqual(
-      {
-        field: "pol-domicilio",
-        message: "Dejá al menos una forma de entrega",
-      },
-    );
+    // sin cadete prendido, los códigos postales vacíos no importan
+    const off = { ...f, methods: { ...f.methods, cadete: false }, local: { ...f.local, cps: "" } };
+    expect("policies" in fromForm(off, DEFAULT_POLICIES)).toBe(true);
+    expect(
+      fromForm(
+        { ...f, methods: { domicilio: false, sucursal: false, acordar: false, taller: false, cadete: false } },
+        DEFAULT_POLICIES,
+      ),
+    ).toEqual({ field: "pol-domicilio", message: "Dejá al menos una forma de entrega" });
   });
 });

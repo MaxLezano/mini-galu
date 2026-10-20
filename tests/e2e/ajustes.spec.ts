@@ -2,11 +2,14 @@ import { ADMIN, expect, test } from "./fixtures";
 
 const API = "http://localhost:4000";
 
-test("cadete en la ciudad del taller: la ficha lo muestra desde $3.000 para coordinar por WhatsApp", async ({
+test("calculá tu envío: Andreani, acordar envío y, en la ciudad del taller, el cadete desde $3.000", async ({
   page,
 }) => {
   const policies = await (await page.request.get(`${API}/policies`)).json();
-  test.skip(!policies.localDelivery.enabled, "La cadetería está apagada en Tienda y pagos");
+  test.skip(
+    !policies.methods.cadete || !policies.methods.acordar,
+    "Cadete o envío a acordar apagados en Tienda y pagos",
+  );
   const cp = String(policies.localDelivery.cps).match(/\d{4}/)?.[0] ?? "4000";
 
   await page.goto("/producto/maddie");
@@ -15,6 +18,7 @@ test("cadete en la ciudad del taller: la ficha lo muestra desde $3.000 para coor
   const row = page.locator(".ship-res > div", { hasText: `Cadete en ${policies.workshop.city}` });
   await expect(row).toContainText(/Desde \$\s?\d/);
   await expect(row.getByRole("link", { name: "Escribinos" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\d+/);
+  await expect(page.locator(".ship-res > div", { hasText: "Acordar envío" })).toContainText("A coordinar");
 
   // afuera de la ciudad no aparece
   await page.getByLabel("Código postal").fill("1414");

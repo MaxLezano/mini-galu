@@ -358,7 +358,7 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   `content_blocks["policies"]`; sin nada guardado rigen las de base): días para cambiar el talle (ficha, inicio,
   checkout, gift cards, mails, ayuda y Galú), formas de entrega prendidas/apagadas (el checkout solo ofrece y acepta las
   prendidas), horarios de retiro por día ("10 a 13, 16 a 19"), envío gratis sí/no y desde qué monto (bolsa, ficha,
-  checkout, ayuda, Galú) y tarifas por zona AMBA/centro/resto (las usa el checkout sin Andreani y la ficha). Los textos
+  checkout, ayuda, Galú) (las tarifas por zona se sacaron: Andreani cotiza con Andreani, ver abajo). Los textos
   de base de la ayuda siguen las políticas; si Gaby editó esas páginas, el panel le avisa que las revise
 - ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); cualquiera se puede apagar o quitar (ya no hay
   apartado "Obligatorio") mientras quede uno visible
@@ -419,11 +419,12 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   - **Datos de la tienda** (caja nueva): WhatsApp, email, Instagram, localidad y provincia del taller. Pie, barra de
     contacto, ayuda, checkout, seguimiento, Galú, mails (también como *Reply-To*), SEO, "Seguinos" de la home y el
     panel de pedidos. Base: 381 319-5264 · mini.galu.store@gmail.com · San Miguel de Tucumán.
-  - **Zonas de envío** con nombre y códigos postales editables (la última es el resto del país). Base desde el taller
-    de Tucumán: Tucumán (4000-4199) · Noroeste (4200-4799, 5300-5399) · Resto. La tabla vieja (AMBA · Centro ·
-    Resto) pasa sola a las zonas nuevas con los mismos precios.
-  - **Cadetería en la ciudad**: códigos postales y precio desde (base CP 4000, desde $3.000). La ficha y el checkout
-    la muestran con el botón para coordinarla por WhatsApp; no se cobra en la web.
+  - **Formas de entrega**: Andreani a domicilio, Andreani a sucursal, **Acordar envío**, Retiro en el taller y
+    **Cadete** (solo en los CP de la ciudad del taller; base 4000, desde $3.000), cada una prendible. Acordar y
+    cadete se eligen en el checkout, guardan la dirección, no se cobran en la web y el pedido arranca con "Coordinar el
+    envío" por WhatsApp (sin etiqueta de Andreani). Sin tabla de precios por zona: Andreani cotiza con Andreani; sin
+    credenciales, simulado en local y CI, y en producción no se ofrece. Si Andreani no responde no hay precio
+    inventado: se pide elegir otra entrega.
   - **Vigencia de las gift cards** (caja Gift cards): vencimiento, /giftcards y términos. Base: 2 meses.
   - **Páginas de ayuda con variables** (`{dias_cambio}`, `{meses_gift_card}`, `{email}`, `{whatsapp}`, `{taller}`,
     `{provincia}`, `{horario_retiro}`): el panel muestra la variable y la tienda el valor de ese momento.

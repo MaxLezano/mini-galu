@@ -8,7 +8,7 @@ import { ConflictError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
-import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { refundPlan } from "../domain/refund";
 import { MemoryOrders } from "../testing/in-memory";
 import { AdminOrdersService } from "./admin-orders-service";
@@ -52,7 +52,7 @@ beforeEach(() => {
   bus.on("PaymentLinkReminder", (e) => void reminders.push(e));
   // como en app.ts: la venta en el taller pagada se da por entregada
   bus.on("PaymentApproved", (e) => links.handedOver(String(e.payload.orderId)));
-  const shipping = new ShippingService(new TableShippingRates());
+  const shipping = new ShippingService(new SimulatedAndreaniRates());
   links = new PaymentLinks(
     variants,
     shipping,

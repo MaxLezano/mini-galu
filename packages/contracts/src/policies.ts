@@ -2,17 +2,14 @@ import { z } from "zod";
 import { type Cents, formatARS } from "./money";
 
 /**
- * Políticas de la tienda que Gaby edita en "Tienda y pagos" (días de cambio, envío gratis, formas de entrega,
- * tarifas por zona y horarios de retiro). Las lee la API (checkout, ayuda, Galú, mails) y la tienda (ficha, bolsa,
- * inicio). Sin nada guardado rige `DEFAULT_POLICIES`, que es lo que la tienda decía hasta que se pudo editar.
+ * Ajustes de la tienda que Gaby edita en "Tienda y pagos" (días de cambio, envío gratis, formas de entrega, cadete,
+ * horarios de retiro, gift cards, contacto y taller). Los lee la API (checkout, ayuda, Galú, mails) y la tienda
+ * (ficha, bolsa, inicio). Sin nada guardado rige `DEFAULT_POLICIES`. Los precios de Andreani salen de Andreani.
  */
 
-/* ------------------------------------------------------------------ zonas de envío (sin Andreani conectado) */
+/* ------------------------------------------------------------------ cadete (códigos postales) */
 
-/**
- * Rangos de CP de una zona como los escribe Gaby: "4000-4199, 5300 a 5399, 4700". null si no se entiende.
- * Vacío = sin rangos (la última zona toma todo lo que no entra en las otras).
- */
+/** Códigos postales como los escribe Gaby: "4000, 4107-4109". null si no se entiende. */
 export function parseCpRanges(text: string): [number, number][] | null {
   const t = text.trim();
   if (!t) return [];
@@ -41,21 +38,8 @@ const cpRanges = z
   .max(200, "Escribilo más corto")
   .refine((s) => parseCpRanges(s) !== null, "Escribí los códigos postales así: 4000-4199, 4700");
 
-export const ShippingZoneSchema = z.object({
-  /** "Tucumán", "Noroeste", "Resto del país". */
-  title: z.string().trim().min(1, "Poné el nombre de la zona").max(40, "Escribilo más corto"),
-  /** Códigos postales de la zona; la última zona no lleva (es el resto del país). */
-  cps: cpRanges,
-  domicilioCents: cents("Poné el precio a domicilio"),
-  sucursalCents: cents("Poné el precio a sucursal"),
-  /** Días hábiles que tarda: "2 a 3". */
-  days: z.string().trim().min(1, "Poné cuántos días tarda").max(20, "Escribilo más corto"),
-});
-export type ShippingZone = z.infer<typeof ShippingZoneSchema>;
-
-/** Cadetería propia en la ciudad del taller: precio desde y se coordina por WhatsApp (no se cobra en la web). */
+/** Cadete propio en la ciudad del taller: a qué códigos postales llega y desde cuánto sale (no se cobra en la web). */
 export const LocalDeliverySchema = z.object({
-  enabled: z.boolean(),
   cps: cpRanges,
   fromCents: cents("Poné desde cuánto sale"),
 });
@@ -113,9 +97,17 @@ export const StorePoliciesSchema = z
       .min(1, "Al menos 1 día")
       .max(90, "Hasta 90 días"),
     freeShipping: z.object({ enabled: z.boolean(), fromCents: cents("Poné desde qué monto").min(1, "Poné un monto") }),
-    methods: z.object({ domicilio: z.boolean(), sucursal: z.boolean(), taller: z.boolean() }),
-    /** Tabla de envío por zona (la usa la tienda cuando Andreani no está conectado). */
-    zones: z.array(ShippingZoneSchema).min(1).max(6),
+    /**
+     * Formas de entrega prendidas. Andreani (domicilio y sucursal) cotiza con Andreani; "acordar" y "cadete" se
+     * coordinan por WhatsApp y no se cobran en la web.
+     */
+    methods: z.object({
+      domicilio: z.boolean(),
+      sucursal: z.boolean(),
+      acordar: z.boolean(),
+      taller: z.boolean(),
+      cadete: z.boolean(),
+    }),
     localDelivery: LocalDeliverySchema,
     /** Franjas de retiro en el taller por día de la semana (0 = domingo). */
     pickupHours: z.array(PickupDaySchema).length(7),
@@ -128,11 +120,11 @@ export const StorePoliciesSchema = z
     contact: StoreContactSchema,
     workshop: WorkshopSchema,
   })
-  .refine((p) => p.methods.domicilio || p.methods.sucursal || p.methods.taller, {
+  .refine((p) => Object.values(p.methods).some(Boolean), {
     message: "Dejá al menos una forma de entrega",
     path: ["methods"],
   })
-  .refine((p) => !p.localDelivery.enabled || (parseCpRanges(p.localDelivery.cps) ?? []).length > 0, {
+  .refine((p) => !p.methods.cadete || (parseCpRanges(p.localDelivery.cps) ?? []).length > 0, {
     message: "Poné los códigos postales de la cadetería",
     path: ["localDelivery", "cps"],
   })
@@ -153,50 +145,59 @@ const WEEKDAY: [number, number][] = [
 export const DEFAULT_POLICIES: StorePolicies = {
   exchangeDays: 2,
   freeShipping: { enabled: false, fromCents: 90_000_00 },
-  methods: { domicilio: true, sucursal: true, taller: true },
-  zones: [
-    { title: "Tucumán", cps: "4000-4199", domicilioCents: 5_900_00, sucursalCents: 4_248_00, days: "2 a 3" },
-    {
-      title: "Noroeste",
-      cps: "4200-4799, 5300-5399",
-      domicilioCents: 7_400_00,
-      sucursalCents: 5_328_00,
-      days: "4 a 6",
-    },
-    { title: "Resto del país", cps: "", domicilioCents: 8_900_00, sucursalCents: 6_408_00, days: "4 a 6" },
-  ],
-  localDelivery: { enabled: true, cps: "4000", fromCents: 3_000_00 },
+  methods: { domicilio: true, sucursal: true, acordar: true, taller: true, cadete: true },
+  localDelivery: { cps: "4000", fromCents: 3_000_00 },
   pickupHours: [[], WEEKDAY, WEEKDAY, WEEKDAY, WEEKDAY, WEEKDAY, [[10, 13]]],
   giftcardMonths: 2,
   contact: { whatsapp: "381 319-5264", email: "mini.galu.store@gmail.com", instagram: "minigalumodainfantil" },
   workshop: { city: "San Miguel de Tucumán", province: "Tucumán" },
 };
 
-type OldRates = Record<"amba" | "centro" | "resto", { domicilioCents: number; sucursalCents: number; days: string }>;
+type Saved = Partial<StorePolicies> & {
+  methods?: Partial<StorePolicies["methods"]>;
+  localDelivery?: Partial<StorePolicies["localDelivery"]> & { enabled?: boolean };
+};
 
 /**
- * Lo guardado antes de que existiera cada ajuste se completa con la base (contacto, taller, gift cards, cadete). La
- * tabla vieja de zonas fijas (AMBA · Centro · Resto, pensada para un taller en CABA) pasa a las zonas nuevas con los
- * mismos precios: la más barata a Tucumán, la del medio al Noroeste y la más cara al resto del país.
+ * Lo guardado antes de que existiera cada ajuste se completa con la base. Las tablas de precios por zona que hubo
+ * antes (AMBA · Centro · Resto y Tucumán · Noroeste · Resto) se descartan: Andreani cotiza con sus precios.
  */
 export function withDefaults(saved: unknown): StorePolicies {
-  const { rates, ...rest } = (saved ?? {}) as Partial<StorePolicies> & { rates?: OldRates };
-  const old = ["amba", "centro", "resto"] as const;
-  const zones =
-    rest.zones ??
-    (rates ? DEFAULT_POLICIES.zones.map((z, i) => ({ ...z, ...rates[old[i] ?? "resto"] })) : DEFAULT_POLICIES.zones);
-  return { ...DEFAULT_POLICIES, ...rest, zones };
+  const { rates: _rates, zones: _zones, ...rest } = (saved ?? {}) as Saved & { rates?: unknown; zones?: unknown };
+  const { enabled, ...local } = rest.localDelivery ?? {};
+  return {
+    ...DEFAULT_POLICIES,
+    ...rest,
+    methods: {
+      ...DEFAULT_POLICIES.methods,
+      ...(enabled === undefined ? {} : { cadete: enabled }),
+      ...rest.methods,
+    },
+    localDelivery: { ...DEFAULT_POLICIES.localDelivery, ...local },
+  };
 }
 
-/** La zona de un CP: la primera cuyos rangos lo incluyen; si ninguna, la última (resto del país). */
-export function zoneOf(p: StorePolicies, postalCode: string): ShippingZone {
-  const last = p.zones[p.zones.length - 1] as ShippingZone;
-  return p.zones.slice(0, -1).find((z) => inRanges(postalCode, z.cps)) ?? last;
-}
-
-/** La cadetería si llega a ese CP (null: no está prendida o el CP no es de la zona). */
+/** El cadete si llega a ese CP (null: no está prendido o el CP no es de la ciudad). */
 export function localDeliveryFor(p: StorePolicies, postalCode: string): LocalDelivery | null {
-  return p.localDelivery.enabled && inRanges(postalCode, p.localDelivery.cps) ? p.localDelivery : null;
+  return p.methods.cadete && inRanges(postalCode, p.localDelivery.cps) ? p.localDelivery : null;
+}
+
+/**
+ * Las formas de entrega prendidas en una frase, igual en la ficha, la ayuda y Galú: "Envíos a todo el país con
+ * Andreani (a domicilio o a sucursal), envío a acordar por WhatsApp, cadete en San Miguel de Tucumán desde $3.000 o
+ * retiro gratis en el taller."
+ */
+export function deliverySummary(p: StorePolicies): string {
+  const { methods: m } = p;
+  const andreani = [m.domicilio && "a domicilio", m.sucursal && "a sucursal"].filter(Boolean).join(" o ");
+  const parts = [
+    andreani && `envíos a todo el país con Andreani (${andreani})`,
+    m.acordar && "envío a acordar por WhatsApp",
+    m.cadete && `cadete en ${p.workshop.city} desde ${formatARS(p.localDelivery.fromCents)}`,
+    m.taller && `retiro gratis en el taller de ${p.workshop.city}`,
+  ].filter((x): x is string => !!x);
+  const text = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} o ${parts.at(-1)}` : (parts[0] ?? "");
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 }
 
 /** Desde qué monto el envío es gratis (null: no hay envío gratis). */
@@ -213,18 +214,6 @@ export function qualifiesForFreeShipping(p: StorePolicies, subtotalCents: Cents)
 export function freeShippingLabel(p: StorePolicies): string | null {
   const from = freeShippingFrom(p);
   return from === null ? null : `Envío gratis desde ${formatARS(from)}`;
-}
-
-/** Precio de lista de la tabla por zona (sin envío gratis). */
-export function zoneQuote(p: StorePolicies, postalCode: string) {
-  const r = zoneOf(p, postalCode);
-  return {
-    domicilio: { cents: r.domicilioCents, detail: `Llega en ${r.days} días hábiles` },
-    sucursal: {
-      cents: r.sucursalCents,
-      detail: "Te confirmamos la sucursal Andreani más cercana a tu CP antes de despachar",
-    },
-  };
 }
 
 /* ------------------------------------------------------------------ horarios de retiro */

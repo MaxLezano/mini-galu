@@ -37,7 +37,7 @@ export class DrizzleReviews implements ReviewRepository {
       status: o.status,
       firstName: o.firstName,
       lastName: o.lastName,
-      city: o.shippingMethod === "domicilio" ? (o.shippingAddress?.city ?? null) : null,
+      city: o.shippingAddress?.city ?? null,
       items: items.map(({ byVariant, bySlug, ...i }) => ({ ...i, productId: byVariant ?? bySlug })),
     };
   }

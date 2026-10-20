@@ -23,26 +23,27 @@ describe("PoliciesService", () => {
     expect([p.exchangeDays, p.giftcardMonths]).toEqual([15, 3]);
   });
 
-  it("lo guardado con la tabla vieja de zonas sigue valiendo (no vuelve a la base)", async () => {
-    const { zones: _z, ...rest } = DEFAULT_POLICIES;
+  it("lo guardado con las tablas viejas de zonas sigue valiendo, sin esos precios (no vuelve a la base)", async () => {
     const old = {
-      ...rest,
+      ...DEFAULT_POLICIES,
       exchangeDays: 7,
-      rates: {
-        amba: { domicilioCents: 1_00, sucursalCents: 2_00, days: "1" },
-        centro: { domicilioCents: 3_00, sucursalCents: 4_00, days: "2" },
-        resto: { domicilioCents: 5_00, sucursalCents: 6_00, days: "3" },
-      },
+      methods: { domicilio: true, sucursal: true, taller: true },
+      rates: { amba: { domicilioCents: 1_00, sucursalCents: 2_00, days: "1" } },
+      localDelivery: { enabled: false, cps: "4000", fromCents: 3_000_00 },
     };
     const p = await new PoliciesService(new MemoryPolicies(old)).get();
     expect(p.exchangeDays).toBe(7);
-    expect(p.zones[0]).toMatchObject({ title: "Tucumán", domicilioCents: 1_00 });
+    expect(p.methods).toMatchObject({ acordar: true, cadete: false });
+    expect("rates" in p).toBe(false);
   });
 
   it("no guarda políticas sin ninguna forma de entrega", async () => {
     const service = new PoliciesService(new MemoryPolicies());
     await expect(
-      service.save({ ...DEFAULT_POLICIES, methods: { domicilio: false, sucursal: false, taller: false } }),
+      service.save({
+        ...DEFAULT_POLICIES,
+        methods: { domicilio: false, sucursal: false, acordar: false, taller: false, cadete: false },
+      }),
     ).rejects.toThrow("Dejá al menos una forma de entrega");
   });
 });

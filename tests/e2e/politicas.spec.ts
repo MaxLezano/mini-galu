@@ -24,7 +24,7 @@ test("entregas y cambios: lo que cambia Gaby en el panel se ve en la tienda", as
     await box.getByLabel("Retiro en el taller").uncheck();
     await expect(box.getByLabel("Sábado")).toHaveCount(0);
     await box.getByLabel("Envío gratis desde un monto").uncheck();
-    await box.locator("#pol-zone-2-domicilio").fill("4.000");
+    await box.getByLabel("Acordar envío por WhatsApp").uncheck();
     await box.getByRole("button", { name: "Guardar entregas y cambios" }).click();
     await expect(page.locator("#toast")).toContainText("Entregas y cambios guardados");
 
@@ -33,8 +33,9 @@ test("entregas y cambios: lo que cambia Gaby en el panel se ve en la tienda", as
     await expect(shop.locator(".trust")).toContainText("15 días para cambiar talle");
     await shop.getByLabel("Código postal").fill("1414");
     await shop.getByRole("button", { name: "Calcular" }).click();
-    await expect(shop.locator(".ship-res")).toContainText("$4.000");
+    await expect(shop.locator(".ship-res")).toContainText("Andreani a domicilio");
     await expect(shop.locator(".ship-res")).not.toContainText("Retiro en el taller");
+    await expect(shop.locator(".ship-res")).not.toContainText("Acordar envío");
 
     await shop.goto("/ayuda/envios-y-pagos");
     await expect(shop.locator(".lead")).not.toContainText("Envío gratis");

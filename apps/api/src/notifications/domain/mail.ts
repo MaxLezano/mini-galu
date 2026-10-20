@@ -100,6 +100,9 @@ function deliveryLine(o: MailOrder, links: MailLinks): string {
     return o.branchLabel
       ? `Sale con Andreani y lo retirás en la sucursal ${o.branchLabel}.`
       : "Sale con Andreani a la sucursal más cercana: te confirmamos cuál antes de despacharlo.";
+  if (o.shippingMethod === "acordar") return "Te escribimos por WhatsApp para acordar cómo y por dónde te lo mandamos.";
+  if (o.shippingMethod === "cadete")
+    return `Te lo lleva un cadete a ${o.shippingAddress ?? "tu domicilio"}: te escribimos por WhatsApp para coordinar el día y el costo.`;
   return `Sale con Andreani a ${o.shippingAddress ?? "tu domicilio"}.`;
 }
 
@@ -128,7 +131,9 @@ export function paymentApprovedMail(
       : [
           o.shippingMethod === "taller"
             ? (["Retiro en el taller", "Sin costo"] as [string, string])
-            : (["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"] as [string, string]),
+            : o.shippingMethod === "acordar" || o.shippingMethod === "cadete"
+              ? (["Envío", "A coordinar por WhatsApp"] as [string, string])
+              : (["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"] as [string, string]),
         ]),
   ];
 

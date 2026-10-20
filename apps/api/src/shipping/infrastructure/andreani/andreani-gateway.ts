@@ -130,15 +130,16 @@ export class AndreaniGateway implements ShippingGateway {
 type Tarifa = { tarifaConIva?: { total?: string } };
 
 /**
- * Cotización real con el contrato de la cuenta (GET /v1/tarifas). Si Andreani no responde, se usa la tabla por
- * zona para no cortar la compra.
+ * Cotización real con el contrato de la cuenta (GET /v1/tarifas). Si Andreani no responde, no hay precio (null): la
+ * tienda lo dice y ofrece las otras formas de entrega.
  */
 export class AndreaniRates implements ShippingRates {
+  readonly available = true;
+
   constructor(
     private readonly api: AndreaniClient,
     private readonly cfg: Pick<AndreaniConfig, "client" | "contracts">,
     private readonly settings: ShippingSettingsStore,
-    private readonly fallback: ShippingRates,
   ) {}
 
   async quote(postalCode: string) {
@@ -164,14 +165,13 @@ export class AndreaniRates implements ShippingRates {
         one(this.cfg.contracts.domicilio),
         one(this.cfg.contracts.sucursal),
       ]);
-      const table = await this.fallback.quote(postalCode);
       return {
-        domicilio: { cents: domicilio, detail: table.domicilio.detail },
-        sucursal: { cents: sucursal, detail: table.sucursal.detail },
+        domicilio: { cents: domicilio, detail: "Te lo lleva Andreani, con número de seguimiento" },
+        sucursal: { cents: sucursal, detail: "Retirás en la sucursal Andreani que elijas" },
       };
     } catch (e) {
-      console.warn("[envíos] Andreani no cotizó, uso la tabla por zona:", e instanceof Error ? e.message : e);
-      return this.fallback.quote(postalCode);
+      console.warn("[envíos] Andreani no cotizó:", e instanceof Error ? e.message : e);
+      return null;
     }
   }
 }

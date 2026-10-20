@@ -96,6 +96,34 @@ test("cupón de primera compra y pago con dinero en cuenta", async ({ page, requ
   await expect(done).toContainText("Llega a tu casa");
 });
 
+test("acordar envío por WhatsApp y cadete en la ciudad del taller: no se cobra el envío en la web", async ({
+  page,
+  request,
+}) => {
+  await skipIfRealMercadoPago(request);
+  await addBow(page);
+  await fillContact(page, uniqueEmail());
+
+  const ship = page.getByRole("region", { name: "Envío" });
+  // en la ciudad del taller (CP 4000) también está el cadete, desde $3.000
+  await ship.getByLabel("Código postal", { exact: true }).fill("4000");
+  await expect(page.locator("label.option", { hasText: "Cadete en" })).toContainText("Desde $3.000");
+  await ship.getByRole("radio", { name: /Acordar envío/ }).check();
+  await expect(page.locator("label.option", { hasText: "Acordar envío" })).toContainText("A coordinar");
+  await ship.getByLabel("Calle").fill("Laprida");
+  await ship.getByLabel("Altura").fill("580");
+  await ship.getByLabel("Localidad").fill("San Miguel de Tucumán");
+  await ship.getByLabel("Provincia").selectOption("Tucumán");
+  await page.getByRole("button", { name: /Continuar al pago/ }).click();
+  await openSummary(page);
+  await expect(page.locator(".summary")).toContainText("A coordinar por WhatsApp");
+
+  await page.getByLabel("Nombre como figura").fill("APRO");
+  await page.locator("#pay").click();
+  const done = page.getByRole("dialog", { name: "Pago aprobado" });
+  await expect(done).toContainText("acordar cómo y por dónde lo mandamos");
+});
+
 test("la bolsa se guarda en el servidor y sobrevive a borrar el navegador", async ({ page, context }) => {
   await page.goto("/producto/mono-verde");
   const saved = page.waitForResponse((r) => r.url().includes("/cart/items") && r.ok());

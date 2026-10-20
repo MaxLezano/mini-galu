@@ -47,13 +47,7 @@ describe("seguimiento", () => {
     });
     const stops = trackingStops(o, ev);
     expect(stops.map((s) => s.done)).toEqual([true, true, true, true, false]);
-    expect(stops.map((s) => s.detail)).toEqual([
-      "vie 2 oct",
-      "sáb 3 oct",
-      "lun 5 oct",
-      "lun 5 oct",
-      "estimado en 2 a 3 días hábiles",
-    ]);
+    expect(stops.map((s) => s.detail)).toEqual(["vie 2 oct", "sáb 3 oct", "lun 5 oct", "lun 5 oct", ""]);
     const log = trackingLog(o, { trackingNumber: "360001", createdAt: d("2026-10-05T11:02:00-03:00") }, ev);
     expect(log.map((l) => l.title)).toEqual([
       "En tránsito",

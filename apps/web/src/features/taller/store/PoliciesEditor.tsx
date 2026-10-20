@@ -21,8 +21,8 @@ type Props = {
 
 /**
  * Entregas y cambios — admin-tienda.html → #envios (envío gratis, formas de entrega y horarios de retiro), más los
- * días de cambio, las zonas de envío (nombre, códigos postales y tarifas) y la cadetería de la ciudad del taller. Lo
- * leen la ficha, la bolsa, el checkout, la ayuda, Galú y los mails.
+ * días de cambio, el envío a acordar y el cadete de la ciudad del taller. Los precios de Andreani los pone Andreani.
+ * Lo leen la ficha, la bolsa, el checkout, la ayuda, Galú y los mails.
  */
 export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
   const [saved, setSaved] = useState(initial);
@@ -93,10 +93,50 @@ export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
         </div>
 
         <h3 className="sh-sub">Formas de entrega</h3>
-        {method("domicilio", "Envío a domicilio")}
-        {method("sucursal", "Envío a sucursal Andreani")}
+        {method("domicilio", "Andreani a domicilio")}
+        {method("sucursal", "Andreani a sucursal")}
+        {method("acordar", "Acordar envío por WhatsApp")}
         {method("taller", "Retiro en el taller")}
+        {method("cadete", "Cadete en la ciudad del taller")}
+        <small className="muted">
+          {andreani
+            ? "Andreani cotiza cada envío con sus precios."
+            : "Andreani todavía no está conectado: en la tienda publicada sus opciones aparecen cuando se cargan las credenciales."}{" "}
+          Acordar envío y cadete no se cobran en la web: se coordinan por WhatsApp.
+        </small>
         {err("pol-domicilio")}
+
+        {form.methods.cadete && (
+          <fieldset className="pol-zone">
+            <legend>Cadete</legend>
+            <div className="pol-zone-fields">
+              <div className="field pol-zone-cps">
+                <label htmlFor="pol-local-cps">Códigos postales a los que llega</label>
+                <input
+                  className="input"
+                  id="pol-local-cps"
+                  placeholder="4000"
+                  value={form.local.cps}
+                  onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, cps: e.target.value } }))}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="pol-local-from">Desde</label>
+                <div className="inline-input">
+                  <span>$</span>
+                  <input
+                    className="input"
+                    id="pol-local-from"
+                    inputMode="numeric"
+                    value={form.local.from}
+                    onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, from: e.target.value } }))}
+                  />
+                </div>
+              </div>
+            </div>
+            {err("pol-local-cps", "pol-local-from")}
+          </fieldset>
+        )}
 
         {form.methods.taller && (
           <fieldset className="pol-hours">
@@ -122,7 +162,7 @@ export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
 
         {shipped && (
           <>
-            <h3 className="sh-sub">Envío gratis</h3>
+            <h3 className="sh-sub">Envío gratis con Andreani</h3>
             <label className="switch">
               Envío gratis desde un monto
               <input
@@ -148,134 +188,8 @@ export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
                 {err("pol-free")}
               </div>
             )}
-
-            <h3 className="sh-sub">Zonas de envío</h3>
-            <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
-              {andreani
-                ? "Con Andreani conectado, el checkout cotiza con Andreani: esta tabla se usa en la ficha y si Andreani no responde."
-                : "Las usa el checkout mientras Andreani no esté conectado, y la ficha para calcular el envío."}{" "}
-              Cada código postal cae en la primera zona que lo incluye; los que no entran en ninguna van a la última.
-            </p>
-            {form.zones.map((z, i) => {
-              const last = i === form.zones.length - 1;
-              const id = (k: string) => `pol-zone-${i}-${k}`;
-              const set = (k: keyof typeof z, v: string) =>
-                setForm((f) => ({ ...f, zones: f.zones.map((x, j) => (j === i ? { ...x, [k]: v } : x)) }));
-              return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: las zonas son posiciones fijas de la tabla
-                <fieldset key={i} className="pol-zone">
-                  <legend>{z.title || `Zona ${i + 1}`}</legend>
-                  <div className="pol-zone-fields">
-                    <div className="field">
-                      <label htmlFor={id("title")}>Nombre</label>
-                      <input
-                        className="input"
-                        id={id("title")}
-                        value={z.title}
-                        onChange={(e) => set("title", e.target.value)}
-                      />
-                    </div>
-                    <div className="field pol-zone-cps">
-                      <label htmlFor={id("cps")}>Códigos postales</label>
-                      {last ? (
-                        <input className="input" id={id("cps")} value="El resto del país" disabled />
-                      ) : (
-                        <input
-                          className="input"
-                          id={id("cps")}
-                          placeholder="4000-4199, 4700"
-                          value={z.cps}
-                          onChange={(e) => set("cps", e.target.value)}
-                        />
-                      )}
-                    </div>
-                    <div className="field">
-                      <label htmlFor={id("domicilio")}>A domicilio</label>
-                      <div className="inline-input">
-                        <span>$</span>
-                        <input
-                          className="input"
-                          id={id("domicilio")}
-                          inputMode="numeric"
-                          value={z.domicilio}
-                          onChange={(e) => set("domicilio", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="field">
-                      <label htmlFor={id("sucursal")}>A sucursal</label>
-                      <div className="inline-input">
-                        <span>$</span>
-                        <input
-                          className="input"
-                          id={id("sucursal")}
-                          inputMode="numeric"
-                          value={z.sucursal}
-                          onChange={(e) => set("sucursal", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="field">
-                      <label htmlFor={id("days")}>Días hábiles</label>
-                      <input
-                        className="input"
-                        id={id("days")}
-                        placeholder="2 a 3"
-                        value={z.days}
-                        onChange={(e) => set("days", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  {err(id("title"), id("cps"), id("domicilio"), id("sucursal"), id("days"))}
-                </fieldset>
-              );
-            })}
           </>
         )}
-
-        <h3 className="sh-sub">Cadetería en la ciudad</h3>
-        <label className="switch">
-          Ofrecer cadete propio
-          <input
-            className="tog"
-            id="pol-local"
-            type="checkbox"
-            checked={form.local.enabled}
-            onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, enabled: e.target.checked } }))}
-          />
-        </label>
-        {form.local.enabled && (
-          <div className="pol-zone-fields">
-            <div className="field pol-zone-cps">
-              <label htmlFor="pol-local-cps">Códigos postales</label>
-              <input
-                className="input"
-                id="pol-local-cps"
-                placeholder="4000"
-                value={form.local.cps}
-                onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, cps: e.target.value } }))}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="pol-local-from">Desde</label>
-              <div className="inline-input">
-                <span>$</span>
-                <input
-                  className="input"
-                  id="pol-local-from"
-                  inputMode="numeric"
-                  value={form.local.from}
-                  onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, from: e.target.value } }))}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-        <small className="muted">
-          Se muestra en la ficha y en el checkout con su precio desde y el botón para coordinarlo por WhatsApp. No se
-          cobra en la web.
-        </small>
-        {err("pol-local-cps", "pol-local-from")}
 
         {helpEdited && (
           <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>

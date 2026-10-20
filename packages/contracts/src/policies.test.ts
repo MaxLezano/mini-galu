@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_POLICIES,
+  deliverySummary,
   freeShippingLabel,
   localDeliveryFor,
   parseCpRanges,
@@ -11,8 +12,6 @@ import {
   StorePoliciesSchema,
   whatsappUrl,
   withDefaults,
-  zoneOf,
-  zoneQuote,
 } from "./policies";
 
 const with_ = (p: Partial<StorePolicies>): StorePolicies => ({ ...DEFAULT_POLICIES, ...p });
@@ -20,16 +19,6 @@ const with_ = (p: Partial<StorePolicies>): StorePolicies => ({ ...DEFAULT_POLICI
 describe("políticas de la tienda", () => {
   it("las de base son válidas", () => {
     expect(StorePoliciesSchema.safeParse(DEFAULT_POLICIES).success).toBe(true);
-  });
-
-  it("ubica el CP en su zona (las de base, desde el taller de Tucumán)", () => {
-    const zone = (cp: string) => zoneOf(DEFAULT_POLICIES, cp).title;
-    expect(zone("T4000")).toBe("Tucumán");
-    expect(zone("4107")).toBe("Tucumán");
-    expect(zone("4600")).toBe("Noroeste");
-    expect(zone("5300")).toBe("Noroeste");
-    expect(zone("1414")).toBe("Resto del país");
-    expect(zone("abc")).toBe("Resto del país");
   });
 
   it("lee los códigos postales como los escribe Gaby", () => {
@@ -43,43 +32,44 @@ describe("políticas de la tienda", () => {
     expect(parseCpRanges("4199-4000")).toBeNull();
   });
 
-  it("cotiza con la tabla de la zona", () => {
-    const q = zoneQuote(DEFAULT_POLICIES, "4000");
-    expect(q.domicilio).toEqual({ cents: 5_900_00, detail: "Llega en 2 a 3 días hábiles" });
-    expect(q.sucursal.cents).toBe(4_248_00);
-  });
-
   it("la cadetería llega solo a sus códigos postales y si está prendida", () => {
     expect(localDeliveryFor(DEFAULT_POLICIES, "4000")?.fromCents).toBe(3_000_00);
     expect(localDeliveryFor(DEFAULT_POLICIES, "4107")).toBeNull();
-    const off = with_({ localDelivery: { ...DEFAULT_POLICIES.localDelivery, enabled: false } });
+    const off = with_({ methods: { ...DEFAULT_POLICIES.methods, cadete: false } });
     expect(localDeliveryFor(off, "4000")).toBeNull();
-    const sinCp = with_({ localDelivery: { enabled: true, cps: "", fromCents: 3_000_00 } });
+    const sinCp = with_({ localDelivery: { cps: "", fromCents: 3_000_00 } });
     expect(StorePoliciesSchema.safeParse(sinCp).error?.issues[0]?.message).toBe(
       "Poné los códigos postales de la cadetería",
     );
   });
 
-  it("lo guardado antes de los ajustes nuevos se completa y la tabla vieja pasa a las zonas nuevas", () => {
+  it("lo guardado antes se completa con la base y las tablas de precios por zona se descartan", () => {
     const old = {
       exchangeDays: 5,
-      rates: {
-        amba: { domicilioCents: 1, sucursalCents: 2, days: "1" },
-        centro: { domicilioCents: 3, sucursalCents: 4, days: "2" },
-        resto: { domicilioCents: 5, sucursalCents: 6, days: "3" },
-      },
+      methods: { domicilio: true, sucursal: false, taller: true },
+      rates: { amba: { domicilioCents: 1, sucursalCents: 2, days: "1" } },
+      zones: [{ title: "Tucumán" }],
+      localDelivery: { enabled: false, cps: "4000", fromCents: 2_000_00 },
     };
     const p = withDefaults(old);
     expect(p.exchangeDays).toBe(5);
-    expect(p.zones.map((z) => [z.title, z.domicilioCents])).toEqual([
-      ["Tucumán", 1],
-      ["Noroeste", 3],
-      ["Resto del país", 5],
-    ]);
-    expect(p.contact).toEqual(DEFAULT_POLICIES.contact);
-    expect("rates" in p).toBe(false);
+    expect(p.methods).toEqual({ domicilio: true, sucursal: false, acordar: true, taller: true, cadete: false });
+    expect(p.localDelivery).toEqual({ cps: "4000", fromCents: 2_000_00 });
+    expect("rates" in p || "zones" in p).toBe(false);
     expect(StorePoliciesSchema.safeParse(p).success).toBe(true);
     expect(withDefaults(null)).toEqual(DEFAULT_POLICIES);
+  });
+
+  it("resume las formas de entrega prendidas", () => {
+    expect(deliverySummary(DEFAULT_POLICIES)).toBe(
+      "Envíos a todo el país con Andreani (a domicilio o a sucursal), envío a acordar por WhatsApp, cadete en San Miguel de Tucumán desde $3.000 o retiro gratis en el taller de San Miguel de Tucumán.",
+    );
+    const solo = with_({
+      methods: { domicilio: false, sucursal: true, acordar: false, taller: true, cadete: false },
+    });
+    expect(deliverySummary(solo)).toBe(
+      "Envíos a todo el país con Andreani (a sucursal) o retiro gratis en el taller de San Miguel de Tucumán.",
+    );
   });
 
   it("arma el WhatsApp de la tienda", () => {
@@ -97,11 +87,13 @@ describe("políticas de la tienda", () => {
   });
 
   it("pide al menos una forma de entrega y horarios si hay retiro", () => {
-    const none = with_({ methods: { domicilio: false, sucursal: false, taller: false } });
+    const none = with_({
+      methods: { domicilio: false, sucursal: false, acordar: false, taller: false, cadete: false },
+    });
     expect(StorePoliciesSchema.safeParse(none).error?.issues[0]?.message).toBe("Dejá al menos una forma de entrega");
     const closed = with_({ pickupHours: [[], [], [], [], [], [], []] });
     expect(StorePoliciesSchema.safeParse(closed).error?.issues[0]?.message).toBe("Poné al menos un horario de retiro");
-    const noPickup = with_({ ...closed, methods: { domicilio: true, sucursal: true, taller: false } });
+    const noPickup = with_({ ...closed, methods: { ...DEFAULT_POLICIES.methods, taller: false } });
     expect(StorePoliciesSchema.safeParse(noPickup).success).toBe(true);
   });
 

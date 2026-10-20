@@ -8,7 +8,7 @@ import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
-import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { MemoryOrders } from "../testing/in-memory";
 import { AdminOrdersService } from "./admin-orders-service";
 import { CheckoutService } from "./checkout-service";
@@ -30,7 +30,13 @@ beforeEach(() => {
   const bus = new EventBus();
   published = [];
   bus.on("OrderStatusChanged", (e) => void published.push(e));
-  const checkout = new CheckoutService(cart, new ShippingService(new TableShippingRates()), coupons, orders, storage);
+  const checkout = new CheckoutService(
+    cart,
+    new ShippingService(new SimulatedAndreaniRates()),
+    coupons,
+    orders,
+    storage,
+  );
   const payments = new OrderPayments(orders, cart, coupons, bus);
   admin = new AdminOrdersService(
     orders,
@@ -133,7 +139,7 @@ describe("AdminOrdersService", () => {
       undefined,
       (n, t) => `http://web/resena/${n}?t=${t}`,
     );
-    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const slot = (await new ShippingService(new SimulatedAndreaniRates()).options(undefined, 0)).pickupSlots[0]?.id;
     const a = await place("a", { method: "taller", pickupSlot: slot });
     await pay(a.orderId);
     expect((await withReview.detail(a.number)).reviewUrl).toBeNull();
@@ -145,7 +151,7 @@ describe("AdminOrdersService", () => {
   it("no mueve un pedido sin pagar ni manda a 'en camino' un retiro en el taller", async () => {
     const a = await place("a");
     await expect(admin.move(a.number, "preparando")).rejects.toThrow("no está pagado");
-    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const slot = (await new ShippingService(new SimulatedAndreaniRates()).options(undefined, 0)).pickupSlots[0]?.id;
     const b = await place("b", { method: "taller", pickupSlot: slot });
     await pay(b.orderId);
     await admin.move(b.number, "listo");
@@ -177,7 +183,7 @@ describe("AdminOrdersService", () => {
 
   it("resumen del día: tareas, ventas del mes y lo que se hizo solo", async () => {
     const a = await place("a");
-    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const slot = (await new ShippingService(new SimulatedAndreaniRates()).options(undefined, 0)).pickupSlots[0]?.id;
     const b = await place("b", { method: "taller", pickupSlot: slot });
     await place("c"); // sin pagar: no cuenta ni vende
     await pay(a.orderId);

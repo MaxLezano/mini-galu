@@ -19,12 +19,20 @@ import type { HTMLAttributes, ReactNode, Ref } from "react";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { type NextAction, nextAction } from "../order-flow";
 
-export const SHIP_SHORT = { domicilio: "Domicilio", sucursal: "Sucursal", taller: "Retira" } as const;
+export const SHIP_SHORT = {
+  domicilio: "Domicilio",
+  sucursal: "Sucursal",
+  acordar: "A acordar",
+  taller: "Retira",
+  cadete: "Cadete",
+} as const;
 export const ShipIcon = ({ method }: { method: AdminOrderSummary["shippingMethod"] }) =>
   method === "taller" ? (
     <House className="i-sm" />
   ) : method === "sucursal" ? (
     <Store className="i-sm" />
+  ) : method === "acordar" || method === "cadete" ? (
+    <BrandIcon name="whatsapp" className="i-sm" />
   ) : (
     <Truck className="i-sm" />
   );

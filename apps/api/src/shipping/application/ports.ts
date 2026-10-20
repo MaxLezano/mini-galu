@@ -2,13 +2,18 @@ import type { ShippingSettings, StorePolicies } from "@mini-galu/contracts";
 import type { Branch } from "../domain/branches";
 import type { CarrierEvent, TrackedOrder } from "../domain/tracking";
 
-/** Cotización: la tabla por zona del panel (`TableShippingRates`) o Andreani con credenciales (`AndreaniRates`). */
+/**
+ * Cotización de Andreani: la real con credenciales (`AndreaniRates`), la simulada en local y CI
+ * (`SimulatedAndreaniRates`) o ninguna en producción sin credenciales (`NoAndreaniRates`).
+ */
 export interface ShippingRates {
-  /** Precios en centavos y texto de plazo para un CP. */
+  /** false: Andreani no está conectado y no se ofrece (envío a acordar, cadete y retiro siguen). */
+  readonly available: boolean;
+  /** Precios en centavos para un CP; null si Andreani no cotizó (no se inventa un precio). */
   quote(postalCode: string): Promise<{
     domicilio: { cents: number; detail: string };
     sucursal: { cents: number; detail: string };
-  }>;
+  } | null>;
 }
 
 /** Lo que el correo necesita para dar de alta un envío y armar la etiqueta. */

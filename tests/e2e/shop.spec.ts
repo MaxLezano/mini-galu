@@ -168,7 +168,7 @@ test("sin modelo en la API, Galú busca el pedido por su número", async ({ page
   await msg.fill("mg 1042");
   await msg.press("Enter");
   const found = page.locator(".galu-body .msg.bot").last();
-  await expect(found).toContainText("Tu pedido #MG-1042 está en camino: Llega en 2 a 3 días.");
+  await expect(found).toContainText("Tu pedido #MG-1042 está en camino: Ya salió hacia vos.");
   await expect(found).toContainText("Último movimiento: En tránsito. Lo que sigue: Entregado.");
   await expect(found.getByRole("link", { name: "Ver el seguimiento" })).toHaveAttribute(
     "href",

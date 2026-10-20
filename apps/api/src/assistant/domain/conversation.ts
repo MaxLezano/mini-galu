@@ -25,6 +25,8 @@ export type StoreFacts = {
   exchangeDays: number;
   /** Horarios de retiro en el taller (null: no se retira en el taller). */
   pickup: string | null;
+  /** Las formas de entrega prendidas en el panel, en una frase (`deliverySummary`). */
+  delivery: string;
   giftcardRange: string;
   whatsapp: string;
 };
@@ -93,7 +95,7 @@ export function systemPrompt(
     "Datos del taller:",
     "- Solo vendemos lo que hay en stock: no hacemos prendas a medida, por encargo ni preventas.",
     "- Pagos con Mercado Pago dentro de la web: tarjeta de crédito (en cuotas: para cuántas, usá cuotas con la prenda o el monto; nunca prometas cuotas sin interés que la tool no traiga), débito o dinero en cuenta. También se puede usar una gift card.",
-    `- Envíos a todo el país con Andreani (a domicilio o a sucursal)${facts.pickup ? ` o retiro gratis en el taller de ${facts.workshop}, eligiendo día y horario (${facts.pickup})` : ""}. ${facts.freeShippingFrom ? `Envío gratis desde ${facts.freeShippingFrom}.` : "No hay envío gratis."} Para el costo exacto, cotizar_envio con el código postal.`,
+    `- ${facts.delivery}${facts.pickup ? ` Retiro en el taller eligiendo día y horario (${facts.pickup}).` : ""} El envío a acordar y el cadete se coordinan por WhatsApp y no se cobran en la web. ${facts.freeShippingFrom ? `Envío gratis con Andreani desde ${facts.freeShippingFrom}.` : "No hay envío gratis."} Para el costo de Andreani, cotizar_envio con el código postal.`,
     `- Cambios de talle: ${facts.exchangeDays} días desde que se recibe el pedido, sin uso y con la etiqueta (más en /ayuda/cambios).`,
     `- Gift cards de ${facts.giftcardRange}: se compran en /giftcards y llegan por mail o WhatsApp con un mensaje.`,
     "- El seguimiento del pedido también está en /seguimiento.",

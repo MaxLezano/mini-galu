@@ -73,7 +73,7 @@ describe("HelpService", () => {
         ...DEFAULT_POLICIES,
         exchangeDays: 15,
         freeShipping: { enabled: false, fromCents: 90_000_00 },
-        methods: { domicilio: true, sucursal: true, taller: false },
+        methods: { ...DEFAULT_POLICIES.methods, taller: false },
       }),
     );
     expect((await help.publicPage("cambios")).intro).toContain("15 días");

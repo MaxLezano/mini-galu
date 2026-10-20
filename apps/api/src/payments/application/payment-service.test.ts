@@ -17,7 +17,7 @@ import { UnauthorizedError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
-import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { MercadoPagoGateway } from "../infrastructure/mercadopago-gateway";
 import { SimulatedGateway } from "../infrastructure/simulated-gateway";
 import { PaymentService } from "./payment-service";
@@ -55,7 +55,7 @@ beforeEach(async () => {
   for (const t of ["PaymentApproved", "PaymentAmountMismatch"]) bus.on(t, (e) => void events.push(e));
   const checkout = new CheckoutService(
     cart,
-    new ShippingService(new TableShippingRates()),
+    new ShippingService(new SimulatedAndreaniRates()),
     coupons,
     orders,
     storage,

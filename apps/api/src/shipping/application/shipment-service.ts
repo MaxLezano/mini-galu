@@ -1,9 +1,10 @@
-import type {
-  AdminShipping,
-  BulkLabels,
-  PublicTracking,
-  ShipmentCreated,
-  ShippingSettings,
+import {
+  type AdminShipping,
+  type BulkLabels,
+  isAndreani,
+  type PublicTracking,
+  type ShipmentCreated,
+  type ShippingSettings,
 } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { recipientLabel, trackingLog, trackingStops } from "../domain/tracking";
@@ -97,7 +98,7 @@ export class ShipmentService {
     const pdfs: Uint8Array[] = [];
     for (const number of new Set(numbers)) {
       const o = await this.orders.find(number);
-      if (!o || o.shippingMethod === "taller") continue;
+      if (!o || !isAndreani(o.shippingMethod)) continue;
       const s = await this.shipments.byOrder(o.id);
       if (s)
         pdfs.push(await this.gateway.label(s.trackingNumber, toNewShipment(o as Labelable, await this.settings.get())));
@@ -160,6 +161,8 @@ export class ShipmentService {
     const o = await this.orders.find(number);
     if (!o) throw new NotFoundError("No existe ese pedido");
     if (o.shippingMethod === "taller") throw new ConflictError("Este pedido se retira en el taller: no lleva etiqueta");
+    if (!isAndreani(o.shippingMethod))
+      throw new ConflictError("Este envío se coordina por WhatsApp: no lleva etiqueta de Andreani");
     return o as Labelable;
   }
 }

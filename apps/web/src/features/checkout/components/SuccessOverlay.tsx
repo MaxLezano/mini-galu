@@ -21,7 +21,7 @@ export function SuccessOverlay({
   workshop: string;
   /** Franja elegida para retirar ("Jue 8 · 10 a 13 h"). */
   pickupLabel: string | null;
-  /** Plazo de Andreani ("Llega en 2 a 3 días hábiles"). */
+  /** Lo que dijo Andreani al cotizar (solo en envíos con Andreani). */
   deliveryDetail: string | null;
   /** Sin animaciones (prefers-reduced-motion / ?static). */
   still: boolean;
@@ -75,18 +75,30 @@ export function SuccessOverlay({
             text: `Lo retirás en el taller de ${workshop}`,
           },
         ]
-      : [
-          { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },
-          { icon: <Truck />, title: "Después", text: "Sale con Andreani con número de seguimiento" },
-          {
-            icon: <House />,
-            title: deliveryDetail ?? "En unos días",
-            text:
-              receipt.shippingMethod === "sucursal"
-                ? `Lo retirás en la sucursal${receipt.branchLabel ? ` ${receipt.branchLabel.split(" · ")[0]}` : ""}`
-                : "Llega a tu casa",
-          },
-        ];
+      : receipt.shippingMethod === "acordar" || receipt.shippingMethod === "cadete"
+        ? [
+            { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },
+            {
+              icon: <Truck />,
+              title: "Te escribimos",
+              text:
+                receipt.shippingMethod === "cadete"
+                  ? "Por WhatsApp, para coordinar el día y el costo del cadete"
+                  : "Por WhatsApp, para acordar cómo y por dónde lo mandamos",
+            },
+          ]
+        : [
+            { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },
+            { icon: <Truck />, title: "Después", text: "Sale con Andreani con número de seguimiento" },
+            {
+              icon: <House />,
+              title: deliveryDetail ?? "En unos días",
+              text:
+                receipt.shippingMethod === "sucursal"
+                  ? `Lo retirás en la sucursal${receipt.branchLabel ? ` ${receipt.branchLabel.split(" · ")[0]}` : ""}`
+                  : "Llega a tu casa",
+            },
+          ];
 
   return (
     <div className={`done-ov ${on ? "is-on" : ""}`} aria-live="polite" role="dialog" aria-label="Pago aprobado">

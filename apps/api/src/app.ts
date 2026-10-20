@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { serveStatic } from "@hono/node-server/serve-static";
 import {
   CatalogQuerySchema,
+  deliverySummary,
   formatARS,
   freeShippingFrom,
   GIFTCARD_MAX_CENTS,
@@ -149,7 +150,7 @@ import {
   trackingRoutes,
 } from "./shipping/infrastructure/http/shipment-routes";
 import { PdfLibMerger } from "./shipping/infrastructure/pdf-lib-merger";
-import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
+import { NoAndreaniRates, SimulatedAndreaniRates } from "./shipping/infrastructure/simulated-andreani-rates";
 import { SubscribersService } from "./subscribers/application/subscribers-service";
 import { DrizzleSubscribersReadModel } from "./subscribers/infrastructure/drizzle-subscribers";
 import { adminSubscribersRoutes } from "./subscribers/infrastructure/http/subscribers-routes";
@@ -260,13 +261,16 @@ export function buildApp(config: Config) {
   // checkout: bolsa → pedido (reserva stock) → pago
   const orders = new DrizzleOrderRepository(db);
   const variants = new DrizzleVariantCatalog(db);
-  // Andreani de verdad si están las credenciales en el .env; si no, envíos simulados y tabla por zona
+  // Andreani de verdad si están las credenciales en el .env; si no, simulado en local y CI, y en producción no se
+  // ofrece (quedan envío a acordar, cadete y retiro): nunca un precio inventado
   const shippingSettings = new DrizzleShippingSettings(db);
   const andreani = config.andreani ? new AndreaniClient(config.andreani) : null;
   const shipping = new ShippingService(
     andreani && config.andreani
-      ? new AndreaniRates(andreani, config.andreani, shippingSettings, new TableShippingRates(policies))
-      : new TableShippingRates(policies),
+      ? new AndreaniRates(andreani, config.andreani, shippingSettings)
+      : config.env === "production"
+        ? new NoAndreaniRates()
+        : new SimulatedAndreaniRates(),
     undefined,
     config.branches === "andreani" ? new AndreaniBranches() : new FakeBranches(),
     policies,
@@ -652,6 +656,7 @@ export function buildApp(config: Config) {
         freeShippingFrom: free === null ? null : formatARS(free),
         exchangeDays: p.exchangeDays,
         pickup: p.methods.taller ? pickupHoursLabel(p) : null,
+        delivery: deliverySummary(p),
         giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
         whatsapp: whatsappUrl(p.contact.whatsapp),
       };

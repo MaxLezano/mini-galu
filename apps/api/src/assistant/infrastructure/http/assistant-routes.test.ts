@@ -35,6 +35,7 @@ function app(owner: CartVars["Variables"]["cartOwner"]) {
       freeShippingFrom: "$90.000",
       exchangeDays: 30,
       pickup: "Lun a vie · 10 a 13 h",
+      delivery: "Envíos a todo el país con Andreani (a domicilio o a sucursal) o retiro gratis en el taller.",
       giftcardRange: "$5.000 a $500.000",
       whatsapp: "wa",
     }),

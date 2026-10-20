@@ -104,17 +104,21 @@ const PostalCodeSchema = z
   .regex(/^[A-Z]?\d{4}[A-Z]{0,3}$/, "Código postal inválido");
 const ProvinceSchema = z.enum(PROVINCES, "Elegí la provincia");
 
+/** Dirección de entrega: la piden Andreani a domicilio, el envío a acordar y el cadete. */
+const address = {
+  postalCode: PostalCodeSchema,
+  province: ProvinceSchema,
+  street: z.string().trim().min(2, "Poné la calle").max(120),
+  number: z.string().trim().min(1, "Poné la altura").max(10),
+  unit: z.string().trim().max(20).nullable().default(null),
+  city: z.string().trim().min(2, "Poné la localidad").max(80),
+  notes: z.string().trim().max(300).nullable().default(null),
+};
+
 export const ShippingInputSchema = z.discriminatedUnion("method", [
-  z.object({
-    method: z.literal("domicilio"),
-    postalCode: PostalCodeSchema,
-    province: ProvinceSchema,
-    street: z.string().trim().min(2, "Poné la calle").max(120),
-    number: z.string().trim().min(1, "Poné la altura").max(10),
-    unit: z.string().trim().max(20).nullable().default(null),
-    city: z.string().trim().min(2, "Poné la localidad").max(80),
-    notes: z.string().trim().max(300).nullable().default(null),
-  }),
+  z.object({ method: z.literal("domicilio"), ...address }),
+  z.object({ method: z.literal("acordar"), ...address }),
+  z.object({ method: z.literal("cadete"), ...address }),
   z.object({
     method: z.literal("sucursal"),
     postalCode: PostalCodeSchema,
@@ -130,8 +134,10 @@ export type ShippingOption = {
   method: ShippingMethod;
   label: string;
   detail: string;
-  /** null si todavía no se puede cotizar (falta el CP). */
+  /** null si todavía no se puede cotizar (falta el CP o Andreani no respondió). */
   cents: Cents | null;
+  /** Se coordina por WhatsApp y no se cobra en la web: "Desde $3.000" (cadete) o "A coordinar" (null). */
+  arranged?: { fromCents: Cents | null };
 };
 
 export type PickupSlot = { id: string; label: string };
@@ -139,15 +145,10 @@ export type PickupSlot = { id: string; label: string };
 /** Sucursal Andreani para retirar (la primera es la que atiende el código postal). */
 export type ShippingBranch = { id: string; name: string; address: string; hours: string | null };
 
-/** "Cadete en San Miguel de Tucumán · desde $3.000" con el WhatsApp para coordinarlo. */
-export type LocalDeliveryInfo = { label: string; fromCents: Cents; whatsapp: string };
-
 export type ShippingOptions = {
   options: ShippingOption[];
   pickupSlots: PickupSlot[];
   workshop: string;
-  /** Cadetería propia si llega al CP consultado: no se cobra en la web, se coordina por WhatsApp. */
-  localDelivery: LocalDeliveryInfo | null;
   /** Sucursales para el CP consultado (vacío sin CP o si no se pudieron consultar). */
   branches: ShippingBranch[];
 };
@@ -155,7 +156,7 @@ export type ShippingOptions = {
 /* ------------------------------------------------------------------ cotización y pedido */
 
 export const QuoteRequestSchema = z.object({
-  method: z.enum(["domicilio", "sucursal", "taller"]),
+  method: z.enum(["domicilio", "sucursal", "acordar", "taller", "cadete"]),
   postalCode: PostalCodeSchema.optional(),
   couponCode: z.string().trim().max(30).optional(),
   giftcardCode: z.string().trim().max(40).optional(),

@@ -119,7 +119,7 @@ export class CheckoutService {
     await this.shipping.checkDelivery(s);
     const postalCode = s.method === "taller" ? undefined : s.postalCode;
     const branch = await sucursalOf(this.shipping, s);
-    const shippingCents = (await this.shipping.cost(s.method, postalCode, subtotalCents)) ?? 0;
+    const shippingCents = await this.shipping.charge(s.method, postalCode, subtotalCents);
 
     let coupon: { id: string; code: string } | null = null;
     let discountCents = 0;
@@ -344,7 +344,7 @@ export function shippingFields(
     shippingBranch: s.method === "sucursal" ? branch : null,
     shippingMethod: s.method,
     shippingAddress:
-      s.method === "domicilio"
+      s.method === "domicilio" || s.method === "acordar" || s.method === "cadete"
         ? {
             street: s.street,
             number: s.number,

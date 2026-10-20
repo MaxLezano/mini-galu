@@ -33,7 +33,9 @@ import { type LowStockRow, pctChange } from "../summary-view";
 const SHIP_SHORT = {
   domicilio: "Envío a domicilio",
   sucursal: "Envío a sucursal",
+  acordar: "Envío a acordar",
   taller: "Retira en el taller",
+  cadete: "Cadete",
 } as const;
 const PAY_SHORT = {
   credito: "Crédito",

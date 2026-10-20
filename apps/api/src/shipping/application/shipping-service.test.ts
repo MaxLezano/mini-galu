@@ -1,6 +1,6 @@
 import { DEFAULT_POLICIES, type StorePolicies } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
-import { TableShippingRates } from "../infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../infrastructure/simulated-andreani-rates";
 import { ShippingService } from "./shipping-service";
 
 // viernes 9/10 a las 12 h en Argentina
@@ -10,55 +10,67 @@ function service(over: Partial<StorePolicies> = {}) {
   // con envío gratis desde $90.000 (en la base de la tienda está apagado)
   const p = { ...DEFAULT_POLICIES, freeShipping: { enabled: true, fromCents: 90_000_00 }, ...over };
   const policies = { get: async () => p };
-  return new ShippingService(new TableShippingRates(policies), clock, null, policies);
+  return new ShippingService(new SimulatedAndreaniRates(), clock, null, policies);
 }
 
 describe("ShippingService con las políticas del panel", () => {
-  it("cotiza con la tabla de la zona y aplica el envío gratis desde el monto", async () => {
-    const [tucuman, ...rest] = DEFAULT_POLICIES.zones;
-    const s = service({
-      zones: [
-        {
-          ...DEFAULT_POLICIES.zones[0],
-          title: tucuman?.title ?? "Tucumán",
-          cps: tucuman?.cps ?? "",
-          domicilioCents: 4_000_00,
-          sucursalCents: 3_000_00,
-          days: "1 a 2",
-        },
-        ...rest,
-      ],
-    });
-    const { options } = await s.options("4107", 10_000_00);
-    expect(options.map((o) => [o.method, o.cents])).toEqual([
-      ["domicilio", 4_000_00],
-      ["sucursal", 3_000_00],
-      ["taller", 0],
-    ]);
-    expect(options[0]?.detail).toBe("Llega en 1 a 2 días hábiles");
-    expect(await s.cost("domicilio", "4107", 90_000_00)).toBe(0);
-  });
-
-  it("en la ciudad del taller suma la cadetería (desde, por WhatsApp); afuera, no", async () => {
+  it("ofrece Andreani (con su precio), envío a acordar y retiro; el envío gratis sale desde el monto", async () => {
     const s = service();
-    expect((await s.options("4000", 0)).localDelivery).toEqual({
-      label: "Cadete en San Miguel de Tucumán",
-      fromCents: 3_000_00,
-      whatsapp: DEFAULT_POLICIES.contact.whatsapp,
-    });
-    expect((await s.options("4107", 0)).localDelivery).toBeNull();
-    expect((await s.options(undefined, 0)).localDelivery).toBeNull();
+    const { options } = await s.options("1414", 10_000_00);
+    expect(options.map((o) => [o.method, o.cents, o.arranged ?? null])).toEqual([
+      ["domicilio", 8_900_00, null],
+      ["sucursal", 6_400_00, null],
+      ["acordar", 0, { fromCents: null }],
+      ["taller", 0, null],
+    ]);
+    expect(await s.cost("domicilio", "1414", 90_000_00)).toBe(0);
+    expect(await s.cost("acordar", "1414", 10_000_00)).toBe(0);
   });
 
-  it("sin envío gratis cobra el envío aunque la compra sea grande", async () => {
+  it("sin envío gratis cobra el envío de Andreani aunque la compra sea grande", async () => {
     const s = service({ freeShipping: { enabled: false, fromCents: 90_000_00 } });
     expect(await s.cost("domicilio", "1414", 500_000_00)).toBe(8_900_00);
     expect(await s.freeShippingFrom()).toBeNull();
   });
 
+  it("el cadete aparece solo en la ciudad del taller y no se cobra en la web", async () => {
+    const s = service();
+    const cadete = (await s.options("4000", 0)).options.find((o) => o.method === "cadete");
+    expect(cadete).toMatchObject({
+      label: "Cadete en San Miguel de Tucumán",
+      cents: 0,
+      arranged: { fromCents: 3_000_00 },
+    });
+    expect((await s.options("4107", 0)).options.some((o) => o.method === "cadete")).toBe(false);
+    expect(await s.cost("cadete", "4000", 10_000_00)).toBe(0);
+    await expect(s.checkDelivery({ method: "cadete", postalCode: "4107" })).rejects.toThrow(
+      "El cadete llega solo dentro de San Miguel de Tucumán",
+    );
+    await expect(s.checkDelivery({ method: "cadete", postalCode: "4000" })).resolves.toBeUndefined();
+  });
+
+  it("si Andreani no cotiza no hay precio inventado: no se puede cerrar con Andreani", async () => {
+    const policies = { get: async () => DEFAULT_POLICIES };
+    const down = { available: true, quote: async () => null };
+    const s = new ShippingService(down, clock, null, policies);
+    const domicilio = (await s.options("1414", 0)).options.find((o) => o.method === "domicilio");
+    expect(domicilio).toMatchObject({ cents: null, detail: expect.stringContaining("Andreani no respondió") });
+    await expect(s.charge("domicilio", "1414", 0)).rejects.toThrow("Andreani no pudo cotizar");
+    expect(await s.charge("acordar", "1414", 0)).toBe(0);
+  });
+
+  it("sin Andreani conectado (producción sin credenciales) no se ofrece ni se acepta", async () => {
+    const policies = { get: async () => DEFAULT_POLICIES };
+    const s = new ShippingService({ available: false, quote: async () => null }, clock, null, policies);
+    expect((await s.options("4000", 0)).options.map((o) => o.method)).toEqual(["acordar", "taller", "cadete"]);
+    await expect(s.checkDelivery({ method: "domicilio", postalCode: "1414" })).rejects.toThrow(
+      "Esa forma de entrega ya no está disponible",
+    );
+  });
+
   it("solo ofrece las formas de entrega prendidas y rechaza las apagadas", async () => {
-    const s = service({ methods: { domicilio: true, sucursal: false, taller: false } });
-    const r = await s.options("1414", 0);
+    const s = service({ methods: { domicilio: true, sucursal: false, acordar: false, taller: false, cadete: false } });
+    const r = await s.options("4000", 0);
     expect(r.options.map((o) => o.method)).toEqual(["domicilio"]);
     expect(r.pickupSlots).toEqual([]);
     await expect(s.checkDelivery({ method: "taller", pickupSlot: "2026-10-10T10-13" })).rejects.toThrow(

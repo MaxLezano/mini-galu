@@ -9,9 +9,13 @@ export function headline(status: OrderStatus, method: ShippingMethod): [string, 
     case "preparando":
       return ["Ya lo estamos ", "preparando", ""];
     case "listo":
-      return method === "taller" ? ["Listo para ", "retirar", ""] : ["Sale ", "pronto", " con Andreani"];
+      return method === "taller"
+        ? ["Listo para ", "retirar", ""]
+        : method === "domicilio" || method === "sucursal"
+          ? ["Sale ", "pronto", " con Andreani"]
+          : ["Sale ", "pronto", ""];
     case "en_camino":
-      return ["Llega en ", "2 a 3 días", ""];
+      return ["Ya ", "salió", " hacia vos"];
     case "entregado":
       return method === "taller" ? ["¡", "Retirado", "!"] : ["¡", "Entregado", "!"];
     case "cancelado":

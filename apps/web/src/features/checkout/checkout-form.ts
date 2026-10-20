@@ -2,6 +2,7 @@ import {
   type CheckoutContactInput,
   CheckoutContactSchema,
   type PROVINCES,
+  SHIPPING_METHODS,
   type ShippingInput,
   ShippingInputSchema,
   type ShippingMethod,
@@ -43,8 +44,9 @@ export function toShippingInput(f: ShippingForm): ShippingInput {
   if (f.method === "taller") return { method: "taller", pickupSlot: f.pickupSlot };
   if (f.method === "sucursal")
     return { method: "sucursal", postalCode: f.postalCode, province: f.province, branchId: f.branchId };
+  // a domicilio, a acordar y en cadete llevan la dirección
   return {
-    method: "domicilio",
+    method: f.method,
     postalCode: f.postalCode,
     province: f.province,
     street: f.street,
@@ -77,5 +79,6 @@ export const quotablePostalCode = (cp: string) => /^[A-Z]?\d{4}[A-Z]{0,3}$/i.tes
 export function shippingSummary(f: ShippingForm, slotLabel?: string, branchName?: string): string {
   if (f.method === "taller") return `Retiro en el taller${slotLabel ? ` · ${slotLabel}` : ""}`;
   if (f.method === "sucursal" && branchName) return `Andreani a sucursal · ${branchName}`;
-  return `${f.method === "domicilio" ? "Andreani a domicilio" : "Andreani a sucursal"} · ${f.province}`;
+  const where = f.method === "cadete" ? f.city || f.province : f.province;
+  return `${SHIPPING_METHODS[f.method]} · ${where}`;
 }

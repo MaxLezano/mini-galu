@@ -15,7 +15,7 @@ import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { FakeAndreani } from "../infrastructure/fake-andreani";
 import { PdfLibMerger } from "../infrastructure/pdf-lib-merger";
-import { TableShippingRates } from "../infrastructure/table-shipping-rates";
+import { SimulatedAndreaniRates } from "../infrastructure/simulated-andreani-rates";
 import { MemoryShipments, MemoryShippingSettings } from "../testing/in-memory";
 import { ShipmentService } from "./shipment-service";
 import { ShippingService } from "./shipping-service";
@@ -40,7 +40,7 @@ beforeEach(() => {
   changes = [];
   bus.on("OrderStatusChanged", (e) => void changes.push(e));
   const cart = new CartService(new MemoryCarts(), variants, storage, orders);
-  const shipping = new ShippingService(new TableShippingRates());
+  const shipping = new ShippingService(new SimulatedAndreaniRates());
   const checkout = new CheckoutService(cart, shipping, new CouponService(new MemoryCoupons()), orders, storage);
   const payments = new OrderPayments(orders, cart, new CouponService(new MemoryCoupons()), bus, clock);
   admin = new AdminOrdersService(
@@ -119,7 +119,7 @@ describe("envíos", () => {
   });
 
   it("un retiro en el taller no lleva etiqueta y un número que no existe da 404", async () => {
-    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const slot = (await new ShippingService(new SimulatedAndreaniRates()).options(undefined, 0)).pickupSlots[0]?.id;
     const o = await paidOrder({ method: "taller", pickupSlot: slot });
     await admin.move(o.number, "preparando");
     await expect(shipments.createLabel(o.number)).rejects.toThrow("retira en el taller");
@@ -142,7 +142,7 @@ describe("envíos", () => {
     const lista = await paidOrder();
     const nueva = await paidOrder();
     const conEtiqueta = await paidOrder();
-    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const slot = (await new ShippingService(new SimulatedAndreaniRates()).options(undefined, 0)).pickupSlots[0]?.id;
     const taller = await paidOrder({ method: "taller", pickupSlot: slot });
     for (const o of [lista, conEtiqueta, taller]) await admin.move(o.number, "preparando");
     const { trackingNumber } = await shipments.createLabel(conEtiqueta.number);

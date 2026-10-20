@@ -1,5 +1,6 @@
 import {
   DEFAULT_POLICIES,
+  deliverySummary,
   discountPercent,
   formatARS,
   freeShippingFrom,
@@ -173,14 +174,17 @@ export async function answer(
     return [
       text(
         <>
-          Enviamos a todo el país con <b>Andreani</b> (a domicilio o a sucursal)
-          {policies.methods.taller ? " o podés retirar gratis por el taller" : ""}.{" "}
+          {deliverySummary(policies)}{" "}
           {free !== null && (
             <>
-              Desde <b>{formatARS(free)}</b> el envío es gratis.{" "}
+              Con Andreani, desde <b>{formatARS(free)}</b> el envío es gratis.{" "}
             </>
           )}
-          En cada prenda podés calcular el envío con tu código postal.
+          En cada prenda podés calcular el envío con tu código postal
+          {policies.methods.acordar || policies.methods.cadete ? (
+            <>; si preferís otra forma, {WA(policies.contact.whatsapp, "lo acordamos por WhatsApp")}</>
+          ) : null}
+          .
         </>,
       ),
     ];

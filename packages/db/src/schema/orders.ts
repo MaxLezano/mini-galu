@@ -94,7 +94,7 @@ export const orderStatus = pgEnum("order_status", [
   "cancelado",
   "reembolsado",
 ]);
-export const shippingMethod = pgEnum("shipping_method", ["domicilio", "sucursal", "taller"]);
+export const shippingMethod = pgEnum("shipping_method", ["domicilio", "sucursal", "taller", "acordar", "cadete"]);
 export const paymentMethod = pgEnum("payment_method", [
   "credito",
   "debito",

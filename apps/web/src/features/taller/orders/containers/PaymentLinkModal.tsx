@@ -390,6 +390,8 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
                   ["taller", "Retira en el taller"],
                   ["domicilio", "Envío a domicilio"],
                   ["sucursal", "Envío a sucursal"],
+                  ["acordar", "Envío a acordar"],
+                  ["cadete", "Cadete"],
                 ] as const
               ).map(([m, label]) => (
                 <button
@@ -459,7 +461,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
                     ))}
                   </select>
                 )}
-                {ship.method === "domicilio" && (
+                {(ship.method === "domicilio" || ship.method === "acordar" || ship.method === "cadete") && (
                   <>
                     <div className="pl-grid">
                       <input
@@ -567,7 +569,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
           <div className="row" style={{ alignItems: "center" }}>
             <span className="muted">
               Prendas <b style={{ color: "var(--cacao)" }}>{formatARS(linesSubtotal(lines))}</b>
-              {!inPerson && ship.method !== "taller" ? " + envío" : ""}
+              {!inPerson && (ship.method === "domicilio" || ship.method === "sucursal") ? " + envío" : ""}
               {balance?.usable && <> · gift card −{formatARS(balance.balanceCents)}</>}
             </span>
             <button type="button" className="btn" disabled={busy} onClick={submit}>

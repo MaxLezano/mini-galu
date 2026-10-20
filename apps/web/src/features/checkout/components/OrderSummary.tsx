@@ -13,6 +13,8 @@ type Props = {
   installmentsText: string | null;
   /** Retiro en el taller: no hay envío (no se muestra "envío gratis"). */
   pickup: boolean;
+  /** Envío a acordar o cadete: se coordina por WhatsApp y no se cobra acá. */
+  arranged: boolean;
   /** Planes de la tarjeta que se está cargando: reemplazan al texto general de cuotas. */
   cardPlans: CardPlans | null;
   /** Cuotas elegidas en el formulario de pago: el resumen muestra cuánto se paga así. */
@@ -40,6 +42,7 @@ export function OrderSummary({
   quote,
   installmentsText,
   pickup,
+  arranged,
   cardPlans,
   chosenInstallments,
   couponBusy,
@@ -149,6 +152,8 @@ export function OrderSummary({
             <span>
               {pickup ? (
                 <span>Sin costo</span>
+              ) : arranged ? (
+                <span>A coordinar por WhatsApp</span>
               ) : quote && quote.shippingCents > 0 ? (
                 formatARS(quote.shippingCents)
               ) : quote ? (

@@ -3,6 +3,7 @@
 import {
   type AdminOrderDetail,
   type AdminOrderSummary,
+  isAndreani,
   ORDER_CHANNELS,
   ORDER_STATUSES,
   type OrderChannel,
@@ -187,7 +188,7 @@ export function OrdersAdmin({
   const chosen = orders.filter((o) => selected.has(o.number));
 
   const labelSelected = async () => {
-    const byCarrier = chosen.filter((o) => o.shippingMethod !== "taller").map((o) => o.number);
+    const byCarrier = chosen.filter((o) => isAndreani(o.shippingMethod)).map((o) => o.number);
     if (!byCarrier.length)
       return toast("Ninguno de esos pedidos va por Andreani", { icon: <Printer className="i-sm" /> });
     const r = await generateLabels(byCarrier);

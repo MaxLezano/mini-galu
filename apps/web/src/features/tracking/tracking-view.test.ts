@@ -3,7 +3,8 @@ import { handNote, headline, normalizeCode } from "./tracking-view";
 
 describe("seguimiento", () => {
   it("titular y nota según el estado y la entrega", () => {
-    expect(headline("en_camino", "domicilio").join("")).toBe("Llega en 2 a 3 días");
+    expect(headline("en_camino", "domicilio").join("")).toBe("Ya salió hacia vos");
+    expect(headline("listo", "acordar").join("")).toBe("Sale pronto");
     expect(headline("listo", "taller")).toEqual(["Listo para ", "retirar", ""]);
     expect(headline("entregado", "taller").join("")).toBe("¡Retirado!");
     expect(handNote("listo", "taller")).toBe("te esperamos ♡");

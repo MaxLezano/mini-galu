@@ -69,7 +69,8 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 - **Pagos**: sin `MP_ACCESS_TOKEN` la API usa `SimulatedGateway` (local y CI); el titular de la tarjeta decide el
   resultado (APRO aprueba, OTHE rechaza, CONT pendiente). Nunca se aprueba un pedido sin consultar el pago al gateway.
 - **Envíos**: sin `ANDREANI_*` en el `.env`, `FakeAndreani` da número, etiqueta y eventos que avanzan con el reloj
-  (`FAKE_ANDREANI_SPEED` los acelera) y se cotiza con la tabla por zona; con credenciales, `AndreaniGateway` y
+  (`FAKE_ANDREANI_SPEED` los acelera) y `SimulatedAndreaniRates` da un precio de prueba (en producción sin
+  credenciales Andreani no se ofrece: no hay precios cargados a mano); con credenciales, `AndreaniGateway` y
   `AndreaniRates` (API REST; docs de Andreani en `andreani/`, fuera del repo). El seguimiento es público: nunca
   mostrar la calle ni el apellido completo.
 - **Galú**: con `ANTHROPIC_API_KEY` responde Claude; si no, con `OLLAMA_URL` responde Ollama (`ollama pull qwen3:4b`);

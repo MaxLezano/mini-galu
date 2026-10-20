@@ -1,4 +1,4 @@
-import type { AdminOrderItem, AdminOrderSummary, OrderStatus } from "@mini-galu/contracts";
+import { type AdminOrderItem, type AdminOrderSummary, isArranged, type OrderStatus } from "@mini-galu/contracts";
 
 /** Qué hace el botón principal de un pedido (mismo criterio que nextAction() del mockup admin.js). */
 export type NextAction =
@@ -15,12 +15,17 @@ export function nextAction(
   const pickup = o.shippingMethod === "taller";
   switch (o.status) {
     case "nuevo":
-      return { kind: "move", label: "Empezar a preparar", icon: "scissors", to: "preparando" };
+      // envío a acordar o cadete: primero se arregla con el cliente por WhatsApp
+      return isArranged(o.shippingMethod)
+        ? { kind: "whatsapp", label: "Coordinar el envío", icon: "send", template: "acordar" }
+        : { kind: "move", label: "Empezar a preparar", icon: "scissors", to: "preparando" };
     case "preparando":
       // la etiqueta guarda el número de Andreani y deja el pedido listo para despachar
       return pickup
         ? { kind: "move", label: "Marcar listo para retirar", icon: "package-check", to: "listo" }
-        : { kind: "label", label: "Generar etiqueta Andreani", icon: "printer" };
+        : isArranged(o.shippingMethod)
+          ? { kind: "move", label: "Marcar listo para enviar", icon: "package-check", to: "listo" }
+          : { kind: "label", label: "Generar etiqueta Andreani", icon: "printer" };
     case "listo":
       return pickup
         ? { kind: "move", label: "Marcar como retirado", icon: "circle-check", to: "entregado" }
@@ -41,7 +46,7 @@ export function nextAction(
 
 /* ------------------------------------------------------------------ WhatsApp */
 
-export type TemplateKey = "link" | "pago" | "despacho" | "retiro" | "resena" | "libre";
+export type TemplateKey = "link" | "pago" | "acordar" | "despacho" | "retiro" | "resena" | "libre";
 
 export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
   link: {
@@ -52,9 +57,13 @@ export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
     title: "Pago recibido",
     body: "Hola {nombre}! Recibimos el pago de tu pedido #{pedido}. Ya lo estamos preparando en el taller. Te avisamos cuando salga ✿",
   },
+  acordar: {
+    title: "Coordinar el envío",
+    body: "Hola {nombre}! Recibimos tu pedido #{pedido} ✿ Contanos cómo te queda mejor que te lo mandemos y lo coordinamos por acá.",
+  },
   despacho: {
     title: "Pedido despachado",
-    body: "{nombre}, tu pedido #{pedido} ya salió con Andreani. Lo podés seguir acá: {seguimiento}",
+    body: "{nombre}, tu pedido #{pedido} ya salió. Lo podés seguir acá: {seguimiento}",
   },
   retiro: {
     title: "Listo para retirar",
@@ -70,6 +79,7 @@ export const TEMPLATES: Record<TemplateKey, { title: string; body: string }> = {
 /** La plantilla que corresponde según el estado (como openWA() del mockup). */
 export function defaultTemplate(o: Pick<AdminOrderSummary, "status" | "shippingMethod">): TemplateKey {
   if (o.status === "esperando_pago") return "link";
+  if (o.status === "nuevo" && isArranged(o.shippingMethod)) return "acordar";
   if (o.status === "listo") return o.shippingMethod === "taller" ? "retiro" : "despacho";
   if (o.status === "en_camino") return "despacho";
   if (o.status === "entregado") return "resena";
