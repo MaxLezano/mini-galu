@@ -1,4 +1,4 @@
-import { type HelpLink, type HelpPage, type HelpTopic, isWithdrawalSection } from "@mini-galu/contracts";
+import type { HelpLink, HelpPage, HelpTopic } from "@mini-galu/contracts";
 import { FileText, type LucideIcon, RefreshCcw, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
 import { longDateYear } from "@/lib/date";
@@ -73,11 +73,6 @@ export function HelpArticle({ page, links, children }: Props) {
                     ))}
                   </ul>
                 ),
-              )}
-              {isWithdrawalSection(page.topic, s) && (
-                <Link className="btn btn-ghost help-cta" href="/arrepentimiento">
-                  Botón de arrepentimiento
-                </Link>
               )}
             </section>
           ))}

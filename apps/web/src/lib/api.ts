@@ -28,8 +28,6 @@ import type {
   PublicWishlist,
   Quote,
   QuoteRequest,
-  RevocationInput,
-  RevocationReceipt,
   ShippingOptions,
   Size,
   StorePolicies,
@@ -133,9 +131,6 @@ export const api = {
   /** Galú por reglas: la pregunta y la respuesta quedan en el panel (`/taller/galu`). */
   galuLog: (body: AssistantRulesLog) => request<null>("/assistant/log", { method: "POST", body: JSON.stringify(body) }),
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
-  /** Botón de arrepentimiento: pide la baja de un pedido (sin cuenta). */
-  revoke: (input: RevocationInput) =>
-    request<RevocationReceipt>("/revocations", { method: "POST", body: JSON.stringify(input) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),
   receipt: (number: string, t: string) =>

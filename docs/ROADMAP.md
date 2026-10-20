@@ -292,10 +292,15 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Páginas de ayuda (`/ayuda/cambios`, `envios-y-pagos`, `terminos`, `privacidad`; sin mockup propio, con el lenguaje
   de seguimiento y la ficha): navegación entre temas, índice "En esta página", contacto (Galú, WhatsApp, mail) y links
   a términos y privacidad en el pie. Texto de base con lo que ya dice la tienda (30 días, Andreani, retiro, cuotas,
-  envío gratis) y la ley (arrepentimiento de 10 días, Ley 25.326 y leyenda de la AAIP); "Páginas de ayuda" en Tienda y
-  pagos edita título, bajada y apartados (párrafos y listas con "- "), y vuelve al texto de base
+  envío gratis); "Páginas de ayuda" en Tienda y pagos edita título, bajada y apartados (párrafos y listas con "- "),
+  y vuelve al texto de base. Piloto: los textos de base ya no llevan lo legal (arrepentimiento, Defensa del
+  Consumidor, "Tus derechos" con la leyenda de la AAIP) y "Si algo llegó mal" viene apagado
 - ⏳ Que Gaby revise los textos (y, antes del deploy, términos y privacidad con quien la asesore)
-- ✅ **Botón de arrepentimiento** (Res. SCI 424/2020; sin mockup, lenguaje de seguimiento y ayuda): link quieto a la
+- ⏳ **Botón de arrepentimiento: sacado de la tienda mientras es un piloto** (decisión de Gaby). Se fue el link de la
+  cinta, el del pie, el botón de la ayuda y la página `/arrepentimiento`; la API (`POST /revocations`) y lo del panel
+  quedan sin uso. La Res. SCI 424/2020 lo pide en la página de inicio de toda tienda online: volver a ponerlo (con el
+  apartado de la ayuda) antes de abrir al público. Cómo era:
+- **Botón de arrepentimiento** (Res. SCI 424/2020; sin mockup, lenguaje de seguimiento y ayuda): link quieto a la
   derecha de la barra de novedades (primera pantalla de todas las páginas), en el pie y en el apartado de la ayuda.
   `/arrepentimiento` pide número de pedido, mail de la compra y motivo opcional, sin cuenta; da al instante un código
   `ARR-XXXXXX` (una solicitud por pedido: si se repite, el mismo código) y lo manda por mail, con aviso al mail de la
@@ -355,8 +360,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   prendidas), horarios de retiro por día ("10 a 13, 16 a 19"), envío gratis sí/no y desde qué monto (bolsa, ficha,
   checkout, ayuda, Galú) y tarifas por zona AMBA/centro/resto (las usa el checkout sin Andreani y la ficha). Los textos
   de base de la ayuda siguen las políticas; si Gaby editó esas páginas, el panel le avisa que las revise
-- ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); el de **arrepentimiento** en Cambios queda
-  bloqueado ("Obligatorio": Ley 24.240 y Res. SCI 424/2020) y la API no deja guardar la página sin él visible
+- ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); cualquiera se puede apagar o quitar (ya no hay
+  apartado "Obligatorio") mientras quede uno visible
+- ✅ La cinta de novedades llena pantallas anchas (2560+): los mensajes se repiten en cada vuelta, a la misma velocidad
+- ✅ Tablero de pedidos enfocable con el teclado aunque esté vacío (axe: región con scroll sin nada enfocable)
 - ✅ **Build de la API**: `pnpm --filter @mini-galu/api build` (esbuild, `apps/api/build.mjs`) arma `dist/main.js` con
   los paquetes del monorepo adentro (`sharp` queda afuera, es nativo) y `dist/migrate.js` con las migraciones copiadas
   en `dist/drizzle` (no necesita el monorepo para migrar). `start` corre el bundle con node; los e2e (local sin

@@ -31,18 +31,3 @@ export type HelpPage = z.infer<typeof HelpPageSchema>;
 /** Índice para la navegación entre páginas de ayuda. */
 export const HelpLinkSchema = z.object({ topic: HelpTopicSchema, title: z.string() });
 export type HelpLink = z.infer<typeof HelpLinkSchema>;
-
-/**
- * El apartado de arrepentimiento es obligatorio para las tiendas online (Ley 24.240, art. 34, y Res. SCI 424/2020):
- * en "Cambios y devoluciones" no se puede apagar ni quitar.
- */
-export const isWithdrawalSection = (topic: HelpTopic, s: Pick<HelpSection, "title">) =>
-  topic === "cambios" && /arrepent/i.test(s.title);
-
-/** Por qué no se puede guardar la página sin el apartado de arrepentimiento (null si está bien). */
-export function withdrawalError(topic: HelpTopic, page: Pick<HelpPageInput, "sections">): string | null {
-  if (topic !== "cambios") return null;
-  return page.sections.some((s) => !s.hidden && isWithdrawalSection(topic, s))
-    ? null
-    : "El apartado de arrepentimiento es obligatorio por ley (Ley 24.240 y Res. SCI 424/2020): dejalo visible";
-}

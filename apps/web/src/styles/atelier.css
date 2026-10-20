@@ -163,10 +163,6 @@ i[data-lucide].i-lg { width: 26px; height: 26px; }
 .marquee > * { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; white-space: nowrap; }
 .marquee .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--rosa); }
 @keyframes marquee { to { transform: translateX(-50%); } }
-/* agregado: botón de arrepentimiento (Res. SCI 424/2020), quieto a la derecha de la barra */
-.announce { position: relative; }
-.announce-legal { position: absolute; inset-block: 0; right: 0; display: flex; align-items: center; padding: 0 var(--gutter) 0 28px; background: linear-gradient(to right, transparent, var(--cacao) 20px); color: var(--paper); font-weight: 600; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; white-space: nowrap; }
-.announce-legal:hover { color: var(--rosa-l); }
 
 .site-header { position: sticky; top: 0; z-index: 50; transition: background var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease), color var(--t-med); view-transition-name: site-header; }
 .site-header.is-solid, .site-header:not(.is-over) { background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); box-shadow: 0 1px 0 var(--line); }

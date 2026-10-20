@@ -85,7 +85,14 @@ export function OrdersBoard({ orders, selecting, cardProps, onMove, onShowAll }:
 
   return (
     <DndContext id={dndId} sensors={sensors} onDragStart={start} onDragEnd={end} onDragCancel={() => setActive(null)}>
-      <div className={`board ${selecting ? "selecting" : ""}`} id="board">
+      {/* con scroll horizontal: enfocable para moverlo con el teclado aunque no haya tarjetas (axe) */}
+      <section
+        className={`board ${selecting ? "selecting" : ""}`}
+        id="board"
+        aria-label="Tablero de pedidos"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: región con scroll, el foco permite desplazarla
+        tabIndex={0}
+      >
         {BOARD_STATUSES.map((s) => {
           const list = orders.filter((o) => o.status === s);
           const shown = s === "entregado" ? list.slice(0, 4) : list;
@@ -118,7 +125,7 @@ export function OrdersBoard({ orders, selecting, cardProps, onMove, onShowAll }:
             </section>
           );
         })}
-      </div>
+      </section>
       <DragOverlay>{active ? <OrderCard {...cardProps(active)} order={active} dragging /> : null}</DragOverlay>
     </DndContext>
   );

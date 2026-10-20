@@ -1,11 +1,4 @@
-import {
-  HELP_TOPICS,
-  type HelpLink,
-  type HelpPage,
-  type HelpPageInput,
-  type HelpTopic,
-  withdrawalError,
-} from "@mini-galu/contracts";
+import { HELP_TOPICS, type HelpLink, type HelpPage, type HelpPageInput, type HelpTopic } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
 import { defaultHelpPage, type HelpFacts } from "../domain/help";
 import type { HelpRepository, StoredHelpPage } from "./help-ports";
@@ -39,8 +32,6 @@ export class HelpService {
   }
 
   async save(topic: HelpTopic, input: HelpPageInput): Promise<HelpPage> {
-    const legal = withdrawalError(topic, input);
-    if (legal) throw new ValidationError(legal);
     if (input.sections.every((s) => s.hidden)) throw new ValidationError("Dejá al menos un apartado visible");
     await this.repo.save(topic, input);
     return this.page(topic);

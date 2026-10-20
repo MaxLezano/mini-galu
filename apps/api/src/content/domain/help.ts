@@ -15,9 +15,10 @@ export type HelpFacts = {
 };
 
 /**
- * Textos de base de las páginas de ayuda: lo que ya dice la tienda (producto, home, Galú) y lo que pide la ley
- * (Ley 24.240 de Defensa del Consumidor y Ley 25.326 de Datos Personales). Gaby los ajusta desde el panel; lo que
- * guarda reemplaza al texto de base.
+ * Textos de base de las páginas de ayuda: lo que ya dice la tienda (producto, home, Galú). Gaby los ajusta desde el
+ * panel; lo que guarda reemplaza al texto de base.
+ * TODO(fase 10 · content): mientras la tienda es un piloto no llevan los textos legales (arrepentimiento de la
+ * Ley 24.240 y leyenda de la AAIP de la Ley 25.326); ver docs/ROADMAP.md.
  */
 export function defaultHelpPage(topic: HelpTopic, f: HelpFacts): HelpPageInput {
   return DEFAULTS[topic](f);
@@ -41,20 +42,14 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
         body: [
           `Escribinos por WhatsApp o a ${f.email} con tu número de pedido y el talle que querés.`,
           f.policies.methods.taller
-            ? `Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller de ${f.workshop}.`
+            ? "Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller."
             : "Coordinamos cómo nos hacés llegar la prenda por Andreani.",
-        ].join("\n\n"),
-      },
-      {
-        title: "Arrepentimiento de compra",
-        body: [
-          "Por la Ley 24.240 de Defensa del Consumidor, podés arrepentirte de una compra online dentro de los 10 días corridos desde que la recibís, sin dar explicaciones y sin costo.",
-          `Para hacerlo, tocá "Botón de arrepentimiento" (arriba de todo en la tienda) con tu número de pedido y el mail de la compra: te damos un código de solicitud al instante. También podés escribirnos a ${f.email}. Te devolvemos el dinero por el mismo medio de pago con el que compraste.`,
         ].join("\n\n"),
       },
       {
         title: "Si algo llegó mal",
         body: "Si una prenda llegó con una falla o no es la que pediste, avisanos apenas la recibas y lo resolvemos sin costo para vos.",
+        hidden: true,
       },
     ],
   }),
@@ -64,8 +59,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
     const shipped = methods.domicilio || methods.sucursal;
     const how = [
       shipped && "Enviamos a todo el país con Andreani",
-      methods.taller &&
-        (shipped ? "o lo retirás gratis por el taller" : `Lo retirás gratis por el taller de ${f.workshop}`),
+      methods.taller && (shipped ? "o lo retirás gratis por el taller" : "Lo retirás gratis por el taller"),
     ]
       .filter(Boolean)
       .join(" ");
@@ -80,7 +74,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
             methods.domicilio && !methods.sucursal && "- A domicilio con Andreani, a todo el país.",
             !methods.domicilio && methods.sucursal && "- A una sucursal Andreani, a todo el país.",
             methods.taller &&
-              `- Retiro gratis en el taller de ${f.workshop}, eligiendo día y horario (${pickupHoursLabel(f.policies)}).`,
+              `- Retiro gratis en el taller, eligiendo día y horario (${pickupHoursLabel(f.policies)}).`,
             shipped && free !== null && `- Envío gratis en compras desde ${formatARS(free)}.`,
             ...(shipped
               ? [
@@ -138,16 +132,16 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
         body: "Las gift cards valen 6 meses desde que se activan. Se usan en la tienda online o en el taller, en una o varias compras, hasta agotar el saldo.",
       },
       {
-        title: "Cambios, devoluciones y arrepentimiento",
-        body: "Están explicados en la página de Cambios y devoluciones. Tu derecho de arrepentimiento (10 días corridos desde que recibís la compra) está garantizado por la Ley 24.240.",
+        title: "Cambios y devoluciones",
+        body: "Están explicados en la página de Cambios y devoluciones.",
       },
       {
         title: "Contacto y reclamos",
-        body: `Para cualquier consulta o reclamo escribinos a ${f.email}. Si no lo resolvemos, podés acudir a la Dirección Nacional de Defensa del Consumidor (argentina.gob.ar/produccion/defensadelconsumidor).`,
+        body: `Para cualquier consulta o reclamo escribinos a ${f.email}.`,
       },
     ],
   }),
-  privacidad: (f) => ({
+  privacidad: () => ({
     title: "Política de privacidad",
     intro: "Qué datos tuyos guardamos, para qué y cómo podés pedir que los cambiemos o los borremos.",
     sections: [
@@ -177,14 +171,6 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       {
         title: "Cookies",
         body: "Usamos cookies para recordar tu bolsa y tu sesión. No usamos cookies de publicidad.",
-      },
-      {
-        title: "Tus derechos",
-        body: [
-          `Podés pedirnos ver, corregir o borrar tus datos escribiendo a ${f.email}. Las Cartas del taller tienen su link para darte de baja en cada envío.`,
-          "El acceso a tus datos es gratuito cada seis meses o antes si tenés un interés legítimo (Ley 25.326, art. 14).",
-          "La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.",
-        ].join("\n\n"),
       },
     ],
   }),

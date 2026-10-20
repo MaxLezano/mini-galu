@@ -50,18 +50,3 @@ test("entregas y cambios: lo que cambia Gaby en el panel se ve en la tienda", as
     expect(r.ok()).toBe(true);
   }
 });
-
-test("ayuda: el apartado de arrepentimiento no se puede apagar ni quitar", async ({ page }) => {
-  await page.goto("/taller/tienda");
-  await page.getByLabel("Email").fill(ADMIN.email);
-  await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
-  await page.getByRole("button", { name: "Entrar al taller" }).click();
-  await expect(page.locator("body.adm-body")).toBeAttached();
-
-  const box = page.locator("#ayuda");
-  await box.getByRole("button", { name: "Cambios", exact: true }).click();
-  const legal = box.locator(".help-ed-sec").filter({ has: page.locator('input[value*="Arrepentimiento"]') });
-  await expect(legal.getByText("Obligatorio")).toBeVisible();
-  await expect(legal.getByRole("button", { name: "Quitar apartado" })).toBeDisabled();
-  await expect(legal.getByRole("checkbox")).toHaveCount(0);
-});

@@ -45,7 +45,11 @@ describe("HelpService", () => {
     expect(pages.every((p) => p.updatedAt === null && p.sections.length > 0)).toBe(true);
     const envios = await help.page("envios-y-pagos");
     expect(envios.intro).toContain("$90.000");
-    expect(JSON.stringify(await help.page("cambios"))).toContain("10 días corridos");
+    const cambios = await help.page("cambios");
+    expect(cambios.intro).toContain("30 días");
+    // piloto: sin el apartado de arrepentimiento; "Si algo llegó mal" viene apagado
+    expect(JSON.stringify(cambios)).not.toContain("arrepent");
+    expect(cambios.sections.find((s) => s.title === "Si algo llegó mal")?.hidden).toBe(true);
   });
 
   it("lo que guarda Gaby reemplaza al texto de base y se puede volver atrás", async () => {
@@ -78,7 +82,7 @@ describe("HelpService", () => {
     expect(conRetiro).toContain("Lun a vie · 10 a 13 y 16 a 19 h");
   });
 
-  it("los apartados apagados no se ven en la tienda, pero el de arrepentimiento no se puede apagar", async () => {
+  it("los apartados apagados no se ven en la tienda y se pueden apagar todos menos uno", async () => {
     const help = new HelpService(new MemoryHelp(), facts);
     const base = await help.page("cambios");
     const hide = (pred: (title: string) => boolean) => ({
@@ -87,20 +91,10 @@ describe("HelpService", () => {
     });
     await help.save(
       "cambios",
-      hide((t) => t === "Si algo llegó mal"),
+      hide((t) => t === "Cómo pedir un cambio"),
     );
-    expect((await help.page("cambios")).sections.some((s) => s.hidden)).toBe(true);
-    expect((await help.publicPage("cambios")).sections.map((s) => s.title)).not.toContain("Si algo llegó mal");
-
-    await expect(
-      help.save(
-        "cambios",
-        hide((t) => /arrepent/i.test(t)),
-      ),
-    ).rejects.toThrow("obligatorio por ley");
-    await expect(
-      help.save("cambios", { ...base, sections: base.sections.filter((s) => !/arrepent/i.test(s.title)) }),
-    ).rejects.toThrow("obligatorio por ley");
+    expect((await help.page("cambios")).sections.find((s) => s.title === "Cómo pedir un cambio")?.hidden).toBe(true);
+    expect((await help.publicPage("cambios")).sections.map((s) => s.title)).not.toContain("Cómo pedir un cambio");
     await expect(
       help.save(
         "terminos",
