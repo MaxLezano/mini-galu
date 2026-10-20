@@ -39,8 +39,10 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
-  for (const step of ["Empezar a preparar", "Marcar listo para retirar", "Marcar como retirado"])
-    await drawer.getByRole("button", { name: step }).click();
+  await drawer.getByRole("button", { name: "Empezar a preparar" }).click();
+  await drawer.getByLabel("Moño Verde Largo talle Único preparado").check();
+  await drawer.getByRole("button", { name: "Marcar listo para retirar" }).click();
+  await drawer.getByRole("button", { name: "Marcar como retirado" }).click();
   await expect(drawer.locator(".drawer-head .pill-status")).toHaveText(/Entregado/);
   await drawer.getByRole("button", { name: "Pedir reseña" }).click();
   const wa = page.getByRole("dialog", { name: "Mensaje por WhatsApp" });
