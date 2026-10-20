@@ -1,7 +1,7 @@
 /* Tienda y pagos — copiado de design/mockups/admin-tienda.html */
 .set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
-.set-col { display: grid; gap: 22px; align-content: start; min-width: 0; }
-.box > .stack { display: grid; gap: 14px; }
+.set-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-content: start; min-width: 0; }
+.box > .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .conn { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: var(--linen); }
 .conn .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--paper); display: grid; place-items: center; flex: none; }
 .conn .ic .brand, .conn .ic svg { width: 24px; height: 24px; }
@@ -36,7 +36,7 @@
 .hp-btn { justify-self: start; padding: 6px 12px; border-radius: 999px; background: var(--paper); color: var(--cacao); font-size: 10.5px; font-weight: 700; }
 .cp-edit { color: var(--cacao-2); }
 #cp-rows tr { cursor: pointer; }
-@media (max-width: 1100px) { .set-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .set-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
 /* agregados */
 .heroes .up { cursor: pointer; }
@@ -48,9 +48,9 @@
 .sh-sub { margin: 4px 0 -4px; font: 600 12px var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-2); }
 /* Páginas de ayuda */
 .help-ed-tabs { flex-wrap: wrap; justify-self: start; border-radius: 22px; }
-.help-ed-secs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.help-ed-sec { display: grid; gap: 8px; padding: 14px; border-radius: 16px; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }
-.help-ed-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
+.help-ed-secs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.help-ed-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 14px; border-radius: 16px; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }
+.help-ed-sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
 .help-ed-sec-head > div { display: flex; gap: 4px; }
 .help-ed-vis { gap: 8px; font-size: 12.5px; font-weight: 600; margin-right: 6px; }
 .help-ed-vis .tog { transform: scale(.85); }
