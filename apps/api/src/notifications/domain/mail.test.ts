@@ -11,6 +11,7 @@ const links = {
 
 const order = (over: Partial<MailOrder> = {}): MailOrder => ({
   number: "MG-1001",
+  accessToken: "tok",
   firstName: "Lucía",
   email: "lucia@gmail.com",
   items: [

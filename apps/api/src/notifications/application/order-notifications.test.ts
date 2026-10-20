@@ -5,6 +5,7 @@ import { OrderNotifications } from "./order-notifications";
 
 const order: MailOrder = {
   number: "MG-1001",
+  accessToken: "tok",
   firstName: "Lucía",
   email: "lucia@gmail.com",
   items: [],
@@ -21,10 +22,10 @@ const order: MailOrder = {
 };
 
 describe("OrderNotifications", () => {
-  it("manda 'Recibimos tu pago' al email del pedido con el link de seguimiento", async () => {
+  it("manda 'Recibimos tu pago' al email del pedido con el link de seguimiento (con el token)", async () => {
     const mailer = new MemoryMailer();
-    const n = new OrderNotifications({ find: async (id) => (id === "o1" ? order : null) }, mailer, async (num) => ({
-      tracking: `http://web/seguimiento?pedido=${num}`,
+    const n = new OrderNotifications({ find: async (id) => (id === "o1" ? order : null) }, mailer, async (num, t) => ({
+      tracking: `http://web/seguimiento?pedido=${num}&t=${t}`,
       whatsapp: "w",
       site: "s",
       workshop: "Villa Crespo",
@@ -34,6 +35,6 @@ describe("OrderNotifications", () => {
     expect(await n.paymentApproved("no-existe")).toBeNull();
     expect(mailer.sent).toHaveLength(1);
     expect(mailer.sent[0]).toMatchObject({ to: "lucia@gmail.com", subject: "Recibimos tu pago · Pedido #MG-1001" });
-    expect(mailer.sent[0]?.html).toContain("http://web/seguimiento?pedido=MG-1001");
+    expect(mailer.sent[0]?.text).toContain("http://web/seguimiento?pedido=MG-1001&t=tok");
   });
 });

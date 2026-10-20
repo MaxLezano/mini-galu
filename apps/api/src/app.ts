@@ -11,6 +11,7 @@ import {
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
   pickupHoursLabel,
+  trackingPath,
   whatsappUrl,
   workshopPlace,
 } from "@mini-galu/contracts";
@@ -376,6 +377,7 @@ export function buildApp(config: Config) {
         const a = o.shippingAddress;
         return {
           number: r.number,
+          accessToken: o.accessToken,
           firstName: o.firstName,
           email: o.email,
           items: r.items,
@@ -400,10 +402,10 @@ export function buildApp(config: Config) {
       config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail),
       async () => (await policies.get()).contact.email,
     ),
-    async (number) => {
+    async (number, token) => {
       const p = await policies.get();
       return {
-        tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
+        tracking: `${config.webOrigin}${trackingPath(number, token)}`,
         whatsapp: whatsappUrl(p.contact.whatsapp),
         site: config.webOrigin,
         workshop: p.workshop.city,
@@ -505,7 +507,7 @@ export function buildApp(config: Config) {
     ),
     {
       launch: `${config.webOrigin}/#lanzamiento`,
-      tracking: (n) => `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(n)}`,
+      tracking: (n, t) => `${config.webOrigin}${trackingPath(n, t)}`,
       product: (slug) => `${config.webOrigin}/producto/${slug}`,
       catalog: (size) => `${config.webOrigin}/catalogo?talle=${encodeURIComponent(size)}`,
       // con sesión, ingresar pasa directo al checkout con la bolsa de la cuenta

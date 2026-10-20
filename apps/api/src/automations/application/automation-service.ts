@@ -35,7 +35,8 @@ export const IDLE_CART_HOURS = 24;
 const IDLE_CART_MAX_DAYS = 7;
 
 export type AutomationLinks = {
-  tracking: (orderNumber: string) => string;
+  /** Con el token del pedido (el seguimiento muestra el total solo con él). */
+  tracking: (orderNumber: string, token: string) => string;
   product: (slug: string) => string;
   /** El lanzamiento en la home (cuenta regresiva y adelanto). */
   launch: string;
@@ -160,7 +161,7 @@ export class AutomationService {
     const o = await this.orders.find(orderId);
     if (!o) return;
     if (to === "en_camino" && (await this.isOn("despachado"))) {
-      const link = this.links.tracking(o.number);
+      const link = this.links.tracking(o.number, o.accessToken);
       await this.send("despachado", o, {
         subject: `Tu pedido #${o.number} ya salió`,
         eyebrow: `Pedido #${o.number} · en camino`,

@@ -526,6 +526,7 @@ test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido
   await expect(card).toContainText("Pedido P.");
   await expect(card).toContainText("Palermo, CABA");
   await expect(card).not.toContainText("Gurruchaga");
+  await expect(card.locator(".tr-top")).not.toContainText("$"); // el total, solo con el token del pedido
   await expect(card.locator(".stop.is-done")).toHaveCount(2);
 
   // buscar desde el formulario, como lo escriba el cliente

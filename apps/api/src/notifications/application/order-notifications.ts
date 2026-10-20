@@ -20,14 +20,15 @@ export class OrderNotifications {
   constructor(
     private readonly orders: MailOrders,
     private readonly mailer: Mailer,
-    private readonly links: (orderNumber: string) => Promise<MailLinks>,
+    /** `token`: el del pedido, para que el link de seguimiento muestre el total. */
+    private readonly links: (orderNumber: string, token?: string) => Promise<MailLinks>,
   ) {}
 
   /** "Recibimos tu pago" con el detalle del pedido. Devuelve a quién se mandó (null si no existe el pedido). */
   async paymentApproved(orderId: string, intro?: string): Promise<string | null> {
     const o = await this.orders.find(orderId);
     if (!o) return null;
-    await this.mailer.send(paymentApprovedMail(o, await this.links(o.number), intro));
+    await this.mailer.send(paymentApprovedMail(o, await this.links(o.number, o.accessToken), intro));
     return o.email;
   }
 

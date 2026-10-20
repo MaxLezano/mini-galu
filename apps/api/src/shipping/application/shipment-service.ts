@@ -133,13 +133,15 @@ export class ShipmentService {
     if (!o) throw new NotFoundError("No encontramos ese pedido");
     const s = byTracking ?? (await this.shipments.byOrder(o.id));
     const ev = s ? await this.shipments.events(s.id) : [];
+    // con el token del pedido (link del mail o del checkout): total y link para pagar
+    const owner = token && token === o.accessToken ? token : null;
     return {
       number: o.number,
       status: o.status,
       shippingMethod: o.shippingMethod,
       createdAt: o.createdAt.toISOString(),
       paidAt: o.paidAt?.toISOString() ?? null,
-      totalCents: o.totalCents,
+      totalCents: owner ? o.totalCents : null,
       items: o.items,
       destination:
         o.shippingMethod === "taller"
@@ -153,7 +155,7 @@ export class ShipmentService {
         : null,
       stops: trackingStops(o, ev),
       log: trackingLog(o, s, ev),
-      payUrl: o.status === "esperando_pago" && token && token === o.accessToken ? this.payUrl(o.number, token) : null,
+      payUrl: o.status === "esperando_pago" && owner ? this.payUrl(o.number, owner) : null,
     };
   }
 

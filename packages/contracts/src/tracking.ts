@@ -15,7 +15,8 @@ export type PublicTracking = {
   shippingMethod: ShippingMethod;
   createdAt: string;
   paidAt: string | null;
-  totalCents: Cents;
+  /** Solo con el token del pedido (los números son correlativos: sin el link no se ve cuánto se pagó). */
+  totalCents: Cents | null;
   items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
   /** "El taller · San Miguel de Tucumán, Tucumán" · "Sucursal Andreani · Rosario" · "Palermo, CABA" (sin la calle). */
   destination: string;
@@ -27,6 +28,10 @@ export type PublicTracking = {
   /** Solo si se entró con el link que tiene el token del pedido (para pagar lo que falta). */
   payUrl: string | null;
 };
+
+/** "/seguimiento?pedido=MG-1043&t=…": con el token, el seguimiento también muestra el total y el link para pagar. */
+export const trackingPath = (number: string, token?: string | null) =>
+  `/seguimiento?pedido=${encodeURIComponent(number)}${token ? `&t=${encodeURIComponent(token)}` : ""}`;
 
 /** Lo que devuelve generar la etiqueta desde el panel. */
 export type ShipmentCreated = { carrier: string; trackingNumber: string };

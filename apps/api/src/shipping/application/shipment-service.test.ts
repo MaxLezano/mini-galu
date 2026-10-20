@@ -127,6 +127,13 @@ describe("envíos", () => {
     await expect(shipments.track("MG-9999", null)).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("el total del pedido solo se ve con el token (los números son correlativos)", async () => {
+    const o = await paidOrder();
+    expect((await shipments.track(o.number, null)).totalCents).toBeNull();
+    expect((await shipments.track(o.number, "otro")).totalCents).toBeNull();
+    expect((await shipments.track(o.number, o.accessToken)).totalCents).toBe(orders.items[0]?.totalCents);
+  });
+
   it("sin pagar: el link para pagar solo aparece con el token del pedido", async () => {
     const o = await paidOrder();
     const record = orders.items[0];

@@ -1,6 +1,13 @@
 "use client";
 
-import { type CheckoutConfig, formatARS, imageThumb, type OrderReceipt, type PayResult } from "@mini-galu/contracts";
+import {
+  type CheckoutConfig,
+  formatARS,
+  imageThumb,
+  type OrderReceipt,
+  type PayResult,
+  trackingPath,
+} from "@mini-galu/contracts";
 import { ChevronDown, Info, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -180,7 +187,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
                     Te mandamos el código a {receipt.email}.
                   </p>
                 ) : (
-                  <Link className="btn" href={`/seguimiento?pedido=${receipt.number}`}>
+                  <Link className="btn" href={trackingPath(receipt.number, token)}>
                     Seguir mi pedido
                   </Link>
                 )}
@@ -264,6 +271,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
       {done && (
         <SuccessOverlay
           receipt={done}
+          token={token}
           pickupLabel={null}
           deliveryDetail={null}
           workshop={info.workshop}

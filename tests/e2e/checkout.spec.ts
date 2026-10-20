@@ -60,6 +60,16 @@ test("compra como invitada con retiro en el taller: rechazo y reintento aprobado
   await expect(done).toContainText(/Pedido #MG-\d+/);
   await expect(done).toContainText("San Miguel de Tucumán");
 
+  // "Seguir mi pedido" lleva el token: el seguimiento muestra el total (sin el token, no)
+  const follow = done.getByRole("link", { name: /Seguir mi pedido/ });
+  await expect(follow).toHaveAttribute("href", /\/seguimiento\?pedido=MG-\d+&t=.+/);
+  const href = (await follow.getAttribute("href")) ?? "";
+  await page.goto(href);
+  await expect(page.locator(".tr-card")).toContainText(/pagado el .+ · \$/);
+  await page.goto(href.replace(/&t=.*/, ""));
+  await expect(page.locator(".tr-card")).toContainText("Pedido #MG-");
+  await expect(page.locator(".tr-card .tr-top")).not.toContainText("$");
+
   // la bolsa quedó vacía
   await page.goto("/checkout");
   await expect(page.getByText("Tu bolsa está vacía").first()).toBeVisible();

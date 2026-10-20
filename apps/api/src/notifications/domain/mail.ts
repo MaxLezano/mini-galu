@@ -7,6 +7,8 @@ export type Mail = { to: string; subject: string; html: string; text: string; re
 /** Lo que el mail necesita saber del pedido (lo arma la composición desde el módulo de pedidos). */
 export type MailOrder = {
   number: string;
+  /** Token del pedido: el link "Seguir mi pedido" lo lleva (sin él, el seguimiento no muestra el total). */
+  accessToken: string;
   firstName: string;
   email: string;
   items: { name: string; size: string; qty: number; unitPriceCents: number; imageUrl: string }[];

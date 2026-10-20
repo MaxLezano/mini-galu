@@ -795,6 +795,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         <SuccessOverlay
           workshop={info.workshop}
           receipt={done}
+          token={order?.number === done.number ? order.accessToken : (back?.t ?? null)}
           pickupLabel={slotLabel ?? null}
           deliveryDetail={selected && isAndreani(selected.method) ? selected.detail : null}
           still={isStill()}

@@ -81,7 +81,7 @@ beforeEach(() => {
     launches,
     {
       launch: "http://web/#lanzamiento",
-      tracking: (n) => `http://web/seguimiento?pedido=${n}`,
+      tracking: (n, t) => `http://web/seguimiento?pedido=${n}&t=${t}`,
       product: (s) => `http://web/producto/${s}`,
       catalog: (size) => `http://web/catalogo?talle=${size}`,
       bag: "http://web/ingresar?volver=%2Fcheckout",
@@ -120,7 +120,7 @@ describe("automatizaciones", () => {
       "Tu pedido #MG-1042 ya salió",
       "Tu pedido #MG-1043 está listo para retirar",
     ]);
-    expect(messenger.sent[0]?.body).toContain("http://web/seguimiento?pedido=MG-1042");
+    expect(messenger.sent[0]?.body).toContain("http://web/seguimiento?pedido=MG-1042&t=tok1");
     expect(messenger.sent[1]?.body).toBe(
       "Hola Carla! Tu pedido #MG-1043 está listo para retirar en el taller (Villa Crespo, CABA). Te esperamos el Jue 8 · 10 a 13 h.",
     );

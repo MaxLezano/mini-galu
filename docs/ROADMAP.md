@@ -312,8 +312,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ⏳ Decidir con Gaby: pedir confirmar el mail antes de poder ingresar (Better Auth `requireEmailVerification`). Hoy
   una cuenta sin confirmar se puede usar; si alguien la crea con el mail de otra persona, Better Auth no la vincula a
   Google (bien), pero la dueña real no puede entrar con Google hasta recuperar la contraseña
-- ⏳ El seguimiento público por número muestra prendas y total del pedido: con el tope ya no se recorren todos, pero
-  conviene pensar si el total hace falta sin el token
+- ✅ **Total del pedido solo con el token**: el seguimiento por número (o código Andreani) sigue mostrando recorrido,
+  prendas, localidad y "Lucía F.", pero el total (y el monto de "Te falta pagar") solo con el token del pedido.
+  Lo llevan los links "Seguir mi pedido" del mail "Recibimos tu pago", del aviso de despacho, del pago aprobado del
+  checkout y del link de pago (`trackingPath` de contracts)
 
 ## Fase 9 · Pulido / Fase 10 · Deploy
 - ✅ Páginas de ayuda (`/ayuda/cambios`, `envios-y-pagos`, `terminos`, `privacidad`; sin mockup propio, con el lenguaje

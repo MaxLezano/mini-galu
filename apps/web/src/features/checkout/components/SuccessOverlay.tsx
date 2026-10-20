@@ -1,4 +1,4 @@
-import { formatARS, type OrderReceipt, PAYMENT_METHODS } from "@mini-galu/contracts";
+import { formatARS, type OrderReceipt, PAYMENT_METHODS, trackingPath } from "@mini-galu/contracts";
 import { CalendarHeart, Clock, Gift, House, Mail, PackageSearch, Scissors, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -11,12 +11,15 @@ type Confetti = { left: number; color: string; duration: number; delay: number; 
 /** Pago aprobado (o en revisión) — checkout.html → #done. */
 export function SuccessOverlay({
   receipt,
+  token,
   pickupLabel,
   deliveryDetail,
   workshop,
   still,
 }: {
   receipt: OrderReceipt;
+  /** Token del pedido: el seguimiento lo usa para mostrar el total. */
+  token: string | null;
   /** Localidad del taller (Tienda y pagos → Datos de la tienda). */
   workshop: string;
   /** Franja elegida para retirar ("Jue 8 · 10 a 13 h"). */
@@ -167,7 +170,7 @@ export function SuccessOverlay({
               Ver la tienda
             </Link>
           ) : (
-            <Link className="btn" href={`/seguimiento?pedido=${encodeURIComponent(receipt.number)}`}>
+            <Link className="btn" href={trackingPath(receipt.number, token)}>
               Seguir mi pedido <PackageSearch />
             </Link>
           )}

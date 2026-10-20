@@ -33,8 +33,8 @@ export function TrackingCard({
             {post}
           </p>
           <p className="muted" style={{ margin: "10px 0 0" }}>
-            Pedido <b>#{t.number}</b> · {t.paidAt ? "pagado" : "creado"} el {shortDate(t.paidAt ?? t.createdAt)} ·{" "}
-            {formatARS(t.totalCents)}
+            Pedido <b>#{t.number}</b> · {t.paidAt ? "pagado" : "creado"} el {shortDate(t.paidAt ?? t.createdAt)}
+            {t.totalCents !== null && ` · ${formatARS(t.totalCents)}`}
           </p>
         </div>
         <span className="hand">{handNote(t.status, t.shippingMethod)}</span>
@@ -60,7 +60,7 @@ export function TrackingCard({
           </ul>
           {waiting && (
             <div className="pending-pay">
-              <b>Te falta pagar {formatARS(t.totalCents)}</b>
+              <b>Te falta pagar{t.totalCents !== null && ` ${formatARS(t.totalCents)}`}</b>
               <span className="muted" style={{ fontSize: 13.5 }}>
                 Podés pagar con tarjeta de crédito, débito o dinero en cuenta de Mercado Pago
                 {t.payUrl ? "." : ", desde el link que te mandamos por mail o WhatsApp."}
