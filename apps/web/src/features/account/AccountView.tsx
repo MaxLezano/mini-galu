@@ -29,6 +29,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { ProductCardContainer } from "@/features/catalog/containers/ProductCardContainer";
 import { useFavorites } from "@/features/favorites/favorites-store";
 import { AccountGiftcards } from "@/features/giftcards/containers/AccountGiftcards";
+import { useStoreInfo } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
@@ -58,6 +59,7 @@ const TABS: [Tab, string, ReactNode][] = [
 /** Mi cuenta — design/mockups/cuenta.html */
 export function AccountView() {
   const router = useRouter();
+  const info = useStoreInfo();
   const mounted = useMounted();
   const status = useAccount((s) => s.status);
   const signOut = useAccount((s) => s.signOut);
@@ -349,6 +351,7 @@ export function AccountView() {
                 <AddressForm
                   key={a.id}
                   initial={a}
+                  defaultProvince={info.province}
                   busy={busy}
                   onCancel={() => setEditingAddr(null)}
                   onSave={async (v) => {
@@ -392,6 +395,7 @@ export function AccountView() {
             {editingAddr === "nueva" ? (
               <AddressForm
                 initial={null}
+                defaultProvince={info.province}
                 busy={busy}
                 onCancel={() => setEditingAddr(null)}
                 onSave={async (v) => {

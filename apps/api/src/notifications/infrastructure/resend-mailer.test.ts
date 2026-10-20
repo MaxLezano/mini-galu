@@ -32,6 +32,13 @@ describe("ResendMailer", () => {
     });
   });
 
+  it("si el mail tiene a dónde responder, lo manda como reply_to", async () => {
+    const f = vi.spyOn(globalThis, "fetch").mockResolvedValue(reply(200, { id: "e1" }));
+    await resend.send({ ...mail, replyTo: "mini.galu.store@gmail.com" });
+    const [, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).reply_to).toBe("mini.galu.store@gmail.com");
+  });
+
   it("si se pasa del límite por segundo espera lo que pide Resend y reintenta", async () => {
     const f = vi
       .spyOn(globalThis, "fetch")

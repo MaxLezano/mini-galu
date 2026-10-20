@@ -90,6 +90,7 @@ export class FixedShipping implements AssistantShipping {
       ],
       pickupSlots: [],
       workshop: "Villa Crespo",
+      localDelivery: null,
       branches: [],
     };
   }

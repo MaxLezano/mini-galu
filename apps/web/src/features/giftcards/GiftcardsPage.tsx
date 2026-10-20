@@ -21,7 +21,7 @@ const faq = (exchangeDays: number) => [
 ];
 
 /** giftcards.html: hero, armado con vista previa, cómo funciona, saldo y preguntas. */
-export function GiftcardsPage({ exchangeDays }: { exchangeDays: number }) {
+export function GiftcardsPage({ exchangeDays, months }: { exchangeDays: number; months: number }) {
   return (
     <main>
       <section className="wrap gh">
@@ -46,7 +46,7 @@ export function GiftcardsPage({ exchangeDays }: { exchangeDays: number }) {
               <Send /> Llega al instante o el día que elijas
             </li>
             <li>
-              <CalendarHeart /> Vale 6 meses y se puede usar en varias compras
+              <CalendarHeart /> Vale {months === 1 ? "1 mes" : `${months} meses`} y se puede usar en varias compras
             </li>
             <li>
               <CreditCard /> Pagás con crédito, débito o dinero en cuenta

@@ -11,12 +11,12 @@ import {
   type PublicTracking,
   type Size,
   type StorePolicies,
+  whatsappUrl,
 } from "@mini-galu/contracts";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { headline } from "@/features/tracking/tracking-view";
 import { sizesIn, stockOf, stripAccents, totalStock } from "@/lib/product";
-import { SITE } from "@/lib/site";
 
 /**
  * Galú por reglas sobre el catálogo REAL (stock y precios de la API), portado del mockup.
@@ -32,8 +32,9 @@ const text = (content: ReactNode): GaluReply => ({ kind: "text", content });
 const cards = (products: ProductSummary[], size?: Size): GaluReply[] =>
   products.length ? [{ kind: "cards", products, size }] : [];
 
-const WA = (label = "escribile a Gaby") => (
-  <a className="link" href={SITE.whatsapp}>
+/** Link al WhatsApp de la tienda (el de Tienda y pagos → Datos de la tienda). */
+const WA = (whatsapp: string, label = "escribile a Gaby") => (
+  <a className="link" href={whatsappUrl(whatsapp)}>
     {label}
   </a>
 );
@@ -94,12 +95,12 @@ export function orderReply(t: PublicTracking): GaluReply[] {
   ];
 }
 
-export function orderNotFound(code: string): GaluReply[] {
+export function orderNotFound(code: string, whatsapp: string): GaluReply[] {
   return [
     text(
       <>
         No encontré el pedido <b>{code}</b>. Revisá el número (está en el mail de la compra y empieza con <b>MG-</b>) o{" "}
-        {WA()}.
+        {WA(whatsapp)}.
       </>,
     ),
   ];
@@ -334,7 +335,7 @@ export async function answer(
       text(
         <>
           Por ahora no hacemos prendas a medida ni por encargo. Si me contás para qué ocasión es, te muestro lo que hay
-          en su talle, o {WA("le escribís a Gaby")} y lo charlan.
+          en su talle, o {WA(policies.contact.whatsapp, "le escribís a Gaby")} y lo charlan.
         </>,
       ),
     ];
@@ -406,7 +407,7 @@ export async function answer(
       content: (
         <>
           Eso todavía no lo sé. Puedo ayudarte con <b>talles, stock, precios, envíos</b> o a <b>elegir un look</b>. Para
-          otras consultas, {WA()}.
+          otras consultas, {WA(policies.contact.whatsapp)}.
         </>
       ),
     },

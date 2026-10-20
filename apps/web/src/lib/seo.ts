@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@mini-galu/contracts";
+import { instagramUrl, type ProductDetail, type StorePolicies } from "@mini-galu/contracts";
 import { totalStock } from "./product";
 import { SITE } from "./site";
 
@@ -11,15 +11,16 @@ export const serializeJsonLd = (data: object) => JSON.stringify(data).replace(/<
 /** Base de Open Graph: cada página que define `openGraph` reemplaza la del layout entera, así que la repite. */
 export const OPEN_GRAPH = { siteName: SITE.name, locale: "es_AR", type: "website" } as const;
 
-export function storeJsonLd() {
+/** La tienda, con el contacto de Tienda y pagos → Datos de la tienda. */
+export function storeJsonLd({ contact }: StorePolicies) {
   return {
     "@context": "https://schema.org",
     "@type": "OnlineStore",
     name: SITE.name,
     description: SITE.description,
     url: absoluteUrl("/"),
-    email: SITE.email,
-    sameAs: [SITE.instagram],
+    email: contact.email,
+    sameAs: [instagramUrl(contact.instagram)],
   };
 }
 

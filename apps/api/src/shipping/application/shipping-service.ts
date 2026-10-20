@@ -1,19 +1,19 @@
 import {
   DEFAULT_POLICIES,
   freeShippingFrom,
+  type LocalDeliveryInfo,
+  localDeliveryFor,
   qualifiesForFreeShipping,
   type ShippingBranch,
   type ShippingMethod,
   type ShippingOption,
   type ShippingOptions,
-  WORKSHOP as WORKSHOP_AT,
+  type StorePolicies,
 } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
 import { branchAddress, branchesFor, branchName } from "../domain/branches";
 import { isValidSlot, pickupSlots } from "../domain/pickup";
 import type { BranchDirectory, PoliciesReader, ShippingRates } from "./ports";
-
-export const WORKSHOP = WORKSHOP_AT.city;
 
 export class ShippingService {
   constructor(
@@ -75,13 +75,14 @@ export class ShippingService {
       options.push({
         method: "taller",
         label: "Retiro en el taller",
-        detail: `${WORKSHOP} · elegís día y horario`,
+        detail: `${p.workshop.city} · elegís día y horario`,
         cents: 0,
       });
     return {
       options,
       pickupSlots: p.methods.taller ? pickupSlots(this.clock(), p.pickupHours) : [],
-      workshop: WORKSHOP,
+      workshop: p.workshop.city,
+      localDelivery: postalCode ? localDelivery(p, postalCode) : null,
       branches,
     };
   }
@@ -106,4 +107,10 @@ export class ShippingService {
     if (s.method === "taller" && !isValidSlot(s.pickupSlot ?? "", this.clock(), p.pickupHours))
       throw new ValidationError("Ese horario de retiro ya no está disponible, elegí otro");
   }
+}
+
+/** La cadetería de la ciudad del taller: se muestra con su precio desde y se coordina por WhatsApp. */
+function localDelivery(p: StorePolicies, postalCode: string): LocalDeliveryInfo | null {
+  const d = localDeliveryFor(p, postalCode);
+  return d && { label: `Cadete en ${p.workshop.city}`, fromCents: d.fromCents, whatsapp: p.contact.whatsapp };
 }

@@ -154,7 +154,7 @@ export const adminApi = {
     adminRequest<{ recipients: number }>("/admin/newsletter/send", { method: "POST", body: JSON.stringify(input) }),
   saveShipping: (input: ShippingSettings) =>
     adminRequest<AdminShipping>("/admin/shipping", { method: "PUT", body: JSON.stringify(input) }),
-  savePolicies: (p: StorePolicies) =>
+  savePolicies: (p: Partial<StorePolicies>) =>
     adminRequest<StorePolicies>("/admin/policies", { method: "PUT", body: JSON.stringify(p) }),
   savePayments: (s: PaymentSettings) =>
     adminRequest<AdminPayments>("/admin/payments", { method: "PUT", body: JSON.stringify(s) }),

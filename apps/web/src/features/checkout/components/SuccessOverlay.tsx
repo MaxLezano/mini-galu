@@ -2,7 +2,6 @@ import { formatARS, type OrderReceipt, PAYMENT_METHODS } from "@mini-galu/contra
 import { CalendarHeart, Clock, Gift, House, Mail, PackageSearch, Scissors, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SITE } from "@/lib/site";
 import { Foco } from "@/ui/atoms/Foco";
 
 const COLORS = ["#E8C6BF", "#A95E3A", "#8B9A7C", "#A3302B", "#EADFD0"];
@@ -14,9 +13,12 @@ export function SuccessOverlay({
   receipt,
   pickupLabel,
   deliveryDetail,
+  workshop,
   still,
 }: {
   receipt: OrderReceipt;
+  /** Localidad del taller (Tienda y pagos → Datos de la tienda). */
+  workshop: string;
   /** Franja elegida para retirar ("Jue 8 · 10 a 13 h"). */
   pickupLabel: string | null;
   /** Plazo de Andreani ("Llega en 2 a 3 días hábiles"). */
@@ -70,7 +72,7 @@ export function SuccessOverlay({
           {
             icon: <Store />,
             title: pickupLabel ?? "El día elegido",
-            text: `Lo retirás en el taller de ${SITE.workshop}`,
+            text: `Lo retirás en el taller de ${workshop}`,
           },
         ]
       : [

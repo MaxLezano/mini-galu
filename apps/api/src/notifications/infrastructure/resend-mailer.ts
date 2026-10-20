@@ -18,6 +18,7 @@ export class ResendMailer implements Mailer {
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
+      ...(mail.replyTo && { reply_to: mail.replyTo }),
     });
     for (let attempt = 1; ; attempt++) {
       const res = await fetch(API, {

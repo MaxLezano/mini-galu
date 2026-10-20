@@ -4,6 +4,7 @@ import type { PublicTracking } from "@mini-galu/contracts";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useStoreInfo } from "@/features/shell/shell-context";
 import { useUi } from "@/features/shell/ui-store";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { TrackingCard } from "../components/TrackingCard";
@@ -18,6 +19,7 @@ type Props = {
 
 /** Seguí tu pedido — design/mockups/seguimiento.html */
 export function TrackingView({ code, result }: Props) {
+  const info = useStoreInfo();
   const router = useRouter();
   const openGalu = useUi((s) => s.openGalu);
   const [value, setValue] = useState(code);
@@ -65,6 +67,7 @@ export function TrackingView({ code, result }: Props) {
         <TrackingCard
           key={result.number}
           t={result}
+          whatsapp={info.whatsapp}
           onAskGalu={() => openGalu(`¿Dónde está mi pedido #${result.number}?`)}
         />
       ) : result === null ? (

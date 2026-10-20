@@ -1,8 +1,9 @@
 import { type AdminGiftcards, formatARS } from "@mini-galu/contracts";
 import { monthYear } from "@/lib/date";
+import { GiftcardValidity } from "./GiftcardValidity";
 
 /** Gift cards (admin-tienda.html): lo vendido, el saldo que falta usar y cada tarjeta activa. */
-export function GiftcardsBox({ data }: { data: AdminGiftcards }) {
+export function GiftcardsBox({ data, months }: { data: AdminGiftcards; months: number }) {
   return (
     <section className="box" id="giftcards">
       <div className="box-head">
@@ -11,6 +12,7 @@ export function GiftcardsBox({ data }: { data: AdminGiftcards }) {
           {data.sold} {data.sold === 1 ? "vendida" : "vendidas"}
         </span>
       </div>
+      <GiftcardValidity initial={months} />
       <div className="kpis" style={{ gridTemplateColumns: "1fr 1fr", marginBottom: 16 }}>
         <div className="kpi" style={{ background: "var(--linen)", boxShadow: "none" }}>
           <span>Vendido</span>

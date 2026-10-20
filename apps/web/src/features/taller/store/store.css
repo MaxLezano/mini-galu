@@ -63,5 +63,12 @@
 .pol-hour { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; font-size: 13.5px; }
 .pol-hour .input { height: 38px; font-size: 13.5px; }
 .pol-zone-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.pol-zone-cps { grid-column: span 2; }
 @media (max-width: 520px) { .pol-zone-fields { grid-template-columns: 1fr 1fr; } }
 .help-ed-sec-head > span { white-space: nowrap; }
+/* Variables de las páginas de ayuda ({dias_cambio}…) */
+.help-vars { font-size: 12.5px; }
+.help-vars summary { cursor: pointer; font-weight: 600; }
+.help-vars p { margin: 8px 0 6px; }
+.help-vars ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.help-vars code { font: 600 12px/1.4 var(--f-ui); background: var(--linen); padding: 1px 6px; border-radius: 6px; }

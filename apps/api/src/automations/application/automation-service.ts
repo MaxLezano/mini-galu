@@ -45,7 +45,7 @@ export type AutomationLinks = {
   bag: string;
   site: string;
   /** "San Miguel de Tucumán, Tucumán" */
-  workshop: string;
+  workshop: () => Promise<string>;
   /** Donde se reseñan las prendas del pedido (con su token, sin cuenta). */
   review: (orderNumber: string, token: string) => string;
 };
@@ -175,7 +175,7 @@ export class AutomationService {
         eyebrow: `Pedido #${o.number} · listo para retirar`,
         body: await this.text("listo_retirar", {
           ...this.vars(o),
-          taller: this.links.workshop,
+          taller: await this.links.workshop(),
           horario: o.pickupLabel ? `Te esperamos el ${o.pickupLabel}.` : "Coordinamos el horario por WhatsApp.",
         }),
         cta: null,

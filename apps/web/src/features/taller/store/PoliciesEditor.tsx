@@ -1,6 +1,6 @@
 "use client";
 
-import { SHIPPING_ZONES, type StorePolicies, WEEKDAYS, ZONE_LABELS } from "@mini-galu/contracts";
+import { type StorePolicies, WEEKDAYS } from "@mini-galu/contracts";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/features/shell/ui-store";
@@ -21,7 +21,8 @@ type Props = {
 
 /**
  * Entregas y cambios — admin-tienda.html → #envios (envío gratis, formas de entrega y horarios de retiro), más los
- * días de cambio y las tarifas por zona. Lo leen la ficha, la bolsa, el checkout, la ayuda, Galú y los mails.
+ * días de cambio, las zonas de envío (nombre, códigos postales y tarifas) y la cadetería de la ciudad del taller. Lo
+ * leen la ficha, la bolsa, el checkout, la ayuda, Galú y los mails.
  */
 export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
   const [saved, setSaved] = useState(initial);
@@ -32,7 +33,7 @@ export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
   const shipped = form.methods.domicilio || form.methods.sucursal;
 
   const save = async () => {
-    const r = fromForm(form);
+    const r = fromForm(form, saved);
     if ("field" in r) {
       setError(r);
       return document.getElementById(r.field)?.focus();
@@ -148,64 +149,133 @@ export function PoliciesEditor({ initial, andreani, helpEdited }: Props) {
               </div>
             )}
 
-            <h3 className="sh-sub">Tarifas por zona</h3>
+            <h3 className="sh-sub">Zonas de envío</h3>
             <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
               {andreani
                 ? "Con Andreani conectado, el checkout cotiza con Andreani: esta tabla se usa en la ficha y si Andreani no responde."
-                : "Las usa el checkout mientras Andreani no esté conectado, y la ficha para calcular el envío."}
+                : "Las usa el checkout mientras Andreani no esté conectado, y la ficha para calcular el envío."}{" "}
+              Cada código postal cae en la primera zona que lo incluye; los que no entran en ninguna van a la última.
             </p>
-            {SHIPPING_ZONES.map((z) => {
-              const set = (k: "domicilio" | "sucursal" | "days", v: string) =>
-                setForm((f) => ({ ...f, rates: { ...f.rates, [z]: { ...f.rates[z], [k]: v } } }));
+            {form.zones.map((z, i) => {
+              const last = i === form.zones.length - 1;
+              const id = (k: string) => `pol-zone-${i}-${k}`;
+              const set = (k: keyof typeof z, v: string) =>
+                setForm((f) => ({ ...f, zones: f.zones.map((x, j) => (j === i ? { ...x, [k]: v } : x)) }));
               return (
-                <fieldset key={z} className="pol-zone">
-                  <legend>
-                    {ZONE_LABELS[z].title} <small className="muted">{ZONE_LABELS[z].cp}</small>
-                  </legend>
+                // biome-ignore lint/suspicious/noArrayIndexKey: las zonas son posiciones fijas de la tabla
+                <fieldset key={i} className="pol-zone">
+                  <legend>{z.title || `Zona ${i + 1}`}</legend>
                   <div className="pol-zone-fields">
                     <div className="field">
-                      <label htmlFor={`pol-${z}-domicilio`}>A domicilio</label>
+                      <label htmlFor={id("title")}>Nombre</label>
+                      <input
+                        className="input"
+                        id={id("title")}
+                        value={z.title}
+                        onChange={(e) => set("title", e.target.value)}
+                      />
+                    </div>
+                    <div className="field pol-zone-cps">
+                      <label htmlFor={id("cps")}>Códigos postales</label>
+                      {last ? (
+                        <input className="input" id={id("cps")} value="El resto del país" disabled />
+                      ) : (
+                        <input
+                          className="input"
+                          id={id("cps")}
+                          placeholder="4000-4199, 4700"
+                          value={z.cps}
+                          onChange={(e) => set("cps", e.target.value)}
+                        />
+                      )}
+                    </div>
+                    <div className="field">
+                      <label htmlFor={id("domicilio")}>A domicilio</label>
                       <div className="inline-input">
                         <span>$</span>
                         <input
                           className="input"
-                          id={`pol-${z}-domicilio`}
+                          id={id("domicilio")}
                           inputMode="numeric"
-                          value={form.rates[z].domicilio}
+                          value={z.domicilio}
                           onChange={(e) => set("domicilio", e.target.value)}
                         />
                       </div>
                     </div>
                     <div className="field">
-                      <label htmlFor={`pol-${z}-sucursal`}>A sucursal</label>
+                      <label htmlFor={id("sucursal")}>A sucursal</label>
                       <div className="inline-input">
                         <span>$</span>
                         <input
                           className="input"
-                          id={`pol-${z}-sucursal`}
+                          id={id("sucursal")}
                           inputMode="numeric"
-                          value={form.rates[z].sucursal}
+                          value={z.sucursal}
                           onChange={(e) => set("sucursal", e.target.value)}
                         />
                       </div>
                     </div>
                     <div className="field">
-                      <label htmlFor={`pol-${z}-days`}>Días hábiles</label>
+                      <label htmlFor={id("days")}>Días hábiles</label>
                       <input
                         className="input"
-                        id={`pol-${z}-days`}
+                        id={id("days")}
                         placeholder="2 a 3"
-                        value={form.rates[z].days}
+                        value={z.days}
                         onChange={(e) => set("days", e.target.value)}
                       />
                     </div>
                   </div>
-                  {err(`pol-${z}-domicilio`, `pol-${z}-sucursal`, `pol-${z}-days`)}
+                  {err(id("title"), id("cps"), id("domicilio"), id("sucursal"), id("days"))}
                 </fieldset>
               );
             })}
           </>
         )}
+
+        <h3 className="sh-sub">Cadetería en la ciudad</h3>
+        <label className="switch">
+          Ofrecer cadete propio
+          <input
+            className="tog"
+            id="pol-local"
+            type="checkbox"
+            checked={form.local.enabled}
+            onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, enabled: e.target.checked } }))}
+          />
+        </label>
+        {form.local.enabled && (
+          <div className="pol-zone-fields">
+            <div className="field pol-zone-cps">
+              <label htmlFor="pol-local-cps">Códigos postales</label>
+              <input
+                className="input"
+                id="pol-local-cps"
+                placeholder="4000"
+                value={form.local.cps}
+                onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, cps: e.target.value } }))}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="pol-local-from">Desde</label>
+              <div className="inline-input">
+                <span>$</span>
+                <input
+                  className="input"
+                  id="pol-local-from"
+                  inputMode="numeric"
+                  value={form.local.from}
+                  onChange={(e) => setForm((f) => ({ ...f, local: { ...f.local, from: e.target.value } }))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        <small className="muted">
+          Se muestra en la ficha y en el checkout con su precio desde y el botón para coordinarlo por WhatsApp. No se
+          cobra en la web.
+        </small>
+        {err("pol-local-cps", "pol-local-from")}
 
         {helpEdited && (
           <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>

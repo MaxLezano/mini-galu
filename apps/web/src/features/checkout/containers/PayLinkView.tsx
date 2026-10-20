@@ -6,10 +6,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { GiftcardCard } from "@/features/giftcards/components/GiftcardCard";
 import { isStill } from "@/features/shell/craft";
+import { useStoreInfo } from "@/features/shell/shell-context";
 import { toast } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
 import { launchWhen } from "@/lib/date";
-import { SITE } from "@/lib/site";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { SimulatedBrick, type SimulatedCard } from "../components/SimulatedBrick";
 import { SuccessOverlay } from "../components/SuccessOverlay";
@@ -29,6 +29,7 @@ type Props = {
  * checkout. Se llega con el número y el token del pedido (/pagar/MG-1046?t=…).
  */
 export function PayLinkView({ config, initial, token, paymentId }: Props) {
+  const info = useStoreInfo();
   const [receipt, setReceipt] = useState(initial);
   const [done, setDone] = useState<OrderReceipt | null>(null);
   const [busy, setBusy] = useState(false);
@@ -163,7 +164,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
                     <p className="muted" style={{ margin: 0 }}>
                       Las prendas volvieron a la tienda. Escribinos y te armamos uno nuevo.
                     </p>
-                    <a className="btn" href={SITE.whatsapp} target="_blank" rel="noopener">
+                    <a className="btn" href={info.whatsapp} target="_blank" rel="noopener">
                       Escribir por WhatsApp
                     </a>
                   </>
@@ -260,7 +261,15 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
         </div>
       </aside>
 
-      {done && <SuccessOverlay receipt={done} pickupLabel={null} deliveryDetail={null} still={isStill()} />}
+      {done && (
+        <SuccessOverlay
+          receipt={done}
+          pickupLabel={null}
+          deliveryDetail={null}
+          workshop={info.workshop}
+          still={isStill()}
+        />
+      )}
     </main>
   );
 }

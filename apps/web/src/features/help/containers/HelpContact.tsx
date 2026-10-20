@@ -1,12 +1,13 @@
 "use client";
 
 import { Mail, MessageCircleHeart } from "lucide-react";
+import { useStoreInfo } from "@/features/shell/shell-context";
 import { useUi } from "@/features/shell/ui-store";
-import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 
 /** "¿Te quedó una duda?": Galú, WhatsApp y mail del taller. */
 export function HelpContact() {
+  const info = useStoreInfo();
   const openGalu = useUi((s) => s.openGalu);
   return (
     <div className="help-contact hem-top">
@@ -18,11 +19,11 @@ export function HelpContact() {
         <button type="button" className="btn" onClick={() => openGalu()}>
           <MessageCircleHeart className="i-sm" /> Preguntale a Galú
         </button>
-        <a className="btn btn-ghost" href={SITE.whatsapp}>
+        <a className="btn btn-ghost" href={info.whatsapp}>
           <BrandIcon name="whatsapp" /> WhatsApp
         </a>
-        <a className="btn btn-ghost" href={`mailto:${SITE.email}`}>
-          <Mail className="i-sm" /> {SITE.email}
+        <a className="btn btn-ghost" href={`mailto:${info.email}`}>
+          <Mail className="i-sm" /> {info.email}
         </a>
       </div>
     </div>

@@ -1,17 +1,16 @@
-import { type StorePolicies, StorePoliciesSchema } from "@mini-galu/contracts";
+import type { StorePolicies } from "@mini-galu/contracts";
 import { type Db, eq, schema as s } from "@mini-galu/db";
 import type { PoliciesStore } from "../application/ports";
 
 const KEY = "policies";
 
-/** Políticas del panel en content_blocks["policies"]. */
+/** Ajustes de la tienda del panel en content_blocks["policies"]. */
 export class DrizzlePoliciesStore implements PoliciesStore {
   constructor(private readonly db: Db) {}
 
-  async get(): Promise<StorePolicies | null> {
+  async get(): Promise<unknown | null> {
     const [r] = await this.db.select().from(s.contentBlocks).where(eq(s.contentBlocks.key, KEY));
-    const parsed = StorePoliciesSchema.safeParse(r?.value);
-    return parsed.success ? parsed.data : null;
+    return r?.value ?? null;
   }
 
   async save(value: StorePolicies) {

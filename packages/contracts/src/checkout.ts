@@ -139,10 +139,15 @@ export type PickupSlot = { id: string; label: string };
 /** Sucursal Andreani para retirar (la primera es la que atiende el código postal). */
 export type ShippingBranch = { id: string; name: string; address: string; hours: string | null };
 
+/** "Cadete en San Miguel de Tucumán · desde $3.000" con el WhatsApp para coordinarlo. */
+export type LocalDeliveryInfo = { label: string; fromCents: Cents; whatsapp: string };
+
 export type ShippingOptions = {
   options: ShippingOption[];
   pickupSlots: PickupSlot[];
   workshop: string;
+  /** Cadetería propia si llega al CP consultado: no se cobra en la web, se coordina por WhatsApp. */
+  localDelivery: LocalDeliveryInfo | null;
   /** Sucursales para el CP consultado (vacío sin CP o si no se pudieron consultar). */
   branches: ShippingBranch[];
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import type { HelpPage, HelpPageInput, HelpTopic } from "@mini-galu/contracts";
+import { HELP_VARS, type HelpPage, type HelpPageInput, type HelpTopic } from "@mini-galu/contracts";
 import { ArrowDown, ArrowUp, Check, ExternalLink, Plus, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/features/shell/ui-store";
@@ -164,6 +164,20 @@ export function HelpEditor({ initial }: { initial: HelpPage[] }) {
         <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
           Separá los párrafos con una línea en blanco. Empezá una línea con “- ” para armar una lista.
         </p>
+        <details className="help-vars">
+          <summary>Datos que se completan solos</summary>
+          <p className="muted">
+            Escribí estos nombres entre llaves y la tienda muestra lo que tengas en Tienda y pagos (si lo cambiás, la
+            página cambia sola):
+          </p>
+          <ul>
+            {Object.entries(HELP_VARS).map(([k, label]) => (
+              <li key={k}>
+                <code>{`{${k}}`}</code> {label}
+              </li>
+            ))}
+          </ul>
+        </details>
         {error && (
           <span className="field-error" role="alert">
             {error}

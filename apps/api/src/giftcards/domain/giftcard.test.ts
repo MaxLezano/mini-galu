@@ -13,7 +13,8 @@ describe("gift cards", () => {
   });
 
   it("vence a los 6 meses y se manda el día elegido a las 9 de Argentina", () => {
-    expect(expiresAt(new Date("2026-10-14T12:00:00Z")).toISOString()).toBe("2027-04-14T12:00:00.000Z");
+    expect(expiresAt(new Date("2026-10-14T12:00:00Z"), 6).toISOString()).toBe("2027-04-14T12:00:00.000Z");
+    expect(expiresAt(new Date("2026-10-14T12:00:00Z"), 2).toISOString()).toBe("2026-12-14T12:00:00.000Z");
     expect(deliverAt("2026-11-14")?.toISOString()).toBe("2026-11-14T12:00:00.000Z");
     expect(deliverAt(null)).toBeNull();
   });

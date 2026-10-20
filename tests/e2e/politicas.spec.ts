@@ -24,7 +24,7 @@ test("entregas y cambios: lo que cambia Gaby en el panel se ve en la tienda", as
     await box.getByLabel("Retiro en el taller").uncheck();
     await expect(box.getByLabel("Sábado")).toHaveCount(0);
     await box.getByLabel("Envío gratis desde un monto").uncheck();
-    await box.locator("#pol-amba-domicilio").fill("4.000");
+    await box.locator("#pol-zone-2-domicilio").fill("4.000");
     await box.getByRole("button", { name: "Guardar entregas y cambios" }).click();
     await expect(page.locator("#toast")).toContainText("Entregas y cambios guardados");
 

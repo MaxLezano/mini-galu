@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 /** Mockup: design/mockups/giftcards.html */
 export default async function Page() {
   const policies = await api.policies();
-  return <GiftcardsPage exchangeDays={policies.exchangeDays} />;
+  return <GiftcardsPage exchangeDays={policies.exchangeDays} months={policies.giftcardMonths} />;
 }

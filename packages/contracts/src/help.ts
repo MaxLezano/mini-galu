@@ -31,3 +31,23 @@ export type HelpPage = z.infer<typeof HelpPageSchema>;
 /** Índice para la navegación entre páginas de ayuda. */
 export const HelpLinkSchema = z.object({ topic: HelpTopicSchema, title: z.string() });
 export type HelpLink = z.infer<typeof HelpLinkSchema>;
+
+/**
+ * Datos de Tienda y pagos que se escriben entre llaves en las páginas de ayuda ("Tenés {dias_cambio} para…"): la
+ * tienda los muestra con el valor de ese momento, así cambiar un ajuste cambia también el texto.
+ */
+export const HELP_VARS = {
+  dias_cambio: "Días para cambiar el talle (“2 días”)",
+  meses_gift_card: "Lo que vale una gift card (“2 meses”)",
+  horario_retiro: "Horarios de retiro en el taller",
+  taller: "Localidad del taller",
+  provincia: "Provincia del taller",
+  email: "Email de la tienda",
+  whatsapp: "WhatsApp de la tienda",
+} as const;
+export type HelpVar = keyof typeof HELP_VARS;
+
+/** Reemplaza cada {variable} conocida; lo que no es una variable queda como está. */
+export function fillHelpText(text: string, values: Record<HelpVar, string>): string {
+  return text.replace(/\{(\w+)\}/g, (all, k: string) => (k in values ? values[k as HelpVar] : all));
+}

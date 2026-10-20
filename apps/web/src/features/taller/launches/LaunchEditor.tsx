@@ -15,6 +15,7 @@ import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 import { fromArInputs, launchWhen, toArInputs } from "@/lib/date";
 import { cover as coverOf } from "@/lib/product";
+import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 
 type Props = {
@@ -98,7 +99,7 @@ export function LaunchEditor({ open, launch, copy = false, products, collections
   const when = startsAt ? launchWhen(startsAt) : "pronto";
   const social = f.socialTouched
     ? f.socialText
-    : `✿ ${f.title || "Nuevo lanzamiento"} ✿ ${f.teaser} Sale ${when} en minigalu.com.ar. Anotate y te avisamos 1 hora antes 🎀`;
+    : `✿ ${f.title || "Nuevo lanzamiento"} ✿ ${f.teaser} Sale ${when} en ${new URL(SITE.url).host}. Anotate y te avisamos 1 hora antes 🎀`;
 
   // portadas posibles: la actual, las fotos de las prendas elegidas y de las demás prendas
   const covers = useMemo(() => {

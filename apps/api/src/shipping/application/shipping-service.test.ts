@@ -15,22 +15,44 @@ function service(over: Partial<StorePolicies> = {}) {
 
 describe("ShippingService con las políticas del panel", () => {
   it("cotiza con la tabla de la zona y aplica el envío gratis desde el monto", async () => {
+    const [tucuman, ...rest] = DEFAULT_POLICIES.zones;
     const s = service({
-      rates: { ...DEFAULT_POLICIES.rates, amba: { domicilioCents: 4_000_00, sucursalCents: 3_000_00, days: "1 a 2" } },
+      zones: [
+        {
+          ...DEFAULT_POLICIES.zones[0],
+          title: tucuman?.title ?? "Tucumán",
+          cps: tucuman?.cps ?? "",
+          domicilioCents: 4_000_00,
+          sucursalCents: 3_000_00,
+          days: "1 a 2",
+        },
+        ...rest,
+      ],
     });
-    const { options } = await s.options("1414", 10_000_00);
+    const { options } = await s.options("4107", 10_000_00);
     expect(options.map((o) => [o.method, o.cents])).toEqual([
       ["domicilio", 4_000_00],
       ["sucursal", 3_000_00],
       ["taller", 0],
     ]);
     expect(options[0]?.detail).toBe("Llega en 1 a 2 días hábiles");
-    expect(await s.cost("domicilio", "1414", 90_000_00)).toBe(0);
+    expect(await s.cost("domicilio", "4107", 90_000_00)).toBe(0);
+  });
+
+  it("en la ciudad del taller suma la cadetería (desde, por WhatsApp); afuera, no", async () => {
+    const s = service();
+    expect((await s.options("4000", 0)).localDelivery).toEqual({
+      label: "Cadete en San Miguel de Tucumán",
+      fromCents: 3_000_00,
+      whatsapp: DEFAULT_POLICIES.contact.whatsapp,
+    });
+    expect((await s.options("4107", 0)).localDelivery).toBeNull();
+    expect((await s.options(undefined, 0)).localDelivery).toBeNull();
   });
 
   it("sin envío gratis cobra el envío aunque la compra sea grande", async () => {
     const s = service({ freeShipping: { enabled: false, fromCents: 90_000_00 } });
-    expect(await s.cost("domicilio", "1414", 500_000_00)).toBe(5_900_00);
+    expect(await s.cost("domicilio", "1414", 500_000_00)).toBe(8_900_00);
     expect(await s.freeShippingFrom()).toBeNull();
   });
 

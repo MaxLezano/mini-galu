@@ -24,6 +24,8 @@ export class GiftcardService {
     private readonly cards: GiftcardRepository,
     private readonly orders: GiftcardOrders,
     private readonly mailer: GiftcardMailer,
+    /** Meses que vale desde que se activa (Tienda y pagos → Gift cards). */
+    private readonly months: () => Promise<number>,
     private readonly clock: () => Date = () => new Date(),
     private readonly random: () => Uint8Array = () => crypto.getRandomValues(new Uint8Array(8)),
   ) {}
@@ -83,7 +85,7 @@ export class GiftcardService {
     if (card?.status !== "esperando_pago") return;
     const now = this.clock();
     const code = giftcardCode(this.random());
-    const until = expiresAt(now);
+    const until = expiresAt(now, await this.months());
     if (!(await this.cards.activate(card.id, code, until))) return;
     await this.orders.close(orderId);
     const active = { ...card, code, expiresAt: until, status: "activa" as const };

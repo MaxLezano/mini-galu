@@ -30,7 +30,6 @@ import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
-import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { ActionIcon } from "../components/OrderCard";
@@ -66,6 +65,8 @@ const statusIcon = (title: string) =>
 
 type Props = {
   number: string | null;
+  /** Localidad del taller (Tienda y pagos → Datos de la tienda). */
+  workshop: string;
   /** Cambió algo (estado, nota): el tablero se actualiza con el detalle nuevo. */
   onChanged: (o: AdminOrderDetail) => void;
   onWhatsApp: (o: AdminOrderDetail, template?: TemplateKey) => void;
@@ -73,7 +74,7 @@ type Props = {
 };
 
 /** Detalle del pedido (admin.js → renderOrder): pasos, prendas para preparar, cliente, envío, pago e historial. */
-export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
+export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }: Props) {
   const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
@@ -347,7 +348,7 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     <>
                       <dt>Retira</dt>
                       <dd>
-                        {o.pickupLabel ?? "A coordinar"} · taller de {SITE.workshop}
+                        {o.pickupLabel ?? "A coordinar"} · taller de {workshop}
                       </dd>
                     </>
                   ) : a ? (

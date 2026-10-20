@@ -2,13 +2,21 @@ import { formatARS, imageThumb, ORDER_STATUSES, type PublicTracking } from "@min
 import { ExternalLink, MessageCircleHeart } from "lucide-react";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
-import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { handNote, headline } from "../tracking-view";
 import { Journey } from "./Journey";
 
 /** Tarjeta del pedido encontrado — seguimiento.html → render(). */
-export function TrackingCard({ t, onAskGalu }: { t: PublicTracking; onAskGalu: () => void }) {
+export function TrackingCard({
+  t,
+  whatsapp,
+  onAskGalu,
+}: {
+  t: PublicTracking;
+  /** wa.me de la tienda (Tienda y pagos → Datos de la tienda). */
+  whatsapp: string;
+  onAskGalu: () => void;
+}) {
   const st = ORDER_STATUSES[t.status];
   const [pre, em, post] = headline(t.status, t.shippingMethod);
   const pickup = t.shippingMethod === "taller";
@@ -112,7 +120,7 @@ export function TrackingCard({ t, onAskGalu }: { t: PublicTracking; onAskGalu: (
             </button>
             <a
               className="link"
-              href={SITE.whatsapp}
+              href={whatsapp}
               target="_blank"
               rel="noopener"
               style={{ justifySelf: "center", fontSize: 13, marginTop: 6 }}

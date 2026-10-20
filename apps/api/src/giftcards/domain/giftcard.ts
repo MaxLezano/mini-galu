@@ -14,10 +14,10 @@ export function normalizeCode(input: string): string {
   return body.length === 8 ? `GALU-${body.slice(0, 4)}-${body.slice(4)}` : input.trim().toUpperCase();
 }
 
-/** Vale 6 meses desde que se activa. */
-export function expiresAt(from: Date): Date {
+/** Vence a los `months` meses de activarse (los que pone Gaby en Tienda y pagos). */
+export function expiresAt(from: Date, months: number): Date {
   const d = new Date(from);
-  d.setMonth(d.getMonth() + 6);
+  d.setMonth(d.getMonth() + months);
   return d;
 }
 

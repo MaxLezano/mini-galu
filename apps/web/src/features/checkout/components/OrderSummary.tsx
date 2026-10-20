@@ -2,11 +2,12 @@ import { type CardPlans, type CartLine, formatARS, imageThumb, type Quote } from
 import { ChevronDown, Gift, RefreshCcw, Scissors, ShoppingBag, TicketPercent, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 
 type Props = {
   lines: CartLine[];
+  /** wa.me de la tienda (Tienda y pagos → Datos de la tienda). */
+  whatsapp: string;
   quote: Quote | null;
   /** Texto de cuotas de Mercado Pago para el total (solo dice "sin interés" si lo confirma Mercado Pago). */
   installmentsText: string | null;
@@ -35,6 +36,7 @@ type Props = {
 /** Resumen lateral (checkout.html → .summary). En celular es un desplegable arriba. */
 export function OrderSummary({
   lines,
+  whatsapp,
   quote,
   installmentsText,
   pickup,
@@ -237,7 +239,7 @@ export function OrderSummary({
             <BrandIcon name="whatsapp" />
             <span>
               <b>¿Dudas? Escribinos</b>
-              <a className="link" href={SITE.whatsapp} target="_blank" rel="noopener">
+              <a className="link" href={whatsapp} target="_blank" rel="noopener">
                 WhatsApp del taller
               </a>
             </span>

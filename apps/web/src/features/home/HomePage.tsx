@@ -32,10 +32,13 @@ export function HomePage({
   home,
   products,
   exchangeDays,
+  instagram,
 }: {
   home: HomeContent;
   products: ProductSummary[];
   exchangeDays: number;
+  /** Tienda y pagos → Datos de la tienda (las fotos del feed son de la portada). */
+  instagram: { url: string; handle: string };
 }) {
   const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
   const img = (slug: string, n = 1) => {
@@ -265,16 +268,16 @@ export function HomePage({
           <div>
             <span className="eyebrow">Instagram</span>
             <h2 className="display h2" style={{ marginTop: 14, overflowWrap: "anywhere" }}>
-              <em>@{home.instagram.handle}</em>
+              <em>{instagram.handle}</em>
             </h2>
           </div>
-          <a className="btn btn-ghost" href={home.instagram.url}>
+          <a className="btn btn-ghost" href={instagram.url}>
             <BrandIcon name="instagram" className="i-sm" /> Seguinos
           </a>
         </div>
         <div className="ig">
           {home.instagram.imageUrls.map((u, i) => (
-            <a key={u} href={home.instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
+            <a key={u} href={instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
               <Picture src={u} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
               <BrandIcon name="instagram" />
             </a>

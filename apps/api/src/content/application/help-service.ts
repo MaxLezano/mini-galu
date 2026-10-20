@@ -1,6 +1,6 @@
 import { HELP_TOPICS, type HelpLink, type HelpPage, type HelpPageInput, type HelpTopic } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
-import { defaultHelpPage, type HelpFacts } from "../domain/help";
+import { defaultHelpPage, fillHelpPage, type HelpFacts } from "../domain/help";
 import type { HelpRepository, StoredHelpPage } from "./help-ports";
 
 /** Páginas de ayuda: el texto que guardó Gaby o, si no tocó esa página, el de base. */
@@ -16,10 +16,11 @@ export class HelpService {
     return this.toPage(topic, stored.get(topic), facts);
   }
 
-  /** Lo que ve la tienda: sin los apartados apagados. */
+  /** Lo que ve la tienda: sin los apartados apagados y con cada {variable} con su valor de Tienda y pagos. */
   async publicPage(topic: HelpTopic): Promise<HelpPage> {
-    const page = await this.page(topic);
-    return { ...page, sections: page.sections.filter((s) => !s.hidden) };
+    const [stored, facts] = await Promise.all([this.repo.findAll(), this.facts()]);
+    const page = this.toPage(topic, stored.get(topic), facts);
+    return { ...page, ...fillHelpPage({ ...page, sections: page.sections.filter((s) => !s.hidden) }, facts) };
   }
 
   async links(): Promise<HelpLink[]> {

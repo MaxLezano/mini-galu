@@ -1,4 +1,4 @@
-import { StorePoliciesSchema } from "@mini-galu/contracts";
+import { type StorePoliciesInput, StorePoliciesInputSchema } from "@mini-galu/contracts";
 import { Hono } from "hono";
 import type { AdminVars } from "../../../auth/infrastructure/http/auth-routes";
 import { parse } from "../../../shared/http/errors";
@@ -9,9 +9,9 @@ export function policiesRoutes(policies: PoliciesService) {
   return new Hono().get("/", async (c) => c.json(await policies.get()));
 }
 
-/** /admin/policies — editarlas desde "Tienda y pagos" (protegido con requireAdmin en app.ts). */
+/** /admin/policies — editarlas desde "Tienda y pagos"; cada caja manda solo lo suyo (requireAdmin en app.ts). */
 export function adminPoliciesRoutes(policies: PoliciesService) {
   return new Hono<AdminVars>().put("/", async (c) =>
-    c.json(await policies.save(parse(StorePoliciesSchema, await c.req.json()))),
+    c.json(await policies.save(parse(StorePoliciesInputSchema, await c.req.json()) as StorePoliciesInput)),
   );
 }

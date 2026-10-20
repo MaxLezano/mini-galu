@@ -413,19 +413,21 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   fila dice si sigue esperando o ya se le avisó, busca por contacto, nombre, prenda o lanzamiento, y tiene el botón
   para escribirle (mail o WhatsApp). Si el mail o el WhatsApp coincide con una cuenta o un pedido, muestra el nombre y
   lleva a su ficha en Clientes.
-- 🟡 **Revisión panel ↔ tienda (QA de datos fijos)**. ✅ "Tienda y pagos" como la dejó Gaby es la base: el seed
-  guarda portada, datos de envío (Laprida 580, San Miguel de Tucumán) y sus términos; `DEFAULT_POLICIES` son sus
-  políticas (2 días de cambio, sin envío gratis). ✅ El taller es `WORKSHOP` de contracts (San Miguel de Tucumán), no
-  más "Villa Crespo, CABA" fijo. ✅ Los e2e que tocan "Tienda y pagos" (envíos, ayuda, políticas, mensajes de
-  automatizaciones) devuelven lo que había aunque fallen. Pendiente, con decisión de Gaby:
-  - ⏳ Zonas de la tabla de envíos armadas para un taller en CABA (AMBA < 1900 · Centro < 5000 · Resto): con el
-    taller en Tucumán, Tucumán cuesta lo mismo que Jujuy y Buenos Aires es lo más barato.
-  - ⏳ WhatsApp de la tienda de relleno (`wa.me/5491100000000`, en `lib/site.ts` y en los mails/Galú de `app.ts`) y
-    mail de contacto `hola@minigalu.com.ar` (también recibe los avisos de arrepentimiento): llevarlos a "Tienda y
-    pagos" en vez de dejarlos en el código.
-  - ⏳ Términos: "las gift cards valen 2 meses", pero vencen a los 6 (`giftcards/domain/giftcard.ts` y /gift-cards).
-  - ⏳ Una página de ayuda guardada desde el panel congela sus datos (días de cambio, envío gratis, retiro): si
-    después cambian las políticas, esa página no se entera. Avisarlo en el editor o insertar los datos como variables.
+- ✅ **Todo lo de la tienda sale de "Tienda y pagos"** (revisión QA de datos fijos). Un solo ajuste
+  (`StorePolicies` de contracts, `content_blocks["policies"]`) que leen la API (checkout, envíos, ayuda, gift cards,
+  Galú, mails, automatizaciones) y la tienda (`useStoreInfo` / `storeInfo`); cada caja del panel guarda solo lo suyo.
+  - **Datos de la tienda** (caja nueva): WhatsApp, email, Instagram, localidad y provincia del taller. Pie, barra de
+    contacto, ayuda, checkout, seguimiento, Galú, mails (también como *Reply-To*), SEO, "Seguinos" de la home y el
+    panel de pedidos. Base: 381 319-5264 · mini.galu.store@gmail.com · San Miguel de Tucumán.
+  - **Zonas de envío** con nombre y códigos postales editables (la última es el resto del país). Base desde el taller
+    de Tucumán: Tucumán (4000-4199) · Noroeste (4200-4799, 5300-5399) · Resto. La tabla vieja (AMBA · Centro ·
+    Resto) pasa sola a las zonas nuevas con los mismos precios.
+  - **Cadetería en la ciudad**: códigos postales y precio desde (base CP 4000, desde $3.000). La ficha y el checkout
+    la muestran con el botón para coordinarla por WhatsApp; no se cobra en la web.
+  - **Vigencia de las gift cards** (caja Gift cards): vencimiento, /giftcards y términos. Base: 2 meses.
+  - **Páginas de ayuda con variables** (`{dias_cambio}`, `{meses_gift_card}`, `{email}`, `{whatsapp}`, `{taller}`,
+    `{provincia}`, `{horario_retiro}`): el panel muestra la variable y la tienda el valor de ese momento.
+  - "Tienda y pagos" como la dejó Gaby es la base del seed; los e2e que tocan ajustes devuelven lo que había.
 - ⏳ **Galú sin IA, más completo** (sin modelo por costo: la tienda responde por reglas, `galu-engine.tsx`).
   - Hoy entiende una docena de temas (pedido y seguimiento, envíos, cuotas y pagos, precio, regalo, ocasión,
     talles, presupuesto, gift card, a medida y saludo) y consulta el catálogo y el stock reales.

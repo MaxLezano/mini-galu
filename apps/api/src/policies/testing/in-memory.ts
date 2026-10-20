@@ -2,7 +2,7 @@ import type { StorePolicies } from "@mini-galu/contracts";
 import type { PoliciesStore } from "../application/ports";
 
 export class MemoryPolicies implements PoliciesStore {
-  constructor(public value: StorePolicies | null = null) {}
+  constructor(public value: unknown | null = null) {}
   async get() {
     return this.value;
   }

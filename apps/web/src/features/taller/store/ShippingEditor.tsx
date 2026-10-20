@@ -36,7 +36,7 @@ const MODE: Record<AdminShipping["andreani"]["mode"], { title: string; text: str
 
 const EMPTY: ShippingSettings = {
   package: "bolsa",
-  origin: { street: "", number: "", unit: null, city: "", province: "CABA", postalCode: "" },
+  origin: { street: "", number: "", unit: null, city: "", province: "", postalCode: "" },
   sender: { name: "Mini Galú", phone: "", email: "", taxId: null },
 };
 

@@ -2,6 +2,9 @@
 
 import type { Collection, Launch, ProductSummary, StorePolicies } from "@mini-galu/contracts";
 import { createContext, type ReactNode, useContext } from "react";
+import { type StoreInfo, storeInfo } from "./store-info";
+
+export { type StoreInfo, storeInfo };
 
 /** Datos que comparten header, buscador y Galú (se cargan una vez en el layout de la tienda). */
 export type ShellData = {
@@ -9,7 +12,7 @@ export type ShellData = {
   collections: Collection[];
   launch: Launch | null;
   announcements: string[];
-  /** Días de cambio, envío gratis, formas de entrega y tarifas (se editan en el panel). */
+  /** Ajustes de Tienda y pagos: cambios, envíos, retiro, gift cards, contacto y taller (se editan en el panel). */
   policies: StorePolicies;
 };
 
@@ -24,6 +27,8 @@ export function useShellData(): ShellData {
   if (!v) throw new Error("useShellData fuera de ShellDataProvider");
   return v;
 }
+
+export const useStoreInfo = (): StoreInfo => storeInfo(useShellData().policies);
 
 /** Días que faltan para el lanzamiento, como en el navbar del mockup. */
 export function launchCountLabel(launch: Launch | null, now = Date.now()): string | null {

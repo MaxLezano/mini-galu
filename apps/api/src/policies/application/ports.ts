@@ -1,7 +1,7 @@
 import type { StorePolicies } from "@mini-galu/contracts";
 
-/** Dónde quedan guardadas las políticas del panel (null: nunca se guardaron). */
+/** Dónde quedan guardados los ajustes del panel. Devuelve lo guardado tal cual (null: nunca se guardaron). */
 export interface PoliciesStore {
-  get(): Promise<StorePolicies | null>;
+  get(): Promise<unknown | null>;
   save(p: StorePolicies): Promise<void>;
 }

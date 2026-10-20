@@ -26,7 +26,6 @@ import { toast, useUi } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 import { launchWhen, relativeWhen } from "@/lib/date";
-import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { OPEN_ORDER, panelChanged } from "../../shell/panel-events";
 
@@ -43,7 +42,16 @@ import "../orders.css";
 const HOUR = 3_600_000;
 
 /** Pedidos del taller — design/mockups/admin-pedidos.html */
-export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderSummary[]; open: string | null }) {
+export function OrdersAdmin({
+  initial,
+  open: openFirst,
+  workshop,
+}: {
+  initial: AdminOrderSummary[];
+  open: string | null;
+  /** Localidad del taller (Tienda y pagos → Datos de la tienda). */
+  workshop: string;
+}) {
   const [orders, setOrders] = useState(initial);
   const [view, setView] = useState<"board" | "list">("board");
   const [q, setQ] = useState("");
@@ -324,6 +332,7 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
 
       <OrderDrawer
         number={openNumber}
+        workshop={workshop}
         onChanged={(o) => replace(o)}
         onWhatsApp={(o, t) => {
           setWa({ order: o, template: t ?? defaultTemplate(o) });
@@ -338,7 +347,7 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
         template={wa?.template ?? "libre"}
         vars={{
           seguimiento: wo ? `${location.origin}/seguimiento?pedido=${wo.number}` : "",
-          taller: SITE.workshop,
+          taller: workshop,
           horario: wo?.pickupLabel ? `Te esperamos el ${wo.pickupLabel}.` : "Coordinamos el horario por acá.",
           link: wo?.payUrl ?? "",
           vence: wo?.reservedUntil ? launchWhen(wo.reservedUntil) : "",

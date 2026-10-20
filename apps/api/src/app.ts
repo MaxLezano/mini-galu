@@ -10,7 +10,8 @@ import {
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
   pickupHoursLabel,
-  WORKSHOP_PLACE,
+  whatsappUrl,
+  workshopPlace,
 } from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
@@ -88,6 +89,7 @@ import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
 import { OrderNotifications } from "./notifications/application/order-notifications";
+import { withReplyTo } from "./notifications/application/ports";
 import { untilLabel } from "./notifications/domain/mail";
 import { ResendMailer } from "./notifications/infrastructure/resend-mailer";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
@@ -133,7 +135,7 @@ import { S3ImageStorage } from "./shared/media/s3-image-storage";
 import { SharpCropper, SharpResizer } from "./shared/media/sharp-resizer";
 import { IntervalScheduler } from "./shared/scheduler/interval-scheduler";
 import { ShipmentService } from "./shipping/application/shipment-service";
-import { ShippingService, WORKSHOP } from "./shipping/application/shipping-service";
+import { ShippingService } from "./shipping/application/shipping-service";
 import { slotLabel } from "./shipping/domain/pickup";
 import { AndreaniClient } from "./shipping/infrastructure/andreani/andreani-client";
 import { AndreaniGateway, AndreaniRates } from "./shipping/infrastructure/andreani/andreani-gateway";
@@ -151,9 +153,6 @@ import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rat
 import { SubscribersService } from "./subscribers/application/subscribers-service";
 import { DrizzleSubscribersReadModel } from "./subscribers/infrastructure/drizzle-subscribers";
 import { adminSubscribersRoutes } from "./subscribers/infrastructure/http/subscribers-routes";
-
-/** Mail de la tienda: contacto en la ayuda y a donde llegan los avisos para el taller. */
-const SHOP_EMAIL = "hola@minigalu.com.ar";
 
 /** Composition root: acá (y solo acá) se eligen los adapters de cada puerto. */
 export function buildApp(config: Config) {
@@ -224,13 +223,11 @@ export function buildApp(config: Config) {
   );
   const reviews = new ReviewService(new DrizzleReviews(db, formatOrderNumber, parseOrderNumber), storage, resizer);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
-  // políticas del panel (cambios, envío gratis, formas de entrega, tarifas, horarios): las leen envíos, ayuda, Galú y mails
+  // ajustes de "Tienda y pagos" (cambios, envíos, retiro, gift cards, contacto y taller): los leen envíos, ayuda,
+  // gift cards, Galú y los mails, así lo que cambia Gaby se ve igual en todos lados
   const policies = new PoliciesService(new DrizzlePoliciesStore(db));
-  const help = new HelpService(new DrizzleHelpRepository(db), async () => ({
-    workshop: WORKSHOP,
-    email: SHOP_EMAIL,
-    policies: await policies.get(),
-  }));
+  const workshop = async () => workshopPlace((await policies.get()).workshop);
+  const help = new HelpService(new DrizzleHelpRepository(db), async () => ({ policies: await policies.get() }));
 
   // los lanzamientos publican prendas a través del catálogo (que valida, por ejemplo, que tengan foto)
   const publisher: ProductPublisher = {
@@ -329,7 +326,7 @@ export function buildApp(config: Config) {
       ? new AndreaniGateway(andreani, config.andreani)
       : new FakeAndreani(undefined, config.fakeAndreaniSpeed),
     new DrizzleShipmentRepository(db),
-    new OrderShipping(orders, storage, events, WORKSHOP_PLACE),
+    new OrderShipping(orders, storage, events, workshop),
     (number, token) => config.webOrigin + payPath(number, token),
     shippingSettings,
     config.branches,
@@ -386,14 +383,20 @@ export function buildApp(config: Config) {
         };
       },
     },
-    config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail),
-    async (number) => ({
-      tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
-      whatsapp: "https://wa.me/5491100000000",
-      site: config.webOrigin,
-      workshop: WORKSHOP,
-      exchangeDays: (await policies.get()).exchangeDays,
-    }),
+    withReplyTo(
+      config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail),
+      async () => (await policies.get()).contact.email,
+    ),
+    async (number) => {
+      const p = await policies.get();
+      return {
+        tracking: `${config.webOrigin}/seguimiento?pedido=${encodeURIComponent(number)}`,
+        whatsapp: whatsappUrl(p.contact.whatsapp),
+        site: config.webOrigin,
+        workshop: p.workshop.city,
+        exchangeDays: p.exchangeDays,
+      };
+    },
   );
   const newsletter = new NewsletterService(
     new DrizzleSubscribers(db),
@@ -444,6 +447,7 @@ export function buildApp(config: Config) {
               : null,
         }),
     },
+    async () => (await policies.get()).giftcardMonths,
   );
   const customers = new CustomerService(
     new DrizzleCustomers(db, storage),
@@ -494,7 +498,7 @@ export function buildApp(config: Config) {
       // con sesión, ingresar pasa directo al checkout con la bolsa de la cuenta
       bag: `${config.webOrigin}/ingresar?volver=%2Fcheckout`,
       site: config.webOrigin,
-      workshop: WORKSHOP_PLACE,
+      workshop,
       review: (n, t) => `${config.webOrigin}${reviewPath(n, t)}`,
     },
   );
@@ -553,7 +557,7 @@ export function buildApp(config: Config) {
       number: p.number,
     });
     await notifications.message({
-      to: SHOP_EMAIL,
+      to: (await policies.get()).contact.email,
       subject: `Arrepentimiento · #${p.number} · ${p.code}`,
       eyebrow: "Botón de arrepentimiento",
       name: null,
@@ -644,12 +648,12 @@ export function buildApp(config: Config) {
       const p = await policies.get();
       const free = freeShippingFrom(p);
       return {
-        workshop: WORKSHOP_PLACE,
+        workshop: workshopPlace(p.workshop),
         freeShippingFrom: free === null ? null : formatARS(free),
         exchangeDays: p.exchangeDays,
         pickup: p.methods.taller ? pickupHoursLabel(p) : null,
         giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
-        whatsapp: "https://wa.me/5491100000000",
+        whatsapp: whatsappUrl(p.contact.whatsapp),
       };
     },
     assistantMemory,

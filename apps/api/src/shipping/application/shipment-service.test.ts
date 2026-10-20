@@ -54,7 +54,7 @@ beforeEach(() => {
   shipments = new ShipmentService(
     new FakeAndreani(clock),
     new MemoryShipments(clock),
-    new OrderShipping(orders, storage, bus, "Villa Crespo, CABA"),
+    new OrderShipping(orders, storage, bus, async () => "Villa Crespo, CABA"),
     (n, t) => `http://web/pagar/${n}?t=${t}`,
     new MemoryShippingSettings(),
     "fake",

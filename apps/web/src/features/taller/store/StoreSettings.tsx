@@ -19,6 +19,7 @@ import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
 import { PoliciesEditor } from "./PoliciesEditor";
 import { ShippingEditor } from "./ShippingEditor";
+import { StoreInfoEditor } from "./StoreInfoEditor";
 import "./store.css";
 
 /** Tienda y pagos — design/mockups/admin-tienda.html */
@@ -70,10 +71,11 @@ export function StoreSettings({
             )}
           />
           <CouponsEditor initial={coupons} />
-          <GiftcardsBox data={giftcards} />
+          <GiftcardsBox data={giftcards} months={policies.giftcardMonths} />
           <HelpEditor initial={help} />
         </div>
         <div className="set-col">
+          <StoreInfoEditor initial={policies} />
           <ShippingEditor initial={shipping} />
           <HeroEditor initial={home} />
           <section className="box" id="lanzamiento">

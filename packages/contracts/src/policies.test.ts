@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_POLICIES,
   freeShippingLabel,
+  localDeliveryFor,
+  parseCpRanges,
   parsePickupDay,
   pickupHoursLabel,
   qualifiesForFreeShipping,
   type StorePolicies,
   StorePoliciesSchema,
+  whatsappUrl,
+  withDefaults,
   zoneOf,
   zoneQuote,
 } from "./policies";
@@ -18,18 +22,69 @@ describe("políticas de la tienda", () => {
     expect(StorePoliciesSchema.safeParse(DEFAULT_POLICIES).success).toBe(true);
   });
 
-  it("ubica el CP en su zona", () => {
-    expect(zoneOf("C1414")).toBe("amba");
-    expect(zoneOf("1899")).toBe("amba");
-    expect(zoneOf("2000")).toBe("centro");
-    expect(zoneOf("5000")).toBe("resto");
-    expect(zoneOf("abc")).toBe("resto");
+  it("ubica el CP en su zona (las de base, desde el taller de Tucumán)", () => {
+    const zone = (cp: string) => zoneOf(DEFAULT_POLICIES, cp).title;
+    expect(zone("T4000")).toBe("Tucumán");
+    expect(zone("4107")).toBe("Tucumán");
+    expect(zone("4600")).toBe("Noroeste");
+    expect(zone("5300")).toBe("Noroeste");
+    expect(zone("1414")).toBe("Resto del país");
+    expect(zone("abc")).toBe("Resto del país");
+  });
+
+  it("lee los códigos postales como los escribe Gaby", () => {
+    expect(parseCpRanges("4000-4199, 5300 a 5399 y 4700")).toEqual([
+      [4000, 4199],
+      [5300, 5399],
+      [4700, 4700],
+    ]);
+    expect(parseCpRanges("")).toEqual([]);
+    expect(parseCpRanges("Tucumán")).toBeNull();
+    expect(parseCpRanges("4199-4000")).toBeNull();
   });
 
   it("cotiza con la tabla de la zona", () => {
-    const q = zoneQuote(DEFAULT_POLICIES, "1414");
+    const q = zoneQuote(DEFAULT_POLICIES, "4000");
     expect(q.domicilio).toEqual({ cents: 5_900_00, detail: "Llega en 2 a 3 días hábiles" });
     expect(q.sucursal.cents).toBe(4_248_00);
+  });
+
+  it("la cadetería llega solo a sus códigos postales y si está prendida", () => {
+    expect(localDeliveryFor(DEFAULT_POLICIES, "4000")?.fromCents).toBe(3_000_00);
+    expect(localDeliveryFor(DEFAULT_POLICIES, "4107")).toBeNull();
+    const off = with_({ localDelivery: { ...DEFAULT_POLICIES.localDelivery, enabled: false } });
+    expect(localDeliveryFor(off, "4000")).toBeNull();
+    const sinCp = with_({ localDelivery: { enabled: true, cps: "", fromCents: 3_000_00 } });
+    expect(StorePoliciesSchema.safeParse(sinCp).error?.issues[0]?.message).toBe(
+      "Poné los códigos postales de la cadetería",
+    );
+  });
+
+  it("lo guardado antes de los ajustes nuevos se completa y la tabla vieja pasa a las zonas nuevas", () => {
+    const old = {
+      exchangeDays: 5,
+      rates: {
+        amba: { domicilioCents: 1, sucursalCents: 2, days: "1" },
+        centro: { domicilioCents: 3, sucursalCents: 4, days: "2" },
+        resto: { domicilioCents: 5, sucursalCents: 6, days: "3" },
+      },
+    };
+    const p = withDefaults(old);
+    expect(p.exchangeDays).toBe(5);
+    expect(p.zones.map((z) => [z.title, z.domicilioCents])).toEqual([
+      ["Tucumán", 1],
+      ["Noroeste", 3],
+      ["Resto del país", 5],
+    ]);
+    expect(p.contact).toEqual(DEFAULT_POLICIES.contact);
+    expect("rates" in p).toBe(false);
+    expect(StorePoliciesSchema.safeParse(p).success).toBe(true);
+    expect(withDefaults(null)).toEqual(DEFAULT_POLICIES);
+  });
+
+  it("arma el WhatsApp de la tienda", () => {
+    expect(whatsappUrl("381 319-5264")).toBe("https://wa.me/5493813195264");
+    expect(whatsappUrl("+54 9 381 319-5264", "hola ✿")).toBe("https://wa.me/5493813195264?text=hola%20%E2%9C%BF");
   });
 
   it("el envío gratis se puede apagar (en la base está apagado)", () => {

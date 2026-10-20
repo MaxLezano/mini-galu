@@ -13,11 +13,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
-import { useShellData } from "@/features/shell/shell-context";
+import { useShellData, useStoreInfo } from "@/features/shell/shell-context";
 import { useUi } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
 import { cover, sizesIn, stockOf } from "@/lib/product";
-import { SITE } from "@/lib/site";
 import { Foco } from "@/ui/atoms/Foco";
 import {
   answer,
@@ -80,6 +79,7 @@ function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (
 
 /** Galú: el foco flotante + el panel de chat (mockup app.js → galu). */
 export function Galu() {
+  const info = useStoreInfo();
   const { products, policies } = useShellData();
   const { galu, openGalu, closeGalu, consumeGaluQuestion } = useUi();
   const pathname = usePathname();
@@ -153,7 +153,9 @@ export function Galu() {
         ? api
             .track(code)
             .then(orderReply, (e: unknown) =>
-              e instanceof ApiRequestError && e.status === 404 ? orderNotFound(code) : orderUnavailable(code),
+              e instanceof ApiRequestError && e.status === 404
+                ? orderNotFound(code, policies.contact.whatsapp)
+                : orderUnavailable(code),
             )
         : answer(q, products, ctx, policies, installmentsFor),
       new Promise((r) => setTimeout(r, 650 + Math.random() * 450)),
@@ -312,7 +314,7 @@ export function Galu() {
         </form>
         <div className="galu-note">
           ¿Algo más?{" "}
-          <a className="link" href={SITE.whatsapp}>
+          <a className="link" href={info.whatsapp}>
             Escribile a Gaby por WhatsApp
           </a>
         </div>

@@ -104,6 +104,7 @@ beforeEach(() => {
       },
     },
     mailer,
+    async () => 6,
     clock,
   );
   bus.on("PaymentApproved", (e) => giftcards.paymentApproved(String(e.payload.orderId)));

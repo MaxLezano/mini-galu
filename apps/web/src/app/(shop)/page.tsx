@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HomePage } from "@/features/home/HomePage";
+import { storeInfo } from "@/features/shell/store-info";
 import { api } from "@/lib/api";
 import { storeJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/ui/atoms/JsonLd";
@@ -16,11 +17,12 @@ export default async function Page() {
   );
   return (
     <>
-      <JsonLd data={storeJsonLd()} />
+      <JsonLd data={storeJsonLd(policies)} />
       <HomePage
         home={home}
         products={[...products, ...draft.filter((p) => p !== null)]}
         exchangeDays={policies.exchangeDays}
+        instagram={{ url: storeInfo(policies).instagram, handle: storeInfo(policies).instagramHandle }}
       />
     </>
   );

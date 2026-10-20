@@ -25,11 +25,6 @@ export function firstDayWindow(startsAt: Date, publishedAt: Date | null): { from
   return { from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000) };
 }
 
-/** Texto sugerido para redes (mockup admin-lanzamientos). */
-export function suggestSocialText(title: string, teaser: string, when: string): string {
-  return `✿ ${title} ✿ ${teaser} Sale ${when} en minigalu.com.ar. Anotate y te avisamos 1 hora antes 🎀`;
-}
-
 /** El adelanto se cuenta mientras el lanzamiento no salió: antes de su hora y sin las prendas publicadas. */
 export function isPreviewOpen(l: { startsAt: Date; publishedAt: Date | null }, now: Date): boolean {
   return !l.publishedAt && l.startsAt > now;

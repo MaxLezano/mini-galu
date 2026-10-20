@@ -16,7 +16,7 @@ export class OrderShipping implements ShippableOrders {
     private readonly storage: ImageStorage,
     private readonly events: EventBus,
     /** "San Miguel de Tucumán, Tucumán" */
-    private readonly workshop: string,
+    private readonly workshop: () => Promise<string>,
   ) {}
 
   async find(number: string) {
@@ -97,7 +97,7 @@ export class OrderShipping implements ShippableOrders {
         .filter((e) => e.toStatus)
         .map((e) => ({ to: e.toStatus as OrderStatus, at: e.at }))
         .sort((x, y) => x.at.getTime() - y.at.getTime()),
-      workshop: this.workshop,
+      workshop: await this.workshop(),
       firstName: o.firstName,
       lastName: o.lastName,
       email: o.email,

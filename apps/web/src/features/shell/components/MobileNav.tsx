@@ -4,13 +4,13 @@ import { GARMENT_SIZES, sizeLabel } from "@mini-galu/contracts";
 import { ArrowRight, MessageCircleHeart, Search, Truck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useAccount } from "@/features/account/account-store";
-import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
-import { launchCountLabel, useShellData } from "../shell-context";
+import { launchCountLabel, useShellData, useStoreInfo } from "../shell-context";
 import { useUi } from "../ui-store";
 
 export function MobileNav() {
+  const info = useStoreInfo();
   const { products, collections, launch } = useShellData();
   const signedIn = useAccount((s) => s.status === "in");
   const { menuOpen, setMenu, openGalu } = useUi();
@@ -75,10 +75,10 @@ export function MobileNav() {
           </a>
         </div>
         <div className="mnav-foot">
-          <a className="btn btn-sm btn-ghost" href={SITE.whatsapp}>
+          <a className="btn btn-sm btn-ghost" href={info.whatsapp}>
             <BrandIcon name="whatsapp" className="i-sm" /> WhatsApp
           </a>
-          <a className="btn btn-sm btn-ghost" href={SITE.instagram}>
+          <a className="btn btn-sm btn-ghost" href={info.instagram}>
             <BrandIcon name="instagram" className="i-sm" /> Instagram
           </a>
         </div>

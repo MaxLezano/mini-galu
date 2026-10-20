@@ -11,6 +11,7 @@ import {
   PROVINCES,
   type Quote,
   type ShippingOptions,
+  whatsappUrl,
 } from "@mini-galu/contracts";
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +20,7 @@ import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
-import { useShellData } from "@/features/shell/shell-context";
+import { storeInfo, useShellData } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { useGifts } from "@/features/wishlist/gift-store";
 import { accountApi } from "@/lib/account-api";
@@ -52,10 +53,16 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
   const refreshCart = useCart((s) => s.refresh);
   const setDrawer = useUi((s) => s.setDrawer);
   const { policies } = useShellData();
+  const info = storeInfo(policies);
 
   const [step, setStep] = useState(1);
   const [contact, setContact] = useState<ContactForm>(EMPTY_CONTACT);
-  const [ship, setShip] = useState<ShippingForm>(EMPTY_SHIPPING);
+  const [ship, setShip] = useState<ShippingForm>(() => ({
+    ...EMPTY_SHIPPING,
+    province: (PROVINCES as readonly string[]).includes(policies.workshop.province)
+      ? (policies.workshop.province as ShippingForm["province"])
+      : EMPTY_SHIPPING.province,
+  }));
   const accountStatus = useAccount((s) => s.status);
 
   // con cuenta: se completan los datos y la dirección por defecto (lo que ya escribió no se pisa)
@@ -573,6 +580,29 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                   </span>
                 </label>
               ))}
+              {options?.localDelivery && (
+                // la cadetería no se cobra en la web: el precio depende de la dirección y se coordina por WhatsApp
+                <div className="option is-info">
+                  <span>
+                    <b>{options.localDelivery.label}</b>
+                    <small>
+                      Lo coordinamos por WhatsApp según tu dirección (no se cobra acá).{" "}
+                      <a
+                        className="link"
+                        href={whatsappUrl(
+                          options.localDelivery.whatsapp,
+                          "¡Hola! Quiero coordinar un envío por cadete.",
+                        )}
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Escribinos
+                      </a>
+                    </small>
+                  </span>
+                  <span className="opt-price">Desde {formatARS(options.localDelivery.fromCents)}</span>
+                </div>
+              )}
               {ship.method === "sucursal" && (
                 <div className="field">
                   <label htmlFor="f-branchId">¿En qué sucursal lo retirás?</label>
@@ -726,6 +756,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
       </div>
 
       <OrderSummary
+        whatsapp={info.whatsapp}
         exchangeDays={policies.exchangeDays}
         lines={quote?.lines ?? lines}
         quote={quote}
@@ -754,6 +785,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
 
       {done && (
         <SuccessOverlay
+          workshop={info.workshop}
           receipt={done}
           pickupLabel={slotLabel ?? null}
           deliveryDetail={selected?.method !== "taller" ? (selected?.detail ?? null) : null}

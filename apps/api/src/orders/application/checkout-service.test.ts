@@ -111,8 +111,8 @@ describe("CheckoutService", () => {
       couponCode: "otono10",
       email: "a@b.co",
     });
-    expect(q).toMatchObject({ subtotalCents: 38_000_00, discountCents: 3_800_00, shippingCents: 5_900_00 });
-    expect(q.totalCents).toBe(38_000_00 - 3_800_00 + 5_900_00);
+    expect(q).toMatchObject({ subtotalCents: 38_000_00, discountCents: 3_800_00, shippingCents: 8_900_00 });
+    expect(q.totalCents).toBe(38_000_00 - 3_800_00 + 8_900_00);
     const bad = await checkout.quote(guest, { method: "taller", couponCode: "NADA" });
     expect(bad).toMatchObject({ shippingCents: 0, couponError: "Ese código no existe", coupon: null });
   });
@@ -125,7 +125,7 @@ describe("CheckoutService", () => {
 
   it("crear el pedido reserva el stock y queda esperando pago", async () => {
     const p = await checkout.place(guest, null, order());
-    expect(p).toMatchObject({ number: "MG-1001", accessToken: "tok", totalCents: 38_000_00 + 5_900_00 });
+    expect(p).toMatchObject({ number: "MG-1001", accessToken: "tok", totalCents: 38_000_00 + 8_900_00 });
     expect(variants.list[0]?.stock).toBe(1);
     const r = await checkout.receipt("MG-1001", "tok");
     expect(r).toMatchObject({ status: "esperando_pago", firstName: "Lucía", shippingMethod: "domicilio" });
@@ -195,7 +195,7 @@ describe("CheckoutService.changeCoupon", () => {
     await coupons.create(otono);
     const placed = await checkout.place(guest, null, order());
     const withCoupon = await checkout.changeCoupon(placed.number, "tok", "otono10");
-    expect(withCoupon).toMatchObject({ number: placed.number, totalCents: 38_000_00 - 3_800_00 + 5_900_00 });
+    expect(withCoupon).toMatchObject({ number: placed.number, totalCents: 38_000_00 - 3_800_00 + 8_900_00 });
     expect(orders.items).toHaveLength(1);
     expect(orders.items[0]).toMatchObject({ couponCode: "OTONO10", discountCents: 3_800_00, status: "esperando_pago" });
     expect(variants.list[0]?.stock).toBe(1);

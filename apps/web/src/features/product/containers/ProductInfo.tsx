@@ -6,6 +6,7 @@ import {
   discountPercent,
   formatARS,
   installmentsLabel,
+  localDeliveryFor,
   type ProductDetail,
   qualifiesForFreeShipping,
   type ShippingMethod,
@@ -13,6 +14,7 @@ import {
   type Size,
   type StorePolicies,
   sizeAge,
+  whatsappUrl,
   zoneQuote,
 } from "@mini-galu/contracts";
 import {
@@ -44,14 +46,22 @@ import { WISH_PICK_MODAL, WishPickModal } from "@/features/wishlist/WishPickModa
 import { ApiRequestError, api } from "@/lib/api";
 import { longDate } from "@/lib/date";
 import { sizesIn, splitLastWord, stockOf } from "@/lib/product";
-import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Foco } from "@/ui/atoms/Foco";
 import { Stars } from "@/ui/atoms/Stars";
 import { Modal } from "@/ui/organisms/Modal";
 import { formatMeasures, recommendSize } from "../size-advisor";
 
-type Quote = { label: string; detail: string; cents: number | null }[];
+/** Una fila del cálculo de envío; `from`: es un precio desde (la cadetería), con el link para coordinarlo. */
+type Quote = { label: string; detail: string; cents: number | null; from?: { href: string } }[];
+
+/** La cadetería de la ciudad del taller: "Desde $3.000" y se coordina por WhatsApp. */
+const localRow = (label: string, fromCents: number, whatsapp: string): Quote[number] => ({
+  label,
+  detail: "Lo coordinamos por WhatsApp según tu dirección",
+  cents: fromCents,
+  from: { href: whatsappUrl(whatsapp, "¡Hola! Quiero coordinar un envío por cadete.") },
+});
 
 const SHIP_LABEL: Record<ShippingMethod, string> = {
   domicilio: "Andreani a domicilio",
@@ -60,8 +70,9 @@ const SHIP_LABEL: Record<ShippingMethod, string> = {
 };
 
 /** La cotización de la API (Andreani si está conectado; si no, la tabla por zona) con los títulos del mockup. */
-function quoteFrom({ options }: ShippingOptions): Quote {
-  return options.map((o) => ({ label: SHIP_LABEL[o.method], detail: o.detail, cents: o.cents }));
+function quoteFrom({ options, localDelivery: local }: ShippingOptions): Quote {
+  const rows: Quote = options.map((o) => ({ label: SHIP_LABEL[o.method], detail: o.detail, cents: o.cents }));
+  return local ? [...rows, localRow(local.label, local.fromCents, local.whatsapp)] : rows;
 }
 
 /**
@@ -83,14 +94,24 @@ function estimateShipping(policies: StorePolicies, cp: string, subtotalCents: nu
       detail: "Retirás en la sucursal más cercana",
       cents: free ? 0 : q.sucursal.cents,
     },
-    methods.taller && { label: "Retiro en el taller", detail: `${SITE.workshop} · elegís día y horario`, cents: 0 },
-  ].filter((o) => o !== false);
+    methods.taller && {
+      label: "Retiro en el taller",
+      detail: `${policies.workshop.city} · elegís día y horario`,
+      cents: 0,
+    },
+    (() => {
+      const local = localDeliveryFor(policies, cp);
+      return local
+        ? localRow(`Cadete en ${policies.workshop.city}`, local.fromCents, policies.contact.whatsapp)
+        : false;
+    })(),
+  ].filter((o): o is Quote[number] => !!o && o !== true);
 }
 
 /** "Envíos a todo el país con Andreani (domicilio o sucursal) o retiro gratis por el taller." según lo prendido. */
-function shippingText({ methods }: StorePolicies): string {
+function shippingText({ methods, workshop }: StorePolicies): string {
   const how = [methods.domicilio && "domicilio", methods.sucursal && "sucursal"].filter(Boolean).join(" o ");
-  if (!how) return `Retiro gratis por el taller de ${SITE.workshop}.`;
+  if (!how) return `Retiro gratis por el taller de ${workshop.city}.`;
   return `Envíos a todo el país con Andreani (${how})${methods.taller ? " o retiro gratis por el taller" : ""}.`;
 }
 
@@ -324,7 +345,9 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
       <div className="trust">
         <div>
           <Truck />
-          <span>{shipped ? "Envíos Andreani a todo el país" : `Retiro gratis en el taller de ${SITE.workshop}`}</span>
+          <span>
+            {shipped ? "Envíos Andreani a todo el país" : `Retiro gratis en el taller de ${policies.workshop.city}`}
+          </span>
         </div>
         <div>
           <CreditCard />
@@ -349,7 +372,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const cp = String(new FormData(e.currentTarget).get("cp") ?? "").trim() || "1414";
+              const cp = String(new FormData(e.currentTarget).get("cp") ?? "").trim();
+              if (!cp) return e.currentTarget.querySelector("input")?.focus();
               setQuoting(true);
               try {
                 setQuote(quoteFrom(await api.shipping(cp, p.priceCents)));
@@ -365,7 +389,7 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
               name="cp"
               inputMode="numeric"
               maxLength={4}
-              placeholder="Código postal (ej. 1414)"
+              placeholder="Tu código postal"
               aria-label="Código postal"
             />
             <button type="submit" className="btn btn-sm" disabled={quoting} aria-busy={quoting}>
@@ -377,9 +401,19 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
               <div key={o.label}>
                 <span>
                   <b>{o.label}</b>
-                  <small>{o.detail}</small>
+                  <small>
+                    {o.detail}
+                    {o.from && (
+                      <>
+                        {" · "}
+                        <a className="link" href={o.from.href} target="_blank" rel="noopener">
+                          Escribinos
+                        </a>
+                      </>
+                    )}
+                  </small>
                 </span>
-                <b>{o.cents ? formatARS(o.cents) : "Gratis"}</b>
+                <b>{o.from && o.cents ? `Desde ${formatARS(o.cents)}` : o.cents ? formatARS(o.cents) : "Gratis"}</b>
               </div>
             ))}
           </div>

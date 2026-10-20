@@ -109,3 +109,7 @@
 .card-plans .row b { font-weight: 600; }
 .card-plans.is-chosen { font-size: 14px; }
 .card-plans.is-chosen .row b { font-size: 18px; font-weight: 700; }
+/* Cadetería de la ciudad del taller: se informa (con el WhatsApp para coordinarla), no se elige ni se cobra acá */
+.option.is-info { grid-template-columns: 1fr auto; cursor: default; background: transparent; box-shadow: none; border: 1.5px dashed var(--line-2); }
+@media (hover: hover) { .option.is-info:hover { box-shadow: none; } }
+@media (max-width: 720px) { .option.is-info { grid-template-columns: 1fr; } .option.is-info .opt-price { grid-column: 1; } }

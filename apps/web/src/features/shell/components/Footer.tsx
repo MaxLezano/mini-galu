@@ -4,12 +4,13 @@ import { CreditCard, Mail, Truck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
-import { SITE } from "@/lib/site";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
+import { useStoreInfo } from "../shell-context";
 import { useUi } from "../ui-store";
 import { Logo } from "./Logo";
 
 export function Footer() {
+  const info = useStoreInfo();
   const openGalu = useUi((s) => s.openGalu);
   const [subscribed, setSubscribed] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
@@ -24,13 +25,13 @@ export function Footer() {
             nuestro taller.
           </p>
           <div className="social">
-            <a href={SITE.instagram} aria-label="Instagram">
+            <a href={info.instagram} aria-label="Instagram">
               <BrandIcon name="instagram" />
             </a>
-            <a href={SITE.whatsapp} aria-label="WhatsApp">
+            <a href={info.whatsapp} aria-label="WhatsApp">
               <BrandIcon name="whatsapp" />
             </a>
-            <a href={`mailto:${SITE.email}`} aria-label="Email">
+            <a href={`mailto:${info.email}`} aria-label="Email">
               <Mail />
             </a>
           </div>

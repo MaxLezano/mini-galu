@@ -1,23 +1,21 @@
 import {
+  fillHelpText,
   formatARS,
   freeShippingFrom,
   type HelpPageInput,
   type HelpTopic,
+  type HelpVar,
   pickupHoursLabel,
   type StorePolicies,
-  WORKSHOP,
 } from "@mini-galu/contracts";
 
-/** Datos de la tienda que aparecen en los textos de base (las políticas son las del panel). */
-export type HelpFacts = {
-  workshop: string;
-  email: string;
-  policies: StorePolicies;
-};
+/** Los ajustes de Tienda y pagos: deciden qué apartados lleva el texto de base y el valor de cada {variable}. */
+export type HelpFacts = { policies: StorePolicies };
 
 /**
  * Textos de base de las páginas de ayuda: lo que ya dice la tienda (producto, home, Galú). Gaby los ajusta desde el
- * panel; lo que guarda reemplaza al texto de base.
+ * panel; lo que guarda reemplaza al texto de base. Los datos que se cambian en el panel van como {variables}
+ * (`HELP_VARS`), así la página dice siempre lo que está configurado.
  * TODO(fase 10 · content): mientras la tienda es un piloto no llevan los textos legales (arrepentimiento de la
  * Ley 24.240 y leyenda de la AAIP de la Ley 25.326); ver docs/ROADMAP.md.
  */
@@ -28,12 +26,12 @@ export function defaultHelpPage(topic: HelpTopic, f: HelpFacts): HelpPageInput {
 const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
   cambios: (f) => ({
     title: "Cambios y devoluciones",
-    intro: `Si el talle no fue el justo, lo cambiamos. Tenés ${days(f)} desde que recibís el pedido.`,
+    intro: "Si el talle no fue el justo, lo cambiamos. Tenés {dias_cambio} desde que recibís el pedido.",
     sections: [
       {
         title: "Cambios de talle",
         body: [
-          `Tenés ${days(f)} desde que recibís tu pedido para cambiar el talle de cualquier prenda.`,
+          "Tenés {dias_cambio} desde que recibís tu pedido para cambiar el talle de cualquier prenda.",
           "- La prenda tiene que estar sin uso, sin lavar y con su etiqueta.",
           "- El cambio está sujeto al stock del talle que necesitás. Si no queda, te ofrecemos otro modelo o una gift card por el mismo valor.",
         ].join("\n"),
@@ -41,7 +39,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       {
         title: "Cómo pedir un cambio",
         body: [
-          `Escribinos por WhatsApp o a ${f.email} con tu número de pedido y el talle que querés.`,
+          "Escribinos por WhatsApp o a {email} con tu número de pedido y el talle que querés.",
           f.policies.methods.taller
             ? "Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller."
             : "Coordinamos cómo nos hacés llegar la prenda por Andreani.",
@@ -74,8 +72,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
             methods.domicilio && methods.sucursal && "- A domicilio o a una sucursal Andreani, a todo el país.",
             methods.domicilio && !methods.sucursal && "- A domicilio con Andreani, a todo el país.",
             !methods.domicilio && methods.sucursal && "- A una sucursal Andreani, a todo el país.",
-            methods.taller &&
-              `- Retiro gratis en el taller, eligiendo día y horario (${pickupHoursLabel(f.policies)}).`,
+            methods.taller && "- Retiro gratis en el taller, eligiendo día y horario ({horario_retiro}).",
             shipped && free !== null && `- Envío gratis en compras desde ${formatARS(free)}.`,
             ...(shipped
               ? [
@@ -108,13 +105,13 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       ],
     };
   },
-  terminos: (f) => ({
+  terminos: () => ({
     title: "Términos y condiciones",
     intro: "Las condiciones para comprar en la tienda online de Mini Galú.",
     sections: [
       {
         title: "Quiénes somos",
-        body: `Mini Galú es una marca de prendas de diseño para niñas, de 12 meses a talle 10, hechas en nuestro taller de ${f.workshop} (${WORKSHOP.province}). Al comprar en esta web aceptás estas condiciones.`,
+        body: "Mini Galú es una marca de prendas de diseño para niñas, de 12 meses a talle 10, hechas en nuestro taller de {taller} ({provincia}). Al comprar en esta web aceptás estas condiciones.",
       },
       {
         title: "Precios y stock",
@@ -130,7 +127,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       },
       {
         title: "Gift cards",
-        body: "Las gift cards valen 6 meses desde que se activan. Se usan en la tienda online o en el taller, en una o varias compras, hasta agotar el saldo.",
+        body: "Las gift cards valen {meses_gift_card} desde que se activan. Se usan en la tienda online o en el taller, en una o varias compras, hasta agotar el saldo.",
       },
       {
         title: "Cambios y devoluciones",
@@ -138,7 +135,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
       },
       {
         title: "Contacto y reclamos",
-        body: `Para cualquier consulta o reclamo escribinos a ${f.email}.`,
+        body: "Para cualquier consulta o reclamo escribinos a {email}.",
       },
     ],
   }),
@@ -177,7 +174,28 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
   }),
 };
 
-/** "30 días" (o "1 día"). */
-function days(f: HelpFacts): string {
-  return f.policies.exchangeDays === 1 ? "1 día" : `${f.policies.exchangeDays} días`;
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** El valor de cada {variable} con los ajustes de ahora. */
+export function helpValues({ policies: p }: HelpFacts): Record<HelpVar, string> {
+  return {
+    dias_cambio: plural(p.exchangeDays, "día", "días"),
+    meses_gift_card: plural(p.giftcardMonths, "mes", "meses"),
+    horario_retiro: pickupHoursLabel(p),
+    taller: p.workshop.city,
+    provincia: p.workshop.province,
+    email: p.contact.email,
+    whatsapp: p.contact.whatsapp,
+  };
+}
+
+/** La página como la ve la tienda: cada {variable} con su valor. */
+export function fillHelpPage(page: HelpPageInput, f: HelpFacts): HelpPageInput {
+  const v = helpValues(f);
+  return {
+    ...page,
+    title: fillHelpText(page.title, v),
+    intro: fillHelpText(page.intro, v),
+    sections: page.sections.map((s) => ({ ...s, title: fillHelpText(s.title, v), body: fillHelpText(s.body, v) })),
+  };
 }

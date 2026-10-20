@@ -22,11 +22,7 @@ class MemoryHelp implements HelpRepository {
   }
 }
 
-const factsWith = (policies: StorePolicies) => async () => ({
-  workshop: "San Miguel de Tucumán",
-  email: "hola@minigalu.com.ar",
-  policies,
-});
+const factsWith = (policies: StorePolicies) => async () => ({ policies });
 const facts = factsWith({
   ...DEFAULT_POLICIES,
   exchangeDays: 30,
@@ -47,10 +43,12 @@ describe("HelpService", () => {
     const pages = await help.all();
     expect(pages.map((p) => p.topic)).toEqual([...HELP_TOPICS]);
     expect(pages.every((p) => p.updatedAt === null && p.sections.length > 0)).toBe(true);
-    const envios = await help.page("envios-y-pagos");
+    const envios = await help.publicPage("envios-y-pagos");
     expect(envios.intro).toContain("$90.000");
     const cambios = await help.page("cambios");
-    expect(cambios.intro).toContain("30 días");
+    // el panel ve la variable; la tienda, el valor de Tienda y pagos
+    expect(cambios.intro).toContain("{dias_cambio}");
+    expect((await help.publicPage("cambios")).intro).toContain("30 días");
     // piloto: sin el apartado de arrepentimiento; "Si algo llegó mal" viene apagado
     expect(JSON.stringify(cambios)).not.toContain("arrepent");
     expect(cambios.sections.find((s) => s.title === "Si algo llegó mal")?.hidden).toBe(true);
@@ -78,12 +76,28 @@ describe("HelpService", () => {
         methods: { domicilio: true, sucursal: true, taller: false },
       }),
     );
-    expect((await help.page("cambios")).intro).toContain("15 días");
-    const envios = JSON.stringify(await help.page("envios-y-pagos"));
+    expect((await help.publicPage("cambios")).intro).toContain("15 días");
+    const envios = JSON.stringify(await help.publicPage("envios-y-pagos"));
     expect(envios).not.toContain("Envío gratis");
     expect(envios).not.toContain("taller de Villa Crespo");
-    const conRetiro = JSON.stringify(await new HelpService(new MemoryHelp(), facts).page("envios-y-pagos"));
+    const conRetiro = JSON.stringify(await new HelpService(new MemoryHelp(), facts).publicPage("envios-y-pagos"));
     expect(conRetiro).toContain("Lun a vie · 10 a 13 y 16 a 19 h");
+  });
+
+  it("lo que escribe Gaby con {variables} sigue los ajustes; lo demás entre llaves queda igual", async () => {
+    const help = new HelpService(
+      new MemoryHelp(),
+      factsWith({ ...DEFAULT_POLICIES, giftcardMonths: 1, contact: { ...DEFAULT_POLICIES.contact, email: "a@b.com" } }),
+    );
+    await help.save("terminos", {
+      title: "Términos",
+      intro: "",
+      sections: [{ title: "Gift cards", body: "Valen {meses_gift_card}. Dudas a {email}. {otra} sin tocar." }],
+    });
+    expect((await help.publicPage("terminos")).sections[0]?.body).toBe(
+      "Valen 1 mes. Dudas a a@b.com. {otra} sin tocar.",
+    );
+    expect((await help.page("terminos")).sections[0]?.body).toContain("{meses_gift_card}");
   });
 
   it("los apartados apagados no se ven en la tienda y se pueden apagar todos menos uno", async () => {

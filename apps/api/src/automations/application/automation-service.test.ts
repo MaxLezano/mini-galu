@@ -86,7 +86,7 @@ beforeEach(() => {
       catalog: (size) => `http://web/catalogo?talle=${size}`,
       bag: "http://web/ingresar?volver=%2Fcheckout",
       site: "http://web",
-      workshop: "Villa Crespo, CABA",
+      workshop: async () => "Villa Crespo, CABA",
       review: (n, t) => `http://web/resena/${n}?t=${t}`,
     },
     () => now,

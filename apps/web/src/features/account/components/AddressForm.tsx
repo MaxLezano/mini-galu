@@ -5,13 +5,15 @@ import { useState } from "react";
 
 type Props = {
   initial: AccountAddress | null;
+  /** Provincia del taller: la más probable para una dirección nueva. */
+  defaultProvince: string;
   busy: boolean;
   onSave: (a: AddressInput) => void;
   onCancel: () => void;
 };
 
 /** Agregar o editar una dirección guardada (la usa el checkout para no volver a escribirla). */
-export function AddressForm({ initial, busy, onSave, onCancel }: Props) {
+export function AddressForm({ initial, defaultProvince, busy, onSave, onCancel }: Props) {
   const [error, setError] = useState<string | null>(null);
   return (
     <form
@@ -76,7 +78,12 @@ export function AddressForm({ initial, busy, onSave, onCancel }: Props) {
         </div>
         <div className="field">
           <label htmlFor="ad-province">Provincia</label>
-          <select className="input" id="ad-province" name="province" defaultValue={initial?.province ?? "CABA"}>
+          <select
+            className="input"
+            id="ad-province"
+            name="province"
+            defaultValue={initial?.province ?? defaultProvince}
+          >
             {PROVINCES.map((p) => (
               <option key={p}>{p}</option>
             ))}
