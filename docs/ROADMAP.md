@@ -269,7 +269,11 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   entrega) y un campo "Gift card" con "Ver saldo". Si cubre todo, la venta queda pagada sin Mercado Pago (y, en el
   taller, entregada); si no, el link cobra la diferencia y el saldo se descuenta al pagarse. "Gift cards" en Tienda y
   pagos: vendido, saldo sin usar (sin las vencidas) y cada tarjeta con su saldo y vencimiento
-- 🟡 La diferencia de una venta en el taller se cobra con el link de Mercado Pago (no hay registro de efectivo)
+- ✅ **Cobro en efectivo en el taller** (sin mockup; mismos chips del link de pago): en una venta "En el taller",
+  "Cómo paga" elige efectivo o link de Mercado Pago. En efectivo la venta queda pagada y entregada en el momento
+  (medio "Efectivo", historial "Cobrado en efectivo en el taller"; con gift card, se cobra en efectivo la diferencia).
+  El mail "Recibimos tu pago" de una venta del taller no habla de preparar ni de seguimiento. Reintegrarla no pasa por
+  Mercado Pago: el panel dice que se devuelve en mano y el mail al cliente, "en efectivo, en el taller"
 - ✅ Clientes en el panel: todo el que compró (con o sin cuenta, por mail) y las cuentas, con nenas, próximo cumple,
   pedidos y gastado; filtros (cumple en 30 días, volvieron a comprar, nuevas del mes), búsqueda, ficha con
   contacto, resumen ("le gustan" por colección), pedidos y nota del taller; exportar CSV

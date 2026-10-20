@@ -1,14 +1,15 @@
-import { PaymentLinkInputSchema } from "@mini-galu/contracts";
+import { type PaymentLinkInput, PaymentLinkInputSchema } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CartService } from "../../cart/application/cart-service";
 import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
 import { CouponService } from "../../coupons/application/coupon-service";
 import { MemoryCoupons } from "../../coupons/testing/in-memory";
-import { ConflictError } from "../../shared/domain/errors";
+import { ConflictError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
 import { TableShippingRates } from "../../shipping/infrastructure/table-shipping-rates";
+import { refundPlan } from "../domain/refund";
 import { MemoryOrders } from "../testing/in-memory";
 import { AdminOrdersService } from "./admin-orders-service";
 import { OrderPayments } from "./order-payments";
@@ -25,7 +26,7 @@ let payments: OrderPayments;
 let admin: AdminOrdersService;
 let reminders: DomainEvent[];
 
-const input = (qty = 1) =>
+const input = (qty = 1, over: Partial<PaymentLinkInput> = {}) =>
   PaymentLinkInputSchema.parse({
     channel: "whatsapp",
     contact: { email: "paula@gmail.com", firstName: "Paula", lastName: "Benítez", phone: "11 5555-1234" },
@@ -38,6 +39,7 @@ const input = (qty = 1) =>
       city: "CABA",
     },
     items: [{ slug: "elsa", size: "4", qty }],
+    ...over,
   });
 
 beforeEach(() => {
@@ -48,6 +50,8 @@ beforeEach(() => {
   const bus = new EventBus();
   reminders = [];
   bus.on("PaymentLinkReminder", (e) => void reminders.push(e));
+  // como en app.ts: la venta en el taller pagada se da por entregada
+  bus.on("PaymentApproved", (e) => links.handedOver(String(e.payload.orderId)));
   const shipping = new ShippingService(new TableShippingRates());
   links = new PaymentLinks(
     variants,
@@ -58,6 +62,8 @@ beforeEach(() => {
     async () => true,
     clock,
     () => "tok",
+    undefined,
+    (orderId, method) => payments.approved(orderId, { method, installments: 1 }),
   );
   const cart = new CartService(new MemoryCarts(), variants, storage, orders);
   payments = new OrderPayments(orders, cart, new CouponService(new MemoryCoupons()), bus, clock);
@@ -114,5 +120,24 @@ describe("links de pago", () => {
     const r = await links.create(input());
     await payments.approved(orders.items[0]?.id ?? "", { method: "credito", installments: 1 });
     expect((await admin.detail(r.number)).payUrl).toBeNull();
+  });
+
+  it("venta en el taller cobrada en efectivo: queda pagada y entregada en el momento, sin link", async () => {
+    const r = await links.create(input(1, { channel: "taller", shipping: null, payment: "efectivo" }));
+    const o = orders.items[0];
+    expect(r).toMatchObject({ paid: true, cash: true, totalCents: o?.subtotalCents });
+    expect(o).toMatchObject({ status: "entregado", channel: "taller", paymentMethod: "efectivo", shippingCents: 0 });
+    expect(variants.list[0]?.stock).toBe(1);
+    const d = await admin.detail(r.number);
+    expect(d.payUrl).toBeNull();
+    expect(d.events.map((e) => e.title)).toContain("Cobrado en efectivo en el taller");
+    // reintegrarla es devolver la plata en mano: no hace falta un pago de Mercado Pago
+    expect(o && refundPlan(o, false)).toMatchObject({ cash: true, blocked: null });
+  });
+
+  it("en efectivo solo se cobra en el taller", async () => {
+    expect(PaymentLinkInputSchema.safeParse({ ...input(), payment: "efectivo" }).success).toBe(false);
+    await expect(links.create({ ...input(), payment: "efectivo" })).rejects.toBeInstanceOf(ValidationError);
+    expect(orders.items).toHaveLength(0);
   });
 });

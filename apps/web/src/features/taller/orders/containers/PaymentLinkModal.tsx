@@ -13,7 +13,7 @@ import {
   type Size,
   toE164AR,
 } from "@mini-galu/contracts";
-import { Copy, Gift, Plus, Store, X } from "lucide-react";
+import { Banknote, Copy, Gift, Link2, Plus, Store, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
@@ -30,14 +30,23 @@ import {
   type ShippingForm,
 } from "../../../checkout/checkout-form";
 import { fillTemplate, TEMPLATES, waLink } from "../order-flow";
-import { addLine, type LinkChannel, type LinkLine, linesSubtotal, linkError, toLinkInput } from "../payment-link-form";
+import {
+  addLine,
+  type LinkChannel,
+  type LinkLine,
+  type LinkPayment,
+  linesSubtotal,
+  linkError,
+  toLinkInput,
+} from "../payment-link-form";
 
 export const PAYMENT_LINK_MODAL = "m-link";
 
 /**
  * Venta por Instagram o WhatsApp (PLAN §6): se cargan las prendas, el cliente y la entrega; el pedido queda
- * esperando el pago con el stock reservado 72 h y sale un link para mandarle. En el taller no hay entrega; con una
- * gift card se descuenta su saldo y, si cubre todo, la venta queda pagada sin link.
+ * esperando el pago con el stock reservado 72 h y sale un link para mandarle. En el taller no hay entrega y se puede
+ * cobrar en efectivo (queda pagada y entregada); con una gift card se descuenta su saldo y, si cubre todo, la venta
+ * queda pagada sin link.
  */
 export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
   const { modal, closeModal } = useUi();
@@ -55,7 +64,9 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
   const [branches, setBranches] = useState<ShippingBranch[]>([]);
   const [gift, setGift] = useState("");
   const [balance, setBalance] = useState<GiftcardBalance | null>(null);
+  const [payment, setPayment] = useState<LinkPayment>("link");
   const inPerson = channel === "taller";
+  const cash = inPerson && payment === "efectivo";
 
   // envío a sucursal: las sucursales del CP (la primera es la que lo atiende)
   const cp = ship.method === "sucursal" && quotablePostalCode(ship.postalCode) ? ship.postalCode : null;
@@ -90,6 +101,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
     setCreated(null);
     setGift("");
     setBalance(null);
+    setPayment("link");
   };
   const close = () => {
     closeModal();
@@ -139,7 +151,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
     if (e) return document.getElementById(`pl-${e.field}`)?.focus();
     setBusy(true);
     try {
-      setCreated(await adminApi.createPaymentLink(toLinkInput(channel, lines, contact, ship, gift)));
+      setCreated(await adminApi.createPaymentLink(toLinkInput(channel, lines, contact, ship, gift, payment)));
       onCreated();
     } catch (err) {
       setError({ field: "", message: err instanceof ApiRequestError ? err.message : "No se pudo crear el link" });
@@ -178,7 +190,18 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
         </>
       }
     >
-      {created?.paid ? (
+      {created?.cash ? (
+        <div className="modal-body" style={{ display: "grid", gap: 14 }}>
+          <p style={{ margin: 0 }}>
+            Listo: la venta <b>#{created.number}</b> quedó cobrada: <b>{formatARS(created.totalCents)}</b> en efectivo
+            {created.giftcardCents > 0 ? ` y ${formatARS(created.giftcardCents)} con la gift card` : ""}. Quedó como
+            entregada.
+          </p>
+          <button type="button" className="btn btn-block btn-soft" onClick={close}>
+            Listo
+          </button>
+        </div>
+      ) : created?.paid ? (
         <div className="modal-body" style={{ display: "grid", gap: 14 }}>
           <p style={{ margin: 0 }}>
             Listo: la venta <b>#{created.number}</b> se pagó con la gift card (<b>{formatARS(created.giftcardCents)}</b>
@@ -512,6 +535,30 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
             {err("giftcard")}
           </div>
 
+          {inPerson && (
+            <div className="field">
+              <span className="lbl">Cómo paga</span>
+              <div className="pl-chips" role="group" aria-label="Cómo paga">
+                {(
+                  [
+                    ["efectivo", "En efectivo", Banknote],
+                    ["link", "Con link de Mercado Pago", Link2],
+                  ] as const
+                ).map(([p, label, Icon]) => (
+                  <button
+                    type="button"
+                    key={p}
+                    className={`chip ${payment === p ? "is-on" : ""}`}
+                    aria-pressed={payment === p}
+                    onClick={() => setPayment(p)}
+                  >
+                    <Icon className="i-sm" /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {error?.field === "" && (
             <span className="field-error" role="alert">
               {error.message}
@@ -524,7 +571,7 @@ export function PaymentLinkModal({ onCreated }: { onCreated: () => void }) {
               {balance?.usable && <> · gift card −{formatARS(balance.balanceCents)}</>}
             </span>
             <button type="button" className="btn" disabled={busy} onClick={submit}>
-              {busy ? "Reservando…" : inPerson ? "Cargar venta" : "Crear link de pago"}
+              {busy ? "Reservando…" : cash ? "Cobrar en efectivo" : inPerson ? "Cargar venta" : "Crear link de pago"}
             </button>
           </div>
         </div>

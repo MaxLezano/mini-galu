@@ -11,13 +11,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../shared/doma
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ShippingService } from "../../shipping/application/shipping-service";
 import { computeTotals, formatOrderNumber, payPath } from "../domain/order";
-import {
-  type CheckoutGiftcards,
-  NO_GIFTCARDS,
-  type SettleWithGiftcard,
-  shippingFields,
-  sucursalOf,
-} from "./checkout-service";
+import { type CheckoutGiftcards, NO_GIFTCARDS, shippingFields, sucursalOf } from "./checkout-service";
 import type { AdminOrderRepository, OrderRepository } from "./ports";
 
 type PaymentLinkInput = z.output<typeof PaymentLinkInputSchema>;
@@ -35,11 +29,14 @@ const IN_PERSON = {
 } as const;
 const HOUR = 3_600_000;
 
+/** Marca pagada una venta que no pasa por Mercado Pago: la gift card cubrió todo o se cobró en efectivo. */
+export type SettleInHand = (orderId: string, method: "giftcard" | "efectivo") => Promise<void>;
+
 /**
  * Links de pago (PLAN §6): una venta por Instagram o WhatsApp se carga en el panel, el pedido queda esperando el
  * pago con el stock reservado 72 h y el cliente paga en la tienda. A las 24 h se le recuerda; a las 72 h se libera.
- * Una venta en el taller es igual pero sin entrega. Con una gift card se descuenta su saldo y, si cubre todo, el
- * pedido queda pagado sin Mercado Pago.
+ * Una venta en el taller es igual pero sin entrega, y se puede cobrar en efectivo (queda pagada y entregada en el
+ * momento). Con una gift card se descuenta su saldo y, si cubre todo, el pedido queda pagado sin Mercado Pago.
  */
 export class PaymentLinks {
   constructor(
@@ -53,12 +50,14 @@ export class PaymentLinks {
     private readonly clock: () => Date = () => new Date(),
     private readonly newToken: () => string = () => randomBytes(18).toString("base64url"),
     private readonly giftcards: CheckoutGiftcards = NO_GIFTCARDS,
-    private readonly settle: SettleWithGiftcard = async () => {
+    private readonly settle: SettleInHand = async () => {
       throw new ValidationError("Este pedido no se puede pagar solo con gift card");
     },
   ) {}
 
   async create(input: PaymentLinkInput): Promise<PaymentLinkCreated> {
+    if (input.payment === "efectivo" && input.channel !== "taller")
+      throw new ValidationError("En efectivo solo se cobra en el taller");
     const items = [];
     for (const i of input.items) {
       const v = await this.variants.find(i.slug, i.size);
@@ -119,7 +118,8 @@ export class PaymentLinks {
           : `No hay stock del ${r.name} en talle ${r.size}`,
         { slug: r.productSlug, size: r.size, available: r.available },
       );
-    const paid = totals.totalCents === 0;
+    const cash = input.payment === "efectivo" && totals.totalCents > 0;
+    const paid = cash || totals.totalCents === 0;
     await this.orders.addEvent(r.id, {
       kind: "created",
       title:
@@ -134,8 +134,8 @@ export class PaymentLinks {
         .join(" · "),
       auto: false,
     });
-    // la gift card cubre todo: queda pagado (y descontado del saldo) sin pasar por Mercado Pago
-    if (paid) await this.settle(r.id);
+    // la gift card cubre todo o se cobró en efectivo: queda pagado (y la gift card, descontada) sin Mercado Pago
+    if (paid) await this.settle(r.id, cash ? "efectivo" : "giftcard");
     const number = formatOrderNumber(r.number);
     return {
       number,
@@ -143,6 +143,7 @@ export class PaymentLinks {
       totalCents: totals.totalCents,
       giftcardCents: totals.giftcardCents,
       paid,
+      cash,
       reservedUntil: reservedUntil.toISOString(),
     };
   }

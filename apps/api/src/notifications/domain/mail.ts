@@ -23,6 +23,8 @@ export type MailOrder = {
   branchLabel?: string | null;
   paymentMethod: PaymentMethod | null;
   installments: number | null;
+  /** Venta en el taller: se la llevó en el momento (no hay entrega ni seguimiento). */
+  inPerson?: boolean;
 };
 
 export type MailLinks = {
@@ -86,9 +88,11 @@ const METHOD: Record<PaymentMethod, string> = {
   dinero_cuenta: "Dinero en cuenta de Mercado Pago",
   link: "Link de pago de Mercado Pago",
   giftcard: "Gift card",
+  efectivo: "Efectivo, en el taller",
 };
 
 function deliveryLine(o: MailOrder, links: MailLinks): string {
+  if (o.inPerson) return "Te lo llevaste del taller en el momento.";
   if (o.shippingMethod === "taller")
     return `Retirás en el taller (${links.workshop})${o.pickupLabel ? ` el ${o.pickupLabel}` : ""}.`;
   if (o.shippingMethod === "sucursal")
@@ -103,9 +107,11 @@ export function paymentApprovedMail(
   o: MailOrder,
   links: MailLinks,
   /** Texto de la regla "Pago aprobado" (editable en Automatizaciones). */
-  intro = "Gaby ya recibió tu pedido y lo prepara en el taller.",
+  ruleIntro = "Gaby ya recibió tu pedido y lo prepara en el taller.",
 ): Mail {
   const e = escapeHtml;
+  // el texto de la regla habla de preparar el pedido: en una venta del taller ya se lo llevó
+  const intro = o.inPerson ? "Gracias por pasar por el taller." : ruleIntro;
   const paid = o.paymentMethod
     ? `${METHOD[o.paymentMethod]}${o.installments && o.installments > 1 ? ` en ${o.installments} cuotas` : ""}`
     : "Mercado Pago";
@@ -116,9 +122,13 @@ export function paymentApprovedMail(
       ? [[`Cupón ${o.couponCode ?? ""}`.trim(), `-${money(o.discountCents)}`] as [string, string]]
       : []),
     // retirar en el taller no es un envío: no se dice "envío gratis"
-    o.shippingMethod === "taller"
-      ? ["Retiro en el taller", "Sin costo"]
-      : ["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"],
+    ...(o.inPerson
+      ? []
+      : [
+          o.shippingMethod === "taller"
+            ? (["Retiro en el taller", "Sin costo"] as [string, string])
+            : (["Envío", o.shippingCents > 0 ? money(o.shippingCents) : "Gratis"] as [string, string]),
+        ]),
   ];
 
   const items = o.items
@@ -157,9 +167,13 @@ export function paymentApprovedMail(
             <tr><td style="padding:10px 0 0;font-weight:700;font-size:17px">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;font-size:17px">${money(o.totalCents)}</td></tr>
             <tr><td colspan="2" style="padding-top:4px;color:${C.cacao2};font-size:12.5px">Pagado con ${e(paid)}</td></tr>
           </table>
-          <div style="text-align:center;margin-top:26px">
+          ${
+            o.inPerson
+              ? ""
+              : `<div style="text-align:center;margin-top:26px">
             <a href="${e(links.tracking)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Seguir mi pedido</a>
-          </div>
+          </div>`
+          }
 `,
   );
 
@@ -174,7 +188,7 @@ export function paymentApprovedMail(
     ...rows.map(([k, v]) => `${k}: ${v}`),
     `Total: ${money(o.totalCents)} (pagado con ${paid})`,
     "",
-    `Seguí tu pedido: ${links.tracking}`,
+    ...(o.inPerson ? [] : [`Seguí tu pedido: ${links.tracking}`]),
     `¿Dudas? WhatsApp: ${links.whatsapp}`,
   ].join("\n");
 

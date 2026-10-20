@@ -42,8 +42,16 @@ describe("formulario de link de pago", () => {
     expect(linkError("taller", [elsa], contact, EMPTY_SHIPPING)).toBeNull();
     expect(toLinkInput("taller", [elsa], contact, EMPTY_SHIPPING, " galu-7kq2-m9xa ")).toMatchObject({
       channel: "taller",
+      payment: "link",
       shipping: null,
       giftcardCode: "galu-7kq2-m9xa",
     });
+  });
+
+  it("en efectivo solo se cobra en el taller", () => {
+    const contact = { ...EMPTY_CONTACT, email: "a@b.com", firstName: "Ana", lastName: "B", phone: "11 5555-1234" };
+    expect(toLinkInput("taller", [elsa], contact, EMPTY_SHIPPING, "", "efectivo").payment).toBe("efectivo");
+    const shipping = { ...EMPTY_SHIPPING, method: "taller" as const, pickupSlot: "x" };
+    expect(toLinkInput("whatsapp", [elsa], contact, shipping, "", "efectivo").payment).toBe("link");
   });
 });

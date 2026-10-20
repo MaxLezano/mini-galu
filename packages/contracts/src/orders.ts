@@ -17,6 +17,8 @@ export const PAYMENT_METHODS = {
   dinero_cuenta: "Dinero en cuenta MP",
   link: "Link de pago MP",
   giftcard: "Gift card",
+  /** Venta en el taller cobrada en el momento (sin Mercado Pago). */
+  efectivo: "Efectivo",
 } as const;
 export type PaymentMethod = keyof typeof PAYMENT_METHODS;
 

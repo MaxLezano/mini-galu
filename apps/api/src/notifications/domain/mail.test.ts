@@ -59,6 +59,19 @@ describe("paymentApprovedMail", () => {
     expect(m.html).not.toContain("Cupón");
   });
 
+  it("venta en el taller cobrada en efectivo: se la llevó, sin entrega ni seguimiento", () => {
+    const m = paymentApprovedMail(
+      order({ shippingMethod: "taller", inPerson: true, shippingCents: 0, paymentMethod: "efectivo", installments: 1 }),
+      links,
+      "Gaby ya recibió tu pedido y lo prepara en el taller.",
+    );
+    expect(m.text).toContain("Gracias por pasar por el taller. Te lo llevaste del taller en el momento.");
+    expect(m.text).toContain("pagado con Efectivo, en el taller");
+    expect(m.text).not.toContain("prepara");
+    expect(m.text).not.toContain("Retiro en el taller");
+    expect(m.html).not.toContain(links.tracking);
+  });
+
   it("escapa lo que escribió el cliente", () => {
     const m = paymentApprovedMail(order({ firstName: "<script>x</script>" }), links);
     expect(m.html).not.toContain("<script>x");

@@ -312,7 +312,7 @@ export function buildApp(config: Config) {
     undefined,
     undefined,
     { check: (code) => giftcards.check(code), checkById: (id) => giftcards.checkById(id), summary: async () => null },
-    (orderId) => orderPayments.approved(orderId, { method: "giftcard", installments: 1 }),
+    (orderId, method) => orderPayments.approved(orderId, { method, installments: 1 }),
   );
   const shipments = new ShipmentService(
     andreani && config.andreani
@@ -372,6 +372,7 @@ export function buildApp(config: Config) {
           branchLabel: r.branchLabel,
           paymentMethod: o.paymentMethod,
           installments: o.installments,
+          inPerson: o.channel === "taller",
         };
       },
     },
@@ -555,11 +556,20 @@ export function buildApp(config: Config) {
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
   // reintegro desde el panel: el cliente se entera por mail de cuánto vuelve y por dónde
   events.on("OrderRefunded", async (e) => {
-    const p = e.payload as { orderId: string; number: string; cents: number; giftcardCents: number; pending: boolean };
+    const p = e.payload as {
+      orderId: string;
+      number: string;
+      cents: number;
+      cash: boolean;
+      giftcardCents: number;
+      pending: boolean;
+    };
     const o = await orders.findById(p.orderId);
     if (!o) return;
     const parts = [
-      p.cents > 0 ? `${formatARS(p.cents)} por el mismo medio con el que pagaste` : null,
+      p.cents > 0
+        ? `${formatARS(p.cents)} ${p.cash ? "en efectivo, en el taller" : "por el mismo medio con el que pagaste"}`
+        : null,
       p.giftcardCents > 0 ? `${formatARS(p.giftcardCents)} al saldo de tu gift card` : null,
     ].filter(Boolean);
     await notifications.message({
@@ -568,7 +578,7 @@ export function buildApp(config: Config) {
       eyebrow: `Pedido #${p.number} · reintegro`,
       name: o.firstName || null,
       body: `Reintegramos el pedido #${p.number}: ${parts.join(" y ") || "no había nada que devolver"}.${
-        p.cents > 0
+        p.cents > 0 && !p.cash
           ? p.pending
             ? " Mercado Pago lo está procesando; según el medio, puede tardar unos días en verse."
             : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."

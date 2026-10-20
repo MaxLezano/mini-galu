@@ -41,11 +41,16 @@ export function RefundPanel({ refund, busy, onConfirm }: Props) {
         <Undo2 className="i-sm" /> Reintegrar el pedido
       </b>
       <ul>
-        {refund.cents > 0 && (
-          <li>
-            Vuelven <b>{formatARS(refund.cents)}</b> por Mercado Pago, al mismo medio con el que pagó.
-          </li>
-        )}
+        {refund.cents > 0 &&
+          (refund.cash ? (
+            <li>
+              Le devolvés <b>{formatARS(refund.cents)}</b> en efectivo: lo cobraste en el taller.
+            </li>
+          ) : (
+            <li>
+              Vuelven <b>{formatARS(refund.cents)}</b> por Mercado Pago, al mismo medio con el que pagó.
+            </li>
+          ))}
         {refund.giftcardCents > 0 && (
           <li>
             Vuelven <b>{formatARS(refund.giftcardCents)}</b> al saldo de la gift card que usó.

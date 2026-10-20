@@ -41,6 +41,7 @@ const PAY_SHORT = {
   dinero_cuenta: "Dinero en cuenta",
   link: "Link de pago",
   giftcard: "Gift card",
+  efectivo: "Efectivo",
 } as const;
 
 /** "Para hacer hoy": cada tarjeta lleva a los pedidos de ese paso (y la de Galú, a "Enseñale"). */

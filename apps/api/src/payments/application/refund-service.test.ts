@@ -133,6 +133,18 @@ describe("reintegro desde el panel", () => {
     expect(events).toEqual([]);
   });
 
+  it("una venta del taller cobrada en efectivo se devuelve en mano: no pasa por Mercado Pago", async () => {
+    const r = await orders.createReserving(order({ shippingMethod: "taller", channel: "taller" }));
+    if (!r.ok) throw new Error("sin stock");
+    await orders.markPaid(r.id, { method: "efectivo", installments: 1, at: new Date() });
+    const res = await service().refund(`MG-${r.number}`, { restock: true, reason: "" });
+    expect(res).toEqual({ cents: 45_000_00, giftcardCents: 0, pending: false });
+    expect(calls).toEqual([]);
+    expect(orders.items[0]?.status).toBe("reembolsado");
+    expect((await orders.events(r.id))[0]?.detail).toMatch(/en efectivo · prendas al stock/);
+    expect(events[0]?.payload).toMatchObject({ cents: 45_000_00, cash: true });
+  });
+
   it("no se reintegra dos veces", async () => {
     const o = await paid();
     await service().refund(o.number, { restock: true, reason: "" });

@@ -12,7 +12,7 @@ export type RefundTicket = {
   from: OrderStatus;
   kind: "prendas" | "giftcard";
   plan: AdminRefund;
-  /** La operación de Mercado Pago a la que se le devuelve la plata (null si no hay plata que devolver). */
+  /** La operación de Mercado Pago a la que se le devuelve la plata (null si no hay plata que devolver o fue efectivo). */
   payment: OrderPayment | null;
 };
 
@@ -53,7 +53,7 @@ export class OrderRefunds {
       from: o.status,
       kind: o.kind,
       plan,
-      payment: plan.cents > 0 ? payment : null,
+      payment: plan.cents > 0 && !plan.cash ? payment : null,
     };
   }
 
@@ -77,7 +77,14 @@ export class OrderRefunds {
       title: "Pago reintegrado",
       detail:
         refundDetail(
-          { cents: t.plan.cents, giftcardCents, restocked: restock, pending: r.pending, reason: r.reason },
+          {
+            cents: t.plan.cents,
+            cash: t.plan.cash,
+            giftcardCents,
+            restocked: restock,
+            pending: r.pending,
+            reason: r.reason,
+          },
           formatARS,
         ) || null,
       auto: false,
@@ -91,6 +98,7 @@ export class OrderRefunds {
         number: t.number,
         kind: t.kind,
         cents: t.plan.cents,
+        cash: t.plan.cash,
         giftcardCents,
         pending: r.pending,
       },

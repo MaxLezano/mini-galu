@@ -10,6 +10,7 @@ type Input = z.output<typeof RefundInputSchema>;
  * Reintegro desde el panel (detalle del pedido): devuelve el total por Mercado Pago, por el mismo medio con que se
  * pagó, y recién con la plata devuelta el pedido pasa a reembolsado (la gift card usada recupera su saldo y, si se
  * elige, las prendas vuelven al stock). Nunca se marca reembolsado sin que Mercado Pago haya aceptado la devolución.
+ * Una venta del taller cobrada en efectivo se devuelve en mano: no pasa por Mercado Pago.
  */
 export class RefundService {
   constructor(
@@ -37,6 +38,7 @@ export class RefundService {
       await this.payments.markRefunded(t.payment.provider, t.payment.reference);
     }
     const { giftcardCents } = await this.orders.complete(t, { ...input, pending });
-    return { cents: t.payment ? t.plan.cents : 0, giftcardCents, pending };
+    // sin operación de Mercado Pago solo vuelve plata si fue en efectivo (lo demás lo frena el plan)
+    return { cents: t.payment || t.plan.cash ? t.plan.cents : 0, giftcardCents, pending };
   }
 }

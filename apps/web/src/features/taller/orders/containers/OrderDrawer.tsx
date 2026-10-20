@@ -398,9 +398,7 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
               </div>
 
               <div className="od-sec">
-                <h4>
-                  Pago <BrandIcon name="mercadopago" className="i-sm" />
-                </h4>
+                <h4>Pago {o.paymentMethod !== "efectivo" && <BrandIcon name="mercadopago" className="i-sm" />}</h4>
                 <dl className="kv2">
                   <dt>Medio</dt>
                   <dd>
@@ -412,7 +410,9 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                     {o.status === "reembolsado" ? (
                       <span className="pill-status st-muted">Reintegrado</span>
                     ) : o.paidAt ? (
-                      <span className="pill-status st-ok">Aprobado</span>
+                      <span className="pill-status st-ok">
+                        {o.paymentMethod === "efectivo" ? "Cobrado" : "Aprobado"}
+                      </span>
                     ) : (
                       <span className="pill-status st-muted">Pendiente</span>
                     )}

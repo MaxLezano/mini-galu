@@ -93,6 +93,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
 export type AdminRefund = {
   /** Lo que vuelve por Mercado Pago, por el mismo medio con que se pagó (0 si se pagó todo con gift card). */
   cents: Cents;
+  /** Se cobró en efectivo en el taller: `cents` se devuelve en mano, no por Mercado Pago. */
+  cash: boolean;
   /** Lo que vuelve al saldo de la gift card con que se pagó una parte. */
   giftcardCents: Cents;
   /** Si hay prendas que pueden volver al stock (no en la compra de una gift card ni en un pago sin stock). */
@@ -172,11 +174,13 @@ export const PAYMENT_LINK_REMINDER_HOURS = 24;
 
 /**
  * Venta cargada en el panel: por Instagram o WhatsApp (sale un link de pago) o en el taller (se la lleva en el
- * momento, sin entrega). Con una gift card se descuenta su saldo; si cubre todo, el pedido queda pagado.
+ * momento, sin entrega). Con una gift card se descuenta su saldo; si cubre todo, el pedido queda pagado. En el taller
+ * también se puede cobrar en efectivo: la venta queda pagada en el momento, sin link.
  */
 export const PaymentLinkInputSchema = z
   .object({
     channel: z.enum(["whatsapp", "instagram", "taller"]),
+    payment: z.enum(["link", "efectivo"]).default("link"),
     contact: CheckoutContactSchema,
     shipping: ShippingInputSchema.nullable().default(null),
     items: z
@@ -185,17 +189,23 @@ export const PaymentLinkInputSchema = z
       .max(30),
     giftcardCode: z.string().trim().max(40).nullable().default(null),
   })
-  .refine((v) => v.channel === "taller" || v.shipping, { path: ["shipping"], message: "Elegí la entrega" });
+  .refine((v) => v.channel === "taller" || v.shipping, { path: ["shipping"], message: "Elegí la entrega" })
+  .refine((v) => v.channel === "taller" || v.payment === "link", {
+    path: ["payment"],
+    message: "En efectivo solo se cobra en el taller",
+  });
 export type PaymentLinkInput = z.input<typeof PaymentLinkInputSchema>;
 
 export type PaymentLinkCreated = {
   number: string;
   /** Página de la tienda donde el cliente paga (sin cuenta): /pagar/MG-1046?t=… */
   payUrl: string;
-  /** Lo que queda por pagar (0 si la gift card cubrió todo). */
+  /** Lo que queda por pagar (0 si la gift card cubrió todo); en efectivo, lo que se cobró. */
   totalCents: Cents;
   giftcardCents: Cents;
-  /** La gift card cubrió todo: el pedido ya está pagado y no hace falta el link. */
+  /** La gift card cubrió todo o se cobró en efectivo: el pedido ya está pagado y no hace falta el link. */
   paid: boolean;
+  /** Se cobró en efectivo (`totalCents`) en el taller. */
+  cash: boolean;
   reservedUntil: string;
 };

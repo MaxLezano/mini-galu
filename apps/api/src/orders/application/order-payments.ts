@@ -7,6 +7,12 @@ import { formatOrderNumber, payPath } from "../domain/order";
 import { findOwned } from "./checkout-service";
 import type { OrderRecord, OrderRepository } from "./ports";
 
+/** Cómo se anota el pago en el historial cuando no pasó por Mercado Pago. */
+const PAID_TITLE: Partial<Record<PaymentMethod, string>> = {
+  giftcard: "Pagado con gift card",
+  efectivo: "Cobrado en efectivo en el taller",
+};
+
 export type Payable = {
   id: string;
   number: string;
@@ -73,7 +79,7 @@ export class OrderPayments {
     if (!(await this.orders.markPaid(o.id, { ...payment, at }))) return;
     await this.orders.addEvent(o.id, {
       kind: "paid",
-      title: "Pago aprobado por Mercado Pago",
+      title: (payment.method && PAID_TITLE[payment.method]) ?? "Pago aprobado por Mercado Pago",
       detail: [
         payment.method ? PAYMENT_METHODS[payment.method] : null,
         payment.installments && payment.installments > 1 ? `${payment.installments} cuotas` : null,

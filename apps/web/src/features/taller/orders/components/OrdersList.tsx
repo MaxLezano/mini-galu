@@ -12,6 +12,7 @@ const PAY_SHORT = {
   dinero_cuenta: "Dinero en cuenta",
   link: "Link MP",
   giftcard: "Gift card",
+  efectivo: "Efectivo",
 } as const;
 
 type CardProps = Omit<ComponentProps<typeof OrderCard>, "order">;

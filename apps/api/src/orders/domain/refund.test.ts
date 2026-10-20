@@ -8,12 +8,14 @@ const o = {
   paidAt: new Date(),
   totalCents: 500,
   giftcardCents: 0,
+  paymentMethod: "credito" as const,
 };
 
 describe("qué se reintegra", () => {
   it("pagado y en el taller: el total y se sugiere devolver las prendas al stock", () => {
     expect(refundPlan(o, true)).toEqual({
       cents: 500,
+      cash: false,
       giftcardCents: 0,
       restock: true,
       restockSuggested: true,
@@ -34,6 +36,14 @@ describe("qué se reintegra", () => {
     expect(refundPlan(o, false)?.blocked).toMatch(/desde la cuenta de Mercado Pago/);
   });
 
+  it("venta del taller cobrada en efectivo: se devuelve en mano, sin pago de Mercado Pago", () => {
+    expect(refundPlan({ ...o, status: "entregado", paymentMethod: "efectivo" }, false)).toMatchObject({
+      cents: 500,
+      cash: true,
+      blocked: null,
+    });
+  });
+
   it("la compra de una gift card no tiene prendas para el stock", () => {
     expect(refundPlan({ ...o, kind: "giftcard", status: "entregado" }, true)).toMatchObject({ restock: false });
   });
@@ -51,11 +61,17 @@ describe("qué se reintegra", () => {
   it("arma la línea del historial", () => {
     expect(
       refundDetail(
-        { cents: 4_500_000, giftcardCents: 500_000, restocked: true, pending: true, reason: "talle" },
+        { cents: 4_500_000, cash: false, giftcardCents: 500_000, restocked: true, pending: true, reason: "talle" },
         formatARS,
       ),
     ).toBe(
       `${formatARS(4_500_000)} por Mercado Pago (en proceso) · ${formatARS(500_000)} a la gift card · prendas al stock · "talle"`,
     );
+    expect(
+      refundDetail(
+        { cents: 900, cash: true, giftcardCents: 0, restocked: false, pending: false, reason: "" },
+        formatARS,
+      ),
+    ).toBe(`${formatARS(900)} en efectivo`);
   });
 });

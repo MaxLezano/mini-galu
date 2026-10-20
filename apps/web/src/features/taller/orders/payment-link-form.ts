@@ -8,6 +8,8 @@ import {
 } from "../../checkout/checkout-form";
 
 export type LinkChannel = PaymentLinkInput["channel"];
+/** Cómo paga una venta del taller: con el link de Mercado Pago o en efectivo en el momento. */
+export type LinkPayment = NonNullable<PaymentLinkInput["payment"]>;
 
 export type LinkLine = { slug: string; name: string; size: Size; qty: number; priceCents: number; imageUrl: string };
 
@@ -37,9 +39,12 @@ export function toLinkInput(
   contact: ContactForm,
   shipping: ShippingForm,
   giftcardCode = "",
+  payment: LinkPayment = "link",
 ): PaymentLinkInput {
   return {
     channel,
+    // el efectivo solo existe en el taller: si se cambió de canal después de elegirlo, va por link
+    payment: channel === "taller" ? payment : "link",
     contact,
     shipping: channel === "taller" ? null : toShippingInput(shipping),
     items: lines.map(({ slug, size, qty }) => ({ slug, size, qty })),

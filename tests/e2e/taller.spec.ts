@@ -451,6 +451,45 @@ test("venta en el taller pagada con una gift card", async ({ page, request }) =>
   await expect(page.locator("#giftcards")).toContainText(code);
 });
 
+test("venta en el taller cobrada en efectivo y su reintegro en mano", async ({ page }) => {
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  await page.getByRole("button", { name: "Link de pago" }).click();
+  const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
+  // "Cómo paga" solo aparece en el taller
+  await expect(modal.getByRole("group", { name: "Cómo paga" })).toHaveCount(0);
+  await modal.getByRole("button", { name: "En el taller", exact: true }).click();
+  await modal.getByRole("button", { name: "En efectivo" }).click();
+  await modal.getByLabel("Prenda").selectOption({ label: "Moño Verde Largo" });
+  await modal.getByLabel("Talle").selectOption({ index: 1 });
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Nombre").fill("Clara");
+  await modal.getByLabel("Apellido").fill("Efectivo");
+  await modal.getByLabel("Celular").fill("11 4444-5555");
+  await modal.getByLabel("Email").fill(`efectivo-${Date.now()}@ejemplo.com`);
+  await modal.getByRole("button", { name: "Cobrar en efectivo" }).click();
+  await expect(modal).toContainText("en efectivo. Quedó como entregada.");
+  const number = /#(MG-\d+)/.exec((await modal.textContent()) ?? "")?.[1];
+  expect(number).toBeTruthy();
+  await modal.getByRole("button", { name: "Listo" }).click();
+
+  await page.goto(`/taller/pedidos?pedido=${number}`);
+  await ready(page);
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Entregado");
+  await expect(drawer).toContainText("Cobrado en efectivo en el taller");
+  await expect(drawer).toContainText("Efectivo");
+
+  // el reintegro no pasa por Mercado Pago: se devuelve en mano
+  await drawer.getByRole("button", { name: "Reintegrar el pago" }).click();
+  const refund = drawer.getByRole("region", { name: "Reintegrar el pago" });
+  await expect(refund).toContainText("en efectivo: lo cobraste en el taller");
+  await refund.getByRole("button", { name: /^Reintegrar \$/ }).click();
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Reembolsado");
+  await expect(drawer.locator(".tl")).toContainText("en efectivo");
+});
+
 test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido", async ({ page, request }) => {
   const number = await paidOrder(request, {
     method: "domicilio",
