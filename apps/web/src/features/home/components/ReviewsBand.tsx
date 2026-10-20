@@ -1,19 +1,27 @@
 "use client";
 
 import { type FeaturedReview, imageThumb, type Rating } from "@mini-galu/contracts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isStill } from "@/features/shell/craft";
 import { Stars } from "@/ui/atoms/Stars";
 
-/** Cinta infinita: avanza sola, se frena con el mouse encima y se arrastra con mouse o dedo. */
-function useMarquee(band: React.RefObject<HTMLDivElement | null>, track: React.RefObject<HTMLDivElement | null>) {
+/**
+ * Cinta infinita: avanza sola, se frena con el mouse encima y se arrastra con mouse o dedo. Cada mitad repite las
+ * reseñas `reps` veces para cubrir el ancho de la pantalla (con pocas, si no, queda un hueco a la derecha).
+ */
+function useMarquee(
+  band: React.RefObject<HTMLDivElement | null>,
+  track: React.RefObject<HTMLDivElement | null>,
+  reps: number,
+  setReps: (n: number) => void,
+) {
   useEffect(() => {
     const b = band.current;
     const t = track.current;
     if (!b || !t) return;
     const SPEED = 28;
     let x = 0;
-    let half = t.scrollWidth / 2;
+    let half = 0;
     let hover = false;
     let vel = 0;
     let last = performance.now();
@@ -27,8 +35,12 @@ function useMarquee(band: React.RefObject<HTMLDivElement | null>, track: React.R
       }
     };
     const measure = () => {
-      half = t.scrollWidth / 2;
+      // la mitad exacta incluye el espacio entre la última tarjeta de una mitad y la primera de la otra
+      half = (t.scrollWidth + (Number.parseFloat(getComputedStyle(t).columnGap) || 0)) / 2;
+      const need = Math.max(1, Math.ceil(b.clientWidth / (half / reps)));
+      if (need !== reps) setReps(need);
     };
+    measure();
     const enter = (e: PointerEvent) => {
       if (e.pointerType === "mouse") hover = true;
     };
@@ -84,13 +96,15 @@ function useMarquee(band: React.RefObject<HTMLDivElement | null>, track: React.R
       b.removeEventListener("pointerup", end);
       b.removeEventListener("pointercancel", end);
     };
-  }, [band, track]);
+  }, [band, track, reps, setReps]);
 }
 
 export function ReviewsBand({ rating, reviews }: { rating: Rating; reviews: FeaturedReview[] }) {
   const band = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
-  useMarquee(band, track);
+  const [reps, setReps] = useState(1);
+  useMarquee(band, track, reps, setReps);
+  const loop = Array.from({ length: reps }, () => reviews).flat();
   const avg = rating.average.toFixed(1).replace(".", ",");
   const card = (r: FeaturedReview, hidden: boolean, k: number) => (
     <article className="review" aria-hidden={hidden || undefined} key={`${hidden ? "b" : "a"}${k}`}>
@@ -131,8 +145,8 @@ export function ReviewsBand({ rating, reviews }: { rating: Rating; reviews: Feat
       </div>
       <div className="reviews" ref={band} role="region" aria-label="Reseñas de clientes">
         <div className="reviews-track" ref={track}>
-          {reviews.map((r, k) => card(r, false, k))}
-          {reviews.map((r, k) => card(r, true, k))}
+          {loop.map((r, k) => card(r, k >= reviews.length, k))}
+          {loop.map((r, k) => card(r, true, loop.length + k))}
         </div>
       </div>
     </section>
