@@ -395,6 +395,27 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ⏳ Crear las cuentas (Neon, Render, Vercel, R2, Resend), el dominio y el webhook de Mercado Pago de producción:
   pasos en [DEPLOY.md](DEPLOY.md). Plan gratis de Render duerme la API (frena las tareas programadas): Starter para abrir
 
+## Próximas tareas (pedidas por Gaby, sin mockup)
+- ⏳ **Reseñas reales**. Hoy las de la home y la ficha son demo del seed y no hay cómo dejar una.
+  - El cliente deja la reseña desde el mail "¿Cómo le quedó? ♡" (sale cuando el pedido está entregado) o desde
+    Mi cuenta → Mis pedidos, por cada prenda de un pedido entregado.
+  - En el taller, un panel para administrarlas: aprobarlas u ocultarlas y catalogarlas, para que la tienda las
+    muestre con un filtro.
+  - Las estrellas y la cantidad (home y ficha) se calculan solo con las reseñas que se muestran.
+- ⏳ **Suscriptores** (sección nueva del panel, solo para ver). Una tabla con 3 pestañas:
+  - **Cartas del taller**: hoy solo hay número y CSV.
+  - **Anotados a un lanzamiento**: hoy solo se ve el número.
+  - **Aviso de talle**: quién pidió qué prenda y talle; en Productos se ve la cantidad, pero no quiénes son.
+- ⏳ **Galú sin IA, más completo** (sin modelo por costo: la tienda responde por reglas, `galu-engine.tsx`).
+  - Hoy entiende una docena de temas (pedido y seguimiento, envíos, cuotas y pagos, precio, regalo, ocasión,
+    talles, presupuesto, gift card, a medida y saludo) y consulta el catálogo y el stock reales.
+  - Lo que Gaby responde en "Enseñale" solo lo usa con un modelo.
+  - La idea: una biblioteca de preguntas y respuestas sobre la tienda y el catálogo, editable desde el panel, que
+    también use lo enseñado sin modelo.
+  - Sumar más temas que consulten prendas y stock (colores, telas y cuidados, colecciones, novedades, qué hay en un
+    talle, cambios y retiro).
+  - Lo que siga sin saber va a "Enseñale" como hasta ahora.
+
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
 Club Mini Galú, "talles que crecen", PWA del panel con push, reporte mensual, costos por prenda,
