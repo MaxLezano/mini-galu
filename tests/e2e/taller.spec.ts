@@ -519,14 +519,18 @@ test("etiquetas de la selección: las de Andreani salen juntas en un PDF y el re
     await page.request.patch(`http://localhost:4000/admin/orders/${n}/status`, { data: { to: "preparando" } });
   await page.goto("/taller/pedidos");
   await ready(page);
+  // los tildes aparecen con "Seleccionar"
+  await page.getByRole("button", { name: "Lista", exact: true }).click();
+  await page.getByRole("button", { name: "Seleccionar", exact: true }).click();
+  const list = page.locator("#list");
   const bulk = page.locator(".bulk");
 
-  await page.getByLabel(`Seleccionar #${taller}`).check();
+  await list.getByLabel(`Seleccionar #${taller}`).check();
   await bulk.getByRole("button", { name: "Etiquetas" }).click();
   await expect(page.locator("#toast")).toContainText("Ninguno de esos pedidos va por Andreani");
 
-  await page.getByLabel(`Seleccionar #${a}`).check();
-  await page.getByLabel(`Seleccionar #${b}`).check();
+  await list.getByLabel(`Seleccionar #${a}`).check();
+  await list.getByLabel(`Seleccionar #${b}`).check();
   const [pdf] = await Promise.all([
     page.context().waitForEvent("page"),
     bulk.getByRole("button", { name: "Etiquetas" }).click(),
