@@ -1,6 +1,9 @@
-/** Puerto: recorta una foto a una proporción (ancho:alto) sin achicarla más de lo necesario. */
+/**
+ * Puerto: recorta una foto a una proporción (ancho:alto) sin achicarla más de lo necesario; con `null` la deja
+ * como viene. Siempre devuelve la foto sin metadatos (el GPS del celular no queda en el original público).
+ */
 export interface ImageCropper {
-  crop(bytes: Uint8Array, aspect: number): Promise<Uint8Array>;
+  crop(bytes: Uint8Array, aspect: number | null): Promise<Uint8Array>;
 }
 
 /** Diferencia de proporción que se tolera sin recortar (un par de píxeles de redondeo). */

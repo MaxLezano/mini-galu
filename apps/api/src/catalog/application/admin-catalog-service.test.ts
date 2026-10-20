@@ -15,11 +15,11 @@ const storage: ImageStorage = {
     return p;
   },
 };
-const crops: number[] = [];
+const crops: (number | null)[] = [];
 const cropper: ImageCropper = {
   crop: async (b, aspect) => {
     crops.push(aspect);
-    return new TextEncoder().encode(`recortada:${new TextDecoder().decode(b)}`);
+    return new TextEncoder().encode(`${aspect ? "recortada" : "limpia"}:${new TextDecoder().decode(b)}`);
   },
 };
 
@@ -116,15 +116,15 @@ describe("AdminCatalogService", () => {
     );
   });
 
-  it("recorta a 3:4 las fotos de prendas y deja como vienen las de contenido", async () => {
+  it("recorta a 3:4 las fotos de prendas y deja con su proporción (sin metadatos) las de contenido", async () => {
     const photo = new TextEncoder().encode("foto");
     const product = await service.uploadImage({ type: "image/jpeg", bytes: photo });
     expect(saved.get(product.path)).toBe("recortada:foto");
     expect(crops).toEqual([3 / 4]);
 
     const hero = await service.uploadImage({ type: "image/jpeg", bytes: photo }, "content");
-    expect(saved.get(hero.path)).toBe("foto");
-    expect(crops).toHaveLength(1);
+    expect(saved.get(hero.path)).toBe("limpia:foto");
+    expect(crops).toEqual([3 / 4, null]);
   });
 
   it("el contrato pide al menos una foto para publicar y precio anterior mayor al actual", () => {

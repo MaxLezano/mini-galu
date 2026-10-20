@@ -16,8 +16,10 @@ import {
 } from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
 import { AssistantAdminService } from "./assistant/application/assistant-admin-service";
 import { AssistantService } from "./assistant/application/assistant-service";
 import type { AssistantCatalog, LlmProvider } from "./assistant/application/ports";
@@ -129,7 +131,7 @@ import { adminReviewRoutes, reviewRoutes } from "./reviews/infrastructure/http/r
 import { NotFoundError } from "./shared/domain/errors";
 import { EventBus } from "./shared/events/event-bus";
 import { onError } from "./shared/http/errors";
-import { RateLimiter } from "./shared/http/rate-limit";
+import { limitByIp, RateLimiter } from "./shared/http/rate-limit";
 import { LocalDiskImageStorage } from "./shared/media/image-storage";
 import { mediaVariantsOnDemand } from "./shared/media/media-variants";
 import { ResponsiveImageStorage } from "./shared/media/responsive-image-storage";
@@ -289,6 +291,7 @@ export function buildApp(config: Config) {
       check: (code) => giftcards.check(code),
       checkById: (id) => giftcards.checkById(id),
       summary: (orderId) => giftcards.summary(orderId),
+      redeem: (orderId, id, cents) => giftcards.redeem(orderId, id, cents),
     },
     (orderId) => orderPayments.approved(orderId, { method: "giftcard", installments: 1 }),
   );
@@ -323,7 +326,12 @@ export function buildApp(config: Config) {
     () => automations.isOn("link_sin_pagar"),
     undefined,
     undefined,
-    { check: (code) => giftcards.check(code), checkById: (id) => giftcards.checkById(id), summary: async () => null },
+    {
+      check: (code) => giftcards.check(code),
+      checkById: (id) => giftcards.checkById(id),
+      summary: async () => null,
+      redeem: (orderId, id, cents) => giftcards.redeem(orderId, id, cents),
+    },
     (orderId, method) => orderPayments.approved(orderId, { method, installments: 1 }),
   );
   const shipments = new ShipmentService(
@@ -684,9 +692,19 @@ export function buildApp(config: Config) {
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
   }
 
+  // tope por IP cada 10 minutos en las rutas públicas que mandan mails, reservan stock o se pueden adivinar
+  // (en local y CI, alto: los e2e repiten estas rutas)
+  const perIp = (max: number) => limitByIp(new RateLimiter(secure ? max : 1000, 10 * 60_000));
+
   const app = new Hono()
     .use(logger())
+    // las fotos de /media las pide la tienda desde otro subdominio: la política de recursos no puede ser same-origin
+    .use("*", secureHeaders({ crossOriginResourcePolicy: "cross-origin" }))
     .use("*", cors({ origin: config.webOrigin, credentials: true }))
+    // JSON chico en todo lo demás; las fotos (panel y reseñas) tienen su propio tope
+    .use("*", async (c, next) =>
+      c.req.path.startsWith("/admin/") || c.req.path.startsWith("/reviews/") ? next() : jsonLimit(c, next),
+    )
     .use("/media/*", mediaVariantsOnDemand(config.mediaDir, disk, resizer))
     .use(
       "/media/*",
@@ -697,6 +715,13 @@ export function buildApp(config: Config) {
         onFound: (_path, c) => c.header("Cache-Control", "public, max-age=31536000, immutable"),
       }),
     )
+    .use("/checkout/orders", perIp(15))
+    .use("/checkout/installments", perIp(120))
+    .use("/giftcards/*", perIp(30))
+    .use("/tracking/*", perIp(60))
+    .use("/newsletter", perIp(10))
+    .use("/catalog/waitlist", perIp(20))
+    .use("/content/launches/*", perIp(60))
     .get("/health", (c) => c.json({ ok: true }))
     .route("/catalog", catalogRoutes(catalog))
     .route("/content/help", helpRoutes(help))
@@ -767,6 +792,11 @@ export function buildApp(config: Config) {
 }
 
 export type AppType = ReturnType<typeof buildApp>["app"];
+
+const jsonLimit = bodyLimit({
+  maxSize: 256 * 1024,
+  onError: (c) => c.json({ error: { code: "payload_too_large", message: "El pedido es demasiado grande" } }, 413),
+});
 
 const AR_DAY = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",

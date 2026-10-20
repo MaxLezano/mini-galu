@@ -64,9 +64,12 @@ export interface CustomerRepository {
   setFavorite(userId: string, slug: string, on: boolean): Promise<boolean>;
 }
 
-/** Los pedidos del cliente (por cuenta o por el mismo mail, aunque los haya hecho sin ingresar). */
+/**
+ * Los pedidos del cliente: los de la cuenta y, si el mail está confirmado (`email`), también los hechos con ese
+ * mail sin ingresar.
+ */
 export interface CustomerOrders {
-  ofCustomer(userId: string, email: string): Promise<AccountOrder[]>;
+  ofCustomer(userId: string, email: string | null): Promise<AccountOrder[]>;
   /** Las prendas de lista de cumple que se regalaron con un pedido, y quién lo hizo. */
   wishGift(orderId: string): Promise<{ itemIds: string[]; firstName: string } | null>;
 }

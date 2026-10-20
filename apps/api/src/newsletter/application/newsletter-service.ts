@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { AdminNewsletter, LetterInput } from "@mini-galu/contracts";
+import { csvCell } from "../../shared/domain/csv";
 import { NotFoundError } from "../../shared/domain/errors";
 import type { LetterMailer, LetterRepository, SubscriberRepository } from "./ports";
 
@@ -58,7 +59,10 @@ export class NewsletterService {
   /** CSV de suscriptos activos (para importarlos en otra herramienta si hace falta). */
   async csv(): Promise<string> {
     const rows = await this.subscribers.active();
-    return ["email,desde", ...rows.map((s) => `${s.email},${s.createdAt.toISOString().slice(0, 10)}`)].join("\n");
+    return [
+      "email,desde",
+      ...rows.map((s) => `${csvCell(s.email, ",")},${s.createdAt.toISOString().slice(0, 10)}`),
+    ].join("\n");
   }
 
   async sendTest(letter: LetterInput, to: string) {

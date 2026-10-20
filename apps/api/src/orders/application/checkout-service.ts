@@ -29,13 +29,33 @@ export interface CheckoutGiftcards {
   /** La misma validación por id (un pedido guarda la gift card con la que se pagó). */
   checkById(id: string): Promise<GiftcardCheck>;
   summary(orderId: string): Promise<GiftcardSummary | null>;
+  /** Descuenta lo usado de la gift card (una vez por pedido: repetirlo da "repetido"). */
+  redeem(orderId: string, giftcardId: string, cents: number): Promise<"ok" | "repetido" | "sin_saldo">;
 }
 
 export const NO_GIFTCARDS: CheckoutGiftcards = {
   check: async () => ({ error: "Las gift cards no están disponibles" }),
   checkById: async () => ({ error: "Las gift cards no están disponibles" }),
   summary: async () => null,
+  redeem: async () => "sin_saldo",
 };
+
+/**
+ * Antes de dar por pagado un pedido sin Mercado Pago, se descuenta la gift card. Si otro pedido gastó el saldo
+ * mientras tanto (dos compras a la vez con la misma tarjeta), este se cancela y libera el stock: si no, salía
+ * pagado sin que nadie pagara.
+ */
+export async function redeemOrCancel(
+  giftcards: CheckoutGiftcards,
+  orders: OrderRepository,
+  order: { id: string; giftcardId: string | null; giftcardCents: number },
+  now: Date,
+): Promise<void> {
+  if (!order.giftcardId || order.giftcardCents <= 0) return;
+  if ((await giftcards.redeem(order.id, order.giftcardId, order.giftcardCents)) !== "sin_saldo") return;
+  await orders.cancelReleasing(order.id, "La gift card ya no tenía saldo", now);
+  throw new ConflictError("La gift card ya no tiene saldo para este pedido: revisá el saldo y probá de nuevo");
+}
 
 /** Pago aprobado sin pasar por Mercado Pago (cuando la gift card cubre todo el pedido). */
 export type SettleWithGiftcard = (orderId: string) => Promise<void>;
@@ -194,7 +214,10 @@ export class CheckoutService {
     });
     // la gift card cubre todo: no hay nada que cobrar con Mercado Pago
     const paid = totals.totalCents === 0;
-    if (paid) await this.settle(r.id);
+    if (paid) {
+      await redeemOrCancel(this.giftcards, this.orders, { id: r.id, giftcardId: giftcard?.id ?? null, ...totals }, now);
+      await this.settle(r.id);
+    }
     return {
       orderId: r.id,
       number: formatOrderNumber(r.number),
@@ -280,13 +303,24 @@ export class CheckoutService {
       couponCode: coupon?.code ?? null,
     });
     if (!ok) throw new ConflictError("Este pedido ya no espera pago: volvé a la bolsa");
+    // con el cupón, la gift card cubre todo: no queda nada que cobrar con Mercado Pago
+    const paid = totals.totalCents === 0;
+    if (paid) {
+      await redeemOrCancel(
+        this.giftcards,
+        this.orders,
+        { id: o.id, giftcardId: o.giftcardId ?? null, ...totals },
+        this.clock(),
+      );
+      await this.settle(o.id);
+    }
     return {
       orderId: o.id,
       number: formatOrderNumber(o.number),
       accessToken: token,
       totalCents: totals.totalCents,
       reservedUntil: (o.reservedUntil ?? new Date()).toISOString(),
-      paid: false,
+      paid,
     };
   }
 

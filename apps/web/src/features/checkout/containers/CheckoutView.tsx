@@ -351,6 +351,12 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
     if (currentOrder) {
       const updated = await api.changeCoupon(currentOrder.number, currentOrder.accessToken, c);
       setOrder((o) => (o ? { ...o, totalCents: updated.totalCents } : o));
+      // el cupón dejó el total en cero (la gift card cubre el resto): ya está pagado
+      if (updated.paid) {
+        setDone(await api.receipt(updated.number, updated.accessToken));
+        useGifts.getState().clear();
+        void refreshCart();
+      }
     }
     setCoupon(c);
   };

@@ -1,4 +1,5 @@
 import type { AdminCustomer, AdminCustomerChild, AdminCustomers, NextBirthday } from "@mini-galu/contracts";
+import { csvCell } from "../../shared/domain/csv";
 
 /** Lo que importa de cada pedido para la lista de clientes. */
 export type CustomerOrderFact = {
@@ -133,10 +134,6 @@ export function customerKpis(list: AdminCustomer[]): AdminCustomers["kpis"] {
 
 /** CSV para exportar (Excel en español usa ";" y abre bien el UTF-8 con BOM). */
 export function customersCsv(list: AdminCustomer[], money: (cents: number) => string): string {
-  const cell = (v: string | number | null) => {
-    const s = v === null ? "" : String(v);
-    return /[";\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
-  };
   const rows = [
     ["Nombre", "Email", "Celular", "Localidad", "Desde", "Pedidos", "Gastado", "Nenas", "Próximo cumple"],
     ...list.map((c) => [
@@ -151,5 +148,5 @@ export function customersCsv(list: AdminCustomer[], money: (cents: number) => st
       c.nextBirthday ? `${c.nextBirthday.name} · ${c.nextBirthday.date}` : null,
     ]),
   ];
-  return `﻿${rows.map((r) => r.map(cell).join(";")).join("\n")}\n`;
+  return `﻿${rows.map((r) => r.map((v) => csvCell(v)).join(";")).join("\n")}\n`;
 }

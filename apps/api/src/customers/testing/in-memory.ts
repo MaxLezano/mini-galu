@@ -155,9 +155,9 @@ export class MemoryCustomerOrders implements CustomerOrders {
   async wishGift(orderId: string) {
     return this.gifts.get(orderId) ?? null;
   }
-  async ofCustomer(userId: string, email: string) {
+  async ofCustomer(userId: string, email: string | null) {
     return this.list
-      .filter((o) => o.userId === userId || o.email === email)
+      .filter((o) => o.userId === userId || (email !== null && o.email === email))
       .map(({ userId: _u, email: _e, ...o }) => o);
   }
 }

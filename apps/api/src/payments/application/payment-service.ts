@@ -39,6 +39,8 @@ export class PaymentService {
         let plan = hit && Date.now() - hit.at < 3_600_000 ? hit.plan : null;
         if (!plan) {
           plan = await this.gateway.installments(amount);
+          // los montos los elige quien pide: con muchos distintos se vacía en vez de crecer sin tope
+          if (this.plans.size >= 2000) this.plans.clear();
           this.plans.set(amount, { plan, at: Date.now() });
         }
         out[amount] = { interestFree: Math.min(plan.interestFree, cap), max: Math.min(plan.max, cap) };

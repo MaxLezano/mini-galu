@@ -62,15 +62,21 @@ describe("SharpCropper", () => {
     expect([tall.format, tall.width, tall.height]).toEqual(["webp", 600, 800]);
   });
 
-  it("no toca la que ya es 3:4", async () => {
-    const bytes = new Uint8Array(await image(600, 800).png().toBuffer());
-    expect(await new SharpCropper().crop(bytes, 3 / 4)).toBe(bytes);
+  it("la que ya es 3:4 (o sin proporción) queda del mismo tamaño y formato, pero sin el GPS del celular", async () => {
+    const gps = { IFD3: { GPSLatitudeRef: "S", GPSLatitude: "26/1 49/1 0/1" } };
+    const bytes = new Uint8Array(await image(600, 800).withExifMerge(gps).jpeg().toBuffer());
+    expect((await sharp(bytes).metadata()).exif).toBeDefined();
+    for (const aspect of [3 / 4, null]) {
+      const out = await sharp(await new SharpCropper().crop(bytes, aspect)).metadata();
+      expect([out.format, out.width, out.height, out.exif]).toEqual(["jpeg", 600, 800, undefined]);
+    }
   });
 
   it("mide la foto ya girada según el EXIF del celular", async () => {
     // guardada apaisada 1200×900 con orientación 6: se ve vertical 900×1200, que ya es 3:4
     const bytes = new Uint8Array(await image(1200, 900).withMetadata({ orientation: 6 }).jpeg().toBuffer());
-    expect(await new SharpCropper().crop(bytes, 3 / 4)).toBe(bytes);
+    const kept = await sharp(await new SharpCropper().crop(bytes, 3 / 4)).metadata();
+    expect([kept.width, kept.height, kept.orientation]).toEqual([900, 1200, undefined]);
     const rotated = await image(1600, 900).withMetadata({ orientation: 6 }).jpeg().toBuffer();
     const out = await sharp(await new SharpCropper().crop(rotated, 3 / 4)).metadata();
     expect([out.width, out.height, out.orientation]).toEqual([900, 1200, undefined]);

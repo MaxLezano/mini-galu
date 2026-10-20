@@ -269,13 +269,15 @@ export class DrizzleCustomerOrders implements CustomerOrders {
     return o ? { itemIds: o.ids ?? [], firstName: o.firstName } : null;
   }
 
-  async ofCustomer(userId: string, email: string): Promise<AccountOrder[]> {
+  async ofCustomer(userId: string, email: string | null): Promise<AccountOrder[]> {
     const rows = await this.db
       .select()
       .from(s.orders)
       .where(
         and(
-          or(eq(s.orders.userId, userId), eq(s.orders.email, email.toLowerCase())),
+          email
+            ? or(eq(s.orders.userId, userId), eq(s.orders.email, email.toLowerCase()))
+            : eq(s.orders.userId, userId),
           inArray(s.orders.status, ["nuevo", "preparando", "listo", "en_camino", "entregado", "reembolsado"]),
         ),
       )

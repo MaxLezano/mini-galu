@@ -8,6 +8,7 @@ import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 import { Foco } from "@/ui/atoms/Foco";
 import "./login.css";
+import { safePath } from "@/lib/safe-path";
 
 /** Ingreso al panel del taller (email + contraseña). */
 export function AdminLogin() {
@@ -19,7 +20,7 @@ export function AdminLogin() {
   const [step, setStep] = useState<"password" | "code">("password");
   const [backup, setBackup] = useState(false);
   const back = params.get("volver");
-  const target = back?.startsWith("/taller") ? back : "/taller";
+  const target = safePath(back, "/taller", "/taller");
 
   return (
     <main className="auth">

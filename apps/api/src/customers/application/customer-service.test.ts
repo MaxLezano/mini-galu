@@ -47,6 +47,23 @@ describe("mi cuenta", () => {
     expect((await svc.overview("u1")).orders.map((x) => x.number)).toEqual(["MG-1", "MG-2"]);
   });
 
+  it("sin el mail confirmado no aparece nada de ese mail: ni pedidos sin ingresar ni gift cards", async () => {
+    const card = { code: "GALU-AAAA-BBBB", amountCents: 1, balanceCents: 1, toName: "Ema", status: "activa" as const };
+    const gifts = { forEmail: async () => [{ ...card, expiresAt: null, mine: "recibi" as const }] };
+    const svc2 = new CustomerService(repo, orders, newsletter, gifts);
+    const o = { status: "nuevo", createdAt: "", totalCents: 1, items: [], reviewPath: null };
+    orders.list.push(
+      { ...o, number: "MG-1", userId: "u1", email: "otro@x.co" },
+      { ...o, number: "MG-2", userId: null, email: "lucia@gmail.com" },
+    );
+    expect((await svc2.overview("u1")).giftcards).toHaveLength(1);
+    const p = repo.profiles.get("u1");
+    if (p) repo.profiles.set("u1", { ...p, emailVerified: false });
+    const view = await svc2.overview("u1");
+    expect(view.orders.map((x) => x.number)).toEqual(["MG-1"]);
+    expect(view.giftcards).toEqual([]);
+  });
+
   it("el tilde de las cartas suscribe y da de baja", async () => {
     await svc.updateProfile("u1", { firstName: "Lucía", lastName: "F", phone: null, newsletterOptIn: true });
     expect(newsletter.subscribed.has("lucia@gmail.com")).toBe(true);

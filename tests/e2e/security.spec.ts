@@ -58,3 +58,35 @@ test("verificación en dos pasos: se activa con la app, el ingreso pide el códi
     }
   }
 });
+
+test("cabeceras: ni la tienda ni la API se muestran dentro de un iframe ajeno", async ({ request }) => {
+  const web = await request.get("/");
+  expect(web.headers()["x-frame-options"]).toBe("DENY");
+  expect(web.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(web.headers()["x-content-type-options"]).toBe("nosniff");
+  const api = await request.get("http://localhost:4000/health");
+  expect(api.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(api.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+  // las fotos las pide la tienda desde otro origen
+  expect(api.headers()["cross-origin-resource-policy"]).toBe("cross-origin");
+});
+
+test("la API no acepta un JSON gigante en las rutas públicas", async ({ request }) => {
+  const r = await request.post("http://localhost:4000/newsletter", {
+    headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+    data: JSON.stringify({ email: "x@ejemplo.com", source: "x".repeat(400 * 1024) }),
+  });
+  expect(r.status()).toBe(413);
+});
+
+test("ingresar con ?volver= a otro sitio se queda en la tienda", async ({ page }) => {
+  await page.goto(`/ingresar?volver=${encodeURIComponent("/\\example.com")}`);
+  const auth = page.locator("main.auth");
+  await page.getByRole("tab", { name: "Crear cuenta" }).click();
+  await auth.getByLabel("Nombre", { exact: true }).fill("Ana");
+  await auth.getByLabel("Apellido").fill("Volver");
+  await auth.getByLabel("Email").fill(`volver-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`);
+  await auth.getByLabel("Contraseña", { exact: true }).fill("Clave.Segura1");
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/localhost:3000\/cuenta/);
+});

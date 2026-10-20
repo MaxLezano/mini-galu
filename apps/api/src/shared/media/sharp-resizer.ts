@@ -14,19 +14,19 @@ export class SharpResizer implements ImageResizer {
 
 /**
  * Adapter con sharp: recorta donde está lo que llama la atención (la prenda, no el fondo) y deja el mismo formato
- * con calidad alta, porque de este original salen las variantes. Si ya tiene la proporción, no la toca.
+ * con calidad alta, porque de este original salen las variantes. Aunque ya tenga la proporción (o no se recorte)
+ * se vuelve a codificar: así se van los metadatos (GPS, modelo del celular) y la orientación queda aplicada.
  */
 export class SharpCropper implements ImageCropper {
-  async crop(bytes: Uint8Array, aspect: number): Promise<Uint8Array> {
+  async crop(bytes: Uint8Array, aspect: number | null): Promise<Uint8Array> {
     const meta = await sharp(bytes).metadata();
     if (!meta.width || !meta.height) return bytes;
     // orientaciones EXIF 5–8 giran 90°: el ancho real es el alto guardado
     const turned = (meta.orientation ?? 1) >= 5;
-    const box = coverBox(turned ? meta.height : meta.width, turned ? meta.width : meta.height, aspect);
-    if (!box) return bytes;
-    const img = sharp(bytes)
-      .rotate()
-      .resize({ ...box, fit: "cover", position: sharp.strategy.attention });
+    const box =
+      aspect === null ? null : coverBox(turned ? meta.height : meta.width, turned ? meta.width : meta.height, aspect);
+    const rotated = sharp(bytes).rotate();
+    const img = box ? rotated.resize({ ...box, fit: "cover", position: sharp.strategy.attention }) : rotated;
     const out =
       meta.format === "jpeg"
         ? img.jpeg({ quality: 90, mozjpeg: true })

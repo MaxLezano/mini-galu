@@ -121,6 +121,11 @@ export class GiftcardService {
     return due.length;
   }
 
+  /** Descuenta lo usado en un pedido (antes de darlo por pagado sin Mercado Pago, ver `redeemOrCancel`). */
+  redeem(orderId: string, giftcardId: string, cents: number): Promise<"ok" | "repetido" | "sin_saldo"> {
+    return this.cards.redeem(giftcardId, orderId, cents);
+  }
+
   async balance(code: string): Promise<GiftcardBalance> {
     const c = await this.cards.byCode(normalizeCode(code));
     if (!c?.code || c.status !== "activa" || !c.expiresAt) throw new NotFoundError("No encontramos esa gift card");

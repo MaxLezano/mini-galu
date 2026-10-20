@@ -321,7 +321,8 @@ export function AccountView() {
                 <input className="input" id="d-mail" value={p.email} readOnly aria-readonly />
                 {!p.emailVerified && (
                   <small className="muted" style={{ fontSize: 12.5 }}>
-                    Te mandamos un mail para confirmarlo.
+                    Te mandamos un mail para confirmarlo. Al confirmarlo aparecen acá los pedidos y las gift cards de
+                    ese mail.
                   </small>
                 )}
               </div>

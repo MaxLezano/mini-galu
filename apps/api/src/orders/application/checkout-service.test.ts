@@ -4,14 +4,14 @@ import { CartService } from "../../cart/application/cart-service";
 import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
 import { CouponService } from "../../coupons/application/coupon-service";
 import { MemoryCoupons } from "../../coupons/testing/in-memory";
-import { NotFoundError, ValidationError } from "../../shared/domain/errors";
+import { ConflictError, NotFoundError, ValidationError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
 import { FakeBranches } from "../../shipping/infrastructure/andreani-branches";
 import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
 import { MemoryOrders } from "../testing/in-memory";
-import { CheckoutService } from "./checkout-service";
+import { type CheckoutGiftcards, CheckoutService } from "./checkout-service";
 import { OrderPayments } from "./order-payments";
 
 /** Con envío gratis desde $90.000 prendido (en la base de la tienda está apagado). */
@@ -289,5 +289,50 @@ describe("OrderPayments", () => {
     await payments.approved(b.orderId, { method: "credito", installments: 1 });
     expect(orders.items[1]?.status).toBe("cancelado");
     expect(events.at(-1)?.type).toBe("PaymentNeedsRefund");
+  });
+
+  it("dos pedidos a la vez con la misma gift card que cubre todo: el segundo se cancela en vez de salir gratis", async () => {
+    // el saldo que ve el checkout es el de antes de la primera compra (las dos se validan al mismo tiempo)
+    let balance = 50_000_00;
+    const used = new Set<string>();
+    const giftcards: CheckoutGiftcards = {
+      check: async () => ({ id: "g1", code: "GALU-AAAA-BBBB", balanceCents: 50_000_00 }),
+      checkById: async () => ({ id: "g1", code: "GALU-AAAA-BBBB", balanceCents: balance }),
+      summary: async () => null,
+      redeem: async (orderId, _id, cents) => {
+        if (used.has(orderId)) return "repetido";
+        if (balance < cents) return "sin_saldo";
+        balance -= cents;
+        used.add(orderId);
+        return "ok";
+      },
+    };
+    const settled: string[] = [];
+    const withCard = new CheckoutService(
+      cart,
+      new ShippingService(new SimulatedAndreaniRates(), clock, new FakeBranches(), policies),
+      new CouponService(coupons, clock),
+      orders,
+      storage,
+      giftcards,
+      async (id) => void settled.push(id),
+      clock,
+      () => "tok",
+    );
+    const other = { token: "t2" };
+    await cart.add(other, { slug: "maddie", size: "4", qty: 1 });
+    const pickup = order({
+      giftcardCode: "GALU-AAAA-BBBB",
+      shipping: { method: "taller", pickupSlot: "2026-10-08T10-13" },
+    });
+
+    const first = await withCard.place(guest, null, pickup);
+    expect(first).toMatchObject({ paid: true, totalCents: 0 });
+    expect(settled).toEqual([first.orderId]);
+
+    await expect(withCard.place(other, null, pickup)).rejects.toBeInstanceOf(ConflictError);
+    expect(settled).toHaveLength(1);
+    expect(orders.items[1]?.status).toBe("cancelado");
+    expect((await variants.find("maddie", "4"))?.stock).toBe(1);
   });
 });

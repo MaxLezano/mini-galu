@@ -11,7 +11,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../shared/doma
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ShippingService } from "../../shipping/application/shipping-service";
 import { computeTotals, formatOrderNumber, payPath } from "../domain/order";
-import { type CheckoutGiftcards, NO_GIFTCARDS, shippingFields, sucursalOf } from "./checkout-service";
+import { type CheckoutGiftcards, NO_GIFTCARDS, redeemOrCancel, shippingFields, sucursalOf } from "./checkout-service";
 import type { AdminOrderRepository, OrderRepository } from "./ports";
 
 type PaymentLinkInput = z.output<typeof PaymentLinkInputSchema>;
@@ -135,7 +135,10 @@ export class PaymentLinks {
       auto: false,
     });
     // la gift card cubre todo o se cobró en efectivo: queda pagado (y la gift card, descontada) sin Mercado Pago
-    if (paid) await this.settle(r.id, cash ? "efectivo" : "giftcard");
+    if (paid) {
+      await redeemOrCancel(this.giftcards, this.orders, { id: r.id, giftcardId: giftcard?.id ?? null, ...totals }, now);
+      await this.settle(r.id, cash ? "efectivo" : "giftcard");
+    }
     const number = formatOrderNumber(r.number);
     return {
       number,

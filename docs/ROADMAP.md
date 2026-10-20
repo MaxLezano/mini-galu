@@ -288,6 +288,33 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ El panel vive en `/taller` del mismo dominio (sin subdominio), sin links desde la tienda y con `noindex`;
   la API exige sesión con rol admin en todo `/admin/*`.
 
+## Revisión de seguridad (QA, octubre 2026)
+- ✅ **Pedidos y gift cards por mail solo con el mail confirmado**: "Mi cuenta" juntaba los pedidos hechos sin
+  ingresar y las gift cards (con su código) por el mail de la cuenta aunque no estuviera confirmado: con una cuenta
+  nueva a nombre del mail de otra persona se veían sus pedidos y se podían gastar sus gift cards. Ahora sin confirmar
+  solo se ven los de la cuenta, y "Mis datos" lo explica
+- ✅ **Gift card que cubre todo, usada en dos pedidos a la vez**: el segundo salía pagado sin que nadie pagara (solo
+  quedaba una línea en el historial). Ahora el saldo se descuenta antes de dar el pedido por pagado y, si ya no
+  alcanza, el pedido se cancela y libera el stock (checkout, cambio de cupón en el paso de pago y venta del taller).
+  Cambiar el cupón con la gift card y dejar el total en $0 ya no deja el pedido trabado esperando un pago de $0
+- ✅ **Topes por IP que no se podían saltear**: la IP salía del primer `X-Forwarded-For`, que manda el cliente (Render
+  no lo limpia); ahora `cf-connecting-ip` o el último salto. Topes nuevos (producción, cada 10 min): crear pedido
+  (15, reservaba todo el stock 30 min con bolsas nuevas), gift cards (30), seguimiento (60, los números son
+  correlativos), cartas (10, mandaban la bienvenida a cualquier mail), avisos de talle (20), lanzamientos (60) y
+  cuotas (120); la caché de cuotas ya no crece sin tope
+- ✅ **Fotos sin metadatos**: las que ya venían en 3:4 y las de portada/lanzamientos se guardaban tal cual, con el GPS
+  del celular en el original público; ahora todas se vuelven a codificar
+- ✅ CSV de clientes y de cartas sin fórmulas de Excel (un nombre `=HYPERLINK(…)` se ejecutaba al abrirlo)
+- ✅ `?volver=/\otro.com` en ingresar mandaba a otro sitio (`lib/safe-path.ts`, también en el panel)
+- ✅ Cabeceras: la tienda y el panel no se muestran en iframes ajenos (clickjacking), `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`; la API con `secureHeaders` y JSON de hasta 256 KB en las rutas públicas
+- ✅ Un id que no es UUID (`/me/children/abc`) da 404 en vez de 500
+- ⏳ Decidir con Gaby: pedir confirmar el mail antes de poder ingresar (Better Auth `requireEmailVerification`). Hoy
+  una cuenta sin confirmar se puede usar; si alguien la crea con el mail de otra persona, Better Auth no la vincula a
+  Google (bien), pero la dueña real no puede entrar con Google hasta recuperar la contraseña
+- ⏳ El seguimiento público por número muestra prendas y total del pedido: con el tope ya no se recorren todos, pero
+  conviene pensar si el total hace falta sin el token
+
 ## Fase 9 · Pulido / Fase 10 · Deploy
 - ✅ Páginas de ayuda (`/ayuda/cambios`, `envios-y-pagos`, `terminos`, `privacidad`; sin mockup propio, con el lenguaje
   de seguimiento y la ficha): navegación entre temas, índice "En esta página", contacto (Galú, WhatsApp, mail) y links

@@ -92,7 +92,7 @@ export class AdminCatalogService {
     const ext = EXT[file.type as keyof typeof EXT];
     if (!ext) throw new ValidationError("Formato no soportado: subí WebP, JPG, PNG o AVIF");
     if (file.bytes.byteLength > MAX_IMAGE_BYTES) throw new ValidationError("La foto pesa más de 8 MB");
-    const bytes = folder === "products" ? await this.cropper.crop(file.bytes, PRODUCT_PHOTO_ASPECT) : file.bytes;
+    const bytes = await this.cropper.crop(file.bytes, folder === "products" ? PRODUCT_PHOTO_ASPECT : null);
     const path = await this.storage.save(`${folder}/${randomUUID()}.${ext}`, bytes);
     return { path, url: this.storage.url(path) };
   }

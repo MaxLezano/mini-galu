@@ -67,6 +67,7 @@ beforeEach(() => {
     check: (c: string) => giftcards.check(c),
     checkById: (id: string) => giftcards.checkById(id),
     summary: (id: string) => giftcards.summary(id),
+    redeem: (orderId: string, id: string, cents: number) => giftcards.redeem(orderId, id, cents),
   };
   const shipping = new ShippingService(new SimulatedAndreaniRates(), clock, new FakeBranches());
   const settle = (id: string) => payments.approved(id, { method: "giftcard", installments: 1 });

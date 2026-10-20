@@ -12,6 +12,7 @@ import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { useAccount } from "./account-store";
 import { PasswordInput } from "./components/PasswordInput";
 import "./auth.css";
+import { safePath } from "@/lib/safe-path";
 import { Picture } from "@/ui/atoms/Picture";
 
 type Tab = "ingresar" | "crear";
@@ -28,7 +29,7 @@ export function AuthView({ photo }: { photo: { url: string; alt: string } | null
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const back = params.get("volver");
-  const target = back?.startsWith("/") && !back.startsWith("//") ? back : "/cuenta";
+  const target = safePath(back, "/cuenta");
 
   useEffect(() => {
     accountApi.options().then(

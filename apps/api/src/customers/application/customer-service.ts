@@ -30,12 +30,15 @@ export class CustomerService {
   async overview(userId: string): Promise<AccountOverview> {
     const profile = await this.repo.profile(userId);
     if (!profile) throw new NotFoundError("No encontramos tu cuenta");
+    // lo que se encuentra por mail (pedidos sin ingresar, gift cards con su código) solo con el mail confirmado:
+    // si no, cualquiera creaba una cuenta con el mail de otra persona y veía sus pedidos y gastaba sus gift cards
+    const email = profile.emailVerified ? profile.email.toLowerCase() : null;
     const [children, addresses, orders, favorites, giftcards] = await Promise.all([
       this.childrenOf(userId),
       this.repo.addresses(userId),
-      this.orders.ofCustomer(userId, profile.email),
+      this.orders.ofCustomer(userId, email),
       this.repo.favorites(userId),
-      this.giftcards.forEmail(profile.email.toLowerCase()),
+      email ? this.giftcards.forEmail(email) : [],
     ]);
     return { profile, children, addresses, orders, favorites, giftcards };
   }
