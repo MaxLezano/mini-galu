@@ -362,6 +362,8 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   de base de la ayuda siguen las políticas; si Gaby editó esas páginas, el panel le avisa que las revise
 - ✅ Apartados de la ayuda que se apagan sin borrarlos ("Visible"); cualquiera se puede apagar o quitar (ya no hay
   apartado "Obligatorio") mientras quede uno visible
+- ✅ "Tienda y pagos" en dos columnas que apilan sus cajas sin huecos (Mercado Pago, Entregas, Cupones, Gift cards
+  y Páginas de ayuda · Envíos, Portada, Lanzamientos y Cartas); en celular, una sola
 - ✅ La cinta de novedades llena pantallas anchas (2560+): los mensajes se repiten en cada vuelta, a la misma velocidad
 - ✅ Tablero de pedidos enfocable con el teclado aunque esté vacío (axe: región con scroll sin nada enfocable)
 - ✅ **Build de la API**: `pnpm --filter @mini-galu/api build` (esbuild, `apps/api/build.mjs`) arma `dist/main.js` con

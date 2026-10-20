@@ -1,5 +1,6 @@
 /* Tienda y pagos — copiado de design/mockups/admin-tienda.html */
 .set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
+.set-col { display: grid; gap: 22px; align-content: start; min-width: 0; }
 .box > .stack { display: grid; gap: 14px; }
 .conn { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: var(--linen); }
 .conn .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--paper); display: grid; place-items: center; flex: none; }
@@ -46,7 +47,6 @@
 /* agregado: subtítulos dentro de Envíos (origen y remitente) */
 .sh-sub { margin: 4px 0 -4px; font: 600 12px var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-2); }
 /* Páginas de ayuda */
-.help-ed { grid-column: 1 / -1; }
 .help-ed-tabs { flex-wrap: wrap; justify-self: start; border-radius: 22px; }
 .help-ed-secs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .help-ed-sec { display: grid; gap: 8px; padding: 14px; border-radius: 16px; background: var(--paper-2); box-shadow: 0 0 0 1px var(--line); }

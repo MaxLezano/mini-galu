@@ -58,57 +58,62 @@ export function StoreSettings({
         </div>
       </div>
 
+      {/* dos columnas que apilan cada una sus cajas (las alturas son muy distintas: una grilla deja huecos) */}
       <div className="set-grid">
-        <PaymentsEditor initial={payments} />
-
-        <ShippingEditor initial={shipping} />
-        <PoliciesEditor
-          initial={policies}
-          andreani={shipping.andreani.mode !== "simulado"}
-          helpEdited={help.some((h) => (h.topic === "cambios" || h.topic === "envios-y-pagos") && h.updatedAt !== null)}
-        />
-        <NewsletterEditor initial={newsletter} email={email} />
-        <section className="box" id="lanzamiento">
-          <div className="box-head">
-            <h2>Lanzamientos</h2>
-            {next && <span className="pill-status st-warn">Próximo: {launchWhen(next.startsAt)}</span>}
-          </div>
-          <div className="stack">
-            {next ? (
-              <div className="launch-prev">
-                {next.coverUrl ? <img src={next.coverUrl} alt="" /> : <span />}
-                <div>
-                  <span className="eyebrow is-in" style={{ color: "var(--rosa)" }}>
-                    {next.showCountdown ? "Así se ve en la home" : "No se muestra en la home"}
-                  </span>
-                  <p className="display h3" style={{ margin: "6px 0 0" }}>
-                    {next.title}
-                  </p>
-                  <span style={{ fontSize: 12.5, opacity: 0.8 }}>
-                    {launchWhen(next.startsAt)} · {next.signups} anotados
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="muted" style={{ margin: 0 }}>
-                No hay lanzamientos programados.
-              </p>
+        <div className="set-col">
+          <PaymentsEditor initial={payments} />
+          <PoliciesEditor
+            initial={policies}
+            andreani={shipping.andreani.mode !== "simulado"}
+            helpEdited={help.some(
+              (h) => (h.topic === "cambios" || h.topic === "envios-y-pagos") && h.updatedAt !== null,
             )}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link className="btn btn-sm" href="/taller/lanzamientos">
-                Editar lanzamientos
-              </Link>
-              <Link className="btn btn-sm btn-ghost" href="/taller/lanzamientos?nuevo">
-                + Nuevo lanzamiento
-              </Link>
+          />
+          <CouponsEditor initial={coupons} />
+          <GiftcardsBox data={giftcards} />
+          <HelpEditor initial={help} />
+        </div>
+        <div className="set-col">
+          <ShippingEditor initial={shipping} />
+          <HeroEditor initial={home} />
+          <section className="box" id="lanzamiento">
+            <div className="box-head">
+              <h2>Lanzamientos</h2>
+              {next && <span className="pill-status st-warn">Próximo: {launchWhen(next.startsAt)}</span>}
             </div>
-          </div>
-        </section>
-
-        <HeroEditor initial={home} />
-        <CouponsEditor initial={coupons} />
-        <GiftcardsBox data={giftcards} />
-        <HelpEditor initial={help} />
+            <div className="stack">
+              {next ? (
+                <div className="launch-prev">
+                  {next.coverUrl ? <img src={next.coverUrl} alt="" /> : <span />}
+                  <div>
+                    <span className="eyebrow is-in" style={{ color: "var(--rosa)" }}>
+                      {next.showCountdown ? "Así se ve en la home" : "No se muestra en la home"}
+                    </span>
+                    <p className="display h3" style={{ margin: "6px 0 0" }}>
+                      {next.title}
+                    </p>
+                    <span style={{ fontSize: 12.5, opacity: 0.8 }}>
+                      {launchWhen(next.startsAt)} · {next.signups} anotados
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted" style={{ margin: 0 }}>
+                  No hay lanzamientos programados.
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Link className="btn btn-sm" href="/taller/lanzamientos">
+                  Editar lanzamientos
+                </Link>
+                <Link className="btn btn-sm btn-ghost" href="/taller/lanzamientos?nuevo">
+                  + Nuevo lanzamiento
+                </Link>
+              </div>
+            </div>
+          </section>
+          <NewsletterEditor initial={newsletter} email={email} />
+        </div>
       </div>
     </main>
   );
