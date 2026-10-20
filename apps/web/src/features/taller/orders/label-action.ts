@@ -1,3 +1,4 @@
+import type { BulkLabels } from "@mini-galu/contracts";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 
@@ -14,5 +15,19 @@ export async function generateLabel(number: string): Promise<{ trackingNumber: s
   } catch (e) {
     tab?.close();
     return { error: e instanceof ApiRequestError ? e.message : "No se pudo generar la etiqueta" };
+  }
+}
+
+/** "Etiquetas" de la selección: genera las que faltan y abre un solo PDF con todas (la pestaña, igual que arriba). */
+export async function generateLabels(numbers: string[]): Promise<BulkLabels | { error: string }> {
+  const tab = window.open("about:blank", "_blank");
+  try {
+    const r = await adminApi.createLabels(numbers);
+    if (r.labeled.length && tab) tab.location.href = adminApi.labelsUrl(r.labeled);
+    else tab?.close();
+    return r;
+  } catch (e) {
+    tab?.close();
+    return { error: e instanceof ApiRequestError ? e.message : "No se pudieron generar las etiquetas" };
   }
 }

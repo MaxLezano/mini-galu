@@ -141,6 +141,7 @@ import {
   adminShippingRoutes,
   trackingRoutes,
 } from "./shipping/infrastructure/http/shipment-routes";
+import { PdfLibMerger } from "./shipping/infrastructure/pdf-lib-merger";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
 
 /** Mail de la tienda: contacto en la ayuda y a donde llegan los avisos para el taller. */
@@ -322,6 +323,7 @@ export function buildApp(config: Config) {
     (number, token) => config.webOrigin + payPath(number, token),
     shippingSettings,
     config.branches,
+    new PdfLibMerger(),
   );
   const webhookUrl = `${config.publicUrl}/payments/webhook`;
   const gateway: PaymentGateway = config.mercadoPago

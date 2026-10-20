@@ -498,6 +498,48 @@ test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido
   await expect(page.getByText("No encontramos ese pedido")).toBeVisible();
 });
 
+test("etiquetas de la selección: las de Andreani salen juntas en un PDF y el retiro en el taller queda afuera", async ({
+  page,
+  request,
+}) => {
+  const home = {
+    method: "domicilio",
+    postalCode: "1414",
+    province: "CABA",
+    street: "Gurruchaga",
+    number: "1234",
+    city: "Palermo",
+  };
+  const a = await paidOrder(request, home);
+  test.skip(!a, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  const b = await paidOrder(request, home);
+  const taller = await paidOrder(request);
+  await login(page);
+  for (const n of [a, b])
+    await page.request.patch(`http://localhost:4000/admin/orders/${n}/status`, { data: { to: "preparando" } });
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  const bulk = page.locator(".bulk");
+
+  await page.getByLabel(`Seleccionar #${taller}`).check();
+  await bulk.getByRole("button", { name: "Etiquetas" }).click();
+  await expect(page.locator("#toast")).toContainText("Ninguno de esos pedidos va por Andreani");
+
+  await page.getByLabel(`Seleccionar #${a}`).check();
+  await page.getByLabel(`Seleccionar #${b}`).check();
+  const [pdf] = await Promise.all([
+    page.context().waitForEvent("page"),
+    bulk.getByRole("button", { name: "Etiquetas" }).click(),
+  ]);
+  await expect(page.locator("#toast")).toContainText("2 etiquetas Andreani en un PDF");
+  await pdf.close();
+  // generar la etiqueta deja el pedido listo para despachar
+  const detail = await (await page.request.get(`http://localhost:4000/admin/orders/${a}`)).json();
+  expect(detail.status).toBe("listo");
+  const labels = await page.request.get(`http://localhost:4000/admin/orders/labels?n=${a},${b}`);
+  expect(labels.headers()["content-type"]).toBe("application/pdf");
+});
+
 test("tienda y pagos: datos de envío para Andreani (paquete, origen y remitente)", async ({ page }) => {
   await login(page);
   await page.goto("/taller/tienda");

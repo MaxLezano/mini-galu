@@ -1,8 +1,15 @@
-import type { AdminShipping, PublicTracking, ShipmentCreated, ShippingSettings } from "@mini-galu/contracts";
+import type {
+  AdminShipping,
+  BulkLabels,
+  PublicTracking,
+  ShipmentCreated,
+  ShippingSettings,
+} from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { recipientLabel, trackingLog, trackingStops } from "../domain/tracking";
 import type {
   NewShipment,
+  PdfMerger,
   ShipmentRepository,
   ShippableOrder,
   ShippableOrders,
@@ -24,6 +31,7 @@ export class ShipmentService {
     private readonly settings: ShippingSettingsStore,
     /** De dónde salen las sucursales (para mostrarlo en el panel). */
     private readonly branchesSource: "andreani" | "fake",
+    private readonly merger: PdfMerger,
     private readonly clock: () => Date = () => new Date(),
   ) {}
 
@@ -63,6 +71,39 @@ export class ShipmentService {
     if (!s) throw new NotFoundError("Este pedido todavía no tiene etiqueta");
     const pdf = await this.gateway.label(s.trackingNumber, toNewShipment(o, await this.settings.get()));
     return { filename: `etiqueta-${o.number}.pdf`, pdf };
+  }
+
+  /**
+   * "Etiquetas" de la selección del tablero: genera las que faltan (pedidos en preparación o listos) y deja afuera,
+   * con el porqué, los que no llevan (retiro en el taller, todavía sin preparar, número que no existe).
+   */
+  async createLabels(numbers: string[]): Promise<BulkLabels> {
+    const out: BulkLabels = { labeled: [], skipped: [] };
+    for (const number of new Set(numbers)) {
+      try {
+        const o = await this.shippable(number);
+        if (!(await this.shipments.byOrder(o.id))) await this.createLabel(number);
+        out.labeled.push(o.number);
+      } catch (e) {
+        if (!(e instanceof ConflictError || e instanceof NotFoundError)) throw e;
+        out.skipped.push({ number, reason: e.message });
+      }
+    }
+    return out;
+  }
+
+  /** Las etiquetas que ya existen de esos pedidos, en un solo PDF (una por hoja 10×15, en el orden pedido). */
+  async labels(numbers: string[]): Promise<{ filename: string; pdf: Uint8Array }> {
+    const pdfs: Uint8Array[] = [];
+    for (const number of new Set(numbers)) {
+      const o = await this.orders.find(number);
+      if (!o || o.shippingMethod === "taller") continue;
+      const s = await this.shipments.byOrder(o.id);
+      if (s)
+        pdfs.push(await this.gateway.label(s.trackingNumber, toNewShipment(o as Labelable, await this.settings.get())));
+    }
+    if (!pdfs.length) throw new NotFoundError("Ninguno de esos pedidos tiene etiqueta");
+    return { filename: `etiquetas-${pdfs.length}.pdf`, pdf: await this.merger.merge(pdfs) };
   }
 
   /** Consulta al correo los envíos sin entregar. Lo corre el scheduler. */
@@ -115,18 +156,17 @@ export class ShipmentService {
     };
   }
 
-  private async shippable(number: string): Promise<ShippableOrder & { shippingMethod: "domicilio" | "sucursal" }> {
+  private async shippable(number: string): Promise<Labelable> {
     const o = await this.orders.find(number);
     if (!o) throw new NotFoundError("No existe ese pedido");
     if (o.shippingMethod === "taller") throw new ConflictError("Este pedido se retira en el taller: no lleva etiqueta");
-    return o as ShippableOrder & { shippingMethod: "domicilio" | "sucursal" };
+    return o as Labelable;
   }
 }
 
-function toNewShipment(
-  o: ShippableOrder & { shippingMethod: "domicilio" | "sucursal" },
-  from: ShippingSettings | null,
-): NewShipment {
+type Labelable = ShippableOrder & { shippingMethod: "domicilio" | "sucursal" };
+
+function toNewShipment(o: Labelable, from: ShippingSettings | null): NewShipment {
   return {
     orderNumber: o.number,
     method: o.shippingMethod,

@@ -186,6 +186,9 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   (retirado, centro de distribución, en tránsito, a reparto / en sucursal, entregado); `FAKE_ANDREANI_SPEED` acelera
 - ✅ "Generar etiqueta Andreani" en el panel (pasa a listo, guarda el número, abre el PDF); "Imprimir etiqueta" y
   "Seguimiento" en el detalle; en camino con etiqueta, el siguiente paso es "Ver seguimiento"
+- ✅ "Etiquetas" en la barra de la selección (mockup `admin-pedidos.html`): genera las que faltan de los pedidos en
+  preparación o listos y abre todas en un solo PDF 10×15 (una por hoja); dice cuántos quedaron sin etiqueta y, si
+  todos se retiran en el taller, "Ninguno de esos pedidos va por Andreani"
 - ✅ Consulta de envíos cada 10 min: retirado por Andreani → en camino, entregado → entregado (historial automático y
   OrderStatusChanged para las automatizaciones)
 - ✅ Seguimiento público `/seguimiento?pedido=` por número de pedido o de Andreani: recorrido con camión, registro,
@@ -381,5 +384,5 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
-Club Mini Galú, "talles que crecen", PWA del panel con push, etiquetas en lote, reporte mensual, costos por prenda,
+Club Mini Galú, "talles que crecen", PWA del panel con push, reporte mensual, costos por prenda,
 stock de materiales, varias usuarias con permisos, Umami, backups.

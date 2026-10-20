@@ -34,7 +34,7 @@ import { OrdersBoard } from "../components/OrdersBoard";
 import { OrdersList } from "../components/OrdersList";
 import { PICKING_MODAL, PickingModal } from "../components/PickingModal";
 import { WHATSAPP_MODAL, WhatsAppModal } from "../components/WhatsAppModal";
-import { generateLabel } from "../label-action";
+import { generateLabel, generateLabels } from "../label-action";
 import { defaultTemplate, type NextAction, pickingList, type TemplateKey, toPrepare } from "../order-flow";
 import { OrderDrawer } from "./OrderDrawer";
 import { PAYMENT_LINK_MODAL, PaymentLinkModal } from "./PaymentLinkModal";
@@ -177,6 +177,22 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
   };
 
   const chosen = orders.filter((o) => selected.has(o.number));
+
+  const labelSelected = async () => {
+    const byCarrier = chosen.filter((o) => o.shippingMethod !== "taller").map((o) => o.number);
+    if (!byCarrier.length)
+      return toast("Ninguno de esos pedidos va por Andreani", { icon: <Printer className="i-sm" /> });
+    const r = await generateLabels(byCarrier);
+    if ("error" in r) return toast(r.error);
+    adminApi.orders().then(setOrders, () => {});
+    if (!r.labeled.length) return toast(r.skipped[0]?.reason ?? "Ninguno de esos pedidos lleva etiqueta");
+    const n = r.labeled.length;
+    toast(
+      `${n} ${n === 1 ? "etiqueta" : "etiquetas"} Andreani en un PDF${r.skipped.length ? ` · ${r.skipped.length} sin etiqueta todavía` : ""}`,
+      { icon: <Printer className="i-sm" /> },
+    );
+  };
+
   const pickRows = pickingList(picking);
   const wo = wa?.order;
 
@@ -295,7 +311,9 @@ export function OrdersAdmin({ initial, open: openFirst }: { initial: AdminOrderS
         <button type="button" className="btn" onClick={() => showPicking(chosen)}>
           <ListChecks className="i-sm" /> Preparación
         </button>
-        {/* TODO(fase 5 · shipping): "Etiquetas" Andreani en un PDF */}
+        <button type="button" className="btn" onClick={labelSelected}>
+          <Printer className="i-sm" /> Etiquetas
+        </button>
         <button type="button" className="btn" onClick={advanceSelected}>
           <ArrowRight className="i-sm" /> Avanzar estado
         </button>

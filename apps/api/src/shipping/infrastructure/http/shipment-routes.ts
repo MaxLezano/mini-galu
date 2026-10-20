@@ -1,5 +1,5 @@
-import { ShippingSettingsSchema } from "@mini-galu/contracts";
-import { Hono } from "hono";
+import { BulkAdvanceInputSchema, ShippingSettingsSchema } from "@mini-galu/contracts";
+import { type Context, Hono } from "hono";
 import { parse } from "../../../shared/http/errors";
 import type { ShipmentService } from "../../application/shipment-service";
 
@@ -10,18 +10,29 @@ export function trackingRoutes(shipments: ShipmentService) {
   );
 }
 
-/** /admin/orders/:numero/label — generar la etiqueta y descargarla (PDF 10×15). Requiere sesión del taller. */
+/**
+ * /admin/orders/:numero/label — generar la etiqueta y descargarla (PDF 10×15). /admin/orders/labels — lo mismo para
+ * la selección del tablero (`?n=MG-1,MG-2` para el PDF). Requiere sesión del taller.
+ */
 export function adminShipmentRoutes(shipments: ShipmentService) {
   return new Hono()
+    .post("/labels", async (c) =>
+      c.json(await shipments.createLabels(parse(BulkAdvanceInputSchema, await c.req.json()).numbers)),
+    )
+    .get("/labels", async (c) => {
+      const numbers = parse(BulkAdvanceInputSchema, { numbers: (c.req.query("n") ?? "").split(",").filter(Boolean) });
+      return pdfResponse(c, await shipments.labels(numbers.numbers));
+    })
     .post("/:number/label", async (c) => c.json(await shipments.createLabel(c.req.param("number")), 201))
-    .get("/:number/label", async (c) => {
-      const { filename, pdf } = await shipments.label(c.req.param("number"));
-      return c.body(pdf as Uint8Array<ArrayBuffer>, 200, {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename}"`,
-        "Cache-Control": "no-store",
-      });
-    });
+    .get("/:number/label", async (c) => pdfResponse(c, await shipments.label(c.req.param("number"))));
+}
+
+function pdfResponse(c: Context, { filename, pdf }: { filename: string; pdf: Uint8Array }) {
+  return c.body(pdf as Uint8Array<ArrayBuffer>, 200, {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `inline; filename="${filename}"`,
+    "Cache-Control": "no-store",
+  });
 }
 
 /** /admin/shipping — "Tienda y pagos → Envíos": paquete, origen, remitente y estado de Andreani. */

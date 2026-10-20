@@ -31,6 +31,9 @@ export type PublicTracking = {
 /** Lo que devuelve generar la etiqueta desde el panel. */
 export type ShipmentCreated = { carrier: string; trackingNumber: string };
 
+/** "Etiquetas" de la selección del tablero: los pedidos que entran en el PDF y los que no (con el porqué). */
+export type BulkLabels = { labeled: string[]; skipped: { number: string; reason: string }[] };
+
 /* ------------------------------------------------------------------ ajustes de envío (panel) */
 
 /** Paquetes con los que se despacha (admin-tienda.html → "Paquete por defecto"). Peso en kg, medidas en cm. */

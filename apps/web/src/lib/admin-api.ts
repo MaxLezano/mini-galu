@@ -16,6 +16,7 @@ import type {
   AssistantOverview,
   AssistantSettings,
   AutomationKey,
+  BulkLabels,
   Collection,
   CouponInput,
   HelpPage,
@@ -164,6 +165,10 @@ export const adminApi = {
     adminRequest<ShipmentCreated>(`/admin/orders/${encodeURIComponent(number)}/label`, { method: "POST" }),
   /** PDF de la etiqueta (se abre en otra pestaña con la cookie del panel). */
   labelUrl: (number: string) => `${API_URL}/admin/orders/${encodeURIComponent(number)}/label`,
+  createLabels: (numbers: string[]) =>
+    adminRequest<BulkLabels>("/admin/orders/labels", { method: "POST", body: JSON.stringify({ numbers }) }),
+  /** Las etiquetas de varios pedidos en un solo PDF. */
+  labelsUrl: (numbers: string[]) => `${API_URL}/admin/orders/labels?n=${numbers.map(encodeURIComponent).join(",")}`,
   createPaymentLink: (input: PaymentLinkInput) =>
     adminRequest<PaymentLinkCreated>("/admin/orders/links", { method: "POST", body: JSON.stringify(input) }),
   order: (number: string) => adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}`),

@@ -1,4 +1,5 @@
 import { PlaceOrderInputSchema } from "@mini-galu/contracts";
+import { PDFDocument } from "pdf-lib";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CartService } from "../../cart/application/cart-service";
 import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
@@ -13,6 +14,7 @@ import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { FakeAndreani } from "../infrastructure/fake-andreani";
+import { PdfLibMerger } from "../infrastructure/pdf-lib-merger";
 import { TableShippingRates } from "../infrastructure/table-shipping-rates";
 import { MemoryShipments, MemoryShippingSettings } from "../testing/in-memory";
 import { ShipmentService } from "./shipment-service";
@@ -56,6 +58,7 @@ beforeEach(() => {
     (n, t) => `http://web/pagar/${n}?t=${t}`,
     new MemoryShippingSettings(),
     "fake",
+    new PdfLibMerger(),
     clock,
   );
   let k = 0;
@@ -133,5 +136,27 @@ describe("envíos", () => {
     expect((await shipments.track(o.number, o.accessToken)).payUrl).toBe(
       `http://web/pagar/${o.number}?t=${o.accessToken}`,
     );
+  });
+
+  it("etiquetas de la selección: genera las que faltan y las imprime en un solo PDF", async () => {
+    const lista = await paidOrder();
+    const nueva = await paidOrder();
+    const conEtiqueta = await paidOrder();
+    const slot = (await new ShippingService(new TableShippingRates()).options(undefined, 0)).pickupSlots[0]?.id;
+    const taller = await paidOrder({ method: "taller", pickupSlot: slot });
+    for (const o of [lista, conEtiqueta, taller]) await admin.move(o.number, "preparando");
+    const { trackingNumber } = await shipments.createLabel(conEtiqueta.number);
+
+    const r = await shipments.createLabels([lista.number, nueva.number, conEtiqueta.number, taller.number, "MG-9999"]);
+    expect(r.labeled).toEqual([lista.number, conEtiqueta.number]);
+    expect(r.skipped.map((s) => s.number)).toEqual([nueva.number, taller.number, "MG-9999"]);
+    expect(r.skipped[1]?.reason).toContain("retira en el taller");
+    expect(orders.items.find((o) => o.id === lista.orderId)?.status).toBe("listo");
+    expect((await shipments.track(conEtiqueta.number, null)).shipment?.trackingNumber).toBe(trackingNumber); // no duplica
+
+    const { filename, pdf } = await shipments.labels([lista.number, nueva.number, conEtiqueta.number, taller.number]);
+    expect(filename).toBe("etiquetas-2.pdf");
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBe(2);
+    await expect(shipments.labels([nueva.number, taller.number])).rejects.toBeInstanceOf(NotFoundError);
   });
 });

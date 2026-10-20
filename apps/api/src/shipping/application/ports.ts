@@ -44,6 +44,11 @@ export interface ShippingGateway {
   trackingUrl(trackingNumber: string): string | null;
 }
 
+/** Une varias etiquetas en un solo PDF para imprimirlas de una vez. */
+export interface PdfMerger {
+  merge(pdfs: Uint8Array[]): Promise<Uint8Array>;
+}
+
 export type Shipment = {
   id: string;
   orderId: string;
