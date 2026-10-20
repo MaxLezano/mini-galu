@@ -17,6 +17,7 @@ import type {
   HelpTopic,
   HomeContent,
   InstallmentPlan,
+  LaunchVisitRequest,
   OrderReceipt,
   PayResult,
   PlacedOrder,
@@ -98,6 +99,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  launchVisit: (body: LaunchVisitRequest) =>
+    request<void>("/content/launches/visits", { method: "POST", body: JSON.stringify(body), keepalive: true }),
 
   /* bolsa (fase 3: guardada en el servidor) */
   cart: () => request<CartView>("/cart"),

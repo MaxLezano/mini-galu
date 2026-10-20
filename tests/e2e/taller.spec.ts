@@ -158,6 +158,42 @@ test("crear un lanzamiento como borrador y borrarlo", async ({ page }) => {
   await expect(page.locator(".ln", { hasText: "Prueba e2e" })).toHaveCount(0);
 });
 
+test("visitas al adelanto: la sección de la home y la ficha de una prenda que no salió suman en el panel", async ({
+  page,
+  browser,
+}) => {
+  await login(page);
+  const visits = async () => {
+    await page.goto("/taller/lanzamientos");
+    await ready(page);
+    const text = (await page.locator(".ln-count").textContent()) ?? "";
+    return Number(text.match(/([\d.]+)visitas al adelanto/)?.[1]?.replaceAll(".", ""));
+  };
+  const before = await visits();
+  expect(before).not.toBeNaN();
+
+  // dos personas distintas (la API cuenta una por visitante y día: IP + navegador)
+  const run = Date.now();
+  const { baseURL } = test.info().project.use;
+  const sent = (p: Page) =>
+    p.waitForResponse((r) => r.url().includes("/content/launches/visits") && r.status() === 204);
+  const home = await browser.newContext({ baseURL, userAgent: `Mozilla/5.0 e2e-home-${run}` });
+  const a = await home.newPage();
+  await a.goto("/");
+  const homeSent = sent(a);
+  await a.locator("#lanzamiento").scrollIntoViewIfNeeded();
+  await homeSent;
+  const ficha = await browser.newContext({ baseURL, userAgent: `Mozilla/5.0 e2e-ficha-${run}` });
+  const b = await ficha.newPage();
+  const fichaSent = sent(b);
+  await b.goto("/producto/corazon-pana");
+  await fichaSent;
+  await home.close();
+  await ficha.close();
+
+  expect(await visits()).toBeGreaterThanOrEqual(before + 2);
+});
+
 test("cupones: crear, pausar y borrar desde Tienda y pagos", async ({ page }) => {
   await login(page);
   await page.goto("/taller/tienda");

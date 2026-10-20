@@ -37,6 +37,7 @@ import { cartTotal, useCart } from "@/features/cart/cart-store";
 import { useAddToCart } from "@/features/cart/use-add-to-cart";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { useIsFavorite, useToggleFavorite } from "@/features/favorites/use-toggle-favorite";
+import { useLaunchVisit } from "@/features/launch/use-launch-visit";
 import { useShellData } from "@/features/shell/shell-context";
 import { toast, useUi } from "@/features/shell/ui-store";
 import { WISH_PICK_MODAL, WishPickModal } from "@/features/wishlist/WishPickModal";
@@ -107,6 +108,8 @@ export function ProductInfo({ product: p, launchAt }: { product: ProductDetail; 
   const credit = creditCuotas(plan);
   const { openModal, closeModal, openGalu } = useUi();
   const draft = p.status === "draft";
+  // la ficha de una prenda que todavía no salió es parte del adelanto del lanzamiento
+  useLaunchVisit(draft ? { productSlug: p.slug } : null);
   const only = p.variants.length === 1 && sizesIn(p).length === 1 ? sizesIn(p)[0] : undefined;
   const [size, setSize] = useState<Size | null>(only ?? null);
   const [notifySize, setNotifySize] = useState<Size | null>(null);

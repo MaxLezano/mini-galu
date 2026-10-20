@@ -111,6 +111,8 @@ export const AdminLaunchSchema = z.object({
   signups: z.number().int(),
   /** Veces que guardaron sus prendas en favoritos (con cuenta). */
   favorites: z.number().int(),
+  /** Visitas al adelanto antes de salir: la sección de la home o la ficha de sus prendas (una por visitante y día). */
+  visits: z.number().int(),
   /** Unidades vendidas en las primeras 24 h (solo los que ya salieron; null si no salió). */
   soldFirstDay: z.number().int().nullable(),
 });

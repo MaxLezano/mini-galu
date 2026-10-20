@@ -97,7 +97,10 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
 - ✅ Lanzamientos: "favoritos" del próximo (veces que guardaron sus prendas). En el adelanto la ficha muestra el
   corazón al lado de "Avisame cuando salga" y pide ingresar o crear cuenta, así cada favorito queda en el servidor;
   en "Mi cuenta" la prenda aparece recién cuando sale
-- ⏳ Lanzamientos: "visitas al adelanto" → fase 9 (Umami)
+- ✅ Lanzamientos: "visitas al adelanto" en el próximo (y en los que ya salieron): cuenta propia, sin Umami ni
+  cookies. Suma quien ve la sección del lanzamiento en la home (40 % en pantalla) o abre la ficha de una prenda que
+  todavía no salió; una por visitante y día (hash de IP + navegador + día con el secreto del servidor, tabla
+  `launch_visits`). No cuentan buscadores ni vistas previas de links, la cuenta del taller ni las capturas (`?static`)
 - ✅ `admin-tienda`: portada editable con vista previa en vivo, foto (elegir o subir), barra de anuncios, resumen del
   próximo lanzamiento
 - ✅ `admin-tienda`: Mercado Pago y cupones (fase 3); envíos, horarios de retiro y paquete (fase 5); gift cards (fase 8)

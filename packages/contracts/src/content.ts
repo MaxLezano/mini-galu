@@ -113,3 +113,10 @@ export type AdminHome = z.infer<typeof AdminHomeSchema>;
 
 export const LaunchSignupRequestSchema = ContactSchema;
 export type LaunchSignupRequest = z.infer<typeof LaunchSignupRequestSchema>;
+
+/** Alguien vio el adelanto: la sección de la home (por id) o la ficha de una prenda que todavía no salió. */
+export const LaunchVisitRequestSchema = z.union([
+  z.object({ launchId: z.uuid() }).strict(),
+  z.object({ productSlug: z.string().trim().min(1).max(120) }).strict(),
+]);
+export type LaunchVisitRequest = z.infer<typeof LaunchVisitRequestSchema>;

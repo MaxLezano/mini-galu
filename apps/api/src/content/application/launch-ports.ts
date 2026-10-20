@@ -36,9 +36,21 @@ export interface LaunchMetrics {
   unitsSold(slugs: string[], from: Date, to: Date): Promise<number>;
   /** Veces que las guardaron en favoritos (solo cuentas: en el adelanto el corazón pide ingresar). */
   favorites(slugs: string[]): Promise<number>;
+  /** Visitas al adelanto (una por visitante y día, ver LaunchVisitsService). */
+  visits(launchId: string): Promise<number>;
 }
 
 /** Publica prendas a través del módulo de catálogo (que valida, por ejemplo, que tengan foto). */
 export interface ProductPublisher {
   publish(slugs: string[]): Promise<{ published: string[]; skipped: { slug: string; reason: string }[] }>;
+}
+
+/** Qué adelanto se está mirando: la sección de la home (por id) o la ficha de una prenda del lanzamiento. */
+export type LaunchVisitTarget = { launchId: string } | { productSlug: string };
+
+export interface LaunchVisitRepository {
+  /** El lanzamiento por id, o el que trae esa prenda sin publicar (el más próximo). */
+  findPreview(target: LaunchVisitTarget): Promise<{ id: string; startsAt: Date; publishedAt: Date | null } | null>;
+  /** false si ese visitante ya contaba ese día. */
+  add(launchId: string, day: string, visitor: string): Promise<boolean>;
 }

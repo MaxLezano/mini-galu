@@ -91,6 +91,7 @@ const metrics: LaunchMetrics = {
   unitsSold: async (slugs, from, to) =>
     sales.filter((x) => slugs.includes(x.slug) && x.paidAt >= from && x.paidAt < to).reduce((n, x) => n + x.qty, 0),
   favorites: async (slugs) => favs.filter((f) => slugs.includes(f.slug)).length,
+  visits: async (launchId) => (launchId === "l1" ? 1284 : 0),
 };
 
 beforeEach(() => {
@@ -172,6 +173,12 @@ describe("AdminLaunchesService", () => {
       { userId: "u2", slug: "otra" }, // no es del lanzamiento
     ];
     expect((await service.get("l1")).favorites).toBe(3);
+  });
+
+  it("muestra las visitas al adelanto de cada lanzamiento", async () => {
+    await service.create(input());
+    await service.create(input({ status: "draft" }));
+    expect((await service.list()).map((l) => l.visits)).toEqual([1284, 0]);
   });
 
   it("solo se borran borradores", async () => {

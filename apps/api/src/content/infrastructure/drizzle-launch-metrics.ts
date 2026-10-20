@@ -30,4 +30,12 @@ export class DrizzleLaunchMetrics implements LaunchMetrics {
       .where(inArray(s.products.slug, slugs));
     return r?.n ?? 0;
   }
+
+  async visits(launchId: string) {
+    const [r] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(s.launchVisits)
+      .where(eq(s.launchVisits.launchId, launchId));
+    return r?.n ?? 0;
+  }
 }

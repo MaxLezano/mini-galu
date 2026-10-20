@@ -139,8 +139,8 @@ export function LaunchesAdmin({ initial, products, collections, startNew = false
               <span>
                 <b>{l.signups}</b>anotados
               </span>
-              <span>
-                <b>{l.products.length}</b>prendas
+              <span title="Vieron la sección de la home o la ficha de sus prendas (una por persona y día)">
+                <b>{l.visits.toLocaleString("es-AR")}</b>visitas al adelanto
               </span>
               <span title="Clientes con cuenta: en el adelanto, el corazón pide ingresar">
                 <b>{l.favorites}</b>favoritos
@@ -160,6 +160,11 @@ export function LaunchesAdmin({ initial, products, collections, startNew = false
               <span>
                 <Users className="i-sm" /> {l.signups} anotados
               </span>
+              {l.visits > 0 && (
+                <span>
+                  <Eye className="i-sm" /> {l.visits.toLocaleString("es-AR")} visitas al adelanto
+                </span>
+              )}
             </div>
           )}
         </div>

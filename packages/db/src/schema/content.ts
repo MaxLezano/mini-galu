@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   integer,
   jsonb,
   pgEnum,
@@ -68,6 +69,23 @@ export const launchSignups = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex().on(t.launchId, t.contact)],
+);
+
+/**
+ * Visitas al adelanto (la sección de la home o la ficha de una prenda que todavía no salió): una por visitante y día.
+ * Sin cookies ni IP: `visitor` es un hash de IP + navegador + día con un secreto del servidor (como Plausible).
+ */
+export const launchVisits = pgTable(
+  "launch_visits",
+  {
+    launchId: uuid()
+      .notNull()
+      .references(() => launches.id, { onDelete: "cascade" }),
+    day: date().notNull(),
+    visitor: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.launchId, t.day, t.visitor] })],
 );
 
 /** Bloques editables desde el panel (portada, anuncios, carrusel). key → JSON validado con contracts. */

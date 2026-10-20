@@ -102,6 +102,7 @@ export class AdminLaunchesService {
       publishedAt: l.publishedAt?.toISOString() ?? null,
       signups: l.signups,
       favorites: await this.metrics.favorites(slugs),
+      visits: await this.metrics.visits(l.id),
       soldFirstDay: state === "past" ? await this.soldFirstDay(l, slugs) : null,
     };
   }

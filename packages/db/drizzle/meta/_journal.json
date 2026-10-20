@@ -148,6 +148,13 @@
       "when": 1792370601640,
       "tag": "0020_assistant_size_alert",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792461107394,
+      "tag": "0021_launch_visits",
+      "breakpoints": true
     }
   ]
 }

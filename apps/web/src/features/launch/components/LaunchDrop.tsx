@@ -2,13 +2,14 @@
 
 import { type ContactChannel, imageThumb, type Launch } from "@mini-galu/contracts";
 import { BellRing, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
 import { ApiRequestError, api } from "@/lib/api";
 import { longDate } from "@/lib/date";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { Emphasis } from "@/ui/atoms/Emphasis";
 import { Picture } from "@/ui/atoms/Picture";
+import { useLaunchVisit } from "../use-launch-visit";
 
 function useCountdown(target: string) {
   const [parts, setParts] = useState<string[] | null>(null);
@@ -37,11 +38,13 @@ export function LaunchDrop({ launch, avatars }: { launch: Launch; avatars: strin
   const [signups, setSignups] = useState(launch.signups);
   const [error, setError] = useState<string | null>(null);
   const mail = channel === "email";
+  const section = useRef<HTMLElement>(null);
+  useLaunchVisit({ launchId: launch.id }, section);
   // "Otoño · Invierno 26" → la última palabra en itálica
   const title = launch.title.replace(/(\S+)$/, "*$1*");
 
   return (
-    <section className="section wrap" id="lanzamiento">
+    <section className="section wrap" id="lanzamiento" ref={section}>
       <div className="drop" data-reveal="">
         <div className="drop-media">
           {launch.coverUrl && (

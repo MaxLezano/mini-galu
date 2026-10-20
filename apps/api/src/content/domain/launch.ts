@@ -29,3 +29,18 @@ export function firstDayWindow(startsAt: Date, publishedAt: Date | null): { from
 export function suggestSocialText(title: string, teaser: string, when: string): string {
   return `✿ ${title} ✿ ${teaser} Sale ${when} en minigalu.com.ar. Anotate y te avisamos 1 hora antes 🎀`;
 }
+
+/** El adelanto se cuenta mientras el lanzamiento no salió: antes de su hora y sin las prendas publicadas. */
+export function isPreviewOpen(l: { startsAt: Date; publishedAt: Date | null }, now: Date): boolean {
+  return !l.publishedAt && l.startsAt > now;
+}
+
+/** Buscadores, vistas previas de links (WhatsApp, Facebook) y robots no cuentan como visita. */
+export function isBot(userAgent: string | undefined): boolean {
+  return !userAgent || /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|lighthouse/i.test(userAgent);
+}
+
+/** "YYYY-MM-DD" en Argentina: las visitas se cuentan una por visitante y día de acá. */
+export function previewDay(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(now);
+}

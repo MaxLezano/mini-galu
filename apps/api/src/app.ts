@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { relative } from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { serveStatic } from "@hono/node-server/serve-static";
@@ -59,10 +60,12 @@ import { AdminLaunchesService } from "./content/application/admin-launches-servi
 import { ContentService } from "./content/application/content-service";
 import { HelpService } from "./content/application/help-service";
 import type { ProductPublisher } from "./content/application/launch-ports";
+import { LaunchVisitsService } from "./content/application/launch-visits-service";
 import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
 import { DrizzleHelpRepository } from "./content/infrastructure/drizzle-help-repository";
 import { DrizzleLaunchMetrics } from "./content/infrastructure/drizzle-launch-metrics";
+import { DrizzleLaunchVisits } from "./content/infrastructure/drizzle-launch-visits";
 import { adminHomeRoutes } from "./content/infrastructure/http/admin-home-routes";
 import { adminLaunchesRoutes } from "./content/infrastructure/http/admin-launches-routes";
 import { contentRoutes } from "./content/infrastructure/http/content-routes";
@@ -241,6 +244,10 @@ export function buildApp(config: Config) {
     storage,
     events,
     new DrizzleLaunchMetrics(db),
+  );
+  // visitas al adelanto: el visitante es un hash con el secreto del servidor (no se guarda IP ni cookie)
+  const launchVisits = new LaunchVisitsService(new DrizzleLaunchVisits(db), (v) =>
+    createHmac("sha256", config.authSecret).update(v).digest("base64url"),
   );
 
   // checkout: bolsa → pedido (reserva stock) → pago
@@ -658,7 +665,13 @@ export function buildApp(config: Config) {
     .get("/health", (c) => c.json({ ok: true }))
     .route("/catalog", catalogRoutes(catalog))
     .route("/content/help", helpRoutes(help))
-    .route("/content", contentRoutes(content))
+    .route(
+      "/content",
+      contentRoutes(content, launchVisits, async (headers) => {
+        const session = await auth.api.getSession({ headers }).catch(() => null);
+        return session?.user.role === "admin";
+      }),
+    )
     .route("/auth", authRoutes(auth))
     .use("/cart/*", cartOwner(auth, cart, secure))
     .use("/checkout/*", cartOwner(auth, cart, secure))
