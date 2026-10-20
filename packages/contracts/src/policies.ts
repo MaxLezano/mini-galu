@@ -62,14 +62,19 @@ export const StorePoliciesSchema = z
   });
 export type StorePolicies = z.infer<typeof StorePoliciesSchema>;
 
+/** El taller: retiro de pedidos y origen de los envíos (la dirección exacta está en Tienda y pagos → Envíos). */
+export const WORKSHOP = { city: "San Miguel de Tucumán", province: "Tucumán" } as const;
+/** "San Miguel de Tucumán, Tucumán" */
+export const WORKSHOP_PLACE = `${WORKSHOP.city}, ${WORKSHOP.province}`;
+
 const WEEKDAY: [number, number][] = [
   [10, 13],
   [16, 19],
 ];
 
 export const DEFAULT_POLICIES: StorePolicies = {
-  exchangeDays: 30,
-  freeShipping: { enabled: true, fromCents: 90_000_00 },
+  exchangeDays: 2,
+  freeShipping: { enabled: false, fromCents: 90_000_00 },
   methods: { domicilio: true, sucursal: true, taller: true },
   rates: {
     amba: { domicilioCents: 5_900_00, sucursalCents: 4_248_00, days: "2 a 3" },

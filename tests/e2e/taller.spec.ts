@@ -587,26 +587,41 @@ test("tienda y pagos: datos de envío para Andreani (paquete, origen y remitente
   await login(page);
   await page.goto("/taller/tienda");
   await ready(page);
-  const box = page.locator("#envios");
-  await expect(box).toContainText(/Andreani/);
-  await box.getByLabel("Calle").fill("");
-  await box.getByRole("button", { name: "Guardar datos de envío" }).click();
-  await expect(box.locator(".field-error")).toContainText("Poné la calle");
+  // lo que tenía Gaby vuelve al final, aunque el test falle (corre sobre la base local de todos los días)
+  const API = "http://localhost:4000";
+  const before = (await (await page.request.get(`${API}/admin/shipping`)).json()).settings;
+  try {
+    const box = page.locator("#envios");
+    await expect(box).toContainText(/Andreani/);
+    await box.getByLabel("Calle").fill("");
+    await box.getByRole("button", { name: "Guardar datos de envío" }).click();
+    await expect(box.locator(".field-error")).toContainText("Poné la calle");
 
-  await box.getByLabel("Paquete por defecto").selectOption("caja_chica");
-  await box.getByLabel("Calle").fill("Gurruchaga");
-  await box.getByLabel("Altura").fill("1234");
-  await box.getByLabel("Código postal").fill("1414");
-  await box.getByLabel("Localidad").fill("CABA");
-  await box.getByLabel("Teléfono").fill("1155551234");
-  await box.getByLabel("Email").fill("hola@minigalu.com.ar");
-  await box.getByRole("button", { name: "Guardar datos de envío" }).click();
-  await expect(page.locator("#toast")).toContainText("Datos de envío guardados");
+    await box.getByLabel("Paquete por defecto").selectOption("caja_chica");
+    await box.getByLabel("Calle").fill("Gurruchaga");
+    await box.getByLabel("Altura").fill("1234");
+    await box.getByLabel("Código postal").fill("1414");
+    await box.getByLabel("Localidad").fill("CABA");
+    await box.getByLabel("Teléfono").fill("1155551234");
+    await box.getByLabel("Email").fill("hola@minigalu.com.ar");
+    await box.getByRole("button", { name: "Guardar datos de envío" }).click();
+    await expect(page.locator("#toast")).toContainText("Datos de envío guardados");
 
-  await page.reload();
-  await ready(page);
-  await expect(page.locator("#envios").getByLabel("Calle")).toHaveValue("Gurruchaga");
-  await expect(page.locator("#envios").getByLabel("Paquete por defecto")).toHaveValue("caja_chica");
+    await page.reload();
+    await ready(page);
+    await expect(page.locator("#envios").getByLabel("Calle")).toHaveValue("Gurruchaga");
+    await expect(page.locator("#envios").getByLabel("Paquete por defecto")).toHaveValue("caja_chica");
+  } finally {
+    if (before)
+      expect(
+        (
+          await page.request.put(`${API}/admin/shipping`, {
+            data: before,
+            headers: { origin: "http://localhost:3000" },
+          })
+        ).ok(),
+      ).toBe(true);
+  }
 });
 
 test("automatizaciones: el pago queda en el registro, se pausa una regla y se edita un mensaje", async ({
@@ -631,6 +646,12 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
   await page.locator('[data-rule="despachado"]').getByLabel("Activar Despachado").check();
   await expect(page.locator("#toast")).toContainText("Activada");
 
+  const API = "http://localhost:4000";
+  const headers = { origin: "http://localhost:3000" };
+  const rules: { key: string; message: string | null }[] = (
+    await (await page.request.get(`${API}/admin/automations`)).json()
+  ).rules;
+  const original = rules.find((r) => r.key === "listo_retirar")?.message;
   await page.locator('[data-rule="listo_retirar"]').getByRole("button", { name: "Editar mensaje" }).click();
   const modal = page.getByRole("dialog", { name: "Editar mensaje" });
   await modal.getByLabel("Mensaje").fill("Hola ! Ya podés pasar.");
@@ -644,6 +665,14 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
     .getByRole("button", { name: "Enviar prueba" })
     .click();
   await expect(page.locator("#toast")).toContainText("mensajes de prueba");
+
+  // el mensaje de Gaby vuelve a ser el que era
+  if (original)
+    expect(
+      (
+        await page.request.patch(`${API}/admin/automations/listo_retirar`, { data: { message: original }, headers })
+      ).ok(),
+    ).toBe(true);
 });
 
 test("clientes: la cuenta con su nena aparece con el cumple cerca y la nota queda guardada", async ({

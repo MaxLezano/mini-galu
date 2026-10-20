@@ -197,7 +197,14 @@ await db.transaction(async (tx) => {
     })),
   );
 
-  await tx.insert(s.contentBlocks).values({ key: "home", value: data.home });
+  // Tienda y pagos tal como la configuró Gaby: es la base de cada `pnpm db:reset`
+  await tx
+    .insert(s.contentBlocks)
+    .values([
+      { key: "home", value: data.home },
+      { key: "shipping", value: data.shippingSettings },
+      ...Object.entries(data.helpPages).map(([topic, value]) => ({ key: `help.${topic}`, value })),
+    ]);
 
   // charlas demo con Galú: se vuelven a crear (con sus mensajes) relativas a ahora
   const seededAt = Date.now();

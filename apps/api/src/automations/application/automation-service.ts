@@ -44,7 +44,7 @@ export type AutomationLinks = {
   /** La bolsa de la cuenta (pasa por ingresar si no hay sesión). */
   bag: string;
   site: string;
-  /** "Villa Crespo, CABA" */
+  /** "San Miguel de Tucumán, Tucumán" */
   workshop: string;
   /** Donde se reseñan las prendas del pedido (con su token, sin cuenta). */
   review: (orderNumber: string, token: string) => string;

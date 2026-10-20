@@ -11,7 +11,7 @@ test("ayuda: del pie a términos y entre páginas, con el índice del tema", asy
     .getByRole("link", { name: "Envíos y pagos" })
     .click();
   await expect(page).toHaveURL(/\/ayuda\/envios-y-pagos$/);
-  await expect(page.locator(".lead")).toContainText(/Envío gratis desde \$\s?90\.000/);
+  await expect(page.locator(".lead")).toContainText("Andreani");
   await expect(page.getByRole("heading", { name: "Medios de pago" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Preguntale a Galú" })).toBeVisible();
 
@@ -29,6 +29,12 @@ test("ayuda: editar una página en el panel se ve en la tienda y vuelve al texto
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller\/tienda/);
   await expect(page.locator("body.adm-body")).toBeAttached();
+
+  // si Gaby ya la había escrito, al final vuelve su texto (no el de base)
+  const API = "http://localhost:4000";
+  const pages: { topic: string; updatedAt: string | null; title: string; intro: string; sections: unknown[] }[] =
+    await (await page.request.get(`${API}/admin/content/help`)).json();
+  const saved = pages.find((p) => p.topic === topic);
 
   const box = page.locator("#ayuda");
   await box.getByRole("button", { name: tab, exact: true }).click();
@@ -51,4 +57,13 @@ test("ayuda: editar una página en el panel se ve en la tienda y vuelve al texto
   await expect(box.locator(".pill-status")).toHaveText("Texto de base");
   await shop.reload();
   await expect(shop.locator("#apartado-e2e")).toHaveCount(0);
+
+  if (saved?.updatedAt) {
+    const { title, intro, sections } = saved;
+    const r = await page.request.put(`${API}/admin/content/help/${topic}`, {
+      data: { title, intro, sections },
+      headers: { origin: "http://localhost:3000" },
+    });
+    expect(r.ok()).toBe(true);
+  }
 });

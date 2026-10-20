@@ -15,7 +15,7 @@ export class OrderShipping implements ShippableOrders {
     private readonly orders: AdminOrderRepository & { findById(id: string): Promise<OrderRecord | null> },
     private readonly storage: ImageStorage,
     private readonly events: EventBus,
-    /** "Villa Crespo, CABA" */
+    /** "San Miguel de Tucumán, Tucumán" */
     private readonly workshop: string,
   ) {}
 

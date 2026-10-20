@@ -5,7 +5,7 @@
  *
  * ⚠️ DEMO: reseñas, anotadas a listas de espera y al lanzamiento son de ejemplo para poder ver el panel con datos.
  */
-import type { HomeBlock, Measures, Occasion, Size } from "@mini-galu/contracts";
+import type { HelpPageInput, HomeBlock, Measures, Occasion, ShippingSettings, Size } from "@mini-galu/contracts";
 
 export type SeedCollection = { slug: string; name: string; label: string; tagline: string; cover: string };
 
@@ -389,7 +389,6 @@ export const home: HomeBlock = {
     "Pagás en cuotas con Mercado Pago",
     "Diseños propios, bordados a mano",
     "Talles 12 meses a 10 años",
-    "Envío gratis desde $90.000",
   ],
   hero: {
     eyebrow: "Otoño · Invierno 26",
@@ -546,3 +545,59 @@ export const demoConversations: {
     ],
   },
 ];
+
+/**
+ * Tienda y pagos → Envíos, como lo dejó Gaby (origen de los paquetes y remitente de las etiquetas de Andreani).
+ * Las políticas (cambios, envío gratis, formas de entrega, tarifas y horarios) son `DEFAULT_POLICIES` de contracts.
+ */
+export const shippingSettings: ShippingSettings = {
+  origin: {
+    city: "San Miguel de Tucumán",
+    unit: "3 / C",
+    number: "580",
+    street: "Laprida",
+    province: "Tucumán",
+    postalCode: "4000",
+  },
+  sender: {
+    name: "Mini Galú",
+    email: "mini.galu.store@gmail.com",
+    phone: "3813195264",
+    taxId: null,
+  },
+  package: "caja_chica",
+};
+
+/** Páginas de ayuda que Gaby escribió distinto del texto de base (las demás salen de `content/domain/help.ts`). */
+export const helpPages: Partial<Record<string, HelpPageInput>> = {
+  terminos: {
+    intro: "Las condiciones para comprar en la tienda online de Mini Galú.",
+    title: "Términos y condiciones",
+    sections: [
+      {
+        body: "Mini Galú es una marca de prendas de diseño para niñas, de 12 meses a talle 10, hechas en nuestro taller de San Miguel de Tucumán (Tucumán). Al comprar en esta web aceptás estas condiciones.",
+        title: "Quiénes somos",
+      },
+      {
+        body: "- Los precios están en pesos argentinos y son los que ves al confirmar el pedido.\n- Vendemos solo prendas con stock. Una compra queda confirmada cuando Mercado Pago aprueba el pago.\n- Las fotos muestran las prendas reales; el color puede variar un poco según la pantalla.",
+        title: "Precios y stock",
+      },
+      {
+        body: "Los pagos se procesan con Mercado Pago. Mini Galú no ve ni guarda los datos de tu tarjeta.",
+        title: "Pagos",
+      },
+      {
+        body: "Las gift cards valen 2 meses desde que se activan. Se usan en la tienda online o en el taller, en una o varias compras, hasta agotar el saldo.",
+        title: "Gift cards",
+      },
+      {
+        body: "Están explicados en la página de Cambios y devoluciones.",
+        title: "Cambios y devoluciones",
+      },
+      {
+        body: "Para cualquier consulta o reclamo escribinos a hola@minigalu.com.ar.",
+        title: "Contacto y reclamos",
+      },
+    ],
+  },
+};

@@ -17,7 +17,7 @@ export type PublicTracking = {
   paidAt: string | null;
   totalCents: Cents;
   items: { slug: string; name: string; size: string; qty: number; imageUrl: string }[];
-  /** "El taller · Villa Crespo, CABA" · "Sucursal Andreani · Rosario" · "Palermo, CABA" (sin la calle). */
+  /** "El taller · San Miguel de Tucumán, Tucumán" · "Sucursal Andreani · Rosario" · "Palermo, CABA" (sin la calle). */
   destination: string;
   /** Nombre e inicial del apellido ("Lucía F."): la página es pública. */
   recipient: string;

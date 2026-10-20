@@ -2,6 +2,7 @@ import { formatARS, type OrderReceipt, PAYMENT_METHODS } from "@mini-galu/contra
 import { CalendarHeart, Clock, Gift, House, Mail, PackageSearch, Scissors, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { SITE } from "@/lib/site";
 import { Foco } from "@/ui/atoms/Foco";
 
 const COLORS = ["#E8C6BF", "#A95E3A", "#8B9A7C", "#A3302B", "#EADFD0"];
@@ -66,7 +67,11 @@ export function SuccessOverlay({
     : receipt.shippingMethod === "taller"
       ? [
           { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },
-          { icon: <Store />, title: pickupLabel ?? "El día elegido", text: "Lo retirás en el taller de Villa Crespo" },
+          {
+            icon: <Store />,
+            title: pickupLabel ?? "El día elegido",
+            text: `Lo retirás en el taller de ${SITE.workshop}`,
+          },
         ]
       : [
           { icon: <Scissors />, title: "Hoy", text: "Preparamos tu pedido en el taller" },

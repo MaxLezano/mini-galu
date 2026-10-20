@@ -23,11 +23,15 @@ class MemoryHelp implements HelpRepository {
 }
 
 const factsWith = (policies: StorePolicies) => async () => ({
-  workshop: "Villa Crespo",
+  workshop: "San Miguel de Tucumán",
   email: "hola@minigalu.com.ar",
   policies,
 });
-const facts = factsWith(DEFAULT_POLICIES);
+const facts = factsWith({
+  ...DEFAULT_POLICIES,
+  exchangeDays: 30,
+  freeShipping: { enabled: true, fromCents: 90_000_00 },
+});
 const edited: HelpPageInput = {
   title: "Cambios",
   intro: "Hasta 15 días.",

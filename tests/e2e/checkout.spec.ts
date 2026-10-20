@@ -58,7 +58,7 @@ test("compra como invitada con retiro en el taller: rechazo y reintento aprobado
   const done = page.getByRole("dialog", { name: "Pago aprobado" });
   await expect(done).toContainText("¡Gracias, Lucía!");
   await expect(done).toContainText(/Pedido #MG-\d+/);
-  await expect(done).toContainText("Villa Crespo");
+  await expect(done).toContainText("San Miguel de Tucumán");
 
   // la bolsa quedó vacía
   await page.goto("/checkout");

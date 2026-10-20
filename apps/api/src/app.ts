@@ -10,6 +10,7 @@ import {
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
   pickupHoursLabel,
+  WORKSHOP_PLACE,
 } from "@mini-galu/contracts";
 import { createDb, eq, schema } from "@mini-galu/db";
 import { Hono } from "hono";
@@ -328,7 +329,7 @@ export function buildApp(config: Config) {
       ? new AndreaniGateway(andreani, config.andreani)
       : new FakeAndreani(undefined, config.fakeAndreaniSpeed),
     new DrizzleShipmentRepository(db),
-    new OrderShipping(orders, storage, events, `${WORKSHOP}, CABA`),
+    new OrderShipping(orders, storage, events, WORKSHOP_PLACE),
     (number, token) => config.webOrigin + payPath(number, token),
     shippingSettings,
     config.branches,
@@ -493,7 +494,7 @@ export function buildApp(config: Config) {
       // con sesión, ingresar pasa directo al checkout con la bolsa de la cuenta
       bag: `${config.webOrigin}/ingresar?volver=%2Fcheckout`,
       site: config.webOrigin,
-      workshop: `${WORKSHOP}, CABA`,
+      workshop: WORKSHOP_PLACE,
       review: (n, t) => `${config.webOrigin}${reviewPath(n, t)}`,
     },
   );
@@ -643,7 +644,7 @@ export function buildApp(config: Config) {
       const p = await policies.get();
       const free = freeShippingFrom(p);
       return {
-        workshop: WORKSHOP,
+        workshop: WORKSHOP_PLACE,
         freeShippingFrom: free === null ? null : formatARS(free),
         exchangeDays: p.exchangeDays,
         pickup: p.methods.taller ? pickupHoursLabel(p) : null,

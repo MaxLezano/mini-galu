@@ -32,13 +32,13 @@ describe("políticas de la tienda", () => {
     expect(q.sucursal.cents).toBe(4_248_00);
   });
 
-  it("el envío gratis se puede apagar", () => {
-    expect(qualifiesForFreeShipping(DEFAULT_POLICIES, 90_000_00)).toBe(true);
-    expect(qualifiesForFreeShipping(DEFAULT_POLICIES, 89_999_00)).toBe(false);
-    const off = with_({ freeShipping: { enabled: false, fromCents: 90_000_00 } });
-    expect(qualifiesForFreeShipping(off, 500_000_00)).toBe(false);
-    expect(freeShippingLabel(off)).toBeNull();
-    expect(freeShippingLabel(DEFAULT_POLICIES)).toBe("Envío gratis desde $90.000");
+  it("el envío gratis se puede apagar (en la base está apagado)", () => {
+    const on = with_({ freeShipping: { enabled: true, fromCents: 90_000_00 } });
+    expect(qualifiesForFreeShipping(on, 90_000_00)).toBe(true);
+    expect(qualifiesForFreeShipping(on, 89_999_00)).toBe(false);
+    expect(freeShippingLabel(on)).toBe("Envío gratis desde $90.000");
+    expect(qualifiesForFreeShipping(DEFAULT_POLICIES, 500_000_00)).toBe(false);
+    expect(freeShippingLabel(DEFAULT_POLICIES)).toBeNull();
   });
 
   it("pide al menos una forma de entrega y horarios si hay retiro", () => {

@@ -6,13 +6,14 @@ import {
   type ShippingMethod,
   type ShippingOption,
   type ShippingOptions,
+  WORKSHOP as WORKSHOP_AT,
 } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
 import { branchAddress, branchesFor, branchName } from "../domain/branches";
 import { isValidSlot, pickupSlots } from "../domain/pickup";
 import type { BranchDirectory, PoliciesReader, ShippingRates } from "./ports";
 
-export const WORKSHOP = "Villa Crespo";
+export const WORKSHOP = WORKSHOP_AT.city;
 
 export class ShippingService {
   constructor(

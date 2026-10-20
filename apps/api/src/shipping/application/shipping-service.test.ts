@@ -7,7 +7,8 @@ import { ShippingService } from "./shipping-service";
 const clock = () => new Date("2026-10-09T15:00:00Z");
 
 function service(over: Partial<StorePolicies> = {}) {
-  const p = { ...DEFAULT_POLICIES, ...over };
+  // con envío gratis desde $90.000 (en la base de la tienda está apagado)
+  const p = { ...DEFAULT_POLICIES, freeShipping: { enabled: true, fromCents: 90_000_00 }, ...over };
   const policies = { get: async () => p };
   return new ShippingService(new TableShippingRates(policies), clock, null, policies);
 }

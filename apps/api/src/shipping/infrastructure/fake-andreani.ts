@@ -1,3 +1,4 @@
+import { WORKSHOP_PLACE } from "@mini-galu/contracts";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import type { NewShipment, ShippingGateway } from "../application/ports";
 import type { CarrierCode, CarrierEvent } from "../domain/tracking";
@@ -7,14 +8,14 @@ const HOUR = 3_600_000;
 /** Recorrido simulado: horas desde que se generó la etiqueta (como el mockup de seguimiento). */
 const TIMELINE: Record<"domicilio" | "sucursal", [number, CarrierCode, string, string][]> = {
   domicilio: [
-    [4, "picked_up", "Retirado por Andreani", "Villa Crespo, CABA"],
+    [4, "picked_up", "Retirado por Andreani", WORKSHOP_PLACE],
     [7, "hub", "Ingresó al centro de distribución", "Benavídez, Buenos Aires"],
     [18, "in_transit", "En tránsito hacia la sucursal de destino", "Centro de distribución Benavídez"],
     [44, "out_for_delivery", "Salió a reparto", "Sucursal de destino"],
     [50, "delivered", "Entregado", "Recibió el destinatario"],
   ],
   sucursal: [
-    [4, "picked_up", "Retirado por Andreani", "Villa Crespo, CABA"],
+    [4, "picked_up", "Retirado por Andreani", WORKSHOP_PLACE],
     [7, "hub", "Ingresó al centro de distribución", "Benavídez, Buenos Aires"],
     [18, "in_transit", "En tránsito hacia la sucursal de destino", "Centro de distribución Benavídez"],
     [40, "at_branch", "Listo para retirar en la sucursal", "Sucursal Andreani"],
@@ -93,7 +94,7 @@ export async function shippingLabel(trackingNumber: string, s: NewShipment): Pro
   rule();
   line("REMITENTE", 7.5, bold);
   line("Mini Galú · Taller", 10);
-  line("Villa Crespo, CABA", 10, regular, 6);
+  line(WORKSHOP_PLACE, 10, regular, 6);
   rule();
   line("DESTINATARIO", 7.5, bold);
   line(s.recipient.name, 13, bold, 6);

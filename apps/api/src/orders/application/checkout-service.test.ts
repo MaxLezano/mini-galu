@@ -1,4 +1,4 @@
-import { type PlaceOrderInput, PlaceOrderInputSchema } from "@mini-galu/contracts";
+import { DEFAULT_POLICIES, type PlaceOrderInput, PlaceOrderInputSchema } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CartService } from "../../cart/application/cart-service";
 import { MemoryCarts, MemoryVariants, variant } from "../../cart/testing/in-memory";
@@ -13,6 +13,9 @@ import { TableShippingRates } from "../../shipping/infrastructure/table-shipping
 import { MemoryOrders } from "../testing/in-memory";
 import { CheckoutService } from "./checkout-service";
 import { OrderPayments } from "./order-payments";
+
+/** Con envío gratis desde $90.000 prendido (en la base de la tienda está apagado). */
+const policies = { get: async () => ({ ...DEFAULT_POLICIES, freeShipping: { enabled: true, fromCents: 90_000_00 } }) };
 
 const storage: ImageStorage = { url: (p) => `http://api/media/${p}`, save: async (p) => p };
 const guest = { token: "t1" };
@@ -54,7 +57,7 @@ beforeEach(async () => {
   const couponService = new CouponService(coupons, clock);
   checkout = new CheckoutService(
     cart,
-    new ShippingService(new TableShippingRates(), clock, new FakeBranches()),
+    new ShippingService(new TableShippingRates(policies), clock, new FakeBranches(), policies),
     couponService,
     orders,
     storage,

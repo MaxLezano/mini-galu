@@ -5,6 +5,7 @@ import {
   type HelpTopic,
   pickupHoursLabel,
   type StorePolicies,
+  WORKSHOP,
 } from "@mini-galu/contracts";
 
 /** Datos de la tienda que aparecen en los textos de base (las políticas son las del panel). */
@@ -113,7 +114,7 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
     sections: [
       {
         title: "Quiénes somos",
-        body: `Mini Galú es una marca de prendas de diseño para niñas, de 12 meses a talle 10, hechas en nuestro taller de ${f.workshop} (CABA). Al comprar en esta web aceptás estas condiciones.`,
+        body: `Mini Galú es una marca de prendas de diseño para niñas, de 12 meses a talle 10, hechas en nuestro taller de ${f.workshop} (${WORKSHOP.province}). Al comprar en esta web aceptás estas condiciones.`,
       },
       {
         title: "Precios y stock",

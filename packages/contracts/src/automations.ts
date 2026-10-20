@@ -138,7 +138,7 @@ export const AUTOMATION_SAMPLE: Record<string, string> = {
   link_bolsa: "minigalu.com.ar/checkout",
   nena: "Olivia",
   link_catalogo: "minigalu.com.ar/catalogo?talle=6",
-  taller: "Villa Crespo",
+  taller: "San Miguel de Tucumán",
   horario: "Te esperamos el Jue 8 · 10 a 13 h.",
   lanzamiento: "Otoño en el taller",
   hora: "19 h",

@@ -16,6 +16,7 @@ describe("policies-form", () => {
     const r = fromForm({
       ...f,
       exchangeDays: "15",
+      freeEnabled: true,
       freeFrom: "$120000",
       rates: { ...f.rates, amba: { domicilio: "6.500", sucursal: "4500", days: "1 a 2" } },
       pickup: ["", "9-12", "", "", "", "", ""],

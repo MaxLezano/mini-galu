@@ -1,3 +1,5 @@
+import { WORKSHOP } from "@mini-galu/contracts";
+
 /** Datos de contacto del taller (mockups: app.js). */
 export const SITE = {
   name: "Mini Galú",
@@ -8,5 +10,5 @@ export const SITE = {
   instagram: "https://www.instagram.com/minigalumodainfantil/",
   instagramHandle: "@minigalumodainfantil",
   email: "hola@minigalu.com.ar",
-  workshop: "Villa Crespo",
+  workshop: WORKSHOP.city,
 } as const;

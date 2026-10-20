@@ -30,6 +30,7 @@ import { toast } from "@/features/shell/ui-store";
 import { adminApi } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api";
 import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
+import { SITE } from "@/lib/site";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { ActionIcon } from "../components/OrderCard";
@@ -345,7 +346,9 @@ export function OrderDrawer({ number, onChanged, onWhatsApp, onClose }: Props) {
                   {o.shippingMethod === "taller" ? (
                     <>
                       <dt>Retira</dt>
-                      <dd>{o.pickupLabel ?? "A coordinar"} · taller de Villa Crespo</dd>
+                      <dd>
+                        {o.pickupLabel ?? "A coordinar"} · taller de {SITE.workshop}
+                      </dd>
                     </>
                   ) : a ? (
                     <>
