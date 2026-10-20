@@ -429,14 +429,17 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   - **Páginas de ayuda con variables** (`{dias_cambio}`, `{meses_gift_card}`, `{email}`, `{whatsapp}`, `{taller}`,
     `{provincia}`, `{horario_retiro}`): el panel muestra la variable y la tienda el valor de ese momento.
   - "Tienda y pagos" como la dejó Gaby es la base del seed; los e2e que tocan ajustes devuelven lo que había.
-- ⏳ **Galú sin IA, más completo** (sin modelo por costo: la tienda responde por reglas, `galu-engine.tsx`).
-  - Hoy entiende una docena de temas (pedido y seguimiento, envíos, cuotas y pagos, precio, regalo, ocasión,
-    talles, presupuesto, gift card, a medida y saludo) y consulta el catálogo y el stock reales.
-  - Lo que Gaby responde en "Enseñale" solo lo usa con un modelo.
-  - La idea: una biblioteca de preguntas y respuestas sobre la tienda y el catálogo, editable desde el panel, que
-    también use lo enseñado sin modelo.
-  - Sumar más temas que consulten prendas y stock (colores, telas y cuidados, colecciones, novedades, qué hay en un
-    talle, cambios y retiro).
+- ✅ **Galú sin IA, más completo** (sin modelo por costo: la tienda responde por reglas, `galu-engine.tsx`).
+  - **Lo enseñado responde sin modelo**: antes que las reglas, la tienda pregunta `GET /assistant/taught?q=…` y la
+    API busca en lo que Gaby enseñó (`matchTaught`: la misma pregunta escrita distinto o una con casi todas sus
+    palabras, sin plurales ni relleno; si nada se parece lo suficiente, siguen las reglas). Las respuestas pueden
+    llevar `{whatsapp}`, `{email}`, `{dias_cambio}`, `{horario_retiro}`… (las de ayuda), también con modelo.
+  - **Biblioteca editable**: en "Lo que ya sabe" cada respuesta se corrige (lápiz → "Corregí la respuesta") o se
+    olvida; si la pregunta cambia y estaba pendiente, deja de estarlo.
+  - **Temas nuevos con el catálogo y Tienda y pagos**: telas y cuidados (de la prenda que se mira, con los cuidados de
+    la ficha, o las telas del catálogo), colores reales del catálogo, colecciones, lo más nuevo, cambios de talle
+    (días de Tienda y pagos + ayuda) y retiro en el taller (horarios). Todo filtra por talle si se lo dicen.
+    "Rojo" o "bordado" ya no se toman como el nombre de una prenda.
   - Lo que siga sin saber va a "Enseñale" como hasta ahora.
 
 ## Ideas para después (de IDEAS.md)

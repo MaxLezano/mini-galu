@@ -137,6 +137,11 @@ export const adminApi = {
     adminRequest<AdminAssistant>("/admin/assistant/settings", { method: "PUT", body: JSON.stringify(s) }),
   teachAssistant: (f: AssistantFactInput) =>
     adminRequest<AdminAssistant>("/admin/assistant/facts", { method: "POST", body: JSON.stringify(f) }),
+  editAssistantFact: (id: string, f: AssistantFactInput) =>
+    adminRequest<AdminAssistant>(`/admin/assistant/facts/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(f),
+    }),
   forgetAssistantFact: (id: string) =>
     adminRequest<AdminAssistant>(`/admin/assistant/facts/${encodeURIComponent(id)}`, { method: "DELETE" }),
   customers: () => adminRequest<AdminCustomers>("/admin/customers"),

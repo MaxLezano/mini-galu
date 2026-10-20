@@ -23,7 +23,8 @@
 @media (max-width: 800px) { .gl { grid-template-columns: 1fr; } }
 
 /* agregados: lo enseñado (se puede borrar), otras preguntas pendientes, lo que no supo, vacíos */
-.facts .taught { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+.facts .taught { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.facts .taught.is-editing { box-shadow: 0 0 0 2px var(--rosa); }
 .facts .taught p { margin: 2px 0 0; color: var(--cacao-2); }
 .facts .taught .icon-btn { width: 28px; height: 28px; margin: -4px -4px 0 0; }
 .facts .taught .icon-btn svg { color: var(--cacao-2); margin: 0; }

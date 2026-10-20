@@ -10,8 +10,10 @@ import {
   ORDER_STATUSES,
   type ProductSummary,
   type PublicTracking,
+  pickupHoursLabel,
   type Size,
   type StorePolicies,
+  sizeLabel,
   whatsappUrl,
 } from "@mini-galu/contracts";
 import Link from "next/link";
@@ -111,6 +113,14 @@ export function orderUnavailable(code: string): GaluReply[] {
   return [text(<>Ahora no puedo buscarlo. Probá en {trackLink(code, "Seguir mi pedido")} en un ratito.</>)];
 }
 
+/** Lo que Gaby le enseñó desde el panel ("Enseñale"): sin modelo, responde antes que las reglas. */
+export function taughtReply(answer: string): GaluReply[] {
+  return [text(<span style={{ whiteSpace: "pre-line" }}>{answer}</span>)];
+}
+
+/** Los cuidados de una prenda (`care` de la ficha; null si no se pudo consultar). */
+export type CareLookup = (slug: string) => Promise<string | null>;
+
 /** Plan de cuotas real de Mercado Pago para un monto (null si no responde: no se promete nada). */
 export type InstallmentsLookup = (cents: number) => Promise<InstallmentPlan | null>;
 
@@ -135,6 +145,12 @@ function cuotasFor(p: ProductSummary, plan: InstallmentPlan | null): ReactNode {
   return " Con tarjeta de crédito va en un pago.";
 }
 
+/** Lo mismo sin repetir, en el orden en que aparece. */
+const unique = <T,>(l: T[]) => [...new Set(l)];
+
+/** "lino, algodón y gabardina". */
+const joinAnd = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(", ")} y ${l[l.length - 1]}` : (l[0] ?? ""));
+
 /** Edad → talle (talle 4 ≈ 4 años; los impares suben al par siguiente). */
 const ageToSize = (age: number): Size =>
   age <= 1 ? "12m" : (String(Math.max(2, Math.min(10, age + (age % 2)))) as Size);
@@ -145,18 +161,48 @@ export async function answer(
   ctx: ProductSummary | null,
   policies: StorePolicies = DEFAULT_POLICIES,
   installments: InstallmentsLookup = async () => null,
+  care: CareLookup = async () => null,
 ): Promise<GaluReply[]> {
   const q = stripAccents(raw);
   const live = products.filter((p) => p.status === "published");
-  const named = live.find(
-    (p) => q.includes(stripAccents(p.name).split(" ").slice(-1)[0] ?? "") || q.includes(p.slug.split("-")[0] ?? ""),
-  );
+  const colors = unique(live.map((p) => stripAccents(p.color.name)));
+  // la última palabra nombra la prenda ("el Samanta"), salvo un color ("rojo") o una que comparten ("bordado")
+  const lastWord = (p: ProductSummary) => stripAccents(p.name).split(" ").slice(-1)[0] ?? "";
+  const lasts = live.map(lastWord);
+  const named = live.find((p) => {
+    const last = lastWord(p);
+    const names = last.length > 2 && !colors.includes(last) && lasts.indexOf(last) === lasts.lastIndexOf(last);
+    return q.includes(stripAccents(p.name)) || (names && q.includes(last)) || q.includes(p.slug.split("-")[0] ?? "");
+  });
   const m = q.match(/talle\s*(12\s?m\b|\d{1,2})|(\d{1,2})\s*anos?/);
   const size: Size | null = m ? (m[1] ? (m[1].replace(/\s/g, "") as Size) : ageToSize(Number(m[2]))) : null;
   const validSize = size && (GARMENT_SIZES as readonly string[]).includes(size) ? size : null;
   const target = named ?? (/(este|esta|el vestido|lo tenes|viene|cuanto sale|hay talle)/.test(q) ? ctx : null);
 
-  if (/pedido|seguimiento|llega|andreani|donde esta|mi compra/.test(q) && !/cuanto|costo|sale el envio/.test(q)) {
+  const inSize = (p: ProductSummary) => totalStock(p) > 0 && (!validSize || stockOf(p, validSize) > 0);
+  const forSize = validSize ? ` en talle ${sizeLabel(validSize)}` : "";
+
+  if (/cambi(o|ar|an)|devol|no le (queda|va)|le (queda|quedo|vino) (chico|grande)|otro talle/.test(q)) {
+    const days = policies.exchangeDays === 1 ? "1 día" : `${policies.exchangeDays} días`;
+    return [
+      text(
+        <>
+          Si el talle no fue el justo, lo cambiamos: tenés <b>{days}</b> desde que recibís el pedido, con la prenda sin
+          uso y con su etiqueta. {WA(policies.contact.whatsapp, "Escribile a Gaby")} con tu número de pedido y el talle
+          que querés.{" "}
+          <Link className="link" href="/ayuda/cambios">
+            Cambios y devoluciones
+          </Link>
+        </>,
+      ),
+    ];
+  }
+  const news = /nuev[oa]s?|novedad|lo ultimo|recien llegad/.test(q) && !/pedido|compra/.test(q);
+  if (
+    !news &&
+    /pedido|seguimiento|llega|andreani|donde esta|mi compra/.test(q) &&
+    !/cuanto|costo|sale el envio/.test(q)
+  ) {
     return [
       text(
         <>
@@ -189,6 +235,23 @@ export async function answer(
       ),
     ];
   }
+  if (/retir|pasar a buscar|ir a buscar|donde (queda|estan)|ubicad|direccion|horario|local\b|showroom/.test(q)) {
+    return [
+      text(
+        policies.methods.taller ? (
+          <>
+            Podés <b>retirar gratis en el taller</b>, en {policies.workshop.city}: al finalizar la compra elegís el día
+            y el horario ({pickupHoursLabel(policies)}).
+          </>
+        ) : (
+          <>
+            Por ahora no tenemos retiro en el taller. {deliverySummary(policies)} Si necesitás otra cosa,{" "}
+            {WA(policies.contact.whatsapp, "escribile a Gaby")}.
+          </>
+        ),
+      ),
+    ];
+  }
   const cuotas = /cuotas/.test(q) ? (target ?? ctx) : null;
   if (cuotas) {
     return [
@@ -207,6 +270,52 @@ export async function answer(
         <>
           Pagás con <b>Mercado Pago</b> sin salir de la web: <b>tarjeta de crédito</b> (en cuotas: al cargar la tarjeta
           ves los planes de tu banco), <b>débito</b> o <b>dinero en cuenta</b>.
+        </>,
+      ),
+    ];
+  }
+  if (
+    /tela|lava|cuidad|planch|secar|material|tejid|algodon|lino|gabardina|\bpana\b|plumeti|puntilla|encog|destin/.test(q)
+  ) {
+    const about = target ?? ctx;
+    if (about) {
+      const how = await care(about.slug);
+      return [
+        text(
+          <>
+            El <b>{about.name}</b> es de <b>{about.fabric.toLowerCase()}</b>.{" "}
+            {how ? `Cuidados: ${how}` : "Los cuidados están en la ficha de la prenda."}
+          </>,
+        ),
+        ...cards([about]),
+      ];
+    }
+    const fabrics = unique(live.map((p) => p.fabric.toLowerCase()));
+    const asked = unique(fabrics.flatMap((f) => stripAccents(f).split(" "))).find((w) => w.length > 3 && q.includes(w));
+    if (asked) {
+      const list = live.filter((p) => stripAccents(p.fabric).includes(asked) && inSize(p));
+      return [
+        text(
+          list.length ? (
+            <>
+              En <b>{asked}</b>
+              {forSize} tengo estos:
+            </>
+          ) : (
+            <>
+              En {asked}
+              {forSize} no me queda nada ahora. ¿Te muestro otra tela?
+            </>
+          ),
+        ),
+        ...cards(list.slice(0, 4), validSize ?? undefined),
+      ];
+    }
+    return [
+      text(
+        <>
+          Trabajamos con <b>{joinAnd(fabrics)}</b>. Cada ficha dice la tela y cómo cuidarla: decime qué prenda te gusta
+          y te cuento.
         </>,
       ),
     ];
@@ -319,6 +428,90 @@ export async function answer(
       ...cards(list.slice(0, 4), validSize ?? undefined),
     ];
   }
+  if (news) {
+    const list = live.filter(inSize).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return [
+      text(list.length ? `Lo más nuevo del taller${forSize}:` : `Todavía no llegó nada nuevo${forSize}.`),
+      ...cards(list.slice(0, 4), validSize ?? undefined),
+    ];
+  }
+  const collections = unique(live.map((p) => p.collection.slug)).flatMap((slug) => {
+    const c = live.find((p) => p.collection.slug === slug)?.collection;
+    return c ? [c] : [];
+  });
+  // "Otoño · Invierno 26" se nombra "otoño invierno": alcanzan sus palabras (sin el año)
+  const collection = collections.find((c) => {
+    const words = stripAccents(c.name).match(/[a-z]{4,}/g) ?? [];
+    return words.length > 0 && words.every((w) => q.includes(w));
+  });
+  if (collection || /coleccion|temporada/.test(q)) {
+    if (!collection)
+      return [
+        text(
+          <>
+            Ahora están{" "}
+            {collections.map((c, i) => (
+              <span key={c.slug}>
+                {i ? (i === collections.length - 1 ? " y " : ", ") : null}
+                <Link className="link" href={`/catalogo?col=${c.slug}`}>
+                  {c.name}
+                </Link>
+              </span>
+            ))}
+            . ¿Cuál te muestro?
+          </>,
+        ),
+      ];
+    const list = live.filter((p) => p.collection.slug === collection.slug && inSize(p));
+    return [
+      text(
+        <>
+          {list.length ? (
+            <>
+              De <b>{collection.name}</b>
+              {forSize} tengo estos.{" "}
+            </>
+          ) : (
+            <>
+              De <b>{collection.name}</b> no me queda nada{forSize} ahora.{" "}
+            </>
+          )}
+          <Link className="link" href={`/catalogo?col=${collection.slug}`}>
+            Ver la colección
+          </Link>
+        </>,
+      ),
+      ...cards(list.slice(0, 4), validSize ?? undefined),
+    ];
+  }
+  // "verde" también trae el salvia
+  const color = colors.find((c) => q.includes(c)) ?? (/verde/.test(q) ? "verde" : null);
+  if (color || /colores|que color/.test(q)) {
+    if (!color)
+      return [
+        text(
+          <>
+            Ahora hay en <b>{joinAnd(colors)}</b>. ¿Cuál te gusta?
+          </>,
+        ),
+      ];
+    const list = live.filter(
+      (p) => (stripAccents(p.color.name) === color || (color === "verde" && p.color.name === "Salvia")) && inSize(p),
+    );
+    return [
+      text(
+        list.length ? (
+          <>
+            En <b>{color}</b>
+            {forSize} tengo estos:
+          </>
+        ) : (
+          `En ${color} no me queda nada${forSize} ahora. ¿Te muestro otro color?`
+        ),
+      ),
+      ...cards(list.slice(0, 4), validSize ?? undefined),
+    ];
+  }
   if (validSize) {
     const list = live.filter((p) => stockOf(p, validSize) > 0);
     return [
@@ -352,20 +545,6 @@ export async function answer(
           <b>edad</b> o la <b>altura</b> de la nena y te digo cuál le va.
         </>,
       ),
-    ];
-  }
-  const color = ["rojo", "blanco", "salvia", "verde", "beige", "crema"].find((c) => q.includes(c));
-  if (color) {
-    const list = live.filter(
-      (p) => stripAccents(p.color.name).includes(color) || (color === "verde" && p.color.name === "Salvia"),
-    );
-    return [
-      text(
-        <>
-          En <b>{color}</b> tengo estos:
-        </>,
-      ),
-      ...cards(list),
     ];
   }
   if (/barato|economico|menos de|presupuesto|oferta|descuento/.test(q)) {
@@ -410,8 +589,8 @@ export async function answer(
       unanswered: true,
       content: (
         <>
-          Eso todavía no lo sé. Puedo ayudarte con <b>talles, stock, precios, envíos</b> o a <b>elegir un look</b>. Para
-          otras consultas, {WA(policies.contact.whatsapp)}.
+          Eso todavía no lo sé. Puedo ayudarte con <b>talles, stock, precios, telas, envíos y cambios</b> o a{" "}
+          <b>elegir un look</b>. Para otras consultas, {WA(policies.contact.whatsapp)}.
         </>
       ),
     },

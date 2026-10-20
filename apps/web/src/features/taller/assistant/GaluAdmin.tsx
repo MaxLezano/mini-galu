@@ -30,6 +30,8 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
   const [question, setQuestion] = useState(initial.pending[0]?.question ?? "");
   const [free, setFree] = useState(!initial.pending.length);
   const [answer, setAnswer] = useState("");
+  // la respuesta enseñada que se está corrigiendo (null: se enseña una nueva)
+  const [editing, setEditing] = useState<AssistantFact | null>(null);
   const answerRef = useRef<HTMLTextAreaElement>(null);
   const mounted = useMounted();
   const when = (iso: string) => (mounted ? relativeWhen(iso) : "");
@@ -53,25 +55,46 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
   };
 
   const chooseQuestion = (q: string, isFree: boolean) => {
+    setEditing(null);
     setQuestion(q);
     setFree(isFree);
+  };
+
+  const afterSave = (next: AdminAssistant) => {
+    setAnswer("");
+    chooseQuestion(next.pending[0]?.question ?? "", !next.pending.length);
+  };
+
+  const startEdit = (f: AssistantFact) => {
+    setEditing(f);
+    setQuestion(f.question);
+    setFree(true);
+    setAnswer(f.answer);
+    document.getElementById("teach")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    answerRef.current?.focus({ preventScroll: true });
   };
 
   const teach = async () => {
     if (!question.trim()) return toast("Escribí la pregunta primero");
     if (!answer.trim()) return toast("Escribí la respuesta primero");
-    const next = await save(
-      () => adminApi.teachAssistant({ question, answer }),
-      "Listo: Galú ya lo sabe",
-      "No se pudo guardar la respuesta",
-    );
-    if (!next) return;
-    setAnswer("");
-    chooseQuestion(next.pending[0]?.question ?? "", !next.pending.length);
+    const next = editing
+      ? await save(
+          () => adminApi.editAssistantFact(editing.id, { question, answer }),
+          "Listo: Galú ya lo corrigió",
+          "No se pudo guardar el cambio",
+        )
+      : await save(
+          () => adminApi.teachAssistant({ question, answer }),
+          "Listo: Galú ya lo sabe",
+          "No se pudo guardar la respuesta",
+        );
+    if (next) afterSave(next);
   };
 
-  const forget = (f: AssistantFact) =>
-    save(() => adminApi.forgetAssistantFact(f.id), "Galú lo olvidó", "No se pudo borrar");
+  const forget = async (f: AssistantFact) => {
+    const next = await save(() => adminApi.forgetAssistantFact(f.id), "Galú lo olvidó", "No se pudo borrar");
+    if (next && editing?.id === f.id) afterSave(next);
+  };
 
   const updateSettings = async (next: AssistantSettings) => {
     // el interruptor cambia al instante; si no se pudo guardar, vuelve a como estaba
@@ -94,9 +117,8 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
           </p>
           {!data.provider && (
             <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
-              <span className="pill-status st-warn">Sin modelo</span> La tienda responde por reglas: las charlas se
-              guardan igual, pero lo que le enseñes lo usa recién con un modelo (configurá{" "}
-              <code>ANTHROPIC_API_KEY</code> u <code>OLLAMA_URL</code> en la API).
+              <span className="pill-status st-warn">Sin modelo</span> La tienda responde por reglas, con el catálogo y
+              lo que le enseñes acá (aunque se lo pregunten con otras palabras). Las charlas se guardan igual.
             </p>
           )}
         </div>
@@ -167,14 +189,16 @@ export function GaluAdmin({ initial }: { initial: AdminAssistant }) {
             pending={data.pending}
             question={question}
             free={free}
+            editing={!!editing}
             answer={answer}
             busy={busy}
             answerRef={answerRef}
             onQuestion={chooseQuestion}
             onAnswer={setAnswer}
             onSave={teach}
+            onCancel={() => afterSave(data)}
           />
-          <KnowsBox facts={data.facts} busy={busy} onForget={forget} />
+          <KnowsBox facts={data.facts} busy={busy} editing={editing?.id ?? null} onEdit={startEdit} onForget={forget} />
           <SettingsBox settings={data.settings} busy={busy} onChange={updateSettings} />
         </aside>
       </div>

@@ -1,3 +1,5 @@
+import { fillVars } from "./teaching";
+
 /**
  * Galú: la charla tal como la ve cualquier modelo (Claude, Ollama o el guion de los tests).
  * El modelo no inventa datos: pide tools, la aplicación las corre sobre los casos de uso y le devuelve el resultado.
@@ -29,6 +31,8 @@ export type StoreFacts = {
   delivery: string;
   giftcardRange: string;
   whatsapp: string;
+  /** El valor de cada {variable} de Tienda y pagos ({whatsapp}, {dias_cambio}…) para lo que enseñó Gaby. */
+  vars?: Record<string, string>;
 };
 
 /**
@@ -103,7 +107,7 @@ export function systemPrompt(
     ...(taught.length
       ? [
           "Lo que te enseñó Gaby (si preguntan algo parecido, respondé con esto; vale más que lo general):",
-          ...taught.map((f) => `- "${f.question}" → ${f.answer}`),
+          ...taught.map((f) => `- "${f.question}" → ${fillVars(f.answer, facts.vars)}`),
           "",
         ]
       : []),

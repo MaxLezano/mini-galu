@@ -1,6 +1,7 @@
 import type {
   ApiError,
   AssistantRulesLog,
+  AssistantTaught,
   CardPaymentInput,
   CardPlans,
   CartItemInput,
@@ -133,6 +134,8 @@ export const api = {
     request<null>("/newsletter", { method: "POST", body: JSON.stringify({ email, source }) }),
   /** Galú por reglas: la pregunta y la respuesta quedan en el panel (`/taller/galu`). */
   galuLog: (body: AssistantRulesLog) => request<null>("/assistant/log", { method: "POST", body: JSON.stringify(body) }),
+  /** Galú por reglas: lo que le enseñó Gaby que responde la pregunta (null si nada). */
+  galuTaught: (q: string) => request<AssistantTaught>(`/assistant/taught?q=${encodeURIComponent(q)}`),
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),

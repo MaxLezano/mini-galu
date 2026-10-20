@@ -64,6 +64,7 @@ import { ContentService } from "./content/application/content-service";
 import { HelpService } from "./content/application/help-service";
 import type { ProductPublisher } from "./content/application/launch-ports";
 import { LaunchVisitsService } from "./content/application/launch-visits-service";
+import { helpValues } from "./content/domain/help";
 import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
 import { DrizzleHelpRepository } from "./content/infrastructure/drizzle-help-repository";
@@ -659,6 +660,8 @@ export function buildApp(config: Config) {
         delivery: deliverySummary(p),
         giftcardRange: `${formatARS(GIFTCARD_MIN_CENTS)} a ${formatARS(GIFTCARD_MAX_CENTS)}`,
         whatsapp: whatsappUrl(p.contact.whatsapp),
+        // las mismas {variables} que las páginas de ayuda
+        vars: helpValues({ policies: p }),
       };
     },
     assistantMemory,

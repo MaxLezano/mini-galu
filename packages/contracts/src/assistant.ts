@@ -100,6 +100,12 @@ export type AssistantFactInput = z.infer<typeof AssistantFactInputSchema>;
 export type AssistantFact = AssistantFactInput & { id: string; createdAt: string };
 
 /**
+ * Lo enseñado que responde una pregunta (GET /assistant/taught?q=…): la tienda lo usa cuando responde por reglas.
+ * La respuesta ya trae las {variables} de Tienda y pagos con su valor.
+ */
+export type AssistantTaught = { question: string; answer: string } | null;
+
+/**
  * compra: terminó en un pedido pagado · sin_respuesta: algo no lo supo (y todavía no se lo enseñaron) ·
  * aviso: pidió que le avisen cuando vuelva un talle (quedó en la lista de espera).
  */

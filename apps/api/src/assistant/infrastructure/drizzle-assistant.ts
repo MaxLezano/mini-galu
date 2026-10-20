@@ -225,6 +225,16 @@ export class DrizzleFacts implements FactStore {
     return { id: r.id, question: r.question, answer: r.answer, createdAt: r.createdAt.toISOString() };
   }
 
+  async update(id: string, f: AssistantFactInput) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
+    const r = await this.db
+      .update(s.assistantFacts)
+      .set(f)
+      .where(eq(s.assistantFacts.id, id))
+      .returning({ id: s.assistantFacts.id });
+    return r.length > 0;
+  }
+
   async remove(id: string) {
     if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
     const r = await this.db

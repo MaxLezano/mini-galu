@@ -75,10 +75,22 @@ export class AssistantAdminService {
   async teach(input: AssistantFactInput): Promise<AdminAssistant> {
     const at = this.clock();
     await this.memory.facts.add(input, at);
-    const key = questionKey(input.question);
+    await this.markTaught(input.question, at);
+    return this.admin();
+  }
+
+  /** Las veces que se preguntó lo mismo dejan de estar pendientes. */
+  private async markTaught(question: string, at: Date) {
+    const key = questionKey(question);
     const rows = await this.memory.log.unanswered(new Date(0));
     const ids = rows.filter((r) => questionKey(r.question) === key).map((r) => r.id);
     if (ids.length) await this.memory.log.markTaught(ids, at);
+  }
+
+  /** Corrige una respuesta enseñada; si la pregunta cambió, lo pendiente con la pregunta nueva también se responde. */
+  async edit(id: string, input: AssistantFactInput): Promise<AdminAssistant> {
+    if (!(await this.memory.facts.update(id, input))) throw new NotFoundError("Esa respuesta ya no está");
+    await this.markTaught(input.question, this.clock());
     return this.admin();
   }
 

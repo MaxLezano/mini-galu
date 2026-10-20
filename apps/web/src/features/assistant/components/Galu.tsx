@@ -27,6 +27,7 @@ import {
   orderNotFound,
   orderReply,
   orderUnavailable,
+  taughtReply,
 } from "../galu-engine";
 import { boldSegments } from "../galu-sse";
 import { askGalu, GaluOffline } from "../galu-stream";
@@ -48,6 +49,19 @@ const installmentsFor = (cents: number) =>
     (plans) => plans[cents] ?? null,
     () => null,
   );
+
+/** Los cuidados de la ficha (si no responde, Galú manda a la ficha). */
+const careFor = (slug: string) =>
+  api.product(slug).then(
+    (p) => p.care.trim() || null,
+    () => null,
+  );
+
+/** Sin modelo, primero lo que enseñó Gaby; si nada responde (o la API no contesta), las reglas de la tienda. */
+const taughtOr = async (q: string, rules: () => Promise<GaluReply[]>): Promise<GaluReply[]> => {
+  const taught = await api.galuTaught(q).catch(() => null);
+  return taught ? taughtReply(taught.answer) : rules();
+};
 
 function MiniCard({ p, size, onAdd }: { p: ProductSummary; size?: Size; onAdd: (p: ProductSummary, s: Size) => void }) {
   const s = size && stockOf(p, size) ? size : sizesIn(p)[0];
@@ -157,7 +171,7 @@ export function Galu() {
                 ? orderNotFound(code, policies.contact.whatsapp)
                 : orderUnavailable(code),
             )
-        : answer(q, products, ctx, policies, installmentsFor),
+        : taughtOr(q, () => answer(q, products, ctx, policies, installmentsFor, careFor)),
       new Promise((r) => setTimeout(r, 650 + Math.random() * 450)),
     ]);
     const id = chatId();

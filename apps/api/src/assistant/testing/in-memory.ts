@@ -170,6 +170,11 @@ export class MemoryFacts implements FactStore {
     this.facts.push(fact);
     return fact;
   }
+  async update(id: string, f: AssistantFactInput) {
+    const fact = this.facts.find((x) => x.id === id);
+    if (fact) Object.assign(fact, f);
+    return !!fact;
+  }
   async remove(id: string) {
     const before = this.facts.length;
     this.facts = this.facts.filter((f) => f.id !== id);

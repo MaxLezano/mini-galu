@@ -64,7 +64,8 @@ function app(owner: CartVars["Variables"]["cartOwner"]) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-  return { memory, chat, log };
+  const taught = (q: string) => http.request(`/assistant/taught?q=${encodeURIComponent(q)}`);
+  return { memory, chat, log, taught };
 }
 
 describe("POST /assistant/chat", () => {
@@ -113,5 +114,18 @@ describe("POST /assistant/log (charlas por reglas)", () => {
     expect((await log({ question: "hola", answer: "Hola" })).status).toBe(422);
     expect((await log({ conversationId: CONV, question: " ", answer: "Hola" })).status).toBe(422);
     expect(memory.log.conversations).toEqual([]);
+  });
+});
+
+describe("GET /assistant/taught (lo enseñado, sin modelo)", () => {
+  it("devuelve la respuesta enseñada que corresponde, o null", async () => {
+    const { memory, taught } = app(null);
+    await memory.facts.add({ question: "¿Hacen envíos al exterior?", answer: "Por ahora no." }, new Date());
+    expect(await (await taught("hacen envios al exterior?")).json()).toEqual({
+      question: "¿Hacen envíos al exterior?",
+      answer: "Por ahora no.",
+    });
+    expect(await (await taught("¿talle 4?")).json()).toBeNull();
+    expect(await (await taught("  ")).json()).toBeNull();
   });
 });

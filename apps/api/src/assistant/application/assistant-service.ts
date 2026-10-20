@@ -3,6 +3,7 @@ import {
   type AssistantChat,
   type AssistantEvent,
   type AssistantRulesLogRequest,
+  type AssistantTaught,
   CatalogQuerySchema,
   type ProductSummary,
   type Size,
@@ -15,6 +16,7 @@ import {
   type ToolResult,
   UNANSWERED_TOOL,
 } from "../domain/conversation";
+import { fillVars, matchTaught } from "../domain/teaching";
 import type { AssistantCatalog, AssistantMemory, ChatOwner, LlmProvider } from "./ports";
 import type { AssistantTools } from "./tools";
 
@@ -133,6 +135,16 @@ export class AssistantService {
         { unanswered, sizeAlert },
         askedAt,
       );
+  }
+
+  /**
+   * Sin modelo, la tienda pregunta acá antes que a sus reglas: si Gaby enseñó algo que responde la pregunta, va eso
+   * (con las {variables} de Tienda y pagos con su valor de ahora).
+   */
+  async taught(question: string): Promise<AssistantTaught> {
+    const [taught, facts] = await Promise.all([this.memory.facts.list(), this.facts()]);
+    const hit = matchTaught(question, taught);
+    return hit ? { question: hit.question, answer: fillVars(hit.answer, facts.vars) } : null;
   }
 
   /**

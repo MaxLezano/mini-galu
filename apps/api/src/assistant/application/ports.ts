@@ -84,6 +84,8 @@ export interface ConversationLog {
 export interface FactStore {
   list(): Promise<AssistantFact[]>;
   add(f: AssistantFactInput, at: Date): Promise<AssistantFact>;
+  /** Cambia la pregunta o la respuesta (false si ya no está). */
+  update(id: string, f: AssistantFactInput): Promise<boolean>;
   remove(id: string): Promise<boolean>;
 }
 

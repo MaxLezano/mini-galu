@@ -12,5 +12,8 @@ export function adminAssistantRoutes(admin: AssistantAdminService) {
       c.json(await admin.updateSettings(parse(AssistantSettingsSchema, await c.req.json()))),
     )
     .post("/facts", async (c) => c.json(await admin.teach(parse(AssistantFactInputSchema, await c.req.json()))))
+    .put("/facts/:id", async (c) =>
+      c.json(await admin.edit(c.req.param("id"), parse(AssistantFactInputSchema, await c.req.json()))),
+    )
     .delete("/facts/:id", async (c) => c.json(await admin.forget(c.req.param("id"))));
 }

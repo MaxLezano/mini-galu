@@ -770,7 +770,11 @@ test("galú: ver una charla, enseñarle una respuesta, olvidarla y cambiar un aj
   await expect(teach.locator(".q")).toContainText("envíos al exterior");
 
   // una pregunta libre (no toca las demo): se guarda, sigue después de recargar y se olvida
-  const question = `¿Pregunta de prueba ${Date.now()}?`;
+  // solo letras: un número largo Galú lo toma como número de pedido
+  const tag = Date.now()
+    .toString(36)
+    .replace(/\d/g, (d) => "abcdefghij"[Number(d)] ?? "");
+  const question = `¿Pregunta de prueba ${tag}?`;
   await teach.getByRole("button", { name: "Otra pregunta" }).click();
   await teach.getByLabel("Pregunta").fill(question);
   await teach.getByRole("button", { name: "Guardar respuesta" }).click();
@@ -781,6 +785,30 @@ test("galú: ver una charla, enseñarle una respuesta, olvidarla y cambiar un aj
   await page.reload();
   await ready(page);
   await expect(page.locator("#facts")).toContainText(question);
+
+  // corregirla: la respuesta puede llevar datos de Tienda y pagos
+  await page.getByRole("button", { name: `Corregir "${question}"` }).click();
+  await expect(teach.getByRole("heading", { name: "Corregí la respuesta" })).toBeVisible();
+  await teach.getByLabel("Tu respuesta").fill("Respuesta corregida: escribinos al {whatsapp}.");
+  await teach.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.locator("#toast")).toContainText("Galú ya lo corrigió");
+  await expect(page.locator("#facts")).toContainText("Respuesta corregida");
+  await expect(teach.getByRole("heading", { name: "Enseñale" })).toBeVisible();
+
+  // sin modelo, la tienda la responde aunque la escriban distinto, con el WhatsApp de verdad
+  const shop = await page.context().newPage();
+  await shop.route("**/assistant/chat", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),
+  );
+  await shop.route("**/assistant/log", (route) => route.fulfill({ status: 204 }));
+  await shop.goto("/");
+  await shop.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  await shop.getByLabel("Mensaje").fill(`hola! una ${question.slice(1, -1).toLowerCase()}, por favor`);
+  await shop.getByLabel("Mensaje").press("Enter");
+  const reply = shop.locator(".galu-body .msg.bot").last();
+  await expect(reply).toContainText(/Respuesta corregida: escribinos al [\d -]+\./);
+  await shop.close();
+
   await page.getByRole("button", { name: `Olvidar "${question}"` }).click();
   await expect(page.locator("#toast")).toContainText("Galú lo olvidó");
   await expect(page.locator("#facts")).not.toContainText(question);

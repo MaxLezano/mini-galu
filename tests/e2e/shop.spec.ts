@@ -111,6 +111,30 @@ test("sin modelo en la API, Galú responde por reglas con el stock real", async 
   });
 });
 
+test("sin modelo en la API, Galú sabe de telas, colores y cambios con el catálogo y Tienda y pagos", async ({
+  page,
+}) => {
+  await page.route("**/assistant/chat", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),
+  );
+  await page.route("**/assistant/log", (route) => route.fulfill({ status: 204 }));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Abrir asistente Galú" }).click();
+  const ask = async (q: string) => {
+    await page.getByLabel("Mensaje").fill(q);
+    await page.getByLabel("Mensaje").press("Enter");
+  };
+  const last = page.locator(".galu-body .msg.bot").last();
+  await ask("¿de qué tela son los vestidos?");
+  await expect(last).toContainText(/Trabajamos con .*lino/);
+  await ask("¿tenés algo rojo?");
+  await expect(last).toContainText("En rojo tengo estos");
+  await expect(page.locator(".galu-body .msg.cards").last().locator(".mini-card").first()).toBeVisible();
+  await ask("le quedó grande, ¿lo puedo cambiar?");
+  await expect(last).toContainText(/tenés \d+ días? desde que recibís el pedido/);
+  await expect(last.getByRole("link", { name: "Cambios y devoluciones" })).toHaveAttribute("href", "/ayuda/cambios");
+});
+
 test("sin modelo en la API, Galú dice las cuotas reales de Mercado Pago para la prenda", async ({ page }) => {
   await page.route("**/assistant/chat", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "assistant_off", message: "sin modelo" } } }),

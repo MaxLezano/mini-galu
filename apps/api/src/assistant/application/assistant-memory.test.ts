@@ -56,6 +56,7 @@ function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0]) {
       delivery: "Envíos a todo el país con Andreani (a domicilio o a sucursal) o retiro gratis en el taller.",
       giftcardRange: "$5.000 a $500.000",
       whatsapp: "https://wa.me/5491100000000",
+      vars: { whatsapp: "381 319-5264", dias_cambio: "2 días" },
     }),
     memory,
     clock,
@@ -182,6 +183,30 @@ describe("Galú guarda las charlas para el panel", () => {
     const id = after.facts[0]?.id ?? "";
     expect((await admin.forget(id)).facts).toEqual([]);
     await expect(admin.forget(id)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("sin modelo, lo enseñado responde antes que las reglas (con las variables de Tienda y pagos)", async () => {
+    const { svc, admin } = setup([]);
+    await admin.teach({ question: "¿Hacen envíos al exterior?", answer: "Por ahora no. Consultá al {whatsapp}." });
+    expect(await svc.taught("hola! hacen envio al exterior? a Uruguay")).toEqual({
+      question: "¿Hacen envíos al exterior?",
+      answer: "Por ahora no. Consultá al 381 319-5264.",
+    });
+    expect(await svc.taught("¿Cuánto sale el envío a Córdoba?")).toBeNull();
+  });
+
+  it("corregir lo enseñado: cambia la respuesta y, si la pregunta es otra, también responde esa", async () => {
+    const { svc, admin } = setup([]);
+    await svc.logRules({ conversationId: CONV, question: "¿Tienen local?", answer: "No sé.", unanswered: true });
+    const taught = await admin.teach({ question: "¿Hacen a medida?", answer: "No." });
+    const id = taught.facts[0]?.id ?? "";
+    expect(taught.pending).toHaveLength(1);
+    const after = await admin.edit(id, { question: "¿Tienen local?", answer: "Somos un taller: se retira con turno." });
+    expect(after.facts).toMatchObject([
+      { id, question: "¿Tienen local?", answer: "Somos un taller: se retira con turno." },
+    ]);
+    expect(after.pending).toEqual([]);
+    await expect(admin.edit("nada", { question: "¿Algo?", answer: "Nada." })).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it("los ajustes cambian el tono, el WhatsApp y las tarjetas sin stock", async () => {
