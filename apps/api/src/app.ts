@@ -104,12 +104,10 @@ import { OrderPayments } from "./orders/application/order-payments";
 import { OrderRefunds } from "./orders/application/order-refunds";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
-import { Revocations } from "./orders/application/revocations";
 import { formatOrderNumber, parseOrderNumber, payPath } from "./orders/domain/order";
-import { DrizzleOrderRepository, DrizzleRevocations } from "./orders/infrastructure/drizzle-order-repository";
+import { DrizzleOrderRepository } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
 import { checkoutRoutes } from "./orders/infrastructure/http/checkout-routes";
-import { revocationRoutes } from "./orders/infrastructure/http/revocation-routes";
 import { PaymentService } from "./payments/application/payment-service";
 import type { PaymentGateway } from "./payments/application/ports";
 import { RefundService } from "./payments/application/refund-service";
@@ -550,39 +548,6 @@ export function buildApp(config: Config) {
       reservedUntilLabel: p.reservedUntil ? untilLabel(new Date(String(p.reservedUntil))) : null,
     });
   });
-  // botón de arrepentimiento: el código le llega al cliente por mail y el taller se entera para devolver la plata
-  const revocations = new Revocations(orders, new DrizzleRevocations(db), events);
-  events.on("RevocationRequested", async (e) => {
-    const p = e.payload as {
-      number: string;
-      code: string;
-      email: string;
-      firstName: string;
-      customer: string;
-      inTime: boolean;
-      reason: string | null;
-    };
-    await notifications.message({
-      to: p.email,
-      subject: `Recibimos tu pedido de baja · ${p.code}`,
-      eyebrow: `Pedido #${p.number} · arrepentimiento`,
-      name: p.firstName || null,
-      body: `Registramos tu pedido de baja del pedido #${p.number}. El código de tu solicitud es ${p.code}: guardalo para cualquier consulta. Te escribimos en estos días para coordinar la devolución de las prendas (si ya las recibiste) y del dinero, que vuelve por el mismo medio con el que pagaste.`,
-      cta: null,
-      number: p.number,
-    });
-    await notifications.message({
-      to: (await policies.get()).contact.email,
-      subject: `Arrepentimiento · #${p.number} · ${p.code}`,
-      eyebrow: "Botón de arrepentimiento",
-      name: null,
-      body: `${p.customer} (${p.email}) pidió la baja del pedido #${p.number} con el código ${p.code}.${
-        p.inTime ? "" : " Ojo: pasaron más de 10 días desde la entrega."
-      }${p.reason ? ` Motivo: "${p.reason}".` : ""} Escribile para coordinar la devolución y el reintegro.`,
-      cta: { label: "Ver el pedido", url: `${config.webOrigin}/taller/pedidos?pedido=${encodeURIComponent(p.number)}` },
-      number: p.number,
-    });
-  });
   events.on("OrderExpired", (e) => console.info("[eventos] Reserva vencida:", JSON.stringify(e.payload)));
   // reintegro desde el panel: el cliente se entera por mail de cuánto vuelve y por dónde
   events.on("OrderRefunded", async (e) => {
@@ -742,8 +707,6 @@ export function buildApp(config: Config) {
     .route("/checkout", checkoutPaymentRoutes(payments))
     .route("/payments", webhookRoutes(payments))
     .route("/tracking", trackingRoutes(shipments))
-    // tope por IP para no probar mails (en local y CI, alto: los e2e piden varias bajas seguidas)
-    .route("/revocations", revocationRoutes(revocations, new RateLimiter(secure ? 20 : 500, 10 * 60_000)))
     .route("/newsletter", newsletterRoutes(newsletter))
     .route("/policies", policiesRoutes(policies))
     .route("/giftcards", giftcardRoutes(giftcards))

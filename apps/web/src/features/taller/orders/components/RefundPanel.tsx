@@ -11,8 +11,8 @@ type Props = {
 };
 
 /**
- * Reintegro total del pedido, dentro del apartado de pago del detalle (sin mockup: lenguaje del detalle y del aviso
- * de arrepentimiento). Primero un botón; al tocarlo, qué vuelve y por dónde, el stock y el motivo, y la confirmación.
+ * Reintegro total del pedido, dentro del apartado de pago del detalle (sin mockup: lenguaje del detalle). Primero un
+ * botón; al tocarlo, qué vuelve y por dónde, el stock y el motivo, y la confirmación.
  */
 export function RefundPanel({ refund, busy, onConfirm }: Props) {
   const [open, setOpen] = useState(false);

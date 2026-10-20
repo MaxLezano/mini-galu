@@ -13,7 +13,6 @@ import {
   Star,
   Store,
   Truck,
-  Undo2,
 } from "lucide-react";
 import type { HTMLAttributes, ReactNode, Ref } from "react";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
@@ -146,12 +145,6 @@ export function OrderCard({
           <span className="flag">
             <CreditCard className="i-sm" />
             {o.installments} cuotas
-          </span>
-        )}
-        {o.revocation && (
-          <span className="flag hot" title={`Código ${o.revocation.code}`}>
-            <Undo2 className="i-sm" />
-            Arrepentimiento
           </span>
         )}
         {hot && <span className="flag hot">Recién</span>}

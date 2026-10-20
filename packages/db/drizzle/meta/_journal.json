@@ -183,6 +183,13 @@
       "when": 1792518976989,
       "tag": "0025_shipping_acordar_cadete",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792539355837,
+      "tag": "0026_drop_order_revocations",
+      "breakpoints": true
     }
   ]
 }

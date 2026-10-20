@@ -322,20 +322,12 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   de seguimiento y la ficha): navegación entre temas, índice "En esta página", contacto (Galú, WhatsApp, mail) y links
   a términos y privacidad en el pie. Texto de base con lo que ya dice la tienda (30 días, Andreani, retiro, cuotas,
   envío gratis); "Páginas de ayuda" en Tienda y pagos edita título, bajada y apartados (párrafos y listas con "- "),
-  y vuelve al texto de base. Piloto: los textos de base ya no llevan lo legal (arrepentimiento, Defensa del
-  Consumidor, "Tus derechos" con la leyenda de la AAIP) y "Si algo llegó mal" viene apagado
-- ⏳ Que Gaby revise los textos (y, antes del deploy, términos y privacidad con quien la asesore)
-- ⏳ **Botón de arrepentimiento: sacado de la tienda mientras es un piloto** (decisión de Gaby). Se fue el link de la
-  cinta, el del pie, el botón de la ayuda y la página `/arrepentimiento`; la API (`POST /revocations`) y lo del panel
-  quedan sin uso. La Res. SCI 424/2020 lo pide en la página de inicio de toda tienda online: volver a ponerlo (con el
-  apartado de la ayuda) antes de abrir al público. Cómo era:
-- **Botón de arrepentimiento** (Res. SCI 424/2020; sin mockup, lenguaje de seguimiento y ayuda): link quieto a la
-  derecha de la barra de novedades (primera pantalla de todas las páginas), en el pie y en el apartado de la ayuda.
-  `/arrepentimiento` pide número de pedido, mail de la compra y motivo opcional, sin cuenta; da al instante un código
-  `ARR-XXXXXX` (una solicitud por pedido: si se repite, el mismo código) y lo manda por mail, con aviso al mail de la
-  tienda. Mismo error si el pedido no existe o el mail no coincide; no aplica a pedidos sin pagar o cancelados; fuera
-  de los 10 días desde la entrega igual se registra, marcada. Tope de 20 por IP cada 10 min en producción. En el panel:
-  campana, etiqueta en la tarjeta, aviso en el detalle e historial (módulo `orders`, tabla `order_revocations`).
+  y vuelve al texto de base
+- ⏳ Que Gaby revise los textos
+- ✅ **Sin botón de arrepentimiento ni textos legales**: se sacaron la página, los links, la API
+  (`POST /revocations`), el aviso del panel (campana, tarjeta y detalle), los mails y la tabla `order_revocations`
+  (migración `0026`); la ayuda ya no lleva arrepentimiento, Defensa del Consumidor, la leyenda de la AAIP ni
+  "Si algo llegó mal". Los reintegros desde el panel siguen
 - ✅ **Reintegro desde el panel** (sin mockup; apartado Pago del detalle del pedido): "Reintegrar el pago" muestra qué
   vuelve y por dónde (el total por Mercado Pago, al mismo medio; lo usado de una gift card, a su saldo), si las prendas
   vuelven al stock (tildado si todavía no salieron del taller) y un motivo para el historial. Mercado Pago devuelve el

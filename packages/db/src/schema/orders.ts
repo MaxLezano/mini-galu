@@ -263,20 +263,3 @@ export const orderEvents = pgTable(
   },
   (t) => [index().on(t.orderId, t.createdAt)],
 );
-
-/**
- * Botón de arrepentimiento (Res. SCI 424/2020): una solicitud por pedido, con el código que se le da al cliente.
- * `inTime`: dentro de los 10 días corridos desde que lo recibió (o antes de recibirlo).
- */
-export const orderRevocations = pgTable("order_revocations", {
-  id: uuid().primaryKey().defaultRandom(),
-  orderId: uuid()
-    .notNull()
-    .unique()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  /** ARR-7K2M9Q */
-  code: varchar({ length: 12 }).notNull().unique(),
-  reason: text(),
-  inTime: boolean().notNull(),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-});

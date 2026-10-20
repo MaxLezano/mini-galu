@@ -36,7 +36,7 @@ export const user = pgTable("user", {
   documentNumber: varchar({ length: 15 }),
   /** "Cartas del taller" (newsletter). */
   newsletterOptIn: boolean().notNull().default(false),
-  /** Cuándo aceptó términos y privacidad (Ley 25.326 de datos personales). */
+  /** Cuándo aceptó términos y privacidad al crear la cuenta. */
   termsAcceptedAt: timestamp({ withTimezone: true }),
   /** Verificación en dos pasos (plugin twoFactor de Better Auth). Obligatoria para el panel en producción. */
   twoFactorEnabled: boolean().notNull().default(false),

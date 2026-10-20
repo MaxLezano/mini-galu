@@ -101,7 +101,7 @@ describe("reintegro desde el panel", () => {
   it("devuelve el total por Mercado Pago, pasa a reembolsado y las prendas vuelven al stock", async () => {
     const o = await paid();
     expect(stock()).toBe(2);
-    const r = await service().refund(o.number, { restock: true, reason: "arrepentimiento" });
+    const r = await service().refund(o.number, { restock: true, reason: "no le quedó" });
     expect(r).toEqual({ cents: 45_000_00, giftcardCents: 0, pending: false });
     expect(calls).toEqual([{ paymentId: "sim-1", idempotencyKey: `${o.id}:k` }]);
     expect(refunded).toEqual(["sim-1"]);
@@ -110,7 +110,7 @@ describe("reintegro desde el panel", () => {
     expect(orders.unitsSold.get("maddie")).toBe(0);
     const [e] = await orders.events(o.id);
     expect(e).toMatchObject({ kind: "refunded", title: "Pago reintegrado", auto: false, toStatus: "reembolsado" });
-    expect(e?.detail).toMatch(/por Mercado Pago · prendas al stock · "arrepentimiento"/);
+    expect(e?.detail).toMatch(/por Mercado Pago · prendas al stock · "no le quedó"/);
     expect(events[0]?.payload).toMatchObject({ number: o.number, cents: 45_000_00, pending: false });
   });
 

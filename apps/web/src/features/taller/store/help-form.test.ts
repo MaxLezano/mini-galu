@@ -43,7 +43,7 @@ describe("help-form", () => {
       intro: "",
       sections: [
         { title: "Plazo", body: "30 días." },
-        { title: "Si algo llegó mal", body: "Avisanos.", hidden: true },
+        { title: "Envoltorio", body: "Va en caja.", hidden: true },
       ],
     };
     expect(helpError(cambios)).toBeNull();

@@ -49,7 +49,7 @@ test("reintegro desde el panel: el total por Mercado Pago, las prendas vuelven a
   const refund = drawer.getByRole("region", { name: "Reintegrar el pago" });
   await expect(refund).toContainText("por Mercado Pago, al mismo medio con el que pagó");
   await expect(refund.getByRole("checkbox", { name: /Las prendas vuelven al stock/ })).toBeChecked();
-  await refund.getByLabel("Motivo del reintegro").fill("arrepentimiento");
+  await refund.getByLabel("Motivo del reintegro").fill("no le quedó");
   await refund.getByRole("button", { name: /^Reintegrar \$/ }).click();
   await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Reembolsado");
   await expect(drawer.locator(".tl")).toContainText("Pago reintegrado");

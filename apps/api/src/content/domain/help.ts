@@ -16,8 +16,6 @@ export type HelpFacts = { policies: StorePolicies };
  * Textos de base de las páginas de ayuda: lo que ya dice la tienda (producto, home, Galú). Gaby los ajusta desde el
  * panel; lo que guarda reemplaza al texto de base. Los datos que se cambian en el panel van como {variables}
  * (`HELP_VARS`), así la página dice siempre lo que está configurado.
- * TODO(fase 10 · content): mientras la tienda es un piloto no llevan los textos legales (arrepentimiento de la
- * Ley 24.240 y leyenda de la AAIP de la Ley 25.326); ver docs/ROADMAP.md.
  */
 export function defaultHelpPage(topic: HelpTopic, f: HelpFacts): HelpPageInput {
   return DEFAULTS[topic](f);
@@ -44,11 +42,6 @@ const DEFAULTS: Record<HelpTopic, (f: HelpFacts) => HelpPageInput> = {
             ? "Coordinamos cómo nos hacés llegar la prenda: por Andreani o trayéndola al taller."
             : "Coordinamos cómo nos hacés llegar la prenda por Andreani.",
         ].join("\n\n"),
-      },
-      {
-        title: "Si algo llegó mal",
-        body: "Si una prenda llegó con una falla o no es la que pediste, avisanos apenas la recibas y lo resolvemos sin costo para vos.",
-        hidden: true,
       },
     ],
   }),

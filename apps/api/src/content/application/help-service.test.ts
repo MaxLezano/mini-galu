@@ -33,7 +33,7 @@ const edited: HelpPageInput = {
   intro: "Hasta 15 días.",
   sections: [
     { title: "Plazo", body: "15 días desde que lo recibís." },
-    { title: "Arrepentimiento", body: "10 días corridos desde que lo recibís." },
+    { title: "Cómo pedirlo", body: "Por WhatsApp con el número de pedido." },
   ],
 };
 
@@ -49,9 +49,7 @@ describe("HelpService", () => {
     // el panel ve la variable; la tienda, el valor de Tienda y pagos
     expect(cambios.intro).toContain("{dias_cambio}");
     expect((await help.publicPage("cambios")).intro).toContain("30 días");
-    // piloto: sin el apartado de arrepentimiento; "Si algo llegó mal" viene apagado
     expect(JSON.stringify(cambios)).not.toContain("arrepent");
-    expect(cambios.sections.find((s) => s.title === "Si algo llegó mal")?.hidden).toBe(true);
   });
 
   it("lo que guarda Gaby reemplaza al texto de base y se puede volver atrás", async () => {

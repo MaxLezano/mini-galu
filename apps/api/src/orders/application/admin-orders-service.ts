@@ -178,9 +178,6 @@ export class AdminOrdersService {
       paymentMethod: o.paymentMethod,
       installments: o.installments,
       trackingNumber: o.trackingNumber ?? null,
-      revocation: o.revocation
-        ? { ...o.revocation, at: o.revocation.at.toISOString(), reason: o.revocation.reason || null }
-        : null,
       items: o.items.map((i) => ({
         slug: i.productSlug,
         name: i.name,
