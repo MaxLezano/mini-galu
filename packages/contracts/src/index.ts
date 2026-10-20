@@ -2,6 +2,7 @@ export * from "./account";
 export * from "./admin";
 export * from "./admin-customers";
 export * from "./admin-orders";
+export * from "./admin-subscribers";
 export * from "./api";
 export * from "./assistant";
 export * from "./automations";

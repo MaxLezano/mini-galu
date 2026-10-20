@@ -147,6 +147,9 @@ import {
 } from "./shipping/infrastructure/http/shipment-routes";
 import { PdfLibMerger } from "./shipping/infrastructure/pdf-lib-merger";
 import { TableShippingRates } from "./shipping/infrastructure/table-shipping-rates";
+import { SubscribersService } from "./subscribers/application/subscribers-service";
+import { DrizzleSubscribersReadModel } from "./subscribers/infrastructure/drizzle-subscribers";
+import { adminSubscribersRoutes } from "./subscribers/infrastructure/http/subscribers-routes";
 
 /** Mail de la tienda: contacto en la ayuda y a donde llegan los avisos para el taller. */
 const SHOP_EMAIL = "hola@minigalu.com.ar";
@@ -725,6 +728,7 @@ export function buildApp(config: Config) {
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
+    .route("/admin/subscribers", adminSubscribersRoutes(new SubscribersService(new DrizzleSubscribersReadModel(db))))
     .route("/admin/policies", adminPoliciesRoutes(policies))
     .route(
       "/admin/assistant",

@@ -694,7 +694,7 @@ svg.foco path:nth-of-type(5) { animation-name: dibujar, encender; animation-dura
 @keyframes dibujar { to { stroke-dashoffset: 0; } }
 @keyframes encender {
   0%, 100% { stroke: currentColor; }
-  15%, 40%, 60% { stroke: var(--rojo); }
+  15%, 40%, 60% { stroke: var(--miel); }
   27% { stroke: currentColor; }
 }
 .static svg.foco path { animation: none; stroke-dashoffset: 0; }

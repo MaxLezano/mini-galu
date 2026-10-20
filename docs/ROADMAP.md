@@ -407,10 +407,12 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   (publicadas; las cortas, en el inicio). ⏳ Incentivar a que dejen reseñas (cupón `RESENA10` del mockup): después
 - ⚠️ `transiciones.spec` en celular falla a veces contra `next dev` (la ficha no llega a la View Transition en
   5 s); pasa al repetirlo.
-- ⏳ **Suscriptores** (sección nueva del panel, solo para ver). Una tabla con 3 pestañas:
-  - **Cartas del taller**: hoy solo hay número y CSV.
-  - **Anotados a un lanzamiento**: hoy solo se ve el número.
-  - **Aviso de talle**: quién pidió qué prenda y talle; en Productos se ve la cantidad, pero no quiénes son.
+- ✅ **Suscriptores** (`/taller/suscriptores`, módulo `subscribers` de la API, solo para ver). Tres pestañas con lo
+  más nuevo arriba: **Cartas del taller** (mail, desde dónde se sumó, suscripto o de baja; el CSV sigue en
+  "Exportar cartas"), **Anotados a un lanzamiento** (cuál y cuándo sale) y **Aviso de talle** (prenda y talle). Cada
+  fila dice si sigue esperando o ya se le avisó, busca por contacto, nombre, prenda o lanzamiento, y tiene el botón
+  para escribirle (mail o WhatsApp). Si el mail o el WhatsApp coincide con una cuenta o un pedido, muestra el nombre y
+  lleva a su ficha en Clientes.
 - ⏳ **Galú sin IA, más completo** (sin modelo por costo: la tienda responde por reglas, `galu-engine.tsx`).
   - Hoy entiende una docena de temas (pedido y seguimiento, envíos, cuotas y pagos, precio, regalo, ocasión,
     talles, presupuesto, gift card, a medida y saludo) y consulta el catálogo y el stock reales.

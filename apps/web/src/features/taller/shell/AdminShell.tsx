@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   type LucideIcon,
+  Mail,
   Menu,
   MessageCircleHeart,
   ShieldCheck,
@@ -56,6 +57,7 @@ const NAV: [string, NavItem[]][] = [
     [
       { href: "/taller/productos", icon: Shirt, label: "Productos", count: "stock" },
       { href: "/taller/clientes", icon: Users, label: "Clientes" },
+      { href: "/taller/suscriptores", icon: Mail, label: "Suscriptores" },
       { href: "/taller/resenas", icon: Star, label: "Reseñas", count: "resenas" },
       { href: "/taller/galu", icon: MessageCircleHeart, label: "Galú", count: "galu" },
     ],

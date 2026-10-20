@@ -26,6 +26,8 @@
   --rosa: #E8C6BF;
   --rosa-l: #F6E6E1;
   --rojo: #A3302B;
+  /** Luz del foco cuando se enciende. */
+  --miel: #E9B949;
   --line: rgba(58, 42, 34, .12);
   --line-2: rgba(58, 42, 34, .22);
 
