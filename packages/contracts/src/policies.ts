@@ -83,8 +83,22 @@ export type Workshop = z.infer<typeof WorkshopSchema>;
 export const workshopPlace = (w: Workshop) => `${w.city}, ${w.province}`;
 
 /**
- * Datos fiscales de Gaby (monotributista): van impresos en cada factura. El CUIT y el punto de venta no se cargan
- * acá: son los del certificado de ARCA (`ARCA_CUIT`, `ARCA_PUNTO_VENTA` en el .env).
+ * Link del QR de Data Fiscal (formulario 960) como lo da ARCA: el link solo o el HTML entero que ofrece para pegar en
+ * la web (`<a href="http://qr.afip.gob.ar/?qr=…,,"><img …></a>`). null si no es un link de ARCA.
+ */
+export function dataFiscalLink(text: string): string | null {
+  const href = /href\s*=\s*["']([^"']+)["']/i.exec(text)?.[1] ?? text;
+  const m = /^(https?):\/\/qr\.(afip|arca)\.gob\.ar\/?\?qr=([\w,-]+)$/i.exec(href.trim());
+  return m ? `${m[1]?.toLowerCase()}://qr.${m[2]?.toLowerCase()}.gob.ar/?qr=${m[3]}` : null;
+}
+
+/** "27-12345678-9" */
+export const formatCuit = (cuit: string) => cuit.replace(/^(\d{2})(\d{8})(\d)$/, "$1-$2-$3");
+
+/**
+ * Datos fiscales de Gaby (monotributista): van impresos en cada factura y en el pie de la tienda. El CUIT y el punto
+ * de venta no se cargan acá: son los del certificado de ARCA (`ARCA_CUIT`, `ARCA_PUNTO_VENTA` en el .env); `cuit` lo
+ * completa la API al leer los ajustes ("" sin ARCA).
  */
 export const StoreFiscalSchema = z.object({
   /** Nombre y apellido o razón social, como figura en ARCA. */
@@ -98,6 +112,13 @@ export const StoreFiscalSchema = z.object({
     .string()
     .trim()
     .regex(/^(\d{4}-\d{2}-\d{2})?$/, "Elegí la fecha de inicio de actividades"),
+  /** QR de Data Fiscal (formulario 960 de ARCA): va en el pie de la tienda. */
+  dataFiscalUrl: z
+    .string()
+    .trim()
+    .transform((s) => (s ? (dataFiscalLink(s) ?? s) : ""))
+    .refine((s) => !s || dataFiscalLink(s) === s, "Pegá el link de Data Fiscal que te da ARCA (qr.arca.gob.ar/?qr=…)"),
+  cuit: z.string(),
 });
 export type StoreFiscal = z.infer<typeof StoreFiscalSchema>;
 
@@ -193,7 +214,7 @@ export const DEFAULT_POLICIES: StorePolicies = {
   giftcardMonths: 2,
   contact: { whatsapp: "381 319-5264", email: "mini.galu.store@gmail.com", instagram: "minigalumodainfantil" },
   workshop: { city: "San Miguel de Tucumán", province: "Tucumán" },
-  fiscal: { name: "", address: "", iibb: "", activitiesSince: "" },
+  fiscal: { name: "", address: "", iibb: "", activitiesSince: "", dataFiscalUrl: "", cuit: "" },
   // unas 5 prendas reseñadas con foto para un 10%
   reviewPoints: { enabled: true, perReview: 10, perPhoto: 10, threshold: 100, percent: 10, validDays: 60 },
 };
@@ -219,6 +240,7 @@ export function withDefaults(saved: unknown): StorePolicies {
       ...rest.methods,
     },
     localDelivery: { ...DEFAULT_POLICIES.localDelivery, ...local },
+    fiscal: { ...DEFAULT_POLICIES.fiscal, ...rest.fiscal },
   };
 }
 

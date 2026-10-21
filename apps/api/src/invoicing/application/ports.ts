@@ -92,5 +92,5 @@ export interface InvoiceMailer {
   send(o: InvoiceOrder, kind: InvoiceKind, attachment: InvoiceAttachment): Promise<void>;
 }
 
-export type FiscalData = () => Promise<StoreFiscal>;
+export type FiscalData = () => Promise<Pick<StoreFiscal, "name" | "address" | "iibb" | "activitiesSince">>;
 export type { InvoiceData };

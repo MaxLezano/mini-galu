@@ -163,10 +163,10 @@ export class InvoiceService {
   }
 
   private async snapshot(o: InvoiceOrder): Promise<Invoice["data"]> {
-    const f = await this.fiscal();
+    const { name, address, iibb, activitiesSince } = await this.fiscal();
     return {
       orderNumber: o.number,
-      issuer: { ...f, cuit: this.issuer.cuit },
+      issuer: { name, address, iibb, activitiesSince, cuit: this.issuer.cuit },
       receptor: { name: `${o.firstName} ${o.lastName}`.trim(), email: o.email },
       lines: invoiceLines(o),
       payment: o.payment,

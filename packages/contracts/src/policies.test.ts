@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_POLICIES,
+  dataFiscalLink,
   deliverySummary,
+  formatCuit,
   freeShippingLabel,
   localDeliveryFor,
   parseCpRanges,
@@ -17,6 +19,33 @@ import {
 const with_ = (p: Partial<StorePolicies>): StorePolicies => ({ ...DEFAULT_POLICIES, ...p });
 
 describe("políticas de la tienda", () => {
+  it("toma el link de Data Fiscal solo o del HTML que da ARCA", () => {
+    const url = "http://qr.afip.gob.ar/?qr=Cz3hR7gKgZt9Xqk3eiXH-A,,";
+    expect(dataFiscalLink(url)).toBe(url);
+    expect(
+      dataFiscalLink(
+        `<a href="${url}" target="_F960AFIPInfo"><img src="http://www.afip.gob.ar/images/f960/DATAWEB.jpg" border="0"></a>`,
+      ),
+    ).toBe(url);
+    expect(dataFiscalLink("https://qr.arca.gob.ar/?qr=abc")).toBe("https://qr.arca.gob.ar/?qr=abc");
+    expect(dataFiscalLink("https://example.com/?qr=abc")).toBeNull();
+    const fiscal = (dataFiscalUrl: string) =>
+      StorePoliciesSchema.safeParse(with_({ fiscal: { ...DEFAULT_POLICIES.fiscal, dataFiscalUrl } }));
+    expect(fiscal(`<a href="${url}"><img></a>`).data?.fiscal.dataFiscalUrl).toBe(url);
+    expect(fiscal("cualquier cosa").success).toBe(false);
+    expect(fiscal("").success).toBe(true);
+  });
+
+  it("muestra el CUIT con guiones", () => {
+    expect(formatCuit("27123456789")).toBe("27-12345678-9");
+  });
+
+  it("los datos fiscales guardados antes del QR siguen valiendo", () => {
+    const saved = { ...DEFAULT_POLICIES, fiscal: { name: "Gabriela", address: "", iibb: "", activitiesSince: "" } };
+    const r = StorePoliciesSchema.safeParse(withDefaults(saved));
+    expect(r.data?.fiscal).toMatchObject({ name: "Gabriela", dataFiscalUrl: "" });
+  });
+
   it("las de base son válidas", () => {
     expect(StorePoliciesSchema.safeParse(DEFAULT_POLICIES).success).toBe(true);
   });

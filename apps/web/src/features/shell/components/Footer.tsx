@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
 import { sizeGuideHref } from "@/lib/product";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
+import { QrCode } from "@/ui/atoms/QrCode";
 import { useShellData, useStoreInfo } from "../shell-context";
 import { useUi } from "../ui-store";
 import { Logo } from "./Logo";
@@ -129,6 +130,18 @@ export function Footer() {
         </div>
       </div>
       <div className="wrap">
+        {(info.fiscal || info.dataFiscalUrl) && (
+          <div className="footer-fiscal">
+            <span>{info.fiscal}</span>
+            {info.dataFiscalUrl && (
+              // el formulario 960 de ARCA: se abre en su ventana, como lo pide ARCA
+              <a href={info.dataFiscalUrl} target="_F960AFIPInfo" rel="noopener" className="data-fiscal">
+                <QrCode value={info.dataFiscalUrl} size={56} title="QR de Data Fiscal" />
+                Data Fiscal
+              </a>
+            )}
+          </div>
+        )}
         <div className="footer-bottom">
           <span className="footer-legal">
             © {new Date().getFullYear()} Mini Galú · Marca registrada · <Link href="/ayuda/terminos">Términos</Link> ·{" "}

@@ -563,9 +563,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   por IP). Da un código `ARR-` en pantalla y por mail (si la vuelve a pedir, el mismo), lo anota en el historial y el
   taller lo ve en la campana, la tarjeta y el detalle (fuera de los 10 días se registra igual, marcada); el reintegro
   se hace desde Pago. Recuperado de `4c967d6` con la migración `0029_order_revocations`
-- 🟡 **Datos fiscales en la tienda**: ✅ cargables desde "Datos de la tienda" (nombre o razón social, domicilio,
-  Ingresos Brutos, inicio de actividades; el CUIT es el de `ARCA_CUIT`), ya se imprimen en las facturas. ⏳ Mostrar
-  nombre, CUIT y domicilio en el pie y el QR de **Data Fiscal** de ARCA (formulario 960)
+- ✅ **Datos fiscales en la tienda**: cargables desde "Datos de la tienda" (nombre o razón social, domicilio,
+  Ingresos Brutos, inicio de actividades; el CUIT es el de `ARCA_CUIT` y el panel lo muestra sin dejar editarlo), se
+  imprimen en las facturas y el pie muestra nombre, CUIT y domicilio (solo lo cargado). **Data Fiscal** (formulario
+  960): Gaby pega el link o el HTML que da ARCA (se queda con el link de `qr.afip/arca.gob.ar`) y el pie muestra el QR
+  (SVG con `qrcode`, sin imagen de ARCA) que abre el formulario. ⏳ Cargar el link real cuando Gaby lo saque en ARCA
 - ⏳ Términos, privacidad (Ley 25.326) y textos de Defensa del Consumidor en la ayuda
 
 ## Ideas para después (de IDEAS.md)

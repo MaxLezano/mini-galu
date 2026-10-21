@@ -240,7 +240,7 @@ export function buildApp(config: Config) {
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
   // ajustes de "Tienda y pagos" (cambios, envíos, retiro, gift cards, contacto y taller): los leen envíos, ayuda,
   // gift cards, Galú y los mails, así lo que cambia Gaby se ve igual en todos lados
-  const policies = new PoliciesService(new DrizzlePoliciesStore(db));
+  const policies = new PoliciesService(new DrizzlePoliciesStore(db), config.arca?.cuit ?? null);
   const workshop = async () => workshopPlace((await policies.get()).workshop);
   const help = new HelpService(new DrizzleHelpRepository(db), async () => ({ policies: await policies.get() }));
 

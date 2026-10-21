@@ -37,6 +37,14 @@ describe("PoliciesService", () => {
     expect("rates" in p).toBe(false);
   });
 
+  it("el CUIT es el de ARCA: se completa al leer y no se edita", async () => {
+    const service = new PoliciesService(new MemoryPolicies(), "27123456789");
+    expect((await service.get()).fiscal.cuit).toBe("27123456789");
+    const saved = await service.save({ fiscal: { ...DEFAULT_POLICIES.fiscal, name: "Gabriela", cuit: "20999999999" } });
+    expect(saved.fiscal).toMatchObject({ name: "Gabriela", cuit: "27123456789" });
+    expect((await new PoliciesService(new MemoryPolicies()).get()).fiscal.cuit).toBe("");
+  });
+
   it("no guarda políticas sin ninguna forma de entrega", async () => {
     const service = new PoliciesService(new MemoryPolicies());
     await expect(

@@ -1,6 +1,6 @@
 "use client";
 
-import { type StorePolicies, StorePoliciesSchema } from "@mini-galu/contracts";
+import { formatCuit, type StorePolicies, StorePoliciesSchema } from "@mini-galu/contracts";
 import { Check } from "lucide-react";
 import { Fragment, useState } from "react";
 import { toast } from "@/features/shell/ui-store";
@@ -19,11 +19,19 @@ const FIELDS = [
   ["fiscal", "address", "Domicilio comercial", "Calle, número y localidad", null],
   ["fiscal", "iibb", "Ingresos Brutos", "Número de inscripción o Exento", null],
   ["fiscal", "activitiesSince", "Inicio de actividades", "", null],
+  [
+    "fiscal",
+    "dataFiscalUrl",
+    "Data Fiscal (formulario 960)",
+    "http://qr.afip.gob.ar/?qr=…",
+    "Pegá el link o el código que te da ARCA en Data Fiscal: va como QR en el pie de la tienda.",
+  ],
 ] as const;
 
 /**
  * Datos de la tienda (sin mockup): contacto y taller (los usan el pie, la ayuda, el checkout, los mails y Galú) y los
- * datos fiscales que van impresos en las facturas. El CUIT y el punto de venta son los del certificado de ARCA.
+ * datos fiscales que van impresos en las facturas y en el pie. El CUIT y el punto de venta son los del certificado de
+ * ARCA: el CUIT se muestra, no se edita.
  */
 export function StoreInfoEditor({ initial }: { initial: StorePolicies }) {
   const pick = (p: StorePolicies): Info => ({
@@ -72,7 +80,16 @@ export function StoreInfoEditor({ initial }: { initial: StorePolicies }) {
           const value = (form[group] as Record<string, string>)[key] ?? "";
           return (
             <Fragment key={id}>
-              {group === "fiscal" && key === "name" && <h3 className="sh-sub">Datos fiscales · van en cada factura</h3>}
+              {group === "fiscal" && key === "name" && (
+                <>
+                  <h3 className="sh-sub">Datos fiscales · van en cada factura y en el pie de la tienda</h3>
+                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                    {form.fiscal.cuit
+                      ? `CUIT ${formatCuit(form.fiscal.cuit)} (el del certificado de ARCA).`
+                      : "El CUIT sale del certificado de ARCA: se carga en el servidor (paso 9 de la puesta en marcha)."}
+                  </p>
+                </>
+              )}
               <div className="field">
                 <label htmlFor={id}>{label}</label>
                 <input

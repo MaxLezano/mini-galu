@@ -27,7 +27,7 @@ test("calculá tu envío: Andreani, acordar envío y, en la ciudad del taller, e
   await expect(page.locator(".ship-res")).not.toContainText("Cadete");
 });
 
-test("lo que cambia Gaby en Tienda y pagos (gift cards y contacto) se ve igual en toda la tienda", async ({
+test("lo que cambia Gaby en Tienda y pagos (gift cards, contacto y datos fiscales) se ve igual en toda la tienda", async ({
   page,
 }, info) => {
   // los dos proyectos corren a la vez sobre la misma base: este cambia ajustes, así que corre en uno solo
@@ -49,6 +49,13 @@ test("lo que cambia Gaby en Tienda y pagos (gift cards y contacto) se ve igual e
 
     const datos = page.locator("#datos");
     await datos.getByLabel("WhatsApp").fill("381 555-0000");
+    await datos.getByLabel("Nombre o razón social").fill("Gabriela Prueba");
+    await datos.getByLabel("Domicilio comercial").fill("Calle Falsa 123, Tucumán");
+    // pega el HTML entero que da ARCA: se queda con el link
+    const qr = "http://qr.afip.gob.ar/?qr=Cz3hR7gKgZt9Xqk3eiXH-A,,";
+    await datos
+      .getByLabel("Data Fiscal (formulario 960)")
+      .fill(`<a href="${qr}" target="_F960AFIPInfo"><img src="http://www.afip.gob.ar/images/f960/DATAWEB.jpg"></a>`);
     await datos.getByRole("button", { name: "Guardar datos de la tienda" }).click();
     await expect(page.locator("#toast")).toContainText("Datos de la tienda guardados");
 
@@ -61,6 +68,11 @@ test("lo que cambia Gaby en Tienda y pagos (gift cards y contacto) se ve igual e
       "href",
       "https://wa.me/5493815550000",
     );
+    const footer = shop.getByRole("contentinfo");
+    await expect(footer).toContainText("Gabriela Prueba");
+    await expect(footer).toContainText("Calle Falsa 123, Tucumán");
+    await expect(footer.getByRole("link", { name: "Data Fiscal" })).toHaveAttribute("href", qr);
+    await expect(footer.getByRole("img", { name: "QR de Data Fiscal" })).toBeVisible();
     // las otras cajas no se pisaron
     const after = await (await page.request.get(`${API}/policies`)).json();
     expect(after.exchangeDays).toBe(before.exchangeDays);
@@ -68,7 +80,7 @@ test("lo que cambia Gaby en Tienda y pagos (gift cards y contacto) se ve igual e
   } finally {
     // vuelve a lo que había, aunque falle (corre sobre la base local de todos los días)
     const r = await page.request.put(`${API}/admin/policies`, {
-      data: { giftcardMonths: before.giftcardMonths, contact: before.contact },
+      data: { giftcardMonths: before.giftcardMonths, contact: before.contact, fiscal: before.fiscal },
       headers: { origin: "http://localhost:3000" },
     });
     expect(r.ok()).toBe(true);
