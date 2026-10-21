@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { ADMIN, expect, test } from "./fixtures";
 
 /**
  * Anota los pseudo-elementos que anima cada view transition (`::view-transition-old(product-hero)`, …) y el
@@ -79,4 +79,22 @@ test("transiciones: con ?static la página cambia sin animar", async ({ page }) 
   await expect(page).toHaveURL(/\/producto\//, NAV);
   await expect(page.locator(".pdp-main")).toBeVisible();
   expect((await recorded(page)).filter((v) => /vtOut|vtIn/.test(v))).toEqual([]);
+});
+
+test("transiciones: en el panel la sección cambia sin animar la página (antes sumaba ~0,7 s por cambio)", async ({
+  page,
+}) => {
+  await recordTransitions(page);
+  await page.goto("/taller/pedidos");
+  await page.getByLabel("Email").fill(ADMIN.email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
+  await page.getByRole("button", { name: "Entrar al taller" }).click();
+  await expect(page).toHaveURL(/\/taller\/pedidos/, NAV);
+  await warmUp(page, "/taller/productos");
+  // en celular, desde la barra de abajo (el menú lateral está cerrado)
+  const nav = test.info().project.name === "celular" ? ".adm-tabbar" : ".adm-side";
+  await page.locator(`${nav} a[href="/taller/productos"]`).click();
+  await expect(page).toHaveURL(/\/taller\/productos$/, NAV);
+  await expect(page.getByRole("heading", { level: 1, name: "Productos" })).toBeVisible();
+  expect((await recorded(page)).filter((v) => /vt(In|Out)$/.test(v))).toEqual([]);
 });

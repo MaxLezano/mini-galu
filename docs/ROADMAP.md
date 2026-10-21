@@ -523,8 +523,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   "estelas" de la pantalla anterior. Cada ruta (`loading.tsx` de App Router) y cada parte que carga en el cliente
   (bolsa, Galú, Mi cuenta, listas y fichas del panel) muestra un skeleton con la forma de lo que viene, con los tokens
   de la paleta, respetando `prefers-reduced-motion` y `?static`. Átomo/molécula reutilizable en `ui/`, e2e que
-  verifique que se ve el skeleton y no el contenido viejo. Revisar también la demora al cambiar de sección en
-  `/taller` (medir con `pnpm build && pnpm start`, no con `next dev`, que compila cada ruta la primera vez)
+  verifique que se ve el skeleton y no el contenido viejo. Ojo: medir tiempos con `pnpm build && pnpm start`, no
+  con `next dev` (compila cada ruta la primera vez)
+- ✅ **Panel sin transición de página**: desde la view transition de la tienda (15/10) cada cambio de sección en
+  `/taller` sumaba ~0,7 s (la página vieja se desenfocaba y la nueva subía) y se veía la captura congelada de la
+  anterior. Los mockups del panel no la tienen: se sacó su `template.tsx` (la tienda la conserva) y un e2e lo cuida
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
