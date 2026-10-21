@@ -529,6 +529,19 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   `/taller` sumaba ~0,7 s (la página vieja se desenfocaba y la nueva subía) y se veía la captura congelada de la
   anterior. Los mockups del panel no la tienen: se sacó su `template.tsx` (la tienda la conserva) y un e2e lo cuida
 
+## Antes del lanzamiento con clientes reales (Gaby monotributista)
+- ⏳ **Factura electrónica automática** (módulo `invoicing`, puerto `InvoiceIssuer`): al aprobarse el pago, la API
+  emite la factura C por el web service de ARCA (WSFE, certificado + punto de venta "Web Services" a nombre de
+  Gaby), guarda CAE y número en el pedido, la adjunta al mail de confirmación y el panel la muestra/descarga. Sin
+  credenciales, un emisor simulado (local y CI). Reintentos si ARCA no responde; aviso en el panel si queda sin
+  facturar. Reintegro → nota de crédito C. Las ventas fuera de la web (mayoristas en puerta) se facturan a mano
+- ⏳ **Botón de arrepentimiento** (Res. 424/2020, Ley 24.240): link visible en el pie y en la ayuda, formulario con
+  número de pedido y mail, código de trámite al cliente y aviso en el panel. Se había hecho y se sacó (migración
+  `0026`): recuperar lo de `POST /revocations` y la tabla `order_revocations` con una migración nueva
+- ⏳ **Datos fiscales en la tienda**: nombre, CUIT y domicilio en el pie y el QR de **Data Fiscal** de ARCA
+  (formulario 960), cargables desde "Datos de la tienda"
+- ⏳ Términos, privacidad (Ley 25.326) y textos de Defensa del Consumidor en la ayuda
+
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
 Club Mini Galú, "talles que crecen", PWA del panel con push, reporte mensual, costos por prenda,
