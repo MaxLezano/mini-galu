@@ -1,0 +1,18 @@
+# HTTPS automático (Let's Encrypt) para la tienda y la API. Los certificados quedan en DATA_DIR/caddy.
+{
+	email {$ACME_EMAIL}
+}
+
+{$WEB_HOST} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+www.{$WEB_HOST} {
+	redir https://{$WEB_HOST}{uri} permanent
+}
+
+# sin encode: las respuestas de Galú llegan de a pedazos (SSE) y comprimir las demoraría
+{$API_HOST} {
+	reverse_proxy api:4000
+}

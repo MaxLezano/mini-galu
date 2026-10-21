@@ -1,0 +1,33 @@
+# Prueba de los backups sin AWS: rclone hace de bucket (servicio `minio`) y Mailpit recibe los avisos. Lo usa deploy/test/backups.sh.
+services:
+  caddy: { profiles: ["off"] }
+  web: { profiles: ["off"] }
+  api: { profiles: ["off"] }
+
+  # bucket S3 de prueba: rclone sirve una carpeta como S3 (cada subcarpeta es un bucket)
+  minio:
+    image: rclone/rclone:1.74.1
+    entrypoint: ["sh", "-c", "mkdir -p /data/backups && exec rclone serve s3 /data --addr :9000 --auth-key prueba,prueba-prueba --force-path-style"]
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports: ["18025:8025"]
+
+  postgres:
+    depends_on: [minio]
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  backup:
+    environment:
+      WEB_HOST: ""
+      API_HOST: ""
+      ALERT_REPEAT_HOURS: "0"
+    volumes: [pgdata:/var/lib/postgresql/data:ro, state:/state, restore:/restore]
+
+  restore:
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+volumes:
+  pgdata:
+  state:
+  restore:

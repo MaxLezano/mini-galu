@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Arranque del servicio `backup`: espera la base, hace la primera copia completa si el bucket está vacío (sin ella no
+# se puede restaurar nada) y queda corriendo las tareas del crontab con supercronic.
+set -euo pipefail
+mkdir -p "${STATE_DIR:-/state}" "${RESTORE_DIR:-/restore}"
+chown postgres:postgres "${STATE_DIR:-/state}" "${RESTORE_DIR:-/restore}"
+exec gosu postgres bash -c '
+  source mg-lib
+  until pg_isready -q; do log "esperando la base…"; sleep 3; done
+  if ! wal-g backup-list 2>/dev/null | grep -q base_; then
+    log "no hay ninguna copia completa en el bucket: haciendo la primera"
+    mg-base-backup || true
+  else
+    [[ -f $STATE_DIR/ok-base-backup ]] || mark_ok base-backup
+  fi
+  [[ -f $STATE_DIR/ok-dump ]] || mg-dump || true
+  [[ -f $STATE_DIR/ok-restore-check ]] || mark_ok restore-check
+  log "tareas programadas:"; grep -v "^#" /etc/mini-galu/crontab | sed "/^$/d"
+  exec supercronic -quiet /etc/mini-galu/crontab
+'

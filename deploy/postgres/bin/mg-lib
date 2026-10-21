@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Funciones de los scripts de backup y avisos (se cargan con `source mg-lib`).
+# Postgres se alcanza con las variables PG* y el bucket con las de WAL-G (WALG_S3_PREFIX, AWS_*).
+set -euo pipefail
+
+STATE_DIR=${STATE_DIR:-/state}
+mkdir -p "$STATE_DIR"
+
+log() { echo "[$(date '+%F %T')] $*"; }
+
+sql() { psql -XAtq -v ON_ERROR_STOP=1 -c "$1"; }
+
+# Mail por SMTP (SES en producción, Mailpit en las pruebas). Sin ALERT_EMAIL o SMTP_HOST solo queda en el log.
+send_mail() {
+  local subject=$1 body=$2
+  if [[ -z ${ALERT_EMAIL:-} || -z ${SMTP_HOST:-} ]]; then
+    log "MAIL (sin configurar): $subject"
+    return 0
+  fi
+  local from=${MAIL_FROM:-Mini Galú <hola@minigalu.com.ar>}
+  local from_addr
+  from_addr=$(sed -E 's/.*<([^>]+)>.*/\1/' <<<"$from")
+  local port=${SMTP_PORT:-587} url tls=()
+  if [[ $port == 465 ]]; then url="smtps://$SMTP_HOST:$port"; else url="smtp://$SMTP_HOST:$port"; fi
+  [[ ${SMTP_TLS:-on} == on && $port != 465 ]] && tls=(--ssl-reqd)
+  local auth=()
+  [[ -n ${SMTP_USER:-} ]] && auth=(--user "$SMTP_USER:$SMTP_PASS")
+  local rcpts=() to
+  IFS=',' read -ra to <<<"$ALERT_EMAIL"
+  for r in "${to[@]}"; do rcpts+=(--mail-rcpt "$(xargs <<<"$r")"); done
+  local encoded
+  encoded=$(printf '%s' "$subject" | base64 -w0)
+  if printf 'From: %s\r\nTo: %s\r\nSubject: =?UTF-8?B?%s?=\r\nDate: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n' \
+    "$from" "$ALERT_EMAIL" "$encoded" "$(date -R)" "$body" |
+    curl -sS --max-time 30 --url "$url" "${tls[@]}" "${auth[@]}" --mail-from "$from_addr" "${rcpts[@]}" --upload-file -; then
+    log "MAIL enviado: $subject"
+  else
+    log "MAIL FALLÓ: $subject"
+  fi
+}
+
+# Aviso con clave: se manda una vez y se repite cada ALERT_REPEAT_HOURS mientras siga el problema.
+alert() {
+  local key=$1 subject=$2 body=$3 file="$STATE_DIR/alerta-$1"
+  log "PROBLEMA [$key] $subject"
+  if [[ -f $file ]] && [[ -z $(find "$file" -mmin "+$((${ALERT_REPEAT_HOURS:-6} * 60))") ]]; then return 0; fi
+  [[ -f $file ]] || date '+%F %T' >"$file.desde"
+  touch "$file"
+  send_mail "[Mini Galú] $subject" "$body
+
+Desde: $(cat "$file.desde")
+Servidor: $(hostname) · $(date '+%F %T %Z')"
+}
+
+# El problema se resolvió: avisa solo si antes se había avisado.
+resolved() {
+  local key=$1 subject=$2 file="$STATE_DIR/alerta-$1"
+  [[ -f $file ]] || return 0
+  local since
+  since=$(cat "$file.desde" 2>/dev/null || echo "?")
+  rm -f "$file" "$file.desde"
+  log "RESUELTO [$key] $subject"
+  send_mail "[Mini Galú] Resuelto: $subject" "Volvió a andar. El problema empezó el $since y se resolvió el $(date '+%F %T %Z')."
+}
+
+# Cuántos minutos pasaron desde la última vez que salió bien una tarea (marca en STATE_DIR).
+minutes_since() {
+  local file="$STATE_DIR/ok-$1"
+  [[ -f $file ]] || { echo 999999; return; }
+  echo $((($(date +%s) - $(stat -c %Y "$file")) / 60))
+}
+mark_ok() { touch "$STATE_DIR/ok-$1"; }

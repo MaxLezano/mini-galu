@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Cada 5 minutos: tienda y API responden, Postgres archiva los cambios, las copias están al día y hay disco.
+# Avisa por mail al detectar un problema (y cada ALERT_REPEAT_HOURS mientras siga) y cuando se resuelve.
+source mg-lib
+
+# dos fallas seguidas (10 min) antes de avisar: un reinicio o un deploy no son una caída
+check_url() {
+  local key=$1 name=$2 url=$3 count_file="$STATE_DIR/fallas-$1"
+  if curl -fsS -o /dev/null --max-time 20 "$url" 2>/tmp/curl-$key.err; then
+    rm -f "$count_file"
+    resolved "$key" "$name"
+  else
+    local n=$(($(cat "$count_file" 2>/dev/null || echo 0) + 1))
+    echo "$n" >"$count_file"
+    ((n >= 2)) && alert "$key" "$name no responde" "$url no contesta desde hace $((n * 5)) minutos.
+$(cat /tmp/curl-$key.err)
+
+Revisar en el servidor: docker compose ps · docker compose logs --tail 100 ${key}"
+  fi
+  return 0
+}
+
+[[ -n ${WEB_HOST:-} ]] && check_url web "La tienda" "https://$WEB_HOST/"
+[[ -n ${API_HOST:-} ]] && check_url api "La API" "https://$API_HOST/health"
+
+# Postgres no pudo subir un cambio al bucket después del último que sí subió, o se le juntan cambios sin subir
+# (con archive_timeout=60 se sube uno por minuto: varios esperando es que la subida está trabada)
+pending=$(find "$PGDATA/pg_wal/archive_status" -name '*.ready' 2>/dev/null | wc -l)
+if stuck=$(sql "select coalesce(last_failed_time > coalesce(last_archived_time, 'epoch'), false) || ' ' || coalesce(last_failed_wal, '') from pg_stat_archiver" 2>&1); then
+  if [[ $stuck == t* ]] || ((pending >= ${ARCHIVE_PENDING_ALERT:-5})); then
+    alert archive "La base no puede guardar los cambios en el bucket" "Postgres no logra subir los cambios al bucket de backups (${pending} esperando${stuck#t }).
+Mientras dure, lo nuevo solo está en el disco del servidor. Suele ser el bucket (clave vencida o lleno).
+Ver: docker compose logs --tail 100 postgres"
+  else
+    resolved archive "el archivo de cambios de la base"
+  fi
+  resolved db "la base de datos"
+else
+  alert db "La base de datos no responde" "$stuck"
+fi
+
+# copias al día (la primera la hace el servicio al arrancar)
+(($(minutes_since base-backup) > 27 * 60)) &&
+  alert base-backup-vieja "No hay copia completa de la base de las últimas 27 horas" "La copia diaria (3:30) no se hizo o falló. Ver: docker compose logs backup" ||
+  resolved base-backup-vieja "la copia completa de la base"
+(($(minutes_since dump) > 27 * 60)) &&
+  alert dump-vieja "No hay copia lógica (pg_dump) de las últimas 27 horas" "La copia de las 4:00 no se hizo o falló. Ver: docker compose logs backup" ||
+  resolved dump-vieja "la copia lógica de la base"
+(($(minutes_since restore-check) > 8 * 24 * 60)) &&
+  alert restore-vieja "Hace más de 8 días que no se prueba restaurar la base" "La prueba de los domingos no salió bien o no corrió. Ver: docker compose logs backup" ||
+  resolved restore-vieja "la prueba de restauración"
+
+# disco de la base y disco del sistema (imágenes, logs)
+for mount in "$PGDATA" /; do
+  used=$(df -P "$mount" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')
+  key="disco-$(md5sum <<<"$mount" | cut -c1-6)"
+  if ((used >= ${DISK_ALERT_PERCENT:-85})); then
+    alert "$key" "Disco al ${used}% ($mount)" "Queda poco espacio en $mount. Con el disco lleno la base deja de guardar pedidos.
+Liberar: docker image prune -a · o agrandar el disco en Lightsail."
+  else
+    resolved "$key" "el espacio en disco ($mount)"
+  fi
+done

@@ -28,6 +28,7 @@ export default {
         "docs",
         "deps",
         "ci",
+        "deploy",
       ],
     ],
   },

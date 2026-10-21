@@ -1,0 +1,10 @@
+# Stack completo sin AWS ni dominio (deploy/test/stack.sh): Caddy en el puerto 18443 con su CA interna.
+services:
+  caddy:
+    ports: !override ["18443:443"]
+  web:
+    environment:
+      # la CA interna de Caddy no es pública: solo en esta prueba
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+  minio:
+    entrypoint: ["sh", "-c", "mkdir -p /data/backups /data/fotos && exec rclone serve s3 /data --addr :9000 --auth-key prueba,prueba-prueba --force-path-style"]

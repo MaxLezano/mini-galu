@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Copia lógica (pg_dump) de la base al bucket: otra forma de volver si WAL-G fallara, y la que se baja para mirar
+# datos en otra compu (pg_restore). Sin argumento: la diaria (DUMP_KEEP_DAYS) y el día 1 también la mensual (12).
+# `mg-dump antes-de-actualizar`: la que hace deploy/update.sh antes de migrar.
+source mg-lib
+
+kind=${1:-diario}
+file=$(mktemp /tmp/minigalu-XXXX.dump)
+trap 'rm -f "$file"' EXIT
+
+fail() {
+  alert dump "Falló la copia diaria (pg_dump) de la base" "No se pudo armar o subir la copia lógica de la base.
+
+$1"
+  exit 1
+}
+
+log "pg_dump ($kind): empieza"
+pg_dump -Fc -f "$file" 2>"$file.err" || fail "$(cat "$file.err")"
+pg_restore --list "$file" >/dev/null 2>"$file.err" || fail "La copia quedó ilegible: $(cat "$file.err")"
+put() { wal-g st put --no-compress --no-encrypt "$file" "$1" >/dev/null 2>"$file.err" || fail "$(cat "$file.err")"; }
+
+case $kind in
+  diario)
+    put "dumps/diario/$(date +%F).dump"
+    [[ $(date +%d) == 01 ]] && put "dumps/mensual/$(date +%Y-%m).dump"
+    wal-g st rm "dumps/diario/$(date -d "-${DUMP_KEEP_DAYS:-30} days" +%F).dump" >/dev/null 2>&1 || true
+    wal-g st rm "dumps/mensual/$(date -d '-12 months' +%Y-%m).dump" >/dev/null 2>&1 || true
+    mark_ok dump
+    resolved dump "la copia diaria (pg_dump) de la base"
+    ;;
+  antes-de-actualizar)
+    put "dumps/antes-de-actualizar/$(date +%F-%H%M).dump"
+    ;;
+  *) echo "uso: mg-dump [diario|antes-de-actualizar]" >&2; exit 2 ;;
+esac
+log "pg_dump ($kind): $(du -h "$file" | cut -f1) subido"
+rm -f "$file.err"

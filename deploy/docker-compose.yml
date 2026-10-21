@@ -1,0 +1,164 @@
+# Producción en un solo servidor (AWS Lightsail): Caddy (HTTPS) → tienda + API, Postgres y backups.
+#   cd deploy && cp .env.example .env   (completar)   &&   docker compose up -d --build
+# Todo lo que tiene que sobrevivir vive en DATA_DIR (el disco aparte de Lightsail): base, certificados y estado de
+# los backups. Las copias de la base van además al bucket. Guía completa: docs/DEPLOY.md.
+
+name: mini-galu
+
+x-restart: &restart
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+# WAL-G (bucket privado de backups) y conexión a la base: lo usan postgres, backup y restore
+x-db-env: &db-env
+  TZ: America/Argentina/Buenos_Aires
+  PGDATA: /var/lib/postgresql/data/pgdata
+  POSTGRES_USER: ${POSTGRES_USER:-minigalu}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-minigalu}
+  PGHOST: postgres
+  PGUSER: ${POSTGRES_USER:-minigalu}
+  PGPASSWORD: ${POSTGRES_PASSWORD}
+  PGDATABASE: ${POSTGRES_DB:-minigalu}
+  WALG_S3_PREFIX: s3://${BACKUP_BUCKET:?falta BACKUP_BUCKET}/wal-g
+  AWS_ACCESS_KEY_ID: ${BACKUP_ACCESS_KEY_ID:?falta BACKUP_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${BACKUP_SECRET_ACCESS_KEY:?falta BACKUP_SECRET_ACCESS_KEY}
+  AWS_REGION: ${AWS_REGION:-sa-east-1}
+  AWS_ENDPOINT: ${BACKUP_ENDPOINT:-https://s3.${AWS_REGION:-sa-east-1}.amazonaws.com}
+  AWS_S3_FORCE_PATH_STYLE: "true"
+  WALG_COMPRESSION_METHOD: brotli
+  WALG_UPLOAD_CONCURRENCY: "2"
+  # pocos reintentos: si el bucket no anda, que Postgres registre la falla (y avise) en vez de quedar esperando
+  WALG_S3_MAX_RETRIES: "3"
+  # una base nueva y vacía (servidor de reemplazo sin restaurar) nunca pisa el historial guardado: falla y avisa
+  WALG_PREVENT_WAL_OVERWRITE: "true"
+
+services:
+  caddy:
+    <<: *restart
+    image: caddy:2.10-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      WEB_HOST: ${WEB_HOST:?falta WEB_HOST}
+      API_HOST: ${API_HOST:?falta API_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?falta ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${DATA_DIR:-/mnt/data}/caddy:/data
+    depends_on: [web, api]
+    networks:
+      default:
+        # la tienda (su servidor) y los chequeos llegan a la API por acá, sin salir a internet
+        aliases: ["${WEB_HOST}", "${API_HOST}"]
+
+  web:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${API_HOST}
+        NEXT_PUBLIC_SITE_URL: https://${WEB_HOST}
+        NEXT_PUBLIC_MEDIA_URL: ${MEDIA_PUBLIC_URL:-}
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/robots.txt').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      api: { condition: service_healthy }
+
+  api:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      NODE_ENV: production
+      API_PORT: "4000"
+      DATABASE_URL: postgres://${POSTGRES_USER:-minigalu}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-minigalu}
+      PUBLIC_API_URL: https://${API_HOST}
+      WEB_ORIGIN: https://${WEB_HOST}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  postgres:
+    <<: *restart
+    build: ./postgres
+    image: mini-galu-postgres
+    environment: *db-env
+    # cada cambio se sube al bucket (archive_timeout: como mucho 1 minuto después)
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=wal-g wal-push %p
+      - -c
+      - archive_timeout=60
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=50
+    shm_size: 256mb
+    volumes:
+      - ${DATA_DIR:-/mnt/data}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    stop_grace_period: 60s
+
+  backup:
+    <<: *restart
+    image: mini-galu-postgres
+    environment:
+      <<: *db-env
+      STATE_DIR: /state
+      RESTORE_DIR: /restore
+      WEB_HOST: ${WEB_HOST}
+      API_HOST: ${API_HOST}
+      ALERT_EMAIL: ${ALERT_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_TLS: ${SMTP_TLS:-on}
+      MAIL_FROM: ${MAIL_FROM:-Mini Galú <hola@minigalu.com.ar>}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+      DUMP_KEEP_DAYS: ${DUMP_KEEP_DAYS:-30}
+    entrypoint: ["mg-backup-start"]
+    volumes:
+      # solo lectura: el servicio de backups nunca puede tocar la base
+      - ${DATA_DIR:-/mnt/data}/postgres:/var/lib/postgresql/data:ro
+      - ${DATA_DIR:-/mnt/data}/backup-state:/state
+      - ${DATA_DIR:-/mnt/data}/restore-check:/restore
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Solo a mano, con la base apagada: deploy/restore.sh
+  restore:
+    image: mini-galu-postgres
+    profiles: ["restore"]
+    environment:
+      <<: *db-env
+      STATE_DIR: /tmp/estado
+    user: postgres
+    entrypoint: ["mg-restore"]
+    volumes:
+      - ${DATA_DIR:-/mnt/data}/postgres:/var/lib/postgresql/data

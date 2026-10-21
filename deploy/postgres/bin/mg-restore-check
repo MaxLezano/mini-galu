@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Prueba de restauración: baja la última copia + los cambios archivados a una carpeta aparte, levanta ahí un Postgres
+# temporal y compara con la base real. Un backup que nunca se restauró no es un backup. También baja la última copia
+# lógica y verifica que se pueda leer. Nada toca la base real.
+source mg-lib
+
+dir=${RESTORE_DIR:-/restore}/prueba
+port=5499
+report=()
+
+cleanup() {
+  pg_ctl -D "$dir" -m immediate stop >/dev/null 2>&1 || true
+  rm -rf "$dir" /tmp/prueba.dump
+}
+trap cleanup EXIT
+
+fail() {
+  log "prueba de restauración: FALLÓ — $1"
+  alert restore-check "La prueba de restauración falló" "Se intentó restaurar la última copia en una base aparte y no salió bien:
+
+$1
+
+La base real no se tocó. Revisar con: docker compose logs backup"
+  exit 1
+}
+
+cleanup
+mkdir -p "$dir" && chmod 700 "$dir"
+log "prueba de restauración: bajando la última copia"
+t0=$(date +%s)
+wal-g backup-fetch "$dir" LATEST >/tmp/prueba.log 2>&1 || fail "backup-fetch: $(tail -n 5 /tmp/prueba.log)"
+touch "$dir/recovery.signal"
+cat >>"$dir/postgresql.auto.conf" <<CONF
+restore_command = 'wal-g wal-fetch %f %p'
+recovery_target_action = 'promote'
+archive_mode = 'off'
+CONF
+pg_ctl -D "$dir" -w -t 900 -l /tmp/prueba-pg.log \
+  -o "-c port=$port -c listen_addresses='' -c unix_socket_directories=/tmp -c archive_mode=off" start >/dev/null ||
+  fail "el Postgres restaurado no arrancó: $(tail -n 8 /tmp/prueba-pg.log)"
+
+restored() { psql -XAtq -h /tmp -p "$port" -d "${PGDATABASE}" -c "$1"; }
+for _ in $(seq 1 180); do
+  [[ $(restored "select pg_is_in_recovery()" 2>/dev/null) == f ]] && break
+  sleep 2
+done
+[[ $(restored "select pg_is_in_recovery()") == f ]] || fail "la restauración no terminó de aplicar los cambios archivados"
+secs=$(($(date +%s) - t0))
+
+# Lo que hay en la copia tiene que llegar hasta hace muy poco: todo pedido de hace más de 15 minutos tiene que estar.
+for table in orders "user" products; do
+  live=$(sql "select count(*) from \"$table\" where created_at < now() - interval '15 minutes'" 2>/dev/null || echo "")
+  copy=$(restored "select count(*) from \"$table\"" 2>/dev/null || echo "")
+  [[ -n $live && -n $copy ]] || fail "no se pudo contar $table (real: '$live', copia: '$copy')"
+  ((copy >= live)) || fail "faltan filas en $table: la copia tiene $copy y la base real $live (de hace más de 15 min)"
+  report+=("$table: $copy en la copia")
+done
+last=$(restored "select coalesce(max(created_at)::text, 'sin pedidos') from orders")
+report+=("último pedido en la copia: $last")
+
+log "prueba de restauración: verificando la última copia lógica"
+latest=$(wal-g st ls dumps/diario/ 2>/dev/null | awk '{print $NF}' | grep '\.dump$' | sort | tail -n 1 || true)
+if [[ -n $latest ]]; then
+  wal-g st get --no-decompress --no-decrypt "dumps/diario/$latest" /tmp/prueba.dump >/dev/null 2>&1 ||
+    fail "no se pudo bajar la copia lógica $latest"
+  pg_restore --list /tmp/prueba.dump >/dev/null 2>&1 || fail "la copia lógica $latest no se puede leer"
+  report+=("copia lógica $latest: se lee bien")
+fi
+
+mark_ok restore-check
+log "prueba de restauración: OK en ${secs}s · ${report[*]}"
+resolved restore-check "la prueba de restauración"
+if [[ ${RESTORE_CHECK_MAIL:-on} == on ]]; then
+  send_mail "[Mini Galú] Prueba de restauración OK" "La copia de la base se restauró bien en una base aparte (${secs} s).
+
+$(printf -- '- %s\n' "${report[@]}")
+
+No hay que hacer nada: este mail llega una vez por semana para confirmar que los backups sirven."
+fi

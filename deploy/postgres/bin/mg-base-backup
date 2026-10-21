@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Copia completa de la base con WAL-G (punto de partida para restaurar; los cambios de después los archiva Postgres
+# cada minuto). Deja las últimas BACKUP_KEEP_DAYS (con sus WAL): se puede volver a cualquier momento de esos días.
+source mg-lib
+
+log "copia completa: empieza"
+if out=$(wal-g backup-push "$PGDATA" 2>&1) && out+=$'\n'$(wal-g delete retain FULL "${BACKUP_KEEP_DAYS:-30}" --confirm 2>&1); then
+  mark_ok base-backup
+  log "copia completa: lista"
+  resolved base-backup "la copia completa de la base"
+else
+  echo "$out"
+  alert base-backup "Falló la copia completa de la base" "La copia diaria de la base no se pudo subir al bucket de backups.
+Los cambios se siguen archivando, pero sin copia nueva la restauración tarda más.
+
+Últimas líneas:
+$(tail -n 15 <<<"$out")"
+  exit 1
+fi

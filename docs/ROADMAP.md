@@ -413,8 +413,37 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   `node dist/admin.js` crea la cuenta del taller sin correr el seed. El paquete `db` ya no busca la raíz del monorepo
   al importarse (el bundle fallaba fuera del repo). La CI construye la imagen y la arranca en modo producción sobre una
   base vacía (migra, `/health`, catálogo, cuenta del taller)
-- ⏳ Crear las cuentas (Neon, Render, Vercel, R2, Resend), el dominio y el webhook de Mercado Pago de producción:
-  pasos en [DEPLOY.md](DEPLOY.md). Plan gratis de Render duerme la API (frena las tareas programadas): Starter para abrir
+- ⏳ Webhook de Mercado Pago de producción y el resto de la puesta en marcha: ver "Deploy en AWS Lightsail" abajo
+
+## Deploy en AWS Lightsail (todo en un lugar, ~US$16/mes) · listo para cargar
+Decisión: un solo servidor Lightsail con Docker en vez de Render + Vercel + Neon + R2 + Resend
+([ADR 0004](adr/0004-produccion-en-un-servidor-lightsail.md)). Lo que importa es **no perder pedidos ni datos**:
+copia continua de la base fuera del servidor, restauración probada sola y avisos por mail. Guía en
+[DEPLOY.md](DEPLOY.md); precios oficiales y plan de gastos en [COSTOS.md](COSTOS.md).
+- ✅ Imagen Docker de la tienda (`apps/web/Dockerfile`, Next standalone con `NEXT_STANDALONE=1`)
+- ✅ `deploy/docker-compose.yml`: Caddy (HTTPS automático, `www` redirige), tienda, API, Postgres 17 y backups, con
+  reinicio automático, chequeos de salud y logs rotados. La tienda le habla a la API por adentro de la red (alias de
+  Caddy) y los topes por IP siguen viendo la IP del cliente
+- ✅ Base en un disco aparte (`DATA_DIR`, Lightsail block storage) que sobrevive al servidor
+- ✅ Copia continua (WAL-G → bucket privado, `archive_timeout` 60 s): como mucho 1 minuto de atraso y se vuelve a
+  cualquier momento de los últimos 30 días. Una base vacía nunca pisa el historial (`WALG_PREVENT_WAL_OVERWRITE`)
+- ✅ Copia completa diaria (3:30) y `pg_dump` diario (4:00), 30 diarias + 12 mensuales, y uno antes de cada actualización
+- ✅ Prueba de restauración semanal automática (domingos 5:00): restaura en una base aparte, compara pedidos, clientes y
+  productos con la real, lee la última copia lógica y manda "Prueba de restauración OK"
+- ✅ Avisos por mail (SES, cada 5 min): tienda o API caídas 10 min, base caída, cambios que no suben al bucket (falla o
+  más de 5 esperando), copias de más de 27 h, prueba de más de 8 días, disco al 85%; repite cada 6 h y avisa "Resuelto".
+  El servidor entero caído lo avisa la alarma de Lightsail
+- ✅ Scripts: `deploy/bootstrap.sh` (Docker, swap, actualizaciones automáticas, disco), `deploy/update.sh` (copia +
+  build + reemplazo) y `deploy/restore.sh` (a la última copia o a una hora)
+- ✅ Pruebas sin AWS en la CI: `deploy/test/backups.sh` (rclone como bucket, Mailpit) y `deploy/test/stack.sh` (stack
+  completo con HTTPS en `*.localhost`; reemplaza al job "Imagen de la API")
+- ✅ **Portada de base**: en una base de producción nueva (sin seed) la tienda daba 500 en todas las páginas y el panel no
+  podía guardar la portada. Ahora rige una portada de base sin fotos (`content/domain/home.ts`) y la home oculta lo
+  vacío (colecciones, novedades, fotos del taller, lookbook, grilla de Instagram); el hero sin foto va sobre cacao
+- ⏳ Crear la cuenta de AWS, el servidor, los buckets, SES y el dominio: pasos 1 a 9 de [DEPLOY.md](DEPLOY.md)
+- ⏳ Datos fijos que todavía nombran prendas o colecciones del seed: pie y mega menú (Verano 2027, Fiestas), fotos de
+  "El taller" (Maddie, Romántico Rojo) y la charla de ejemplo de Galú (Rebeca, Samanta). Con el catálogo real se ocultan
+  o quedan desactualizados: pasarlos a Tienda y pagos
 
 ## Próximas tareas (pedidas por Gaby, sin mockup)
 - ✅ **Reseñas reales** (módulo `reviews`). `/resena/MG-xxxx?t=…` (token del pedido, sin cuenta): por cada prenda

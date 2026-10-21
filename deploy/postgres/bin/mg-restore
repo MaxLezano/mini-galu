@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Restaura la base del bucket: la última copia + todos los cambios archivados (o hasta un momento).
+#   mg-restore                       → hasta el último cambio guardado
+#   mg-restore "2026-10-21 15:00"    → como estaba a esa hora (hora de Argentina)
+# Corre con Postgres APAGADO (lo usa deploy/restore.sh). La carpeta de antes queda al lado, por las dudas.
+set -euo pipefail
+source mg-lib
+
+target=${1:-}
+if pg_isready -q -h "${PGHOST:-postgres}" 2>/dev/null; then
+  echo "La base está prendida: apagala antes (deploy/restore.sh lo hace solo)." >&2
+  exit 1
+fi
+
+backup=LATEST
+if [[ -n $target ]]; then
+  # la fecha viene en hora de Argentina (TZ); WAL-G y Postgres la quieren en UTC
+  epoch=$(date -d "$target" +%s) || { echo "No entiendo la fecha: $target" >&2; exit 2; }
+  utc=$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)
+  # la última copia completa anterior a ese momento (la lista viene de la más vieja a la más nueva)
+  backup=$(wal-g backup-list 2>/dev/null | awk -v t="$utc" '$1 ~ /^base_/ && $2 <= t { b = $1 } END { print b }')
+  [[ -n $backup ]] || { echo "No hay ninguna copia completa anterior a $target" >&2; exit 2; }
+fi
+
+mkdir -p "$PGDATA"
+if [[ -n $(ls -A "$PGDATA") ]]; then
+  keep="$(dirname "$PGDATA")/antes-de-restaurar-$(date +%F-%H%M)"
+  log "la base actual queda en $keep"
+  mkdir -p "$keep" && find "$PGDATA" -mindepth 1 -maxdepth 1 -exec mv {} "$keep/" \;
+fi
+
+log "bajando la copia $backup"
+wal-g backup-fetch "$PGDATA" "$backup"
+touch "$PGDATA/recovery.signal"
+{
+  echo "restore_command = 'wal-g wal-fetch %f %p'"
+  echo "recovery_target_action = 'promote'"
+  [[ -n $target ]] && echo "recovery_target_time = '$(date -u -d "@$epoch" '+%F %T+00')'"
+} >>"$PGDATA/postgresql.auto.conf"
+chmod 700 "$PGDATA"
+log "listo: al prender Postgres aplica los cambios ${target:+hasta $target }y queda andando"

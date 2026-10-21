@@ -26,6 +26,8 @@ pnpm test:e2e       # Playwright (celular y escritorio); necesita la base con se
 pnpm shots <url> <nombre> [anchos]   # capturas 375/820/1440/2560 para comparar con los mockups
 pnpm --filter @mini-galu/api build   # bundle de producción (dist/main.js + dist/migrate.js)
 pnpm db:generate    # después de tocar packages/db/src/schema → nueva migración (no editar migraciones viejas)
+bash deploy/test/backups.sh   # backups de producción sin AWS: copia, restauración, volver a una hora, avisos
+bash deploy/test/stack.sh     # stack de producción completo (Caddy + tienda + API + base + backups)
 ```
 
 ## Arquitectura
@@ -66,6 +68,9 @@ packages/{contracts (zod), db (Drizzle), design-tokens, config}
 - **Ninguna imagen de contenido va al repo.** Fotos de prueba y export viejo: `local-assets/` (ignorada). En
   producción las fotos se suben desde el panel al `ImageStorage`.
 - Secretos solo en `.env` (nunca commitear). `.env.example` documenta cada variable.
+- **Producción** (ADR 0004, `docs/DEPLOY.md`): un servidor Lightsail con `deploy/docker-compose.yml`; secretos en
+  `deploy/.env` (`deploy/.env.example`). La base se archiva al minuto en el bucket de backups (WAL-G): todo cambio al
+  esquema pasa por migraciones y una variable nueva de producción va también a `deploy/.env.example`.
 - **Pagos**: sin `MP_ACCESS_TOKEN` la API usa `SimulatedGateway` (local y CI); el titular de la tarjeta decide el
   resultado (APRO aprueba, OTHE rechaza, CONT pendiente). Nunca se aprueba un pedido sin consultar el pago al gateway.
 - **Envíos**: sin `ANDREANI_*` en el `.env`, `FakeAndreani` da número, etiqueta y eventos que avanzan con el reloj

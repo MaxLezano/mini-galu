@@ -1,0 +1,5 @@
+# Tareas del servicio backup (hora de Argentina, TZ en docker-compose). Lo que hace cada una: deploy/postgres/bin.
+*/5 * * * * mg-health
+30 3 * * * mg-base-backup
+0 4 * * * mg-dump
+0 5 * * 0 mg-restore-check
