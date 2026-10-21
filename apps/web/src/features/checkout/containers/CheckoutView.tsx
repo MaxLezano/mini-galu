@@ -762,34 +762,37 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
         )}
       </div>
 
-      <OrderSummary
-        whatsapp={info.whatsapp}
-        exchangeDays={policies.exchangeDays}
-        lines={quote?.lines ?? lines}
-        quote={quote}
-        installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
-        pickup={ship.method === "taller"}
-        arranged={isArranged(ship.method)}
-        cardPlans={step === 3 ? cardPlans : null}
-        chosenInstallments={step === 3 ? chosenInstallments : null}
-        couponBusy={couponBusy}
-        couponError={couponError}
-        onCouponInput={() => setCouponError(null)}
-        onApplyCoupon={applyCoupon}
-        onRemoveCoupon={() => {
-          setCouponError(null);
-          setCouponOnOrder(null).catch(() => setCouponError("No pudimos quitar el cupón. Probá de nuevo."));
-        }}
-        giftcardBusy={giftcardBusy}
-        giftcardError={giftcardError}
-        onGiftcardInput={() => setGiftcardError(null)}
-        onApplyGiftcard={applyGiftcard}
-        onRemoveGiftcard={() => {
-          setGiftcardError(null);
-          setGiftcard(null);
-        }}
-        onEditBag={() => setDrawer(true)}
-      />
+      {/* con la bolsa vacía no hay resumen: en celular quedaba "Ver resumen $0" arriba del aviso */}
+      {!empty && (
+        <OrderSummary
+          whatsapp={info.whatsapp}
+          exchangeDays={policies.exchangeDays}
+          lines={quote?.lines ?? lines}
+          quote={quote}
+          installmentsText={plan ? installmentsLabel(plan, totalCents, formatARS) : null}
+          pickup={ship.method === "taller"}
+          arranged={isArranged(ship.method)}
+          cardPlans={step === 3 ? cardPlans : null}
+          chosenInstallments={step === 3 ? chosenInstallments : null}
+          couponBusy={couponBusy}
+          couponError={couponError}
+          onCouponInput={() => setCouponError(null)}
+          onApplyCoupon={applyCoupon}
+          onRemoveCoupon={() => {
+            setCouponError(null);
+            setCouponOnOrder(null).catch(() => setCouponError("No pudimos quitar el cupón. Probá de nuevo."));
+          }}
+          giftcardBusy={giftcardBusy}
+          giftcardError={giftcardError}
+          onGiftcardInput={() => setGiftcardError(null)}
+          onApplyGiftcard={applyGiftcard}
+          onRemoveGiftcard={() => {
+            setGiftcardError(null);
+            setGiftcard(null);
+          }}
+          onEditBag={() => setDrawer(true)}
+        />
+      )}
 
       {done && (
         <SuccessOverlay

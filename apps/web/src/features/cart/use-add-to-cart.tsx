@@ -8,7 +8,10 @@ import { bumpBadge, flyToBag } from "../shell/craft";
 import { toast, useUi } from "../shell/ui-store";
 import { useCart } from "./cart-store";
 
-/** Agregar a la bolsa con todo el ritual: la prenda vuela, la bolsa salta, toast con foto y (opcional) se abre la bolsa. */
+/**
+ * Agregar a la bolsa con todo el ritual: la prenda vuela, la bolsa salta y toast con foto, o se abre la bolsa
+ * (`open`), que ya muestra la prenda: el toast ahí tapaba "Ir a pagar" en celular.
+ */
 export function useAddToCart() {
   const add = useCart((s) => s.add);
   const setDrawer = useUi((s) => s.setDrawer);
@@ -22,14 +25,15 @@ export function useAddToCart() {
         return toast(`Tenemos ${r.max} en talle ${s} y ya están en tu bolsa`, { icon: <Info className="i-sm" /> });
       bumpBadge();
       const flew = flyToBag(opts.from);
-      toast(
-        <span>
-          <b>{p.name}</b> · talle {s} a la bolsa
-        </span>,
-        { image: cover(p) },
-      );
       // abre la bolsa cuando la prenda llegó
       if (opts.open) setTimeout(() => setDrawer(true), flew ? 850 : 0);
+      else
+        toast(
+          <span>
+            <b>{p.name}</b> · talle {s} a la bolsa
+          </span>,
+          { image: cover(p) },
+        );
     },
     [add, setDrawer],
   );

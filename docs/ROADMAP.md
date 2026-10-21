@@ -442,8 +442,16 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
     vuelve a Mi cuenta → Puntos. Una vez por reseña; queda en el historial del pedido
   - ✅ **Puntos en la ficha del cliente** (panel → Clientes): saldo, cuánto le falta para el cupón y sus canjes
     (código, usado o vencimiento). Con los puntos apagados se ve solo si tiene saldo o canjes
-- ⚠️ `transiciones.spec` en celular falla a veces contra `next dev` (la ficha no llega a la View Transition en
-  5 s); pasa al repetirlo.
+- ✅ `transiciones.spec` en celular fallaba a veces contra `next dev`: React anima recién cuando llega la página y
+  la primera visita compila la ruta (más de 5 s). El test pide antes la ficha y el inicio y espera hasta 15 s.
+- ✅ **QA responsive (octubre 2026)**: barrido de la tienda y el panel en 320, 360, 375, 414, 600, 768, 820, 1024,
+  1280, 1440, 1920 y 2560 (desborde horizontal, elementos fuera de pantalla, texto cortado, consola) más los estados
+  abiertos (menú, buscador, bolsa, filtros, guía de talles, Galú, checkout completo, cuenta, seguimiento, reseña,
+  link de pago). Sin desbordes en la tienda. Arreglado: la portada en celular bajaba la foto de 640 px y la estiraba
+  (`sizes` según el alto); en iOS los campos van a 16 px (con menos, Safari agranda la página al tocarlos); botones
+  largos parten en dos líneas en pantallas de 420 o menos (en Seguridad se salían de la tarjeta a 320); "¿Qué estás
+  buscando?" ya no se corta en celular; al agregar desde la ficha se abre la bolsa sin el toast (tapaba "Ir a
+  pagar"); el checkout con la bolsa vacía no muestra el resumen en $0
 - ✅ **Suscriptores** (`/taller/suscriptores`, módulo `subscribers` de la API, solo para ver). Tres pestañas con lo
   más nuevo arriba: **Cartas del taller** (mail, desde dónde se sumó, suscripto o de baja; el CSV sigue en
   "Exportar cartas"), **Anotados a un lanzamiento** (cuál y cuándo sale) y **Aviso de talle** (prenda y talle). Cada

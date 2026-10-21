@@ -768,3 +768,14 @@ html::-webkit-scrollbar-thumb { background-color: var(--cacao-3); border-width: 
 html::-webkit-scrollbar-thumb:hover { background-color: var(--canela); }
 :is(.bg-cacao, .site-footer, .adm-side, .galu-head, .drop, .wish-share) ::-webkit-scrollbar-thumb { background-color: rgba(244,237,227,.3); }
 @supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: var(--cacao-3) transparent; } }
+
+/* ---------- Celulares chicos (320–420) ----------
+   Un botón de texto largo ("Activar la verificación en dos pasos") se salía de su tarjeta: parte en dos líneas. */
+@media (max-width: 420px) {
+  .btn { max-width: 100%; white-space: normal; }
+  .so-form input { font-size: 6vw; } /* "¿Qué estás buscando?" se cortaba */
+}
+/* iOS agranda la página al enfocar un campo con letra de menos de 16px y no la vuelve a achicar */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]), select, textarea { font-size: max(16px, 1em) !important; }
+}

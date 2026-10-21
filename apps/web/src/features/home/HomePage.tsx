@@ -52,7 +52,14 @@ export function HomePage({
     <main>
       {/* HERO */}
       <section className="hero">
-        <Picture src={home.hero.imageUrl} alt={home.hero.imageAlt} fetchPriority="high" sizes="100vw" />
+        {/* la portada cubre todo el alto: en una pantalla más angosta que 16:9 la foto apaisada mide ~1.78 × el alto
+            (con "100vw" el celular bajaba la de 640 px y la estiraba al doble) */}
+        <Picture
+          src={home.hero.imageUrl}
+          alt={home.hero.imageAlt}
+          fetchPriority="high"
+          sizes="(max-aspect-ratio: 16/9) 178vh, 100vw"
+        />
         <div className="wrap hero-inner">
           <div className="split">
             <span className="eyebrow">{home.hero.eyebrow}</span>
