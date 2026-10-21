@@ -1,6 +1,8 @@
 /* Estilos de la página — copiados de design/mockups/index.html */
 /* Hero */
 .hero { position: relative; margin-top: calc(var(--header-h) * -1); min-height: max(580px, calc(100svh - var(--announce-h))); color: var(--paper); display: flex; align-items: flex-end; overflow: hidden; }
+/* sin foto (portada de base de una tienda recién estrenada): el texto claro va sobre cacao */
+.hero:not(:has(> picture, > img)) { background: var(--cacao); }
 .hero > img, .hero > picture > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 58% 38%; animation: kb 2.8s var(--ease) both; }
 .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(40,28,22,.62) 0%, rgba(40,28,22,.28) 42%, rgba(40,28,22,0) 64%), linear-gradient(180deg, rgba(40,28,22,.35) 0%, rgba(40,28,22,0) 26%, rgba(40,28,22,0) 50%, rgba(40,28,22,.55) 100%); }
 @keyframes kb { from { transform: scale(1.12); filter: blur(6px) saturate(.8); } }

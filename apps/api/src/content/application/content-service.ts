@@ -9,6 +9,7 @@ import {
 import type { CatalogService } from "../../catalog/application/catalog-service";
 import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { ImageStorage } from "../../shared/media/image-storage";
+import { DEFAULT_HOME } from "../domain/home";
 import type { ContentRepository, LaunchRow } from "./ports";
 
 export class ContentService {
@@ -30,7 +31,8 @@ export class ContentService {
     const { imagePath, ...hero } = block.hero;
     return {
       announcements: block.announcements,
-      hero: { ...hero, imageUrl: url(imagePath) },
+      // sin foto elegida (portada de base) va vacía y la tienda no dibuja la imagen
+      hero: { ...hero, imageUrl: imagePath ? url(imagePath) : "" },
       featuredCollections: block.featuredCollections.flatMap(({ slug, title }) =>
         facets.collections.filter((c) => c.slug === slug).map((c) => ({ ...c, title })),
       ),
@@ -57,8 +59,8 @@ export class ContentService {
     return {
       hero: block.hero,
       announcements: block.announcements,
-      heroImageUrl: this.storage.url(block.hero.imagePath),
-      imageOptions: [...new Set(paths)].map((path) => ({ path, url: this.storage.url(path) })),
+      heroImageUrl: block.hero.imagePath ? this.storage.url(block.hero.imagePath) : "",
+      imageOptions: [...new Set(paths.filter(Boolean))].map((path) => ({ path, url: this.storage.url(path) })),
     };
   }
 
@@ -68,10 +70,9 @@ export class ContentService {
     return this.adminHome();
   }
 
+  /** La guardada o, si todavía no hay (producción recién estrenada), la de base. */
   private async block() {
-    const raw = await this.content.getHomeBlock();
-    if (!raw) throw new NotFoundError("La portada todavía no está cargada (corré pnpm db:seed)");
-    return HomeBlockSchema.parse(raw);
+    return HomeBlockSchema.parse((await this.content.getHomeBlock()) ?? DEFAULT_HOME);
   }
 
   async joinLaunch(launchId: string, req: LaunchSignupRequest): Promise<{ created: boolean; signups: number }> {

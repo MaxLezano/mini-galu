@@ -47,6 +47,9 @@ export function HomePage({
   };
   const rail = home.railSlugs.flatMap((s) => (bySlug[s] ? [bySlug[s]] : []));
   const launchSlug = home.launch?.collectionSlug;
+  // fotos de "El taller": sin esas prendas (tienda recién estrenada) la columna de fotos no se muestra
+  const tallerA = img("maddie", 2);
+  const tallerB = img("romantico-rojo", 2);
 
   return (
     <main>
@@ -54,12 +57,14 @@ export function HomePage({
       <section className="hero">
         {/* la portada cubre todo el alto: en una pantalla más angosta que 16:9 la foto apaisada mide ~1.78 × el alto
             (con "100vw" el celular bajaba la de 640 px y la estiraba al doble) */}
-        <Picture
-          src={home.hero.imageUrl}
-          alt={home.hero.imageAlt}
-          fetchPriority="high"
-          sizes="(max-aspect-ratio: 16/9) 178vh, 100vw"
-        />
+        {home.hero.imageUrl && (
+          <Picture
+            src={home.hero.imageUrl}
+            alt={home.hero.imageAlt}
+            fetchPriority="high"
+            sizes="(max-aspect-ratio: 16/9) 178vh, 100vw"
+          />
+        )}
         <div className="wrap hero-inner">
           <div className="split">
             <span className="eyebrow">{home.hero.eyebrow}</span>
@@ -117,54 +122,56 @@ export function HomePage({
         </span>
       </section>
 
-      {/* COLECCIONES */}
-      <section className="wrap" style={{ paddingBottom: "clamp(64px,9vw,140px)" }}>
-        <div className="section-head">
-          <div>
-            <span className="eyebrow">Colecciones</span>
-            <h2 className="display h2" style={{ marginTop: 14 }}>
-              Para cada <em>momento</em>
-            </h2>
+      {/* COLECCIONES (lo vacío no se muestra: una tienda recién estrenada todavía no eligió nada) */}
+      {home.featuredCollections.length > 0 && (
+        <section className="wrap" style={{ paddingBottom: "clamp(64px,9vw,140px)" }}>
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Colecciones</span>
+              <h2 className="display h2" style={{ marginTop: 14 }}>
+                Para cada <em>momento</em>
+              </h2>
+            </div>
+            <Link className="link" href="/catalogo">
+              Ver todo el catálogo <ArrowRight className="i-sm" />
+            </Link>
           </div>
-          <Link className="link" href="/catalogo">
-            Ver todo el catálogo <ArrowRight className="i-sm" />
-          </Link>
-        </div>
-        <div className="cols">
-          {home.featuredCollections.map((c, i) => {
-            const soon = c.slug === launchSlug;
-            return (
-              <Link
-                key={c.slug}
-                className="col-card"
-                href={soon ? "/#lanzamiento" : `/catalogo?col=${c.slug}`}
-                data-reveal=""
-                style={d(i * 0.12)}
-              >
-                <div className="arch">
-                  {soon && <span className="soon">Próximamente</span>}
-                  {c.coverUrl && (
-                    <Picture
-                      sizes="(max-width: 760px) 100vw, 33vw"
-                      src={c.coverUrl}
-                      alt={c.label}
-                      loading="lazy"
-                      style={soon ? { objectPosition: "52% 50%" } : undefined}
-                    />
-                  )}
-                </div>
-                <h3 className="display">
-                  <Emphasis text={c.title} />
-                </h3>
-                <span className="muted">{c.tagline}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+          <div className="cols">
+            {home.featuredCollections.map((c, i) => {
+              const soon = c.slug === launchSlug;
+              return (
+                <Link
+                  key={c.slug}
+                  className="col-card"
+                  href={soon ? "/#lanzamiento" : `/catalogo?col=${c.slug}`}
+                  data-reveal=""
+                  style={d(i * 0.12)}
+                >
+                  <div className="arch">
+                    {soon && <span className="soon">Próximamente</span>}
+                    {c.coverUrl && (
+                      <Picture
+                        sizes="(max-width: 760px) 100vw, 33vw"
+                        src={c.coverUrl}
+                        alt={c.label}
+                        loading="lazy"
+                        style={soon ? { objectPosition: "52% 50%" } : undefined}
+                      />
+                    )}
+                  </div>
+                  <h3 className="display">
+                    <Emphasis text={c.title} />
+                  </h3>
+                  <span className="muted">{c.tagline}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* NOVEDADES */}
-      <Rail products={rail} />
+      {rail.length > 0 && <Rail products={rail} />}
 
       {/* LANZAMIENTO */}
       {home.launch && (
@@ -174,27 +181,24 @@ export function HomePage({
       {/* EL TALLER */}
       <section className="section bg-linen hem-top" id="taller">
         <div className="wrap taller">
-          <div className="taller-media">
-            <div className="a" data-reveal="mask">
-              <Picture
-                src={img("maddie", 2)}
-                alt="Detalle de bordado del Set Maddie"
-                loading="lazy"
-                sizes="(max-width: 900px) 70vw, 30vw"
-              />
+          {tallerA && tallerB && (
+            <div className="taller-media">
+              <div className="a" data-reveal="mask">
+                <Picture
+                  src={tallerA}
+                  alt="Detalle de bordado del Set Maddie"
+                  loading="lazy"
+                  sizes="(max-width: 900px) 70vw, 30vw"
+                />
+              </div>
+              <div className="b" data-reveal="" style={d(0.3)}>
+                <Picture src={tallerB} alt="Set Romántico Rojo" loading="lazy" sizes="(max-width: 900px) 45vw, 18vw" />
+              </div>
+              <span className="hand note" data-reveal="" style={d(0.6)}>
+                hecho con amor ♡
+              </span>
             </div>
-            <div className="b" data-reveal="" style={d(0.3)}>
-              <Picture
-                src={img("romantico-rojo", 2)}
-                alt="Set Romántico Rojo"
-                loading="lazy"
-                sizes="(max-width: 900px) 45vw, 18vw"
-              />
-            </div>
-            <span className="hand note" data-reveal="" style={d(0.6)}>
-              hecho con amor ♡
-            </span>
-          </div>
+          )}
           <div>
             <span className="eyebrow">El taller</span>
             <h2 className="display h2" style={{ margin: "16px 0 22px" }}>
@@ -230,7 +234,7 @@ export function HomePage({
       </section>
 
       {/* LOOKBOOK */}
-      <Lookbook spots={home.lookbook} products={bySlug} />
+      {home.lookbook.length > 0 && <Lookbook spots={home.lookbook} products={bySlug} />}
 
       {/* RESEÑAS */}
       {home.reviews.featured.length > 0 && <ReviewsBand rating={home.reviews.rating} reviews={home.reviews.featured} />}
@@ -282,14 +286,16 @@ export function HomePage({
             <BrandIcon name="instagram" className="i-sm" /> Seguinos
           </a>
         </div>
-        <div className="ig">
-          {home.instagram.imageUrls.map((u, i) => (
-            <a key={u} href={instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
-              <Picture src={u} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
-              <BrandIcon name="instagram" />
-            </a>
-          ))}
-        </div>
+        {home.instagram.imageUrls.length > 0 && (
+          <div className="ig">
+            {home.instagram.imageUrls.map((u, i) => (
+              <a key={u} href={instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
+                <Picture src={u} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
+                <BrandIcon name="instagram" />
+              </a>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="perks">
