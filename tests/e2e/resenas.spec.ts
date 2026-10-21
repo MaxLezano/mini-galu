@@ -41,8 +41,10 @@ async function deliver(page: Page): Promise<string> {
   await drawer.getByRole("button", { name: "Marcar como retirado" }).click();
   await expect(drawer.locator(".drawer-head .pill-status")).toHaveText(/Entregado/);
   await drawer.getByRole("button", { name: "Pedir reseña" }).click();
-  const wa = page.getByRole("dialog", { name: "Mensaje por WhatsApp" });
-  const link = /http:\/\/localhost:3000(\/resena\/\S+)/.exec(await wa.getByRole("textbox").inputValue())?.[1];
+  const text = page.getByRole("dialog", { name: "Mensaje por WhatsApp" }).getByRole("textbox");
+  // el mensaje se completa con el link apenas lo arma el panel: esperar a que esté
+  await expect(text).toHaveValue(/\/resena\//);
+  const link = /http:\/\/localhost:3000(\/resena\/\S+)/.exec(await text.inputValue())?.[1];
   expect(link).toBeTruthy();
   return link as string;
 }
