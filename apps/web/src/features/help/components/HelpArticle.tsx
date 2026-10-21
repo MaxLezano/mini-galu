@@ -76,6 +76,19 @@ export function HelpArticle({ page, links, children }: Props) {
               )}
             </section>
           ))}
+          {/* Res. SCI 424/2020: el botón de arrepentimiento también se llega desde la ayuda de cambios */}
+          {page.topic === "cambios" && (
+            <section id="arrepentimiento" className="help-sec">
+              <h2 className="display h3">Botón de arrepentimiento</h2>
+              <p>
+                Si te arrepentiste de una compra, podés pedir la baja dentro de los 10 días corridos desde que la
+                recibiste, sin cuenta: con el número de pedido y el mail con el que compraste.
+              </p>
+              <Link className="btn btn-ghost help-cta" href="/arrepentimiento">
+                Botón de arrepentimiento
+              </Link>
+            </section>
+          )}
           {page.updatedAt && <p className="help-upd">Actualizado el {longDateYear(page.updatedAt)}</p>}
           {children}
         </article>

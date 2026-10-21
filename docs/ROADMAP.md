@@ -558,9 +558,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     no (es un vale: se factura al canjearla). ⏳ Confirmarlo con el contador de Gaby
   - Las ventas fuera de la web (mayoristas en puerta) se facturan a mano
   - ⏳ Probarlo contra homologación de ARCA con un certificado de prueba (WSASS) y después en producción
-- ⏳ **Botón de arrepentimiento** (Res. 424/2020, Ley 24.240): link visible en el pie y en la ayuda, formulario con
-  número de pedido y mail, código de trámite al cliente y aviso en el panel. Se había hecho y se sacó (migración
-  `0026`): recuperar lo de `POST /revocations` y la tabla `order_revocations` con una migración nueva
+- ✅ **Botón de arrepentimiento** (Res. 424/2020, Ley 24.240): link quieto en la cinta (primera pantalla), en el pie y
+  en la ayuda de cambios; `/arrepentimiento` sin cuenta, con número de pedido y mail (mismo error si no coinciden, tope
+  por IP). Da un código `ARR-` en pantalla y por mail (si la vuelve a pedir, el mismo), lo anota en el historial y el
+  taller lo ve en la campana, la tarjeta y el detalle (fuera de los 10 días se registra igual, marcada); el reintegro
+  se hace desde Pago. Recuperado de `4c967d6` con la migración `0029_order_revocations`
 - 🟡 **Datos fiscales en la tienda**: ✅ cargables desde "Datos de la tienda" (nombre o razón social, domicilio,
   Ingresos Brutos, inicio de actividades; el CUIT es el de `ARCA_CUIT`), ya se imprimen en las facturas. ⏳ Mostrar
   nombre, CUIT y domicilio en el pie y el QR de **Data Fiscal** de ARCA (formulario 960)

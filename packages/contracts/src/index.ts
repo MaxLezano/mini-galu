@@ -19,4 +19,5 @@ export * from "./orders";
 export * from "./points";
 export * from "./policies";
 export * from "./reviews";
+export * from "./revocation";
 export * from "./tracking";

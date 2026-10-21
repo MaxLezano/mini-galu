@@ -249,6 +249,23 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
           {!o && <SkeletonRows rows={4} thumb={false} />}
           {o && (
             <>
+              {o.revocation && (
+                <div className="od-sec">
+                  <div className="od-revocation" role="note">
+                    <b>
+                      <Undo2 className="i-sm" /> Pidió la baja · botón de arrepentimiento
+                    </b>
+                    <span>
+                      Código <b>{o.revocation.code}</b> · {longDate(o.revocation.at)}
+                      {o.revocation.inTime ? "" : " · pasaron más de 10 días desde la entrega"}
+                    </span>
+                    {o.revocation.reason && <span>"{o.revocation.reason}"</span>}
+                    <span className="muted">
+                      Escribile para coordinar la devolución de las prendas; el reintegro se hace desde Pago, más abajo.
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="od-sec">
                 <div className="od-steps">
                   {[1, 2, 3, 4, 5].map((k) => (

@@ -31,6 +31,8 @@ import type {
   QuoteRequest,
   ReviewableItem,
   ReviewableOrder,
+  RevocationInput,
+  RevocationReceipt,
   ShippingOptions,
   Size,
   StorePolicies,
@@ -136,6 +138,9 @@ export const api = {
   galuLog: (body: AssistantRulesLog) => request<null>("/assistant/log", { method: "POST", body: JSON.stringify(body) }),
   /** Galú por reglas: lo que le enseñó Gaby que responde la pregunta (null si nada). */
   galuTaught: (q: string) => request<AssistantTaught>(`/assistant/taught?q=${encodeURIComponent(q)}`),
+  /** Botón de arrepentimiento: pide la baja de un pedido (sin cuenta). */
+  revoke: (input: RevocationInput) =>
+    request<RevocationReceipt>("/revocations", { method: "POST", body: JSON.stringify(input) }),
   unsubscribe: (t: string) => request<null>("/newsletter/baja", { method: "POST", body: JSON.stringify({ t }) }),
   track: (code: string, t?: string) =>
     request<PublicTracking>(`/tracking/${encodeURIComponent(code)}${t ? `?t=${encodeURIComponent(t)}` : ""}`),

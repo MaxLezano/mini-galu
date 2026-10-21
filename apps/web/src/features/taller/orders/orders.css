@@ -20,6 +20,11 @@
 .pl-item .q { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--cacao); color: var(--paper); font-size: 10.5px; font-weight: 700; display: grid; place-items: center; }
 .pl-item b { font: 400 16px/1.2 var(--f-display); display: block; }
 .pl-item .muted { font-size: 12.5px; }
+/* agregado: el cliente pidió la baja con el botón de arrepentimiento (Res. SCI 424/2020) */
+.od-revocation { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--rosa-l); color: var(--rojo); font-size: 13.5px; }
+.od-revocation > b { display: inline-flex; gap: 6px; align-items: center; }
+.od-revocation span { color: var(--cacao); }
+.od-revocation .muted { color: var(--cacao-2); font-size: 12.5px; }
 .od-refund-cta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 14px; font-size: 12.5px; }
 .od-refund { display: grid; gap: 10px; margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: var(--linen-2); font-size: 13.5px; }
 .od-refund > b { display: inline-flex; gap: 6px; align-items: center; }
