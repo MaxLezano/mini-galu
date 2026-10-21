@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, panelReady, test } from "./fixtures";
 
 const API = "http://localhost:4000";
 
@@ -10,7 +10,7 @@ test("entregas y cambios: lo que cambia Gaby en el panel se ve en la tienda", as
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller\/tienda/);
-  await expect(page.locator("body.adm-body")).toBeAttached();
+  await panelReady(page);
 
   try {
     const box = page.locator("#entregas");

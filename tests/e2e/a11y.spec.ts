@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, panelReady, test } from "./fixtures";
 
 /**
  * Accesibilidad WCAG 2.1 AA con axe-core en las pantallas principales de la tienda y del panel.
@@ -97,7 +97,7 @@ test("panel · ingresar y pantallas principales sin violaciones AA", async ({ pa
   for (const url of PANEL) {
     await test.step(url, async () => {
       await page.goto(`${url}?static`);
-      await expect(page.locator("body.adm-body")).toBeAttached();
+      await panelReady(page);
       await auditar(page);
     });
   }

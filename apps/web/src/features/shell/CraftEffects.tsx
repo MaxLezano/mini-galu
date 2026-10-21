@@ -20,6 +20,11 @@ import { useUi } from "./ui-store";
 
 /** React ya tomó este nodo (lo marca con su fiber al hidratar o al crearlo). */
 const isHydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactFiber$"));
+/** Cuando el hilo queda libre: React ya no tiene trabajo de hidratación pendiente (lo hace de a tandas). */
+const whenIdle = (fn: () => void) =>
+  "requestIdleCallback" in window ? requestIdleCallback(fn) : (setTimeout(fn, 200) as unknown as number);
+/** La página de la carga inicial ya hidrató (después, navegando, React crea los nodos: no hay que esperar). */
+let settled = false;
 
 /** Monta los detalles de taller en cada página y los reengancha cuando se agrega contenido (filtros, Galú…). */
 export function CraftEffects() {
@@ -60,13 +65,20 @@ export function CraftEffects() {
     releaseHero();
     const cleanups: (() => void)[] = [settleAnchor()];
     let t: ReturnType<typeof setTimeout>;
+    let stopped = false;
     const run = () => {
+      if (stopped) return;
       // la página llega por streaming dentro del Suspense de loading.tsx e hidrata después que el shell: hasta
       // entonces no se la toca (cambiarle atributos rompe la hidratación)
-      const main = document.querySelector("main");
-      if (main && !isHydrated(main)) {
+      if (!settled) {
+        const main = document.querySelector("main");
         clearTimeout(t);
-        t = setTimeout(run, 60);
+        if (main && !isHydrated(main)) t = setTimeout(run, 60);
+        else
+          whenIdle(() => {
+            settled = true;
+            run();
+          });
         return;
       }
       autoReveal();
@@ -81,6 +93,7 @@ export function CraftEffects() {
     const host = document.querySelector("main")?.parentElement;
     if (host) mo.observe(host, { childList: true, subtree: true });
     return () => {
+      stopped = true;
       cancelAnimationFrame(raf);
       clearTimeout(t);
       mo.disconnect();

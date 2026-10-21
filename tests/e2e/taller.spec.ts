@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, panelReady, test } from "./fixtures";
 
-/** El panel ya hidrató: AdminShell agrega `adm-body` en un efecto (corre cuando React terminó). */
-async function ready(page: Page) {
-  await expect(page.locator("body.adm-body")).toBeAttached();
-}
+/** El panel ya hidrató (ver `panelReady`). */
+const ready = panelReady;
 
 async function login(page: Page) {
   await page.goto("/taller/productos");

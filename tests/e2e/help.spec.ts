@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, panelReady, test } from "./fixtures";
 
 test("ayuda: del pie a términos y entre páginas, con el índice del tema", async ({ page }) => {
   await page.goto("/");
@@ -30,7 +30,7 @@ test("ayuda: editar una página en el panel se ve en la tienda y vuelve al texto
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller\/tienda/);
-  await expect(page.locator("body.adm-body")).toBeAttached();
+  await panelReady(page);
 
   // si Gaby ya la había escrito, al final vuelve su texto (no el de base)
   const API = "http://localhost:4000";

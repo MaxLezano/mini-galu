@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, panelReady, test } from "./fixtures";
 
 const API = "http://localhost:4000";
 
@@ -38,7 +38,7 @@ test("lo que cambia Gaby en Tienda y pagos (gift cards y contacto) se ve igual e
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar al taller" }).click();
   await expect(page).toHaveURL(/\/taller\/tienda/);
-  await expect(page.locator("body.adm-body")).toBeAttached();
+  await panelReady(page);
 
   try {
     const months = before.giftcardMonths === 3 ? 4 : 3;
