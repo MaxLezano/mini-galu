@@ -29,10 +29,11 @@ import { useAccount } from "@/features/account/account-store";
 import { ageOf, birthdayLabel } from "@/features/account/account-view";
 import { OpenGaluButton } from "@/features/assistant/components/OpenGaluButton";
 import { isStill } from "@/features/shell/craft";
+import { useShellData } from "@/features/shell/shell-context";
 import { toast } from "@/features/shell/ui-store";
 import { accountApi } from "@/lib/account-api";
 import { ApiRequestError, api } from "@/lib/api";
-import { cover } from "@/lib/product";
+import { cover, sizeGuideHref } from "@/lib/product";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { Foco } from "@/ui/atoms/Foco";
 import { Picture } from "@/ui/atoms/Picture";
@@ -68,6 +69,7 @@ function withTransition(fn: () => void) {
 export function CatalogView({ initial, initialProducts, collections, colors, priceRange }: Props) {
   const [state, setState] = useState(initial);
   const [products, setProducts] = useState(initialProducts);
+  const shell = useShellData();
   const [sheet, setSheet] = useState(false);
   const router = useRouter();
   const status = useAccount((s) => s.status);
@@ -411,6 +413,7 @@ export function CatalogView({ initial, initialProducts, collections, colors, pri
           maxPrice={priceRange.maxCents}
           open={sheet}
           resultCount={n}
+          sizeGuideHref={sizeGuideHref(shell.products)}
           onNena={(n) => {
             const on = nena !== n.id;
             setNena(on ? n.id : null);

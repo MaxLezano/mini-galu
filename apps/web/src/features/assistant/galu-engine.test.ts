@@ -1,6 +1,6 @@
 import { DEFAULT_POLICIES, type ProductSummary } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
-import { answer, type GaluReply, taughtReply } from "./galu-engine";
+import { answer, defaultSuggestions, type GaluReply, taughtReply } from "./galu-engine";
 import { replyText } from "./galu-text";
 
 let n = 0;
@@ -93,6 +93,16 @@ describe("Galú por reglas", () => {
       methods: { ...DEFAULT_POLICIES.methods, taller: false },
     });
     expect(replyText(sinTaller)).toContain("no tenemos retiro en el taller");
+  });
+
+  it("la sugerencia del precio nombra una prenda del catálogo y Galú la responde", async () => {
+    for (const list of [catalog, [cleo, romantico]]) {
+      const q = defaultSuggestions(list).find((s) => s.startsWith("¿Cuánto sale"));
+      const p = list === catalog ? samanta : romantico;
+      expect(q).toBe(`¿Cuánto sale el ${p.name}?`);
+      expect(said(await ask(q ?? ""))).toContain("$30.000");
+    }
+    expect(defaultSuggestions([cleo]).some((s) => s.startsWith("¿Cuánto sale"))).toBe(false);
   });
 
   it("lo que ya sabía sigue igual y lo desconocido va a 'Enseñale'", async () => {

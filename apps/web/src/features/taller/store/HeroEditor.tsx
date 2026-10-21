@@ -17,7 +17,12 @@ type Form = {
   imageUrl: string;
   imageAlt: string;
   announcements: string;
+  /** Fotos de "El taller" (grande y chica): las dos o ninguna. */
+  taller: { imagePath: string; imageUrl: string; alt: string }[];
 };
+
+type Target = "hero" | 0 | 1;
+const TALLER_LABELS = ["Foto grande", "Foto chica"];
 
 const SEP = " · ";
 const toForm = (h: AdminHome): Form => ({
@@ -29,6 +34,7 @@ const toForm = (h: AdminHome): Form => ({
   imageUrl: h.heroImageUrl,
   imageAlt: h.hero.imageAlt,
   announcements: h.announcements.join(SEP),
+  taller: h.taller.length === 2 ? h.taller : [],
 });
 
 /** Portada de la tienda con vista previa en vivo (mockup admin-tienda.html → #home). */
@@ -39,12 +45,27 @@ export function HeroEditor({ initial }: { initial: AdminHome }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const uploadTo = useRef<Target>("hero");
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   const lines = f.title
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
   const dirty = JSON.stringify(f) !== JSON.stringify(toForm(saved));
+
+  /** Elige una foto para la portada o para un lugar del taller (sin fotos del taller, las dos arrancan iguales). */
+  const pick = (target: Target, o: { path: string; url: string }) =>
+    setF((x) => {
+      if (target === "hero") return { ...x, imagePath: o.path, imageUrl: o.url };
+      const taller =
+        x.taller.length === 2 ? [...x.taller] : [0, 1].map(() => ({ imagePath: o.path, imageUrl: o.url, alt: "" }));
+      taller[target] = { ...(taller[target] ?? { alt: "" }), imagePath: o.path, imageUrl: o.url };
+      return { ...x, taller };
+    });
+  const choose = (target: Target) => {
+    uploadTo.current = target;
+    fileInput.current?.click();
+  };
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
@@ -53,7 +74,7 @@ export function HeroEditor({ initial }: { initial: AdminHome }) {
     try {
       const r = await adminApi.uploadImage(file, "content");
       setOptions((o) => [r, ...o]);
-      setF((x) => ({ ...x, imagePath: r.path, imageUrl: r.url }));
+      pick(uploadTo.current, r);
     } catch (e) {
       toast(e instanceof ApiRequestError ? e.message : "No se pudo subir la foto");
     }
@@ -73,6 +94,7 @@ export function HeroEditor({ initial }: { initial: AdminHome }) {
         .split("·")
         .map((a) => a.trim())
         .filter(Boolean),
+      taller: f.taller.map(({ imagePath, alt }) => ({ imagePath, alt })),
     };
     const check = HomeHeroInputSchema.safeParse(input);
     if (!check.success) return setError(check.error.issues[0]?.message ?? "Revisá los datos");
@@ -123,12 +145,12 @@ export function HeroEditor({ initial }: { initial: AdminHome }) {
                 type="button"
                 aria-pressed={o.path === f.imagePath}
                 aria-label="Usar esta foto"
-                onClick={() => setF((x) => ({ ...x, imagePath: o.path, imageUrl: o.url }))}
+                onClick={() => pick("hero", o)}
               >
                 <img src={o.url} alt="" />
               </button>
             ))}
-            <button type="button" className="up" aria-label="Subir foto" onClick={() => fileInput.current?.click()}>
+            <button type="button" className="up" aria-label="Subir foto" onClick={() => choose("hero")}>
               <ImagePlus />
               <small>Subir foto</small>
             </button>
@@ -195,6 +217,69 @@ export function HeroEditor({ initial }: { initial: AdminHome }) {
             maxLength={140}
             onChange={(e) => set("imageAlt", e.target.value)}
           />
+        </div>
+        <div className="field">
+          <span className="lbl">
+            Fotos de “El taller”{" "}
+            <small className="muted" style={{ fontWeight: 400 }}>
+              (al lado de “Pocas, lindas y hechas para durar”; sin fotos, la sección va solo con el texto)
+            </small>
+          </span>
+          {TALLER_LABELS.map((label, i) => {
+            const slot = f.taller[i];
+            return (
+              <div key={label} className="stack" style={{ gap: 6, marginTop: 6 }}>
+                <small className="muted">{label}</small>
+                <div className="heroes">
+                  {options.map((o) => (
+                    <button
+                      key={o.path}
+                      type="button"
+                      aria-pressed={o.path === slot?.imagePath}
+                      aria-label={`${label} del taller: usar esta foto`}
+                      onClick={() => pick(i as 0 | 1, o)}
+                    >
+                      <img src={o.url} alt="" />
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="up"
+                    aria-label={`Subir ${label.toLowerCase()} del taller`}
+                    onClick={() => choose(i as 0 | 1)}
+                  >
+                    <ImagePlus />
+                    <small>Subir foto</small>
+                  </button>
+                </div>
+                {slot && (
+                  <input
+                    className="input"
+                    aria-label={`Descripción de la ${label.toLowerCase()} del taller`}
+                    placeholder="Qué se ve (para lectores de pantalla y Google)"
+                    value={slot.alt}
+                    maxLength={140}
+                    onChange={(e) =>
+                      setF((x) => ({
+                        ...x,
+                        taller: x.taller.map((t, j) => (j === i ? { ...t, alt: e.target.value } : t)),
+                      }))
+                    }
+                  />
+                )}
+              </div>
+            );
+          })}
+          {f.taller.length > 0 && (
+            <button
+              type="button"
+              className="link"
+              style={{ justifySelf: "start", fontSize: 13, marginTop: 6 }}
+              onClick={() => set("taller", [])}
+            >
+              Sacar las fotos del taller
+            </button>
+          )}
         </div>
         <div className="field">
           <label htmlFor="ann">

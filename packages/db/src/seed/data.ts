@@ -434,6 +434,10 @@ export const home: HomeBlock = {
       (f) => `products/${f}.webp`,
     ),
   },
+  taller: [
+    { imagePath: "products/maddie-2.webp", alt: "Detalle de bordado del Set Maddie" },
+    { imagePath: "products/romantico-rojo-2.webp", alt: "Set Romántico Rojo" },
+  ],
 };
 
 /** Imágenes que no son de producto (portada, lanzamiento, colecciones). */

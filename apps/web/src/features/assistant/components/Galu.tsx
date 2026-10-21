@@ -21,7 +21,7 @@ import { Foco } from "@/ui/atoms/Foco";
 import {
   answer,
   contextSuggestions,
-  DEFAULT_SUGGESTIONS,
+  defaultSuggestions,
   type GaluReply,
   greeting,
   orderNotFound,
@@ -207,7 +207,7 @@ export function Galu() {
     document.body.classList.add("galu-open");
     if (!msgs.length) {
       push({ role: "bot", content: greeting(ctx) });
-      setSugs(ctx ? contextSuggestions(ctx) : DEFAULT_SUGGESTIONS);
+      setSugs(ctx ? contextSuggestions(ctx) : defaultSuggestions(products));
     }
     const q = consumeGaluQuestion();
     if (q) void reply(q);

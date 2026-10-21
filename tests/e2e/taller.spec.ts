@@ -119,14 +119,20 @@ test("editar la portada se ve en la home", async ({ page }) => {
   const eyebrow = page.getByLabel("Etiqueta");
   const original = await eyebrow.inputValue();
   await eyebrow.fill("Prueba e2e");
+  // las fotos de "El taller" se eligen acá (antes eran fotos fijas de prendas del seed)
+  const tallerAlt = page.getByLabel("Descripción de la foto chica del taller");
+  const originalAlt = await tallerAlt.inputValue();
+  await tallerAlt.fill("Mesa de costura e2e");
   await page.getByRole("button", { name: "Guardar portada" }).click();
   await expect(page.locator("#toast")).toContainText("Portada publicada");
 
   const shop = await page.context().newPage();
   await shop.goto("/");
   await expect(shop.locator(".hero .eyebrow")).toHaveText("Prueba e2e");
+  await expect(shop.locator(".taller-media .b img")).toHaveAttribute("alt", "Mesa de costura e2e");
 
   await eyebrow.fill(original);
+  await tallerAlt.fill(originalAlt);
   await page.getByRole("button", { name: "Guardar portada" }).click();
   await expect(page.locator("#toast")).toContainText("Portada publicada");
 });

@@ -9,6 +9,13 @@ export const stockOf = (p: Pick<ProductSummary, "variants">, s: Size) =>
 export const cover = (p: Pick<ProductSummary, "images">, n = 1) =>
   p.images[Math.min(n, p.images.length) - 1]?.url ?? "";
 
+/** Guía de talles: la tabla de medidas de la primera prenda del catálogo que la tenga (null sin prendas). */
+export function sizeGuideHref(products: Pick<ProductSummary, "slug" | "isAccessory" | "variants">[]) {
+  const garments = products.filter((p) => !p.isAccessory);
+  const p = garments.find((g) => g.variants.some((v) => v.measures)) ?? garments[0];
+  return p ? `/producto/${p.slug}#medidas` : null;
+}
+
 /** "Vestido Samanta Plumeti" → ["Vestido Samanta ", "Plumeti"] para poner la última palabra en itálica. */
 export function splitLastWord(name: string): [string, string] {
   const i = name.lastIndexOf(" ");

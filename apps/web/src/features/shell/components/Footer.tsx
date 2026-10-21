@@ -4,13 +4,18 @@ import { CreditCard, Mail, Truck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
+import { sizeGuideHref } from "@/lib/product";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
-import { useStoreInfo } from "../shell-context";
+import { useShellData, useStoreInfo } from "../shell-context";
 import { useUi } from "../ui-store";
 import { Logo } from "./Logo";
 
 export function Footer() {
   const info = useStoreInfo();
+  const { products, collections } = useShellData();
+  // las colecciones con prendas (las de la tienda de ese momento, no las del seed)
+  const shop = collections.filter((c) => c.productCount > 0).slice(0, 3);
+  const guide = sizeGuideHref(products);
   const openGalu = useUi((s) => s.openGalu);
   const [subscribed, setSubscribed] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
@@ -42,15 +47,11 @@ export function Footer() {
             <li>
               <Link href="/catalogo">Catálogo</Link>
             </li>
-            <li>
-              <Link href="/catalogo?col=verano-2027">Verano 2027</Link>
-            </li>
-            <li>
-              <Link href="/catalogo?col=fiestas">Fiestas</Link>
-            </li>
-            <li>
-              <Link href="/catalogo?col=accesorios">Accesorios</Link>
-            </li>
+            {shop.map((c) => (
+              <li key={c.slug}>
+                <Link href={`/catalogo?col=${c.slug}`}>{c.label}</Link>
+              </li>
+            ))}
             <li>
               <Link href="/giftcards">Gift cards</Link>
             </li>
@@ -62,9 +63,11 @@ export function Footer() {
             <li>
               <Link href="/seguimiento">Seguir mi pedido</Link>
             </li>
-            <li>
-              <Link href="/producto/cleo#medidas">Guía de talles</Link>
-            </li>
+            {guide && (
+              <li>
+                <Link href={guide}>Guía de talles</Link>
+              </li>
+            )}
             <li>
               <Link href="/ayuda/cambios">Cambios y devoluciones</Link>
             </li>

@@ -56,6 +56,8 @@ export const HomeContentSchema = z.object({
   railSlugs: z.array(z.string()),
   launch: LaunchSchema.nullable(),
   lookbook: z.array(LookbookSpotSchema),
+  /** Fotos de "El taller" (grande y chica); sin elegir, la sección va sin fotos. */
+  taller: z.array(z.object({ imageUrl: z.string(), alt: z.string() })),
   reviews: z.object({ rating: RatingSchema, featured: z.array(FeaturedReviewSchema) }),
   instagram: z.object({ handle: z.string(), url: z.string(), imageUrls: z.array(z.string()) }),
 });
@@ -85,6 +87,7 @@ export const HomeBlockSchema = z.object({
     }),
   ),
   instagram: z.object({ handle: z.string(), url: z.string(), imagePaths: z.array(z.string()) }),
+  taller: z.array(z.object({ imagePath: z.string(), alt: z.string() })).default([]),
 });
 export type HomeBlock = z.infer<typeof HomeBlockSchema>;
 
@@ -103,12 +106,18 @@ export const HomeHeroInputSchema = z.object({
     imageAlt: z.string().trim().max(140),
   }),
   announcements: z.array(z.string().trim().min(2).max(80)).min(1, "Dejá al menos un anuncio").max(8),
+  /** Fotos de "El taller": las dos (grande y chica) o ninguna. Sin el campo, quedan las que había. */
+  taller: z
+    .array(z.object({ imagePath: z.string().min(1), alt: z.string().trim().max(140) }))
+    .refine((t) => t.length === 0 || t.length === 2, "Elegí las dos fotos del taller (o ninguna)")
+    .optional(),
 });
 export type HomeHeroInput = z.infer<typeof HomeHeroInputSchema>;
 
 export const AdminHomeSchema = HomeHeroInputSchema.extend({
   heroImageUrl: z.string(),
-  /** Fotos para elegir: las de la portada, el lookbook y los lanzamientos. */
+  taller: z.array(z.object({ imagePath: z.string(), alt: z.string(), imageUrl: z.string() })),
+  /** Fotos para elegir: las de la portada, el taller, el lookbook y los lanzamientos. */
   imageOptions: z.array(z.object({ path: z.string(), url: z.string() })),
 });
 export type AdminHome = z.infer<typeof AdminHomeSchema>;

@@ -16,6 +16,8 @@ type Props = {
   maxPrice: number;
   open: boolean;
   resultCount: number;
+  /** Tabla de medidas de una prenda real (sin prendas no hay link). */
+  sizeGuideHref: string | null;
   onNena: (n: FilterNena) => void;
   onToggleSize: (s: Size) => void;
   onToggleOcc: (o: Occasion) => void;
@@ -27,7 +29,18 @@ type Props = {
 };
 
 /** Barra lateral en escritorio; hoja que sube desde abajo en celular. */
-export function CatalogFilters({ state, nenas, nena, colors, minPrice, maxPrice, open, resultCount, ...on }: Props) {
+export function CatalogFilters({
+  state,
+  nenas,
+  nena,
+  colors,
+  minPrice,
+  maxPrice,
+  open,
+  resultCount,
+  sizeGuideHref,
+  ...on
+}: Props) {
   const max = state.max ?? maxPrice;
   return (
     <aside className={`filters ${open ? "is-open" : ""}`} id="filters" aria-label="Filtros">
@@ -143,9 +156,11 @@ export function CatalogFilters({ state, nenas, nena, colors, minPrice, maxPrice,
         <div>
           <b>¿Entre dos talles?</b>
           <span>Elegí el más grande: los modelos tienen 3 cm de holgura para que duren más.</span>
-          <Link className="link" href="/producto/cleo#medidas">
-            Ver la tabla
-          </Link>
+          {sizeGuideHref && (
+            <Link className="link" href={sizeGuideHref}>
+              Ver la tabla
+            </Link>
+          )}
         </div>
         <span className="hand">¡crecen rapidísimo!</span>
       </div>

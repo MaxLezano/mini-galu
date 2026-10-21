@@ -22,6 +22,7 @@ import { Foco } from "@/ui/atoms/Foco";
 import { Lookbook } from "./components/Lookbook";
 import { Rail } from "./components/Rail";
 import { ReviewsBand } from "./components/ReviewsBand";
+import { type ChatDemoPick, launchAvatars, pickChatDemo } from "./home-picks";
 import "./home.css";
 import { Picture } from "@/ui/atoms/Picture";
 
@@ -41,15 +42,10 @@ export function HomePage({
   instagram: { url: string; handle: string };
 }) {
   const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
-  const img = (slug: string, n = 1) => {
-    const p = bySlug[slug];
-    return p ? cover(p, n) : "";
-  };
   const rail = home.railSlugs.flatMap((s) => (bySlug[s] ? [bySlug[s]] : []));
   const launchSlug = home.launch?.collectionSlug;
-  // fotos de "El taller": sin esas prendas (tienda recién estrenada) la columna de fotos no se muestra
-  const tallerA = img("maddie", 2);
-  const tallerB = img("romantico-rojo", 2);
+  // fotos de "El taller" (Portada de la tienda en el panel): sin elegir, la columna de fotos no se muestra
+  const [tallerA, tallerB] = home.taller;
 
   return (
     <main>
@@ -174,9 +170,7 @@ export function HomePage({
       {rail.length > 0 && <Rail products={rail} />}
 
       {/* LANZAMIENTO */}
-      {home.launch && (
-        <LaunchDrop launch={home.launch} avatars={[img("cleo"), img("elsa", 2), img("rebeca", 2)].filter(Boolean)} />
-      )}
+      {home.launch && <LaunchDrop launch={home.launch} avatars={launchAvatars(products, rail, launchSlug)} />}
 
       {/* EL TALLER */}
       <section className="section bg-linen hem-top" id="taller">
@@ -185,14 +179,19 @@ export function HomePage({
             <div className="taller-media">
               <div className="a" data-reveal="mask">
                 <Picture
-                  src={tallerA}
-                  alt="Detalle de bordado del Set Maddie"
+                  src={tallerA.imageUrl}
+                  alt={tallerA.alt}
                   loading="lazy"
                   sizes="(max-width: 900px) 70vw, 30vw"
                 />
               </div>
               <div className="b" data-reveal="" style={d(0.3)}>
-                <Picture src={tallerB} alt="Set Romántico Rojo" loading="lazy" sizes="(max-width: 900px) 45vw, 18vw" />
+                <Picture
+                  src={tallerB.imageUrl}
+                  alt={tallerB.alt}
+                  loading="lazy"
+                  sizes="(max-width: 900px) 45vw, 18vw"
+                />
               </div>
               <span className="hand note" data-reveal="" style={d(0.6)}>
                 hecho con amor ♡
@@ -269,7 +268,7 @@ export function HomePage({
               <MessageCircleHeart /> Charlar con Galú
             </OpenGaluButton>
           </div>
-          <ChatDemo rebeca={bySlug.rebeca} samanta={bySlug.samanta} />
+          <ChatDemo pick={pickChatDemo(products)} />
         </div>
       </section>
 
@@ -329,38 +328,41 @@ export function HomePage({
   );
 }
 
-/** Conversación de muestra (con stock real del Rebeca). */
-function ChatDemo({ rebeca, samanta }: { rebeca?: ProductSummary; samanta?: ProductSummary }) {
-  if (!rebeca || !samanta) return null;
-  const t2 = rebeca.variants.find((v) => v.size === "2")?.stock ?? 0;
+/** Conversación de muestra con el stock de ese momento. */
+function ChatDemo({ pick }: { pick: ChatDemoPick | null }) {
+  if (!pick) return null;
+  const { main, other, size, stock, occasion } = pick;
   return (
     <div className="chat-demo" data-reveal="">
-      <div className="msg me">Hola! busco algo para el bautismo de mi sobrina, tiene 2 años</div>
+      <div className="msg me">
+        Hola! busco algo para el {occasion} de mi sobrina, tiene {size} años
+      </div>
       <div className="msg bot">
-        ¡Qué lindo! Para bautismo te recomiendo el <b>{rebeca.name}</b>: blanco, mangas globo y mucho vuelo.{" "}
-        {t2 > 0 && (
-          <>
-            Hay <b>{t2} en talle 2</b>.
-          </>
-        )}
+        ¡Qué lindo! Para {occasion} te recomiendo el <b>{main.name}</b>, en {main.color.name.toLowerCase()}. Hay{" "}
+        <b>
+          {stock} en talle {size}
+        </b>
+        .
       </div>
       <div className="msg cards">
         <div className="mini-card">
-          <img loading="lazy" src={imageThumb(cover(rebeca))} alt="" />
+          <img loading="lazy" src={imageThumb(cover(main))} alt="" />
           <div>
-            <b>{rebeca.name}</b>
-            <div className="stock">{t2 > 0 ? `${t2} en stock · talle 2` : "Sin stock en talle 2"}</div>
-            <Link className="btn" href={`/producto/${rebeca.slug}`}>
+            <b>{main.name}</b>
+            <div className="stock">
+              {stock} en stock · talle {size}
+            </div>
+            <Link className="btn" href={`/producto/${main.slug}`}>
               Ver
             </Link>
           </div>
         </div>
         <div className="mini-card">
-          <img loading="lazy" src={imageThumb(cover(samanta))} alt="" />
+          <img loading="lazy" src={imageThumb(cover(other))} alt="" />
           <div>
-            <b>{samanta.name.replace("Vestido ", "")}</b>
-            <div className="stock">Desde talle {samanta.variants.find((v) => v.stock > 0)?.size ?? "—"}</div>
-            <Link className="btn btn-ghost" href={`/producto/${samanta.slug}`}>
+            <b>{other.name.replace("Vestido ", "")}</b>
+            <div className="stock">Desde talle {other.variants.find((v) => v.stock > 0)?.size ?? "—"}</div>
+            <Link className="btn btn-ghost" href={`/producto/${other.slug}`}>
               Ver
             </Link>
           </div>

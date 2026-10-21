@@ -441,9 +441,12 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   podía guardar la portada. Ahora rige una portada de base sin fotos (`content/domain/home.ts`) y la home oculta lo
   vacío (colecciones, novedades, fotos del taller, lookbook, grilla de Instagram); el hero sin foto va sobre cacao
 - ⏳ Crear la cuenta de AWS, el servidor, los buckets, SES y el dominio: pasos 1 a 9 de [DEPLOY.md](DEPLOY.md)
-- ⏳ Datos fijos que todavía nombran prendas o colecciones del seed: pie y mega menú (Verano 2027, Fiestas), fotos de
-  "El taller" (Maddie, Romántico Rojo) y la charla de ejemplo de Galú (Rebeca, Samanta). Con el catálogo real se ocultan
-  o quedan desactualizados: pasarlos a Tienda y pagos
+- ✅ **Sin datos fijos del seed en la tienda**: el pie lista las colecciones con prendas (como el mega menú); "Guía de
+  talles" y "Tabla de medidas" (pie, mega menú, filtros del catálogo) llevan a la tabla de una prenda real (sin prendas,
+  no se muestran); las fotos de "El taller" se eligen en **Portada de la tienda** (grande y chica, con su descripción;
+  las dos o ninguna, y sin fotos la sección va solo con el texto); los avatares del lanzamiento son prendas de esa
+  colección; la charla de ejemplo de Galú arma ocasión, talle y stock con el catálogo de ese momento
+  (`features/home/home-picks.ts`) y la sugerencia "¿Cuánto sale el …?" nombra una prenda con stock
 
 ## Próximas tareas (pedidas por Gaby, sin mockup)
 - ✅ **Reseñas reales** (módulo `reviews`). `/resena/MG-xxxx?t=…` (token del pedido, sin cuenta): por cada prenda
@@ -515,6 +518,13 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     (días de Tienda y pagos + ayuda) y retiro en el taller (horarios). Todo filtra por talle si se lo dicen.
     "Rojo" o "bordado" ya no se toman como el nombre de una prenda.
   - Lo que siga sin saber va a "Enseñale" como hasta ahora.
+
+- ⏳ **Carga con skeletons en toda la web (tienda y panel)**. Hoy las pantallas aparecen de golpe y al navegar quedan
+  "estelas" de la pantalla anterior. Cada ruta (`loading.tsx` de App Router) y cada parte que carga en el cliente
+  (bolsa, Galú, Mi cuenta, listas y fichas del panel) muestra un skeleton con la forma de lo que viene, con los tokens
+  de la paleta, respetando `prefers-reduced-motion` y `?static`. Átomo/molécula reutilizable en `ui/`, e2e que
+  verifique que se ve el skeleton y no el contenido viejo. Revisar también la demora al cambiar de sección en
+  `/taller` (medir con `pnpm build && pnpm start`, no con `next dev`, que compila cada ruta la primera vez)
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,

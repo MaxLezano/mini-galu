@@ -27,4 +27,5 @@ export const DEFAULT_HOME: HomeBlock = {
     url: "https://www.instagram.com/minigalumodainfantil/",
     imagePaths: [],
   },
+  taller: [],
 };

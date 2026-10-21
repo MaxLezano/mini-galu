@@ -42,13 +42,17 @@ const WA = (whatsapp: string, label = "escribile a Gaby") => (
   </a>
 );
 
-export const DEFAULT_SUGGESTIONS = [
-  "¿Qué hay en talle 6?",
-  "Algo para un cumple",
-  "¿Cuánto sale el Samanta?",
-  "Regalo para una nena de 3",
-  "¿Dónde está mi pedido?",
-];
+/** Sugerencias al abrir Galú fuera de una ficha; la del precio nombra una prenda del catálogo de ese momento. */
+export function defaultSuggestions(products: ProductSummary[]): string[] {
+  const named = products.find((p) => !p.isAccessory && p.variants.some((v) => v.stock > 0));
+  return [
+    "¿Qué hay en talle 6?",
+    "Algo para un cumple",
+    ...(named ? [`¿Cuánto sale el ${named.name}?`] : []),
+    "Regalo para una nena de 3",
+    "¿Dónde está mi pedido?",
+  ];
+}
 
 export function contextSuggestions(p: ProductSummary): string[] {
   const out = p.variants.find((v) => v.stock === 0)?.size;

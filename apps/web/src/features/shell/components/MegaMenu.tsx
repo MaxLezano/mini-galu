@@ -1,7 +1,7 @@
 import { formatARS, GARMENT_SIZES, imageThumb, sizeLabel } from "@mini-galu/contracts";
 import Link from "next/link";
 import { dayMonth } from "@/lib/date";
-import { cover } from "@/lib/product";
+import { cover, sizeGuideHref } from "@/lib/product";
 import { useShellData } from "../shell-context";
 import { useUi } from "../ui-store";
 
@@ -21,6 +21,7 @@ export function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
   const upcoming = collections.find((c) => c.launchAt);
   const feat = products.filter((p) => p.tag === "Nuevo").slice(0, 2);
   const launchDate = launch ? dayMonth(launch.startsAt) : null;
+  const guide = sizeGuideHref(products);
 
   return (
     <div className="mega" id="mega-tienda" role="region" aria-label="Tienda">
@@ -101,10 +102,14 @@ export function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
         <Link className="link" href="/giftcards" onClick={onNavigate}>
           Regalá una gift card
         </Link>
-        <i className="dot-sep" />
-        <Link className="link" href="/producto/cleo#medidas" onClick={onNavigate}>
-          Tabla de medidas
-        </Link>
+        {guide && (
+          <>
+            <i className="dot-sep" />
+            <Link className="link" href={guide} onClick={onNavigate}>
+              Tabla de medidas
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

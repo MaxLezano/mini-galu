@@ -72,4 +72,26 @@ describe("ContentService · portada", () => {
       { path: "content/portada.webp", url: "https://fotos.minigalu.com.ar/content/portada.webp" },
     ]);
   });
+
+  it("las fotos del taller se eligen desde el panel; guardar sin ellas deja las que había", async () => {
+    const repo = new MemoryContent();
+    const service = new ContentService(repo, catalog, storage);
+    expect((await service.home()).taller).toEqual([]);
+    const taller = [
+      { imagePath: "content/bordado.webp", alt: "Bordado de un cuello" },
+      { imagePath: "content/mesa.webp", alt: "La mesa de costura" },
+    ];
+    await service.saveHero({ hero: DEFAULT_HOME.hero, announcements: ["Hola"], taller });
+    await service.saveHero({ hero: DEFAULT_HOME.hero, announcements: ["Chau"] });
+    expect((await service.home()).taller).toEqual([
+      { imageUrl: "https://fotos.minigalu.com.ar/content/bordado.webp", alt: "Bordado de un cuello" },
+      { imageUrl: "https://fotos.minigalu.com.ar/content/mesa.webp", alt: "La mesa de costura" },
+    ]);
+    const admin = await service.adminHome();
+    expect(admin.taller.map((t) => t.imagePath)).toEqual(["content/bordado.webp", "content/mesa.webp"]);
+    expect(admin.imageOptions.map((o) => o.path)).toContain("content/mesa.webp");
+
+    await service.saveHero({ hero: DEFAULT_HOME.hero, announcements: ["Hola"], taller: [] });
+    expect((await service.home()).taller).toEqual([]);
+  });
 });

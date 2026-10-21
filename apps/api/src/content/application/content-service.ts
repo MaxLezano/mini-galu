@@ -39,6 +39,7 @@ export class ContentService {
       railSlugs: block.railSlugs,
       launch: launchRow ? await this.toLaunch(launchRow) : null,
       lookbook: block.lookbook.map(({ imagePath, ...l }) => ({ ...l, imageUrl: url(imagePath) })),
+      taller: block.taller.map(({ imagePath, alt }) => ({ imageUrl: url(imagePath), alt })),
       reviews,
       instagram: {
         handle: block.instagram.handle,
@@ -53,6 +54,7 @@ export class ContentService {
     const block = await this.block();
     const paths = [
       block.hero.imagePath,
+      ...block.taller.map((t) => t.imagePath),
       ...block.lookbook.map((l) => l.imagePath),
       ...(await this.content.launchCoverPaths()),
     ];
@@ -60,13 +62,19 @@ export class ContentService {
       hero: block.hero,
       announcements: block.announcements,
       heroImageUrl: block.hero.imagePath ? this.storage.url(block.hero.imagePath) : "",
+      taller: block.taller.map((t) => ({ ...t, imageUrl: this.storage.url(t.imagePath) })),
       imageOptions: [...new Set(paths.filter(Boolean))].map((path) => ({ path, url: this.storage.url(path) })),
     };
   }
 
   async saveHero(input: HomeHeroInput): Promise<AdminHome> {
     const block = await this.block();
-    await this.content.saveHomeBlock({ ...block, hero: input.hero, announcements: input.announcements });
+    await this.content.saveHomeBlock({
+      ...block,
+      hero: input.hero,
+      announcements: input.announcements,
+      taller: input.taller ?? block.taller,
+    });
     return this.adminHome();
   }
 
