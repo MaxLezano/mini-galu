@@ -3,6 +3,7 @@ import {
   giftcardBuyerMail,
   giftcardMail,
   letterMail,
+  type MailAttachment,
   type MailLinks,
   type MessageMail,
   messageMail,
@@ -22,13 +23,19 @@ export class OrderNotifications {
     private readonly mailer: Mailer,
     /** `token`: el del pedido, para que el link de seguimiento muestre el total. */
     private readonly links: (orderNumber: string, token?: string) => Promise<MailLinks>,
+    /** La factura del pedido, si ya se emitió (va adjunta al "Recibimos tu pago"). */
+    private readonly invoice: (orderId: string) => Promise<MailAttachment | null> = async () => null,
   ) {}
 
   /** "Recibimos tu pago" con el detalle del pedido. Devuelve a quién se mandó (null si no existe el pedido). */
   async paymentApproved(orderId: string, intro?: string): Promise<string | null> {
     const o = await this.orders.find(orderId);
     if (!o) return null;
-    await this.mailer.send(paymentApprovedMail(o, await this.links(o.number, o.accessToken), intro));
+    const invoice = await this.invoice(orderId);
+    await this.mailer.send({
+      ...paymentApprovedMail(o, await this.links(o.number, o.accessToken), intro),
+      ...(invoice && { attachments: [invoice] }),
+    });
     return o.email;
   }
 
@@ -36,8 +43,11 @@ export class OrderNotifications {
     await this.mailer.send(paymentReminderMail(o, await this.links(o.number), intro));
   }
 
-  async message(m: MessageMail): Promise<void> {
-    await this.mailer.send(messageMail(m, await this.links(m.number ?? "")));
+  async message(m: MessageMail, attachments?: MailAttachment[]): Promise<void> {
+    await this.mailer.send({
+      ...messageMail(m, await this.links(m.number ?? "")),
+      ...(attachments?.length && { attachments }),
+    });
   }
 
   /* ---- Gift cards ---- */

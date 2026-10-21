@@ -25,6 +25,7 @@ export class SmtpMailer implements Mailer {
       html: mail.html,
       text: mail.text,
       replyTo: mail.replyTo,
+      attachments: mail.attachments?.map((a) => ({ filename: a.filename, content: Buffer.from(a.content) })),
     });
   }
 }

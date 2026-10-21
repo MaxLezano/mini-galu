@@ -1,4 +1,10 @@
-import type { AdminDaySummary, AdminOrderDetail, AdminOrderSummary, OrderStatus } from "@mini-galu/contracts";
+import type {
+  AdminDaySummary,
+  AdminInvoice,
+  AdminOrderDetail,
+  AdminOrderSummary,
+  OrderStatus,
+} from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
@@ -26,6 +32,8 @@ export class AdminOrdersService {
     private readonly netReceived: (p: OrderPayment) => Promise<number | null> = async () => null,
     /** Página de la tienda donde el cliente reseña las prendas (número + token). */
     private readonly reviewUrl: (number: string, token: string) => string | null = () => null,
+    /** Factura y nota de crédito del pedido (las emite el módulo de facturación). */
+    private readonly invoices: (orderId: string) => Promise<AdminInvoice[]> = async () => [],
   ) {}
 
   async list(): Promise<AdminOrderSummary[]> {
@@ -35,9 +43,10 @@ export class AdminOrdersService {
   async detail(number: string): Promise<AdminOrderDetail> {
     const o = await this.find(number);
     const [events, payment] = await Promise.all([this.orders.events(o.id), this.orders.approvedPayment(o.id)]);
-    const [refund, netCents] = await Promise.all([
+    const [refund, netCents, invoices] = await Promise.all([
       this.refunds.plan(o, payment),
       payment && payment.netCents === null && payment.status !== "refunded" ? this.netReceived(payment) : null,
+      this.invoices(o.id),
     ]);
     return {
       ...this.card(o),
@@ -62,6 +71,7 @@ export class AdminOrdersService {
       payment: payment && { ...payment, netCents: payment.netCents ?? netCents },
       events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
       refund,
+      invoices,
     };
   }
 

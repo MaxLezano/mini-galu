@@ -2,7 +2,16 @@ import { formatARS, type PaymentMethod, type ShippingMethod } from "@mini-galu/c
 
 /** Un mail listo para mandar (HTML + texto plano para clientes que no muestran HTML). */
 /** `replyTo`: a dónde llega si el cliente responde (el email de Tienda y pagos; el remitente puede no recibir). */
-export type Mail = { to: string; subject: string; html: string; text: string; replyTo?: string };
+export type Mail = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  /** PDFs adjuntos (la factura en el mail del pago, la nota de crédito en el del reintegro). */
+  attachments?: MailAttachment[];
+};
+export type MailAttachment = { filename: string; content: Uint8Array };
 
 /** Lo que el mail necesita saber del pedido (lo arma la composición desde el módulo de pedidos). */
 export type MailOrder = {

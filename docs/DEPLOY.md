@@ -106,6 +106,7 @@ docker compose logs backup                     # "copia completa: lista" (la pri
 | `SMTP_*` | SES (paso 5) |
 | `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY` | Mercado Pago → Tus integraciones → credenciales **de producción** |
 | `MP_WEBHOOK_SECRET` | Mercado Pago → Webhooks (paso 8) |
+| `ARCA_*` | factura electrónica (paso 9) |
 | `ANDREANI_*`, `GOOGLE_*`, `ANTHROPIC_API_KEY` | opcionales (ver `.env.example`) |
 
 Si falta o está mal alguna variable, la API no arranca y `docker compose logs api` dice **todas** las que faltan.
@@ -132,12 +133,40 @@ Tus integraciones → la aplicación → **Webhooks** → modo producción:
 - Evento: **Pagos**
 - La "clave secreta" que muestra → `MP_WEBHOOK_SECRET` en `deploy/.env` y `docker compose up -d` para aplicarla.
 
-## 9. Probar antes de anunciar
+## 9. Factura electrónica (ARCA)
+
+Cada pago aprobado emite una factura C (y cada reintegro, su nota de crédito C) por el web service de ARCA. Sin
+`ARCA_*` la tienda vende igual, pero los pedidos quedan **sin facturar** y la campana del panel lo avisa; cuando se
+carga, los pendientes se emiten solos. Con la clave fiscal de Gaby (nivel 3):
+
+1. En la compu, la clave privada y el pedido de certificado (el CUIT sin guiones):
+   ```bash
+   openssl genrsa -out arca.key 2048
+   openssl req -new -key arca.key -subj "/C=AR/O=Mini Galu/CN=minigalu/serialNumber=CUIT 20123456786" -out arca.csr
+   ```
+2. ARCA → **Administración de Certificados Digitales** → agregar el alias `minigalu`, subir `arca.csr` y bajar el
+   certificado (`arca.crt`).
+3. ARCA → **Administrador de Relaciones de Clave Fiscal** → nueva relación → servicio **Facturación Electrónica**
+   (WSFE) → representante: el certificado `minigalu`.
+4. ARCA → **Administración de puntos de venta y domicilios** → alta de un punto de venta **Factura Electrónica -
+   Monotributo - Web Services** (no sirve el de "Comprobantes en línea"). Su número → `ARCA_PUNTO_VENTA`.
+5. En `deploy/.env`: `ARCA_CUIT`, `ARCA_PUNTO_VENTA` y el certificado y la clave en una línea:
+   `ARCA_CERT=` con lo que da `awk '{printf "%s\n", $0}' arca.crt` (igual `ARCA_KEY` con `arca.key`).
+   `docker compose up -d` y `docker compose logs api` dice `[facturas] ARCA produccion, punto de venta N`.
+6. Tienda y pagos → **Datos de la tienda** → datos fiscales (nombre, domicilio, Ingresos Brutos e inicio de
+   actividades): van impresos en cada factura.
+
+`arca.key` no se sube a ningún lado (ni al repo): guardarla junto a las demás claves. Para probar antes con ARCA de
+verdad sin facturar en serio: certificado de homologación (**WSASS**, en ARCA) y `ARCA_ENV=homologacion` en el `.env`
+local.
+
+## 10. Probar antes de anunciar
 
 1. `https://api.minigalu.com.ar/health` → `{"ok":true}`.
 2. Entrar a `/taller`, activar los dos pasos, cargar un producto con foto (tiene que verse desde el bucket).
 3. Comprar algo barato con una tarjeta real y reintegrarlo desde el panel (Pedidos → el pedido → "Reintegrar el pago").
-4. Llega el mail "Recibimos tu pago".
+4. Llega el mail "Recibimos tu pago" con la factura adjunta (el QR del PDF abre el comprobante en ARCA); al
+   reintegrarlo, la nota de crédito.
 5. Crear una cuenta de cliente, cerrar sesión, volver a entrar.
 6. Tienda y pagos → Datos de la tienda: WhatsApp, mail e Instagram reales.
 7. `docker compose exec -u postgres backup mg-restore-check` → llega el mail "Prueba de restauración OK".

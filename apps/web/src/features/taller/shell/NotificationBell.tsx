@@ -1,12 +1,13 @@
 "use client";
 
-import { Bell, Hourglass, Inbox, MessageCircleQuestionMark, TriangleAlert } from "lucide-react";
+import { Bell, FileExclamationPoint, Hourglass, Inbox, MessageCircleQuestionMark, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Notice } from "./shell-view";
 
 const ICON = {
   pedido: Inbox,
   sin_pagar: Hourglass,
+  factura: FileExclamationPoint,
   galu: MessageCircleQuestionMark,
   stock: TriangleAlert,
 } as const;

@@ -1,6 +1,12 @@
 "use client";
 
-import type { AdminCustomer, AdminOrderSummary, AdminProduct, AssistantOverview } from "@mini-galu/contracts";
+import type {
+  AdminCustomer,
+  AdminOrderSummary,
+  AdminProduct,
+  AssistantOverview,
+  InvoiceProblem,
+} from "@mini-galu/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { PANEL_CHANGED } from "./panel-events";
@@ -17,6 +23,7 @@ export function usePanelData(pathname: string) {
   const [galu, setGalu] = useState<AssistantOverview | null>(null);
   const [customers, setCustomers] = useState<AdminCustomer[] | null>(null);
   const [pendingReviews, setPendingReviews] = useState(0);
+  const [invoiceProblems, setInvoiceProblems] = useState<InvoiceProblem[]>([]);
   const [read, setRead] = useState<Set<string>>(new Set());
   const wantsCustomers = useRef(false);
 
@@ -30,6 +37,7 @@ export function usePanelData(pathname: string) {
     adminApi.orders().then(setOrders, () => {});
     adminApi.products().then(setProducts, () => {});
     adminApi.assistantOverview().then(setGalu, () => {});
+    adminApi.invoiceProblems().then(setInvoiceProblems, () => {});
     adminApi.reviews().then(
       (r) => setPendingReviews(r.filter((x) => x.status === "pendiente").length),
       () => {},
@@ -67,5 +75,5 @@ export function usePanelData(pathname: string) {
     } catch {}
   };
 
-  return { orders, products, customers, needCustomers, galu, pendingReviews, read, markRead };
+  return { orders, products, customers, needCustomers, galu, pendingReviews, invoiceProblems, read, markRead };
 }

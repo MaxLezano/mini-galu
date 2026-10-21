@@ -77,13 +77,14 @@ export function AdminShell({ session, children }: { session: AdminSession; child
   const pathname = usePathname();
   const router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
-  const { orders, products, customers, needCustomers, galu, pendingReviews, read, markRead } = usePanelData(pathname);
+  const { orders, products, customers, needCustomers, galu, pendingReviews, invoiceProblems, read, markRead } =
+    usePanelData(pathname);
   const counts = {
     ...(orders && products ? navCounts(orders, products) : { pedidos: 0, stock: 0 }),
     galu: galu?.pending.length ?? 0,
     resenas: pendingReviews,
   };
-  const items = orders && products ? notices(orders, products, formatARS, galu?.pending) : [];
+  const items = orders && products ? notices(orders, products, formatARS, galu?.pending, invoiceProblems) : [];
   // ya en Pedidos se abre el detalle ahí mismo; desde otra pantalla se navega
   const openOrder = (number: string) =>
     pathname === "/taller/pedidos"

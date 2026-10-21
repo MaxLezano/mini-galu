@@ -37,4 +37,17 @@ describe("OrderNotifications", () => {
     expect(mailer.sent[0]).toMatchObject({ to: "lucia@gmail.com", subject: "Recibimos tu pago · Pedido #MG-1001" });
     expect(mailer.sent[0]?.text).toContain("http://web/seguimiento?pedido=MG-1001&t=tok");
   });
+
+  it("adjunta la factura si ya se emitió", async () => {
+    const mailer = new MemoryMailer();
+    const pdf = { filename: "factura-C-00003-00000042.pdf", content: new Uint8Array([37, 80, 68, 70]) };
+    const links = async () => ({ tracking: "t", whatsapp: "w", site: "s", workshop: "w", exchangeDays: 2 });
+    const n = new OrderNotifications({ find: async () => order }, mailer, links, async (id) =>
+      id === "o1" ? pdf : null,
+    );
+    await n.paymentApproved("o1");
+    await n.paymentApproved("o2");
+    expect(mailer.sent[0]?.attachments).toEqual([pdf]);
+    expect(mailer.sent[1]?.attachments).toBeUndefined();
+  });
 });

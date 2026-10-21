@@ -5,6 +5,7 @@ import type {
   AdminCustomerDetail,
   AdminCustomers,
   AdminHome,
+  AdminInvoice,
   AdminLaunch,
   AdminNewsletter,
   AdminOrderDetail,
@@ -24,6 +25,7 @@ import type {
   HelpPageInput,
   HelpTopic,
   HomeHeroInput,
+  InvoiceProblem,
   LaunchInput,
   OrderStatus,
   PaymentLinkCreated,
@@ -182,6 +184,12 @@ export const adminApi = {
   createPaymentLink: (input: PaymentLinkInput) =>
     adminRequest<PaymentLinkCreated>("/admin/orders/links", { method: "POST", body: JSON.stringify(input) }),
   order: (number: string) => adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}`),
+  /** Comprobantes de ARCA trabados (para la campana). */
+  invoiceProblems: () => adminRequest<InvoiceProblem[]>("/admin/invoices/problems"),
+  retryInvoices: (number: string) =>
+    adminRequest<AdminInvoice[]>(`/admin/invoices/orders/${encodeURIComponent(number)}/retry`, { method: "POST" }),
+  /** PDF de la factura o la nota de crédito (se abre en otra pestaña con la cookie del panel). */
+  invoicePdfUrl: (id: string) => `${API_URL}/admin/invoices/${encodeURIComponent(id)}/pdf`,
   moveOrder: (number: string, to: OrderStatus) =>
     adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}/status`, {
       method: "PATCH",

@@ -11,6 +11,7 @@ export * from "./checkout";
 export * from "./content";
 export * from "./giftcards";
 export * from "./help";
+export * from "./invoices";
 export * from "./media";
 export * from "./money";
 export * from "./newsletter";

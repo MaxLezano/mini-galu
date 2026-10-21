@@ -1,29 +1,6 @@
-import type { Page } from "@playwright/test";
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, buyBow, expect, test } from "./fixtures";
 
 const MAILPIT = "http://localhost:8025/api/v1";
-
-/** Compra pagada del moño (retiro en el taller, gateway simulado: APRO aprueba). Devuelve el número de pedido. */
-async function buyBow(page: Page, email: string): Promise<string> {
-  await page.goto("/producto/mono-verde");
-  await page.getByRole("button", { name: "Agregar a la bolsa" }).first().click();
-  await page.locator("#drawer").getByRole("link", { name: "Ir a pagar" }).click();
-  const step = page.getByRole("region", { name: "Tus datos" });
-  await step.getByLabel("Email").fill(email);
-  await step.getByLabel("Nombre", { exact: true }).fill("Lucía");
-  await step.getByLabel("Apellido").fill("Fernández");
-  await step.getByLabel("Celular").fill("11 5555-1234");
-  await step.getByRole("button", { name: /Continuar al envío/ }).click();
-  await page.getByRole("radio", { name: /Retiro en el taller/ }).check();
-  await page.locator(".slots .chip").first().click();
-  await page.getByRole("button", { name: /Continuar al pago/ }).click();
-  await page.getByLabel("Nombre como figura").fill("APRO");
-  await page.locator("#pay").click();
-  const done = page.getByRole("dialog", { name: "Pago aprobado" });
-  const number = /MG-\d+/.exec((await done.textContent()) ?? "")?.[0];
-  expect(number).toBeTruthy();
-  return number as string;
-}
 
 test("reintegro desde el panel: el total por Mercado Pago, las prendas vuelven al stock y le llega un mail", async ({
   page,

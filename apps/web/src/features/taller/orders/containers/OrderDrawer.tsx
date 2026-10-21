@@ -34,6 +34,7 @@ import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { SkeletonLines } from "@/ui/molecules/SkeletonLines";
 import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
+import { InvoicesPanel } from "../components/InvoicesPanel";
 import { ActionIcon } from "../components/OrderCard";
 import { RefundPanel } from "../components/RefundPanel";
 import { generateLabel } from "../label-action";
@@ -157,6 +158,26 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
       });
     } catch (e) {
       toast(e instanceof ApiRequestError ? e.message : "No se pudo hacer el reintegro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const retryInvoices = async () => {
+    if (!o) return;
+    setBusy(true);
+    try {
+      const invoices = await adminApi.retryInvoices(o.number);
+      const updated = await adminApi.order(o.number);
+      setOrder(updated);
+      onChanged(updated);
+      toast(
+        invoices.every((i) => i.status === "emitida" || i.status === "anulada")
+          ? `#${o.number} · Factura emitida`
+          : "ARCA todavía no la emitió: mirá el detalle",
+      );
+    } catch (e) {
+      toast(e instanceof ApiRequestError ? e.message : "No se pudo reintentar");
     } finally {
       setBusy(false);
     }
@@ -468,6 +489,13 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                 </dl>
                 {o.refund && <RefundPanel key={o.number} refund={o.refund} busy={busy} onConfirm={refund} />}
               </div>
+
+              <InvoicesPanel
+                invoices={o.invoices}
+                pdfUrl={adminApi.invoicePdfUrl}
+                busy={busy}
+                onRetry={retryInvoices}
+              />
 
               <div className="od-sec">
                 <h4>Historial</h4>

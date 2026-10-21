@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
+import type { ArcaConfig } from "./invoicing/infrastructure/arca/wsaa";
 import type { S3StorageConfig } from "./shared/media/s3-image-storage";
 import type { AndreaniConfig } from "./shipping/infrastructure/andreani/andreani-client";
 
@@ -62,6 +63,19 @@ const EnvSchema = z.object({
   ANDREANI_CLIENT: z.string().optional(),
   ANDREANI_CONTRACT_DOMICILIO: z.string().optional(),
   ANDREANI_CONTRACT_SUCURSAL: z.string().optional(),
+  /**
+   * Factura electrónica (ARCA, WSFE). Sin estas variables, en local y CI se factura con el emisor simulado; en
+   * producción los pedidos quedan sin facturar y el panel lo avisa. CERT y KEY: el PEM (con \n) o la ruta al archivo.
+   */
+  ARCA_ENV: z.enum(["homologacion", "produccion"]).default("homologacion"),
+  ARCA_CUIT: z
+    .string()
+    .transform((s) => s.replace(/\D/g, ""))
+    .pipe(z.string().length(11, "ARCA_CUIT: 11 números"))
+    .optional(),
+  ARCA_PUNTO_VENTA: z.coerce.number().int().min(1).max(99_998).optional(),
+  ARCA_CERT: z.string().optional(),
+  ARCA_KEY: z.string().optional(),
 });
 
 /** Solo para desarrollo local: en producción BETTER_AUTH_SECRET es obligatorio. */
@@ -92,6 +106,7 @@ export type Config = {
   trackingEverySeconds: number;
   branches: "andreani" | "fake";
   andreani: AndreaniConfig | null;
+  arca: ArcaConfig | null;
   requireAdmin2fa: boolean;
   google: { clientId: string; clientSecret: string } | null;
   assistant: { kind: "claude"; apiKey: string; model: string } | { kind: "ollama"; url: string; model: string } | null;
@@ -151,6 +166,22 @@ const missingS3 = (env: z.infer<typeof EnvSchema>) =>
   });
 const S3_VARS = 5;
 
+const missingArca = (env: z.infer<typeof EnvSchema>) =>
+  missing({
+    ARCA_CUIT: env.ARCA_CUIT,
+    ARCA_PUNTO_VENTA: env.ARCA_PUNTO_VENTA ? String(env.ARCA_PUNTO_VENTA) : undefined,
+    ARCA_CERT: env.ARCA_CERT,
+    ARCA_KEY: env.ARCA_KEY,
+  });
+const ARCA_VARS = 4;
+
+/** El certificado o la clave de ARCA: el PEM en la variable (con los saltos como \n) o la ruta a un archivo. */
+export function readPem(value: string): string {
+  const v = value.trim();
+  if (v.startsWith("-----BEGIN")) return v.replace(/\\n/g, "\n");
+  return readFileSync(resolve(process.cwd(), v), "utf8");
+}
+
 /** Lo que producción necesita sí o sí (en local todo tiene un valor por defecto o un simulador). */
 function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   const problems: string[] = [];
@@ -189,6 +220,9 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   });
   // sin ninguna, envíos simulados; con algunas, seguro es un error de carga
   if (andreani.length && andreani.length < 5) problems.push(`Andreani a medias: faltan ${andreani.join(", ")}`);
+  const arca = missingArca(env);
+  // sin ninguna, los pedidos quedan sin facturar (el panel avisa); con algunas, seguro es un error de carga
+  if (arca.length && arca.length < ARCA_VARS) problems.push(`ARCA a medias: faltan ${arca.join(", ")}`);
   if (!env.GOOGLE_CLIENT_ID !== !env.GOOGLE_CLIENT_SECRET)
     problems.push("Google a medias: van GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET juntos");
   return problems;
@@ -268,6 +302,16 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
             password: env.ANDREANI_PASSWORD,
             client: env.ANDREANI_CLIENT,
             contracts: { domicilio: env.ANDREANI_CONTRACT_DOMICILIO, sucursal: env.ANDREANI_CONTRACT_SUCURSAL },
+          }
+        : null,
+    arca:
+      env.ARCA_CUIT && env.ARCA_PUNTO_VENTA && env.ARCA_CERT && env.ARCA_KEY
+        ? {
+            env: env.ARCA_ENV,
+            cuit: env.ARCA_CUIT,
+            pointOfSale: env.ARCA_PUNTO_VENTA,
+            cert: readPem(env.ARCA_CERT),
+            key: readPem(env.ARCA_KEY),
           }
         : null,
   };

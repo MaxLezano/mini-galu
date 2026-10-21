@@ -75,6 +75,23 @@ describe("armazón del panel", () => {
     ]);
   });
 
+  it("avisa de las facturas que ARCA no emitió (y vuelve a sonar si cambia el error)", () => {
+    const problem = { orderNumber: "MG-1004", kind: "factura" as const, error: "503", since: "2026-10-21T15:00:00Z" };
+    const [f] = notices(orders, products, String, [], [problem]).filter((x) => x.kind === "factura");
+    expect(f).toEqual({
+      key: "factura:MG-1004:factura:503",
+      kind: "factura",
+      title: "#MG-1004 sin facturar",
+      text: "Factura C: 503",
+      at: "2026-10-21T15:00:00Z",
+      order: "MG-1004",
+    });
+    const [again] = notices(orders, products, String, [], [{ ...problem, error: "10016" }]).filter(
+      (x) => x.kind === "factura",
+    );
+    expect(again?.key).not.toBe(f?.key);
+  });
+
   it("busca pedidos por número, cliente o ciudad (sin tildes) y productos por nombre", () => {
     expect(searchAll("1002", orders, products).orders.map((o) => o.number)).toEqual(["MG-1002"]);
     expect(searchAll("mendez", orders, products).orders.map((o) => o.number)).toEqual(["MG-1002"]);

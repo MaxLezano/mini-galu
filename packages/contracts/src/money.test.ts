@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { creditCuotas, installmentsLabel } from "./checkout";
-import { discountPercent, formatARS, installment } from "./money";
+import { discountPercent, formatARS, formatARSExact, installment } from "./money";
 
 describe("money", () => {
   it("formatea centavos como pesos es-AR", () => {
@@ -8,6 +8,12 @@ describe("money", () => {
     expect(formatARS(2_500_00)).toBe("$2.500");
     expect(formatARS(1_234_567_00)).toBe("$1.234.567");
     expect(formatARS(0)).toBe("$0");
+  });
+
+  it("con centavos para las facturas", () => {
+    expect(formatARSExact(59_000_50)).toBe("$59.000,50");
+    expect(formatARSExact(-6_000_00)).toBe("-$6.000,00");
+    expect(formatARSExact(5)).toBe("$0,05");
   });
 
   it("calcula la cuota sin interés", () => {

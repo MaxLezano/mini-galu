@@ -440,7 +440,7 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
 - ✅ **Portada de base**: en una base de producción nueva (sin seed) la tienda daba 500 en todas las páginas y el panel no
   podía guardar la portada. Ahora rige una portada de base sin fotos (`content/domain/home.ts`) y la home oculta lo
   vacío (colecciones, novedades, fotos del taller, lookbook, grilla de Instagram); el hero sin foto va sobre cacao
-- ⏳ Crear la cuenta de AWS, el servidor, los buckets, SES y el dominio: pasos 1 a 9 de [DEPLOY.md](DEPLOY.md)
+- ⏳ Crear la cuenta de AWS, el servidor, los buckets, SES y el dominio: pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)
 - ✅ **Sin datos fijos del seed en la tienda**: el pie lista las colecciones con prendas (como el mega menú); "Guía de
   talles" y "Tabla de medidas" (pie, mega menú, filtros del catálogo) llevan a la tabla de una prenda real (sin prendas,
   no se muestran); las fotos de "El taller" se eligen en **Portada de la tienda** (grande y chica, con su descripción;
@@ -541,16 +541,29 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   anterior. Los mockups del panel no la tienen: se sacó su `template.tsx` (la tienda la conserva) y un e2e lo cuida
 
 ## Antes del lanzamiento con clientes reales (Gaby monotributista)
-- ⏳ **Factura electrónica automática** (módulo `invoicing`, puerto `InvoiceIssuer`): al aprobarse el pago, la API
-  emite la factura C por el web service de ARCA (WSFE, certificado + punto de venta "Web Services" a nombre de
-  Gaby), guarda CAE y número en el pedido, la adjunta al mail de confirmación y el panel la muestra/descarga. Sin
-  credenciales, un emisor simulado (local y CI). Reintentos si ARCA no responde; aviso en el panel si queda sin
-  facturar. Reintegro → nota de crédito C. Las ventas fuera de la web (mayoristas en puerta) se facturan a mano
+- ✅ **Factura electrónica automática** (módulo `invoicing`, puerto `InvoiceIssuer`): al aprobarse el pago se emite
+  la factura C (consumidor final, concepto productos) y va adjunta al "Recibimos tu pago"; al reintegrar, la nota de
+  crédito C (con la factura asociada) va adjunta al aviso del reintegro. Se emite de a una (ARCA numera en orden).
+  - `ArcaIssuer`: WSAA (TRA firmado como CMS con `node-forge`; el ticket de 12 h se guarda en `arca_tokens` para
+    sobrevivir reinicios) + WSFEv1 (`FECompUltimoAutorizado`, `FECAESolicitar`, `FECompConsultar`). Variables
+    `ARCA_*` (paso 9 de [DEPLOY.md](DEPLOY.md)). Sin ellas: `SimulatedIssuer` en local y CI (el PDF dice "sin validez
+    fiscal") y `NoIssuer` en producción (no se inventa un CAE: queda sin facturar y el panel avisa)
+  - Si ARCA no contesta: pendiente, se reintenta sola (1, 5, 15, 30 min y después cada hora) y le llega sola al
+    cliente cuando se emite. El número intentado se guarda antes de pedir el CAE: si la respuesta se perdió, al
+    reintentar se consulta y se recupera (no se emite otra). Rechazo de ARCA o 3 intentos fallidos → "Con error" en el
+    detalle (con "Reintentar con ARCA") y en la campana
+  - PDF A4 (`pdf-lib` + QR de la RG 4892 con `qrcode`), desde `/admin/invoices/:id/pdf`. Montos con centavos
+    (`formatARSExact`)
+  - Qué se factura: los pedidos de prendas por su total (la gift card es un medio de pago); la compra de una gift card
+    no (es un vale: se factura al canjearla). ⏳ Confirmarlo con el contador de Gaby
+  - Las ventas fuera de la web (mayoristas en puerta) se facturan a mano
+  - ⏳ Probarlo contra homologación de ARCA con un certificado de prueba (WSASS) y después en producción
 - ⏳ **Botón de arrepentimiento** (Res. 424/2020, Ley 24.240): link visible en el pie y en la ayuda, formulario con
   número de pedido y mail, código de trámite al cliente y aviso en el panel. Se había hecho y se sacó (migración
   `0026`): recuperar lo de `POST /revocations` y la tabla `order_revocations` con una migración nueva
-- ⏳ **Datos fiscales en la tienda**: nombre, CUIT y domicilio en el pie y el QR de **Data Fiscal** de ARCA
-  (formulario 960), cargables desde "Datos de la tienda"
+- 🟡 **Datos fiscales en la tienda**: ✅ cargables desde "Datos de la tienda" (nombre o razón social, domicilio,
+  Ingresos Brutos, inicio de actividades; el CUIT es el de `ARCA_CUIT`), ya se imprimen en las facturas. ⏳ Mostrar
+  nombre, CUIT y domicilio en el pie y el QR de **Data Fiscal** de ARCA (formulario 960)
 - ⏳ Términos, privacidad (Ley 25.326) y textos de Defensa del Consumidor en la ayuda
 
 ## Ideas para después (de IDEAS.md)

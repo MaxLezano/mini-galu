@@ -10,6 +10,7 @@ import {
   GIFTCARD_MAX_CENTS,
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
+  PAYMENT_METHODS,
   pickupHoursLabel,
   trackingPath,
   whatsappUrl,
@@ -90,6 +91,14 @@ import { GiftcardService } from "./giftcards/application/giftcard-service";
 import type { GiftcardRecord } from "./giftcards/application/ports";
 import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
 import { adminGiftcardRoutes, giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
+import { InvoiceService } from "./invoicing/application/invoice-service";
+import type { InvoiceIssuer } from "./invoicing/application/ports";
+import { ArcaIssuer } from "./invoicing/infrastructure/arca/arca-issuer";
+import { Wsaa } from "./invoicing/infrastructure/arca/wsaa";
+import { DrizzleArcaTickets, DrizzleInvoices } from "./invoicing/infrastructure/drizzle-invoices";
+import { adminInvoiceRoutes } from "./invoicing/infrastructure/http/invoice-routes";
+import { PdfInvoiceRenderer } from "./invoicing/infrastructure/pdf-invoice-renderer";
+import { NoIssuer, SimulatedIssuer } from "./invoicing/infrastructure/simulated-issuer";
 import { NewsletterService } from "./newsletter/application/newsletter-service";
 import { DrizzleLetters, DrizzleSubscribers } from "./newsletter/infrastructure/drizzle-newsletter";
 import { adminNewsletterRoutes, newsletterRoutes } from "./newsletter/infrastructure/http/newsletter-routes";
@@ -333,6 +342,7 @@ export function buildApp(config: Config) {
     orderRefunds,
     (p) => payments.netReceived(p.provider, p.reference),
     (number, token) => config.webOrigin + reviewPath(number, token),
+    (orderId) => invoicing.forOrder(orderId),
   );
   const paymentLinks = new PaymentLinks(
     variants,
@@ -384,7 +394,7 @@ export function buildApp(config: Config) {
   // TODO(fase 6 · automations): avisar a los anotados que ya salió (y 1 hora antes si notifyBefore)
   events.on("LaunchPublished", (e) => console.info("[eventos] Lanzamiento publicado:", JSON.stringify(e.payload)));
   // "Recibimos tu pago" por mail (el resto de los avisos y WhatsApp llegan con las automatizaciones, fase 6)
-  const notifications = new OrderNotifications(
+  const notifications: OrderNotifications = new OrderNotifications(
     {
       async find(orderId) {
         const o = await orders.findById(orderId);
@@ -428,6 +438,66 @@ export function buildApp(config: Config) {
         exchangeDays: p.exchangeDays,
       };
     },
+    (orderId) => invoicing.attachment(orderId, "factura"),
+  );
+
+  // factura electrónica: ARCA con el certificado de Gaby; sin él, simulada en local y CI y, en producción, ninguna
+  // (los pedidos quedan sin facturar y el panel lo avisa): nunca un CAE inventado
+  const invoiceRepo = new DrizzleInvoices(db, formatOrderNumber);
+  const issuer: InvoiceIssuer = config.arca
+    ? new ArcaIssuer(config.arca, new Wsaa(config.arca, new DrizzleArcaTickets(db)))
+    : config.env === "production"
+      ? new NoIssuer()
+      : new SimulatedIssuer((type, pointOfSale) => invoiceRepo.maxNumber(true, type, pointOfSale));
+  const invoiceOrder = (o: Awaited<ReturnType<typeof orders.findById>>) =>
+    o && {
+      id: o.id,
+      number: formatOrderNumber(o.number),
+      kind: o.kind,
+      firstName: o.firstName,
+      lastName: o.lastName,
+      email: o.email,
+      items: o.items.map((i) => ({ name: i.name, size: i.size, qty: i.qty, unitPriceCents: i.unitPriceCents })),
+      discountCents: o.discountCents,
+      couponCode: o.couponCode,
+      shippingCents: o.shippingCents,
+      totalCents: o.totalCents,
+      payment: o.paymentMethod
+        ? `${PAYMENT_METHODS[o.paymentMethod]}${(o.installments ?? 1) > 1 ? ` · ${o.installments} cuotas` : ""}`
+        : null,
+    };
+  const invoicing: InvoiceService = new InvoiceService(
+    issuer,
+    invoiceRepo,
+    {
+      find: async (orderId) => invoiceOrder(await orders.findById(orderId)),
+      async findByNumber(number) {
+        const n = parseOrderNumber(number);
+        return n ? invoiceOrder(await orders.findByNumber(n)) : null;
+      },
+      log: (orderId, title, detail) => orders.addEvent(orderId, { kind: "invoice", title, detail, auto: true }),
+    },
+    new PdfInvoiceRenderer(),
+    {
+      send: (o, kind, attachment) =>
+        notifications.message(
+          {
+            to: o.email,
+            subject:
+              kind === "factura" ? `Tu factura del pedido #${o.number}` : `Nota de crédito del pedido #${o.number}`,
+            eyebrow: `Pedido #${o.number} · ${kind === "factura" ? "factura" : "nota de crédito"}`,
+            name: o.firstName || null,
+            body:
+              kind === "factura"
+                ? "Te adjuntamos la factura de tu compra. Guardala: te sirve si necesitás cambiar un talle."
+                : "Te adjuntamos la nota de crédito que anula la factura del pedido que te reintegramos.",
+            cta: null,
+            number: o.number,
+          },
+          [attachment],
+        ),
+    },
+    async () => (await policies.get()).fiscal,
   );
   const newsletter = new NewsletterService(
     new DrizzleSubscribers(db),
@@ -538,9 +608,14 @@ export function buildApp(config: Config) {
   );
   // la compra de una gift card no lleva los avisos de un pedido de prendas: le llega su código
   const prendas = (e: { payload: Record<string, unknown> }) => e.payload.kind !== "giftcard";
-  events.on("PaymentApproved", (e) =>
-    prendas(e) ? automations.paymentApproved(String(e.payload.orderId)) : undefined,
-  );
+  // la factura se pide antes del "Recibimos tu pago" para que salga adjunta; si ARCA tarda o falla, se reintenta y
+  // le llega sola cuando se emite (también si el mail de confirmación está pausado)
+  events.on("PaymentApproved", async (e) => {
+    const orderId = String(e.payload.orderId);
+    await invoicing.paymentApproved(orderId).catch((err) => console.error("[facturas] pago aprobado:", err));
+    if (prendas(e)) await automations.paymentApproved(orderId);
+    await invoicing.mailPending(orderId);
+  });
   // lista de cumple: lo que se regaló con este pedido queda marcado
   events.on("PaymentApproved", (e) =>
     prendas(e) ? customers.wishGifted(String(e.payload.orderId)).then(() => {}) : undefined,
@@ -586,27 +661,33 @@ export function buildApp(config: Config) {
     };
     const o = await orders.findById(p.orderId);
     if (!o) return;
+    // la factura se anula con una nota de crédito, que va adjunta al aviso
+    await invoicing.refunded(p.orderId).catch((err) => console.error("[facturas] reintegro:", err));
+    const creditNote = await invoicing.attachment(p.orderId, "nota_credito");
     const parts = [
       p.cents > 0
         ? `${formatARS(p.cents)} ${p.cash ? "en efectivo, en el taller" : "por el mismo medio con el que pagaste"}`
         : null,
       p.giftcardCents > 0 ? `${formatARS(p.giftcardCents)} al saldo de tu gift card` : null,
     ].filter(Boolean);
-    await notifications.message({
-      to: o.email,
-      subject: `Te devolvimos el dinero del pedido #${p.number}`,
-      eyebrow: `Pedido #${p.number} · reintegro`,
-      name: o.firstName || null,
-      body: `Reintegramos el pedido #${p.number}: ${parts.join(" y ") || "no había nada que devolver"}.${
-        p.cents > 0 && !p.cash
-          ? p.pending
-            ? " Mercado Pago lo está procesando; según el medio, puede tardar unos días en verse."
-            : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."
-          : ""
-      } Si tenés alguna duda, respondé este mail.`,
-      cta: null,
-      number: p.number,
-    });
+    await notifications.message(
+      {
+        to: o.email,
+        subject: `Te devolvimos el dinero del pedido #${p.number}`,
+        eyebrow: `Pedido #${p.number} · reintegro`,
+        name: o.firstName || null,
+        body: `Reintegramos el pedido #${p.number}: ${parts.join(" y ") || "no había nada que devolver"}.${
+          p.cents > 0 && !p.cash
+            ? p.pending
+              ? " Mercado Pago lo está procesando; según el medio, puede tardar unos días en verse."
+              : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."
+            : ""
+        } Si tenés alguna duda, respondé este mail.`,
+        cta: null,
+        number: p.number,
+      },
+      creditNote ? [creditNote] : undefined,
+    );
   });
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
@@ -668,6 +749,14 @@ export function buildApp(config: Config) {
   );
   if (llm && config.env !== "test") console.info(`[galú] responde con ${llm.name}`);
   if (config.mail.kind === "resend" && config.env !== "test") console.info("[mails] salen por Resend");
+  if (config.env !== "test")
+    console.info(
+      issuer.mode === "simulado"
+        ? "[facturas] simuladas (sin ARCA_* en el .env)"
+        : config.arca
+          ? `[facturas] ARCA ${issuer.mode}, punto de venta ${issuer.pointOfSale}`
+          : "[facturas] ARCA sin conectar: los pedidos quedan sin facturar",
+    );
 
   // el programador arranca cuando ya existen todos los servicios (corre la primera vuelta al registrarse)
   const scheduler = new IntervalScheduler();
@@ -682,6 +771,7 @@ export function buildApp(config: Config) {
     scheduler.every(3600, "cumples que se acercan", () => automations.birthdays());
     scheduler.every(1800, "bolsas abandonadas", () => automations.idleCarts());
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
+    scheduler.every(60, "reintentar facturas", () => invoicing.retryDue());
   }
 
   // tope por IP cada 10 minutos en las rutas públicas que mandan mails, reservan stock o se pueden adivinar
@@ -750,6 +840,7 @@ export function buildApp(config: Config) {
     .route("/admin/orders", adminShipmentRoutes(shipments))
     .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
     .route("/admin/orders", adminRefundRoutes(refunds))
+    .route("/admin/invoices", adminInvoiceRoutes(invoicing))
     .route("/admin/coupons", adminCouponRoutes(coupons))
     .route("/admin/reviews", adminReviewRoutes(reviews))
     .route("/admin/giftcards", adminGiftcardRoutes(giftcards))

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CartItemInputSchema, CheckoutContactSchema, ShippingInputSchema } from "./checkout";
+import type { AdminInvoice } from "./invoices";
 import type { Cents } from "./money";
 import type { OrderStatus, PaymentMethod, ShippingMethod } from "./orders";
 
@@ -86,6 +87,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
   events: AdminOrderEvent[];
   /** Lo que se puede devolver de este pedido (null si no hay nada para reintegrar). */
   refund: AdminRefund | null;
+  /** Factura y nota de crédito (ARCA), en orden. */
+  invoices: AdminInvoice[];
 };
 
 /** Reintegro total de un pedido pagado (o de un pago que llegó cuando ya no había stock). */

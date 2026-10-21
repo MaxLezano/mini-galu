@@ -19,6 +19,12 @@ export class ResendMailer implements Mailer {
       html: mail.html,
       text: mail.text,
       ...(mail.replyTo && { reply_to: mail.replyTo }),
+      ...(mail.attachments?.length && {
+        attachments: mail.attachments.map((a) => ({
+          filename: a.filename,
+          content: Buffer.from(a.content).toString("base64"),
+        })),
+      }),
     });
     for (let attempt = 1; ; attempt++) {
       const res = await fetch(API, {

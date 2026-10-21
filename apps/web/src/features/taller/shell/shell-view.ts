@@ -2,6 +2,8 @@ import {
   type AdminCustomer,
   type AdminOrderSummary,
   type AdminProduct,
+  INVOICE_KINDS,
+  type InvoiceProblem,
   type PendingQuestion,
   questionKey,
 } from "@mini-galu/contracts";
@@ -18,7 +20,7 @@ export function navCounts(orders: AdminOrderSummary[], products: AdminProduct[])
 export type Notice = {
   /** Identifica la novedad para "Marcar como leídas" (cambia si cambia lo que avisa). */
   key: string;
-  kind: "pedido" | "sin_pagar" | "galu" | "stock";
+  kind: "pedido" | "sin_pagar" | "factura" | "galu" | "stock";
   title: string;
   text: string;
   /** ISO: cuándo pasó (los avisos de stock no tienen fecha). */
@@ -27,12 +29,16 @@ export type Notice = {
   href?: string;
 };
 
-/** La campana: pedidos nuevos, links de pago sin pagar, lo que Galú no supo y talles con la última unidad. */
+/**
+ * La campana: pedidos nuevos, links de pago sin pagar, facturas que ARCA no emitió, lo que Galú no supo y talles con
+ * la última unidad.
+ */
 export function notices(
   orders: AdminOrderSummary[],
   products: AdminProduct[],
   money: (c: number) => string,
   pending: PendingQuestion[] = [],
+  invoices: InvoiceProblem[] = [],
 ): Notice[] {
   const nuevos = orders
     .filter((o) => o.status === "nuevo")
@@ -54,6 +60,15 @@ export function notices(
       at: o.createdAt,
       order: o.number,
     }));
+  // si cambia lo que respondió ARCA, vuelve a sonar
+  const facturas = invoices.map<Notice>((i) => ({
+    key: `factura:${i.orderNumber}:${i.kind}:${i.error}`,
+    kind: "factura",
+    title: `#${i.orderNumber} sin facturar`,
+    text: `${INVOICE_KINDS[i.kind]}: ${i.error}`,
+    at: i.since,
+    order: i.orderNumber,
+  }));
   // las más preguntadas primero; si la vuelven a preguntar, vuelve a sonar
   const galu = pending.slice(0, 3).map<Notice>((q) => ({
     key: `galu:${questionKey(q.question)}:${q.times}`,
@@ -75,7 +90,7 @@ export function notices(
       at: null,
       href: `/taller/productos?editar=${p.slug}`,
     }));
-  return [...nuevos, ...sinPagar, ...galu, ...stock];
+  return [...nuevos, ...sinPagar, ...facturas, ...galu, ...stock];
 }
 
 /** Búsqueda global: pedidos por número, cliente o ciudad; clientes por nombre o mail; productos por nombre. */

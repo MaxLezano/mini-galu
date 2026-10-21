@@ -37,6 +37,7 @@ describe("parseConfig", () => {
     expect(config.env).toBe("development");
     expect(config.mercadoPago).toBeNull();
     expect(config.andreani).toBeNull();
+    expect(config.arca).toBeNull();
     expect(config.s3).toBeNull();
     expect(config.mail).toMatchObject({ kind: "smtp", host: "localhost", port: 1025 });
     expect(config.requireAdmin2fa).toBe(false);
@@ -130,6 +131,24 @@ describe("parseConfig", () => {
         PUBLIC_API_URL: "https://mini-galu-api.onrender.com",
       }),
     ).toEqual([expect.stringContaining("COOKIE_DOMAIN (minigalu.com.ar) tiene que contener")]);
+  });
+
+  it("ARCA: el CUIT sin guiones, el PEM en una línea y, en producción, avisa si está a medias", () => {
+    // en el .env los saltos van escritos como \n
+    const pem = "-----BEGIN CERTIFICATE-----\\nMIIB\\n-----END CERTIFICATE-----";
+    const config = parseConfig({
+      ...local,
+      ARCA_CUIT: "20-12345678-6",
+      ARCA_PUNTO_VENTA: "3",
+      ARCA_CERT: pem,
+      ARCA_KEY: pem,
+    });
+    expect(config.arca).toMatchObject({ env: "homologacion", cuit: "20123456786", pointOfSale: 3 });
+    expect(config.arca?.cert).toBe("-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----");
+    expect(problemsOf({ ...production, ARCA_CUIT: "20123456786" })).toEqual([
+      expect.stringContaining("ARCA a medias: faltan ARCA_PUNTO_VENTA, ARCA_CERT, ARCA_KEY"),
+    ]);
+    expect(problemsOf({ ...local, ARCA_CUIT: "123" })).toEqual([expect.stringContaining("ARCA_CUIT")]);
   });
 
   it("toma el puerto de PORT (Render, Fly) si no hay API_PORT", () => {

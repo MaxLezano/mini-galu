@@ -39,6 +39,16 @@ describe("ResendMailer", () => {
     expect(JSON.parse(init.body as string).reply_to).toBe("mini.galu.store@gmail.com");
   });
 
+  it("los PDFs adjuntos van en base64", async () => {
+    const f = vi.spyOn(globalThis, "fetch").mockResolvedValue(reply(200, { id: "e1" }));
+    await resend.send({
+      ...mail,
+      attachments: [{ filename: "factura.pdf", content: new Uint8Array([37, 80, 68, 70]) }],
+    });
+    const [, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).attachments).toEqual([{ filename: "factura.pdf", content: "JVBERg==" }]);
+  });
+
   it("si se pasa del límite por segundo espera lo que pide Resend y reintenta", async () => {
     const f = vi
       .spyOn(globalThis, "fetch")

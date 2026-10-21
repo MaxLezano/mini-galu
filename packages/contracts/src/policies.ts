@@ -82,6 +82,25 @@ export type Workshop = z.infer<typeof WorkshopSchema>;
 /** "San Miguel de Tucumán, Tucumán" */
 export const workshopPlace = (w: Workshop) => `${w.city}, ${w.province}`;
 
+/**
+ * Datos fiscales de Gaby (monotributista): van impresos en cada factura. El CUIT y el punto de venta no se cargan
+ * acá: son los del certificado de ARCA (`ARCA_CUIT`, `ARCA_PUNTO_VENTA` en el .env).
+ */
+export const StoreFiscalSchema = z.object({
+  /** Nombre y apellido o razón social, como figura en ARCA. */
+  name: z.string().trim().max(80, "Escribilo más corto"),
+  /** Domicilio comercial. */
+  address: z.string().trim().max(120, "Escribilo más corto"),
+  /** Ingresos Brutos: número de inscripción (o "Exento"). */
+  iibb: z.string().trim().max(30, "Escribilo más corto"),
+  /** Inicio de actividades (AAAA-MM-DD). */
+  activitiesSince: z
+    .string()
+    .trim()
+    .regex(/^(\d{4}-\d{2}-\d{2})?$/, "Elegí la fecha de inicio de actividades"),
+});
+export type StoreFiscal = z.infer<typeof StoreFiscalSchema>;
+
 const hour = z.number().int().min(0).max(24);
 /** Franjas de retiro de un día: [[10, 13], [16, 19]]. */
 export const PickupDaySchema = z
@@ -140,6 +159,7 @@ export const StorePoliciesSchema = z
       .max(24, "Hasta 24 meses"),
     contact: StoreContactSchema,
     workshop: WorkshopSchema,
+    fiscal: StoreFiscalSchema,
     reviewPoints: ReviewPointsSchema,
   })
   .refine((p) => Object.values(p.methods).some(Boolean), {
@@ -173,6 +193,7 @@ export const DEFAULT_POLICIES: StorePolicies = {
   giftcardMonths: 2,
   contact: { whatsapp: "381 319-5264", email: "mini.galu.store@gmail.com", instagram: "minigalumodainfantil" },
   workshop: { city: "San Miguel de Tucumán", province: "Tucumán" },
+  fiscal: { name: "", address: "", iibb: "", activitiesSince: "" },
   // unas 5 prendas reseñadas con foto para un 10%
   reviewPoints: { enabled: true, perReview: 10, perPhoto: 10, threshold: 100, percent: 10, validDays: 60 },
 };

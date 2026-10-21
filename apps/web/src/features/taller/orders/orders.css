@@ -29,3 +29,5 @@
 .od-refund-check input { margin-top: 3px; accent-color: var(--cacao); }
 .od-refund-check small { display: block; font-size: 12px; }
 .od-refund-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.od-invoice { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.od-invoice .link { display: inline-flex; gap: 4px; align-items: center; }
