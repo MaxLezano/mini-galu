@@ -1,3 +1,4 @@
+import { DEFAULT_POLICIES, type PointsSummary } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
 import { NotFoundError } from "../../shared/domain/errors";
 import { MemoryAdminCustomers } from "../testing/in-memory";
@@ -41,5 +42,39 @@ describe("clientes en el panel", () => {
     expect(d).toMatchObject({ likes: ["Verano 2027"], note: "Prefiere retirar en el taller", orders: 1 });
     await expect(svc.detail("nadie@gmail.com")).rejects.toThrow(NotFoundError);
     expect(await svc.csv()).toContain("lucia@gmail.com");
+  });
+
+  it("la ficha muestra los puntos por reseñas; apagados y sin nada, no", async () => {
+    const repo = new MemoryAdminCustomers();
+    repo.orders = [
+      {
+        email: "lucia@gmail.com",
+        firstName: "Lucía",
+        lastName: "Fernández",
+        phone: "+5491155551234",
+        city: "CABA",
+        createdAt: new Date("2026-09-01T12:00:00Z"),
+        paid: true,
+        totalCents: 40_000_00,
+      },
+    ];
+    let summary: PointsSummary = { rules: DEFAULT_POLICIES.reviewPoints, balance: 30, coupons: [] };
+    const asked: string[] = [];
+    const svc = new AdminCustomersService(repo, undefined, {
+      forEmail: async (email) => {
+        asked.push(email);
+        return summary;
+      },
+    });
+    expect((await svc.detail("Lucia@Gmail.com")).points).toEqual(summary);
+    expect(asked).toEqual(["lucia@gmail.com"]);
+    summary = { ...summary, rules: { ...summary.rules, enabled: false }, balance: 0 };
+    expect((await svc.detail("lucia@gmail.com")).points).toBeNull();
+    // apagados pero con canjes: se siguen viendo
+    summary = {
+      ...summary,
+      coupons: [{ code: "PUNTOS-AB12C", label: "10% de descuento", endsAt: "2026-12-01T00:00:00Z", used: false }],
+    };
+    expect((await svc.detail("lucia@gmail.com")).points?.coupons).toHaveLength(1);
   });
 });

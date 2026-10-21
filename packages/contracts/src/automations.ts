@@ -58,6 +58,15 @@ export const AUTOMATION_RULES = {
     vars: ["nombre", "pedido"],
     phase: null,
   },
+  puntos: {
+    title: "Sumó puntos",
+    when: "publicás una reseña de un pedido",
+    does: ["Le cuenta cuántos puntos sumó y su saldo", "Si le alcanza, lo invita a canjearlos"],
+    channels: ["mail"],
+    message: "Hola {nombre}! Publicamos tu reseña de {prenda} y sumaste {puntos} puntos. Ya tenés {saldo} ♡",
+    vars: ["nombre", "prenda", "puntos", "saldo"],
+    phase: null,
+  },
   listo_retirar: {
     title: "Listo para retirar",
     when: "un pedido con retiro en el taller está listo",
@@ -143,6 +152,8 @@ export const AUTOMATION_SAMPLE: Record<string, string> = {
   lanzamiento: "Otoño en el taller",
   hora: "19 h",
   link_lanzamiento: "minigalu.com.ar/#lanzamiento",
+  puntos: "20",
+  saldo: "60",
 };
 
 /** "{nombre}" → valor; lo que no se conoce queda como está (se ve en la vista previa). */

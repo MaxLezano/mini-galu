@@ -2,7 +2,7 @@ import type { AdminCustomerDetail, AdminCustomers } from "@mini-galu/contracts";
 import { formatARS } from "@mini-galu/contracts";
 import { NotFoundError } from "../../shared/domain/errors";
 import { buildCustomers, customerKpis, customersCsv } from "../domain/customer-list";
-import type { AdminCustomerRepository } from "./ports";
+import type { AdminCustomerRepository, PointsPort } from "./ports";
 
 /** "YYYY-MM-DD" de hoy en Argentina (los cumples se cuentan por día de acá). */
 const arToday = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(d);
@@ -12,6 +12,7 @@ export class AdminCustomersService {
   constructor(
     private readonly repo: AdminCustomerRepository,
     private readonly clock: () => Date = () => new Date(),
+    private readonly points?: Pick<PointsPort, "forEmail">,
   ) {}
 
   private async all() {
@@ -28,12 +29,14 @@ export class AdminCustomersService {
     const key = email.trim().toLowerCase();
     const c = (await this.all()).find((x) => x.email === key);
     if (!c) throw new NotFoundError("No encontramos ese cliente");
-    const [orderList, likes, note] = await Promise.all([
+    const [orderList, likes, note, points] = await Promise.all([
       this.repo.ordersOf(key),
       this.repo.collectionsOf(key),
       this.repo.note(key),
+      this.points?.forEmail(key) ?? null,
     ]);
-    return { ...c, orderList, likes, note };
+    const shown = points && (points.rules.enabled || points.balance > 0 || points.coupons.length > 0);
+    return { ...c, orderList, likes, note, points: shown ? points : null };
   }
 
   async setNote(email: string, note: string): Promise<void> {

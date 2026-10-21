@@ -7,6 +7,7 @@ import {
   fillMessage,
   type OrderStatus,
   pointsHint,
+  pointsNext,
   type RuleUpdate,
   type Size,
   sizeLabel,
@@ -50,6 +51,8 @@ export type AutomationLinks = {
   workshop: () => Promise<string>;
   /** Donde se reseñan las prendas del pedido (con su token, sin cuenta). */
   review: (orderNumber: string, token: string) => string;
+  /** Mi cuenta → Puntos (pasa por ingresar si no hay sesión). */
+  points: string;
 };
 
 /**
@@ -216,6 +219,37 @@ ${pointsHint(points)} Los canjeás en Mi cuenta.`
       n++;
     }
     return n;
+  }
+
+  /** Una reseña publicada sumó puntos: cuántos, el saldo y si ya le alcanza para el cupón. Una vez por reseña. */
+  async pointsEarned(p: { reviewId: string; points: number; balance: number }) {
+    if (!(await this.isOn("puntos"))) return;
+    const key = `puntos:${p.reviewId}`;
+    if (await this.runs.exists("puntos", key)) return;
+    const r = await this.orders.reviewed(p.reviewId);
+    const o = r && (await this.orders.find(r.orderId));
+    if (!r || !o) return;
+    const rules = await this.orders.reviewPoints();
+    const body = await this.text("puntos", {
+      ...this.vars(o),
+      prenda: r.product,
+      puntos: String(p.points),
+      saldo: String(p.balance),
+    });
+    await this.send(
+      "puntos",
+      o,
+      {
+        subject: `Sumaste ${p.points} puntos ♡`,
+        eyebrow: "Puntos por reseñas",
+        body: `${body}
+
+${pointsNext(rules, p.balance)}`,
+        cta: { label: "Ver mis puntos", url: this.links.points },
+        logTitle: `Aviso de puntos enviado (+${p.points})`,
+      },
+      key,
+    );
   }
 
   async linkReminder(p: {

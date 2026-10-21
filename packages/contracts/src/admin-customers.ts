@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Cents } from "./money";
 import type { OrderStatus } from "./orders";
+import type { PointsSummary } from "./points";
 
 /** Una nena de la cuenta, como la ve el taller. `birthday`: "YYYY-MM-DD". */
 export type AdminCustomerChild = { name: string; size: string | null; birthday: string | null };
@@ -39,11 +40,13 @@ export type AdminCustomerOrder = {
   thumbs: string[];
 };
 
-/** La ficha: lo de la fila más pedidos, colecciones que compra y la nota del taller. */
+/** La ficha: lo de la fila más pedidos, colecciones que compra, puntos por reseñas y la nota del taller. */
 export type AdminCustomerDetail = AdminCustomer & {
   orderList: AdminCustomerOrder[];
   likes: string[];
   note: string;
+  /** null: los puntos están apagados y no tiene nada (ni saldo ni canjes). */
+  points: PointsSummary | null;
 };
 
 export const CustomerNoteSchema = z.object({ note: z.string().trim().max(2000) });

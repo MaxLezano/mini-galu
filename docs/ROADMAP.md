@@ -435,8 +435,13 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   gastan el mismo saldo (lock por mail). Todo se edita en la caja **"Puntos por reseñas"** de Tienda y pagos (se
   prende/apaga; muestra cuántas reseñas hacen falta por cupón). La página `/resena` cuenta cuánto suma cada reseña,
   el saldo y, si alcanza, lleva a canjear; el mail "¿Cómo le quedó? ♡" suma la regla. El público "Después de dejar una
-  reseña" de los cupones se sacó (migración `0027`: si había uno, queda pausado). ⏳ Mail "Sumaste N puntos" al
-  publicar la reseña y los puntos en la ficha del cliente del panel: después
+  reseña" de los cupones se sacó (migración `0027`: si había uno, queda pausado).
+  - ✅ **Mail "Sumaste N puntos ♡"**: regla nueva **"Sumó puntos"** en Automatizaciones (se pausa y el mensaje se
+    edita: `{nombre}`, `{prenda}`, `{puntos}`, `{saldo}`). Cuando una reseña publicada suma (evento `PointsEarned`),
+    le cuenta lo que sumó, el saldo y cuánto le falta (o que ya puede canjear); "Ver mis puntos" pasa por ingresar y
+    vuelve a Mi cuenta → Puntos. Una vez por reseña; queda en el historial del pedido
+  - ✅ **Puntos en la ficha del cliente** (panel → Clientes): saldo, cuánto le falta para el cupón y sus canjes
+    (código, usado o vencimiento). Con los puntos apagados se ve solo si tiene saldo o canjes
 - ⚠️ `transiciones.spec` en celular falla a veces contra `next dev` (la ficha no llega a la View Transition en
   5 s); pasa al repetirlo.
 - ✅ **Suscriptores** (`/taller/suscriptores`, módulo `subscribers` de la API, solo para ver). Tres pestañas con lo

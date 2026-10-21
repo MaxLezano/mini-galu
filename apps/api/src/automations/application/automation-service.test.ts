@@ -88,6 +88,7 @@ beforeEach(() => {
       site: "http://web",
       workshop: async () => "Villa Crespo, CABA",
       review: (n, t) => `http://web/resena/${n}?t=${t}`,
+      points: "http://web/cuenta#puntos",
     },
     () => now,
   );
@@ -147,6 +148,31 @@ describe("automatizaciones", () => {
     );
   });
 
+  it("una reseña publicada que suma puntos: mail con lo que sumó, el saldo y cuánto le falta, una vez", async () => {
+    orders.points = { ...orders.points, enabled: true };
+    orders.reviews.set("rv1", { orderId: "o1", product: "Vestido Samanta" });
+    orders.reviews.set("rv2", { orderId: "o1", product: "Set Maddie" });
+    await auto.pointsEarned({ reviewId: "rv1", points: 20, balance: 60 });
+    await auto.pointsEarned({ reviewId: "rv1", points: 20, balance: 60 });
+    await auto.pointsEarned({ reviewId: "rv2", points: 40, balance: 100 });
+    await auto.pointsEarned({ reviewId: "demo", points: 10, balance: 10 }); // sin pedido: no hay a quién
+    expect(messenger.sent.map((m) => [m.to, m.subject])).toEqual([
+      ["lucia@gmail.com", "Sumaste 20 puntos ♡"],
+      ["lucia@gmail.com", "Sumaste 40 puntos ♡"],
+    ]);
+    expect(messenger.sent[0]?.body).toBe(
+      "Hola Lucía! Publicamos tu reseña de Vestido Samanta y sumaste 20 puntos. Ya tenés 60 ♡\n\nTe faltan 40 para un 10% de descuento.",
+    );
+    expect(messenger.sent[1]?.body).toContain("Ya podés canjearlos por un 10% de descuento en Mi cuenta.");
+    expect(messenger.ctas[0]).toEqual({ label: "Ver mis puntos", url: "http://web/cuenta#puntos" });
+    expect(orders.history[0]?.title).toBe("Aviso de puntos enviado (+20)");
+
+    await auto.update("puntos", { on: false });
+    orders.reviews.set("rv3", { orderId: "o1", product: "Set Maddie" });
+    await auto.pointsEarned({ reviewId: "rv3", points: 10, balance: 110 });
+    expect(messenger.sent).toHaveLength(2); // pausada
+  });
+
   it("volvió un talle: mail a los anotados por mail; los de WhatsApp quedan esperando con un aviso", async () => {
     waitlist.entries.push(
       { id: "w1", productId: "p1", size: "6", channel: "email", contact: "Ana@Gmail.com", notifiedAt: null },
@@ -196,7 +222,7 @@ describe("automatizaciones", () => {
   it("enviarme una prueba: todos los mensajes activos con datos de ejemplo", async () => {
     await auto.update("despachado", { on: false });
     const n = await auto.test("gaby@minigalu.com.ar");
-    expect(n).toBe(8); // pago, entregado, listo para retirar, volvió un talle, lanzamiento, link, bolsa y cumple
+    expect(n).toBe(9); // pago, entregado, puntos, listo para retirar, volvió un talle, lanzamiento, link, bolsa y cumple
     expect(messenger.sent.every((m) => m.to === "gaby@minigalu.com.ar" && m.subject?.startsWith("[Prueba]"))).toBe(
       true,
     );

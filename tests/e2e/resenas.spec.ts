@@ -130,8 +130,8 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   await expect(page.locator(".reviews-track")).not.toContainText(body);
 });
 
-/** Link del último mail con ese asunto (Mailpit); null si no hay Mailpit. */
-async function mailLink(request: APIRequestContext, to: string, subject: string): Promise<string | null> {
+/** Texto del último mail con ese asunto (Mailpit); null si no hay Mailpit. */
+async function mailText(request: APIRequestContext, to: string, subject: string): Promise<string | null> {
   const ok = await request.get(`${MAILPIT}/messages?limit=1`).catch(() => null);
   if (!ok?.ok()) return null;
   let text = "";
@@ -143,7 +143,13 @@ async function mailLink(request: APIRequestContext, to: string, subject: string)
       return text;
     })
     .toContain("http");
-  return /https?:\/\/\S+verify-email\S+/.exec(text)?.[0] ?? null;
+  return text;
+}
+
+/** Link para confirmar el mail; null si no hay Mailpit. */
+async function mailLink(request: APIRequestContext, to: string, subject: string): Promise<string | null> {
+  const text = await mailText(request, to, subject);
+  return text && (/https?:\/\/\S+verify-email\S+/.exec(text)?.[0] ?? null);
 }
 
 test("puntos: Gaby baja el canje, la reseña publicada suma y el cliente canjea el cupón en Mi cuenta", async ({
@@ -195,14 +201,24 @@ test("puntos: Gaby baja el canje, la reseña publicada suma y el cliente canjea 
     await card.getByRole("button", { name: "Publicar" }).click();
     await expect(page.locator("#toast")).toContainText("Reseña publicada");
 
-    // Mi cuenta → Puntos: canjea y aparece su cupón personal
-    await client.goto("/cuenta#puntos");
+    // le llega "Sumaste 10 puntos" y el botón lo lleva a Mi cuenta → Puntos
+    const mail = (await mailText(request, email, "Sumaste 10 puntos")) as string;
+    expect(mail).toContain("sumaste 10 puntos. Ya tenés 10");
+    expect(mail).toContain("Ya podés canjearlos por un 10% de descuento en Mi cuenta.");
+    await client.goto(/Ver mis puntos: (\S+)/.exec(mail)?.[1] as string);
+    await expect(client).toHaveURL(/\/cuenta#puntos$/);
     const panel = client.locator("#p-puntos");
     await expect(panel).toContainText("10 puntos");
     await panel.getByRole("button", { name: "Canjear 10 puntos" }).click();
     await expect(panel.locator(".my-gc")).toContainText(/PUNTOS-[A-Z0-9]{5} · 10% de descuento · vence el/);
     await expect(panel.locator(".pts-balance")).toContainText("0 puntos");
     await expect(panel.getByRole("button", { name: "Canjear 10 puntos" })).toBeDisabled();
+
+    // la ficha del cliente en el panel muestra el saldo y el canje
+    await page.goto(`/taller/clientes?cliente=${encodeURIComponent(email)}`);
+    const ficha = page.getByRole("complementary", { name: "Ficha del cliente" });
+    await expect(ficha.getByTestId("cd-puntos")).toContainText("0 · le faltan 10 para el cupón");
+    await expect(ficha).toContainText(/PUNTOS-[A-Z0-9]{5} · vence el/);
   } finally {
     // los demás tests ven el canje de base
     await page.goto("/taller/tienda");

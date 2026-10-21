@@ -123,6 +123,8 @@ export class MemoryAutomationOrders implements AutomationOrders {
   delivered = new Map<string, Date>();
   history: { orderId: string; title: string }[] = [];
   points: ReviewPoints = { ...DEFAULT_POLICIES.reviewPoints, enabled: false };
+  /** reseña → pedido y prenda */
+  reviews = new Map<string, { orderId: string; product: string }>();
   async find(id: string) {
     return this.orders.get(id) ?? null;
   }
@@ -134,6 +136,9 @@ export class MemoryAutomationOrders implements AutomationOrders {
   }
   async reviewPoints() {
     return this.points;
+  }
+  async reviewed(reviewId: string) {
+    return this.reviews.get(reviewId) ?? null;
   }
 }
 

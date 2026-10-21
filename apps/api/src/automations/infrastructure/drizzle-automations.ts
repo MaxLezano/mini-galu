@@ -282,6 +282,15 @@ export class DrizzleAutomationOrders implements AutomationOrders {
   async log(orderId: string, title: string, detail: string | null) {
     await this.db.insert(s.orderEvents).values({ orderId, kind: "mail", title, detail, auto: true });
   }
+
+  async reviewed(reviewId: string) {
+    const [r] = await this.db
+      .select({ orderId: s.orderItems.orderId, product: s.orderItems.name })
+      .from(s.reviews)
+      .innerJoin(s.orderItems, eq(s.orderItems.id, s.reviews.orderItemId))
+      .where(eq(s.reviews.id, reviewId));
+    return r ?? null;
+  }
 }
 
 /** Nenas con cumple cargado ("Mis nenas") y la cuenta que las registró. */

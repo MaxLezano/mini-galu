@@ -26,3 +26,11 @@ export function pointsHint(r: ReviewPoints): string {
 
 /** Cuántos le faltan para el próximo canje (0 si ya puede canjear). */
 export const pointsToGo = (r: ReviewPoints, balance: number) => Math.max(0, r.threshold - balance);
+
+/** Cierre del aviso de puntos: si ya puede canjear o cuánto le falta. */
+export function pointsNext(r: ReviewPoints, balance: number): string {
+  const togo = pointsToGo(r, balance);
+  return togo === 0
+    ? `Ya podés canjearlos por un ${r.percent}% de descuento en Mi cuenta.`
+    : `Te faltan ${togo} para un ${r.percent}% de descuento.`;
+}

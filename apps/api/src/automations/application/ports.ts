@@ -91,6 +91,8 @@ export interface AutomationOrders {
   log(orderId: string, title: string, detail: string | null): Promise<void>;
   /** Las reglas de los puntos por reseñas ("Tienda y pagos"): el pedido de reseña cuenta cuánto suma. */
   reviewPoints(): Promise<ReviewPoints>;
+  /** El pedido y la prenda de una reseña (null: reseña demo, sin pedido). */
+  reviewed(reviewId: string): Promise<{ orderId: string; product: string } | null>;
 }
 
 export type WaitingContact = { id: string; channel: "email" | "whatsapp"; contact: string };

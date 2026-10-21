@@ -1,4 +1,4 @@
-import { type AdminCustomerDetail, formatARS, ORDER_STATUSES } from "@mini-galu/contracts";
+import { type AdminCustomerDetail, formatARS, ORDER_STATUSES, pointsToGo } from "@mini-galu/contracts";
 import { Mail, X } from "lucide-react";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
@@ -16,7 +16,7 @@ type Props = {
   onClose: () => void;
 };
 
-/** Ficha del cliente (admin-clientes.html → #cd): contacto, nenas, resumen, pedidos y nota del taller. */
+/** Ficha del cliente (admin-clientes.html → #cd): contacto, nenas, resumen (con los puntos), pedidos y nota del taller. */
 export function CustomerDrawer({ open, customer: c, sinceLabel, note, onNote, onSaveNote, onClose }: Props) {
   return (
     <>
@@ -99,6 +99,36 @@ export function CustomerDrawer({ open, customer: c, sinceLabel, note, onNote, on
                 <dd>{c.orders ? formatARS(Math.round(c.spentCents / c.orders)) : "—"}</dd>
                 <dt>Le gustan</dt>
                 <dd>{c.likes.join(", ") || "—"}</dd>
+                {c.points && (
+                  <>
+                    <dt>Puntos</dt>
+                    <dd data-testid="cd-puntos">
+                      {c.points.balance}
+                      {c.points.rules.enabled && (
+                        <span className="muted">
+                          {" "}
+                          ·{" "}
+                          {pointsToGo(c.points.rules, c.points.balance)
+                            ? `le faltan ${pointsToGo(c.points.rules, c.points.balance)} para el cupón`
+                            : "le alcanza para el cupón"}
+                        </span>
+                      )}
+                    </dd>
+                    {c.points.coupons.length > 0 && (
+                      <>
+                        <dt>Canjes</dt>
+                        <dd>
+                          {c.points.coupons.map((p) => (
+                            <div key={p.code}>
+                              <b>{p.code}</b>{" "}
+                              <span className="muted">· {p.used ? "usado" : `vence el ${shortDate(p.endsAt)}`}</span>
+                            </div>
+                          ))}
+                        </dd>
+                      </>
+                    )}
+                  </>
+                )}
               </dl>
             </div>
             <div className="od-sec">

@@ -1,5 +1,6 @@
 import { DEFAULT_POLICIES, type ReviewPoints } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { DomainEvent } from "../../shared/events/event-bus";
 import { MemoryPoints, MemoryPointsCoupons } from "../testing/in-memory";
 import { PointsService } from "./points-service";
 
@@ -10,11 +11,13 @@ describe("PointsService", () => {
   let coupons: MemoryPointsCoupons;
   let rules: ReviewPoints;
   let svc: PointsService;
+  let events: DomainEvent[];
   beforeEach(() => {
+    events = [];
     repo = new MemoryPoints();
     coupons = new MemoryPointsCoupons(repo);
     rules = { ...DEFAULT_POLICIES.reviewPoints };
-    svc = new PointsService(repo, coupons, async () => rules);
+    svc = new PointsService(repo, coupons, async () => rules, { publish: async (e) => void events.push(e) });
     for (let i = 1; i <= 6; i++) repo.owners.set(`r${i}`, { email: LUCIA, hasPhoto: i <= 4 });
   });
 
@@ -23,6 +26,11 @@ describe("PointsService", () => {
     expect(await svc.reviewPublished("r1")).toBe(0);
     expect(await svc.reviewPublished("r5")).toBe(10);
     expect((await svc.summary(LUCIA)).balance).toBe(30);
+    // el aviso al cliente sale una vez por reseña, con el saldo ya sumado
+    expect(events.map((e) => e.payload)).toEqual([
+      { reviewId: "r1", email: LUCIA, points: 20, balance: 20 },
+      { reviewId: "r5", email: LUCIA, points: 10, balance: 30 },
+    ]);
   });
 
   it("las reseñas demo (sin pedido) y los puntos apagados no suman", async () => {
@@ -30,6 +38,7 @@ describe("PointsService", () => {
     rules = { ...rules, enabled: false };
     expect(await svc.reviewPublished("r1")).toBe(0);
     expect(repo.entries).toEqual([]);
+    expect(events).toEqual([]);
   });
 
   it("canjea el umbral por un cupón personal y descuenta los puntos", async () => {

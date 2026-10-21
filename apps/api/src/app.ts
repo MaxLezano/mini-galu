@@ -285,6 +285,7 @@ export function buildApp(config: Config) {
     new DrizzlePoints(db),
     { issue: (p) => coupons.issuePersonal(p) },
     async () => (await policies.get()).reviewPoints,
+    events,
   );
   const reviews = new ReviewService(
     new DrizzleReviews(db, formatOrderNumber, parseOrderNumber),
@@ -531,6 +532,8 @@ export function buildApp(config: Config) {
       site: config.webOrigin,
       workshop,
       review: (n, t) => `${config.webOrigin}${reviewPath(n, t)}`,
+      // sin sesión, ingresar vuelve a la pestaña Puntos de Mi cuenta
+      points: `${config.webOrigin}/ingresar?volver=%2Fcuenta%23puntos`,
     },
   );
   // la compra de una gift card no lleva los avisos de un pedido de prendas: le llega su código
@@ -549,8 +552,11 @@ export function buildApp(config: Config) {
   events.on("OrderStatusChanged", (e) =>
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
-  // "Mis nenas": una nena cargada con el cumple cerca recibe el aviso sin esperar al programador
   events.on("ReviewPublished", (e) => points.reviewPublished(String(e.payload.reviewId)).then(() => {}));
+  events.on("PointsEarned", (e) =>
+    automations.pointsEarned(e.payload as { reviewId: string; points: number; balance: number }),
+  );
+  // "Mis nenas": una nena cargada con el cumple cerca recibe el aviso sin esperar al programador
   events.on("ChildSaved", () => automations.birthdays({ anyHour: true }).then(() => {}));
   events.on("StockReplenished", (e) =>
     automations.replenished(e.payload as { productId: string; slug: string; name: string; sizes: { size: string }[] }),
@@ -758,7 +764,11 @@ export function buildApp(config: Config) {
     )
     .route(
       "/admin/customers",
-      adminCustomerRoutes(new AdminCustomersService(new DrizzleAdminCustomers(db, storage, formatOrderNumber))),
+      adminCustomerRoutes(
+        new AdminCustomersService(new DrizzleAdminCustomers(db, storage, formatOrderNumber), undefined, {
+          forEmail: (email) => points.summary(email),
+        }),
+      ),
     )
     .route(
       "/admin/automations",
