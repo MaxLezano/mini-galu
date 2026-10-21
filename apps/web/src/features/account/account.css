@@ -100,3 +100,10 @@
 .acc-form { display: grid; gap: 14px; max-width: 560px; }
 .acc-form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 620px) { .acc-form .two { grid-template-columns: 1fr; } }
+
+/* Puntos por reseñas — sin mockup: la tarjeta de lino de las gift cards con una barra de progreso */
+.pts-card { display: grid; gap: 14px; justify-items: start; max-width: 560px; padding: clamp(18px, 3vw, 28px); border-radius: var(--r-lg); background: var(--linen); }
+.pts-balance { font-family: var(--f-ui); font-size: 15px; }
+.pts-balance b { font: 400 clamp(44px, 6vw, 64px)/1 var(--f-display); margin-right: 6px; }
+.pts-meter { width: 100%; height: 10px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.pts-meter span { display: block; height: 100%; border-radius: inherit; background: var(--canela); }

@@ -1,4 +1,4 @@
-import type { CouponRepository, CouponWrite } from "../application/ports";
+import type { CouponRepository, CouponWrite, PersonalCoupon } from "../application/ports";
 import type { Coupon } from "../domain/coupon";
 
 export class MemoryCoupons implements CouponRepository {
@@ -9,7 +9,7 @@ export class MemoryCoupons implements CouponRepository {
   birthdayMails = new Set<string>();
 
   async all() {
-    return this.items;
+    return this.items.filter((c) => c.email === null);
   }
   async findById(id: string) {
     return this.items.find((c) => c.id === id) ?? null;
@@ -20,6 +20,26 @@ export class MemoryCoupons implements CouponRepository {
   async create(c: CouponWrite) {
     const id = `cp${this.items.length + 1}`;
     this.items.push(this.toCoupon(id, c, 0));
+    return id;
+  }
+  async createPersonal(c: PersonalCoupon) {
+    if (this.items.some((x) => x.code === c.code)) return null;
+    const id = `cp${this.items.length + 1}`;
+    this.items.push({
+      id,
+      code: c.code,
+      kind: "percent",
+      value: c.percent,
+      minSubtotalCents: null,
+      audience: "todos",
+      endsAt: c.endsAt,
+      maxUses: 1,
+      oncePerCustomer: true,
+      active: true,
+      timesUsed: 0,
+      email: c.email,
+      createdAt: new Date(),
+    });
     return id;
   }
   async update(id: string, c: CouponWrite) {
@@ -49,6 +69,6 @@ export class MemoryCoupons implements CouponRepository {
     };
   }
   private toCoupon(id: string, c: CouponWrite, timesUsed: number): Coupon {
-    return { ...c, id, endsAt: c.endsAt ? new Date(c.endsAt) : null, timesUsed, createdAt: new Date() };
+    return { ...c, id, endsAt: c.endsAt ? new Date(c.endsAt) : null, timesUsed, email: null, createdAt: new Date() };
   }
 }

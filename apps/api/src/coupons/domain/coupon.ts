@@ -13,6 +13,8 @@ export type Coupon = {
   oncePerCustomer: boolean;
   active: boolean;
   timesUsed: number;
+  /** Cupón personal (canje de puntos): solo con ese mail. */
+  email: string | null;
   createdAt: Date;
 };
 
@@ -46,9 +48,10 @@ export function evaluateCoupon(c: Coupon, ctx: CouponContext): CouponResult {
     return { ok: false, reason: "Ese cupón ya se usó todas las veces" };
   if (c.minSubtotalCents !== null && ctx.subtotalCents < c.minSubtotalCents)
     return { ok: false, reason: `Ese cupón es para compras desde ${money(c.minSubtotalCents)}` };
-  const needsEmail =
-    c.oncePerCustomer || c.audience === "primera_compra" || c.audience === "anotados" || c.audience === "cumple";
+  const needsEmail = c.oncePerCustomer || c.audience !== "todos" || c.email !== null;
   if (needsEmail && !ctx.email) return { ok: false, reason: "Completá tu email para usar este cupón" };
+  if (c.email !== null && ctx.email !== c.email)
+    return { ok: false, reason: "Ese cupón es de tus puntos: usalo con el email de tu cuenta" };
   if (c.oncePerCustomer && ctx.facts.usedByEmail) return { ok: false, reason: "Ya usaste este cupón" };
   if (c.audience === "primera_compra" && ctx.facts.hasPaidOrder)
     return { ok: false, reason: "Ese cupón es para la primera compra" };
@@ -56,7 +59,6 @@ export function evaluateCoupon(c: Coupon, ctx: CouponContext): CouponResult {
     return { ok: false, reason: "Ese cupón es para quienes se anotaron al lanzamiento con este email" };
   if (c.audience === "cumple" && !ctx.facts.gotBirthdayMail)
     return { ok: false, reason: "Ese cupón llega con el mail de cumpleaños, con el email de la cuenta" };
-  // TODO(fase 6 · automations): "resena" se manda desde las automatizaciones
   if (c.kind === "free_shipping") return { ok: true, discountCents: 0, freeShipping: true };
   const discountCents =
     c.kind === "percent" ? Math.round((ctx.subtotalCents * c.value) / 100) : Math.min(c.value, ctx.subtotalCents);

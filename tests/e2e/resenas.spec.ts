@@ -1,5 +1,7 @@
-import type { Page } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 import { ADMIN, expect, test } from "./fixtures";
+
+const MAILPIT = "http://localhost:8025/api/v1";
 
 /** Compra pagada del moño (retiro en el taller, gateway simulado: APRO aprueba). Devuelve el número de pedido. */
 async function buyBow(page: Page, email: string): Promise<string> {
@@ -23,6 +25,28 @@ async function buyBow(page: Page, email: string): Promise<string> {
   return number as string;
 }
 
+async function adminLogin(page: Page, path: string) {
+  await page.goto(path);
+  await page.getByLabel("Email").fill(ADMIN.email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
+  await page.getByRole("button", { name: "Entrar al taller" }).click();
+}
+
+/** Desde el detalle del pedido abierto en el panel: lo entrega y devuelve el link para reseñar del WhatsApp. */
+async function deliver(page: Page): Promise<string> {
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await drawer.getByRole("button", { name: "Empezar a preparar" }).click();
+  await drawer.getByLabel("Moño Verde Largo talle Único preparado").check();
+  await drawer.getByRole("button", { name: "Marcar listo para retirar" }).click();
+  await drawer.getByRole("button", { name: "Marcar como retirado" }).click();
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText(/Entregado/);
+  await drawer.getByRole("button", { name: "Pedir reseña" }).click();
+  const wa = page.getByRole("dialog", { name: "Mensaje por WhatsApp" });
+  const link = /http:\/\/localhost:3000(\/resena\/\S+)/.exec(await wa.getByRole("textbox").inputValue())?.[1];
+  expect(link).toBeTruthy();
+  return link as string;
+}
+
 test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para el inicio", async ({
   page,
   request,
@@ -34,24 +58,16 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   const number = await buyBow(page, `e2e-resena-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`);
 
   // el taller lo entrega y le escribe por WhatsApp con el link para reseñar
-  await page.goto(`/taller/pedidos?pedido=${number}`);
-  await page.getByLabel("Email").fill(ADMIN.email);
-  await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN.password);
-  await page.getByRole("button", { name: "Entrar al taller" }).click();
-  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
-  await drawer.getByRole("button", { name: "Empezar a preparar" }).click();
-  await drawer.getByLabel("Moño Verde Largo talle Único preparado").check();
-  await drawer.getByRole("button", { name: "Marcar listo para retirar" }).click();
-  await drawer.getByRole("button", { name: "Marcar como retirado" }).click();
-  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText(/Entregado/);
-  await drawer.getByRole("button", { name: "Pedir reseña" }).click();
-  const wa = page.getByRole("dialog", { name: "Mensaje por WhatsApp" });
-  const link = /http:\/\/localhost:3000(\/resena\/\S+)/.exec(await wa.getByRole("textbox").inputValue())?.[1];
-  expect(link).toBeTruthy();
+  await adminLogin(page, `/taller/pedidos?pedido=${number}`);
+  const link = await deliver(page);
 
   // el cliente: estrellas, qué le pareció, el talle y una foto (dibujada en el navegador: no hay fotos en el repo)
-  await page.goto(link as string);
+  await page.goto(link);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("¿Cómo le quedó?");
+  // los puntos del mail del pedido: todavía ninguno
+  await expect(page.locator(".rv-points")).toContainText("te suma 10 puntos (20 con foto)");
+  await expect(page.locator(".rv-points")).toContainText("Tenés 0 puntos");
+
   const item = page.locator(".rv-item").first();
   await item.getByRole("button", { name: "Enviar reseña" }).click();
   await expect(item.getByRole("alert")).toHaveText("Elegí las estrellas");
@@ -75,7 +91,7 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   await expect(item.getByRole("img", { name: "Tu foto" })).toBeVisible();
   await expect(item).toContainText("Va a aparecer como «Lucía F.»");
   await item.getByRole("button", { name: "Enviar reseña" }).click();
-  await expect(item).toContainText("¡Gracias! La leemos y la sumamos a la tienda.");
+  await expect(item).toContainText("¡Gracias! La leemos y, cuando la publiquemos, sumás 20 puntos.");
   await page.reload();
   await expect(page.locator(".rv-item").first()).toContainText(body);
 
@@ -90,6 +106,10 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   await expect(card.getByRole("img", { name: "Foto de Lucía F." })).toBeVisible();
   await card.getByRole("button", { name: "Publicar" }).click();
   await expect(page.locator("#toast")).toContainText("Reseña publicada");
+  // publicada: le suma los puntos (con foto, 20) al mail del pedido
+  await page.goto(link);
+  await expect(page.locator(".rv-points")).toContainText("Tenés 20 puntos: te faltan 80 para el cupón.");
+  await page.goto("/taller/resenas");
   await page.getByRole("button", { name: /^Publicadas/ }).click();
   await card.getByRole("button", { name: "Mostrar en el inicio" }).click();
   await expect(page.locator("#toast")).toContainText("Va a salir en el inicio");
@@ -106,4 +126,86 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
   await expect(page.locator("#toast")).toContainText("Reseña oculta");
   await page.goto("/");
   await expect(page.locator(".reviews-track")).not.toContainText(body);
+});
+
+/** Link del último mail con ese asunto (Mailpit); null si no hay Mailpit. */
+async function mailLink(request: APIRequestContext, to: string, subject: string): Promise<string | null> {
+  const ok = await request.get(`${MAILPIT}/messages?limit=1`).catch(() => null);
+  if (!ok?.ok()) return null;
+  let text = "";
+  await expect
+    .poll(async () => {
+      const q = encodeURIComponent(`to:${to} subject:"${subject}"`);
+      const id = (await (await request.get(`${MAILPIT}/search?query=${q}`)).json()).messages?.[0]?.ID;
+      if (id) text = (await (await request.get(`${MAILPIT}/message/${id}`)).json()).Text;
+      return text;
+    })
+    .toContain("http");
+  return /https?:\/\/\S+verify-email\S+/.exec(text)?.[0] ?? null;
+}
+
+test("puntos: Gaby baja el canje, la reseña publicada suma y el cliente canjea el cupón en Mi cuenta", async ({
+  page,
+  browser,
+  request,
+}) => {
+  const config = await (await request.get("http://localhost:4000/checkout/config")).json();
+  test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  test.slow();
+  const email = `e2e-puntos-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
+
+  // el cliente compra sin cuenta y crea la cuenta con ese mail (la confirma por el link del mail)
+  const client = await browser.newPage();
+  const number = await buyBow(client, email);
+  await client.goto("/ingresar?crear");
+  const auth = client.locator("main.auth");
+  await auth.getByLabel("Nombre", { exact: true }).fill("Lucía");
+  await auth.getByLabel("Apellido").fill("Fernández");
+  await auth.getByLabel("Email").fill(email);
+  await auth.getByLabel("Contraseña", { exact: true }).fill("Clave.Segura1");
+  await client.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(client).toHaveURL(/\/cuenta/);
+  const verify = await mailLink(request, email, "Confirmá tu mail");
+  test.skip(!verify, "Sin Mailpit no se puede confirmar el mail");
+  await client.goto(verify as string);
+
+  // Gaby: canje con 10 puntos (una reseña sin foto) y entrega el pedido
+  await adminLogin(page, "/taller/tienda");
+  const box = page.locator("#puntos");
+  const before = await box.getByLabel("Puntos para canjear").inputValue();
+  await box.getByLabel("Puntos para canjear").fill("10");
+  await expect(box).toContainText("Alcanza con 1 reseña publicada con foto por cupón");
+  await box.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.locator("#toast")).toContainText("Puntos por reseñas guardados");
+  try {
+    await page.goto(`/taller/pedidos?pedido=${number}`);
+    const link = await deliver(page);
+
+    await client.goto(link);
+    const item = client.locator(".rv-item").first();
+    await item.locator(".star-pick label").nth(3).click();
+    await item.getByLabel("Contanos qué te pareció").fill(`Muy lindo el moño, buena calidad ${Date.now()}`);
+    await item.getByRole("button", { name: "Enviar reseña" }).click();
+    await expect(item).toContainText("cuando la publiquemos, sumás 10 puntos");
+
+    await page.goto("/taller/resenas");
+    const card = page.getByRole("article", { name: "Reseña de Lucía F." }).filter({ hasText: `#${number}` });
+    await card.getByRole("button", { name: "Publicar" }).click();
+    await expect(page.locator("#toast")).toContainText("Reseña publicada");
+
+    // Mi cuenta → Puntos: canjea y aparece su cupón personal
+    await client.goto("/cuenta#puntos");
+    const panel = client.locator("#p-puntos");
+    await expect(panel).toContainText("10 puntos");
+    await panel.getByRole("button", { name: "Canjear 10 puntos" }).click();
+    await expect(panel.locator(".my-gc")).toContainText(/PUNTOS-[A-Z0-9]{5} · 10% de descuento · vence el/);
+    await expect(panel.locator(".pts-balance")).toContainText("0 puntos");
+    await expect(panel.getByRole("button", { name: "Canjear 10 puntos" })).toBeDisabled();
+  } finally {
+    // los demás tests ven el canje de base
+    await page.goto("/taller/tienda");
+    await page.locator("#puntos").getByLabel("Puntos para canjear").fill(before);
+    await page.locator("#puntos").getByRole("button", { name: "Guardar" }).click();
+    await expect(page.locator("#toast")).toContainText("Puntos por reseñas guardados");
+  }
 });

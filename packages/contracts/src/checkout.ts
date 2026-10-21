@@ -340,7 +340,6 @@ export type CouponKind = keyof typeof COUPON_KINDS;
 export const COUPON_AUDIENCES = {
   todos: "Todos",
   primera_compra: "Primera compra",
-  resena: "Después de dejar una reseña",
   cumple: "Mail de cumpleaños",
   anotados: "Anotados al lanzamiento",
 } as const;

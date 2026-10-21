@@ -1,4 +1,4 @@
-import type { AutomationKey, AutomationRun } from "@mini-galu/contracts";
+import { type AutomationKey, type AutomationRun, DEFAULT_POLICIES, type ReviewPoints } from "@mini-galu/contracts";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
@@ -122,6 +122,7 @@ export class MemoryAutomationOrders implements AutomationOrders {
   orders = new Map<string, OrderFacts>();
   delivered = new Map<string, Date>();
   history: { orderId: string; title: string }[] = [];
+  points: ReviewPoints = { ...DEFAULT_POLICIES.reviewPoints, enabled: false };
   async find(id: string) {
     return this.orders.get(id) ?? null;
   }
@@ -130,6 +131,9 @@ export class MemoryAutomationOrders implements AutomationOrders {
   }
   async log(orderId: string, title: string) {
     this.history.push({ orderId, title });
+  }
+  async reviewPoints() {
+    return this.points;
   }
 }
 

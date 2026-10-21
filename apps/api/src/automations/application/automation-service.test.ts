@@ -135,6 +135,16 @@ describe("automatizaciones", () => {
     expect(messenger.sent[0]?.subject).toBe("¿Cómo le quedó? ♡");
     // el botón lleva a reseñar las prendas del pedido, sin cuenta
     expect(messenger.ctas[0]).toEqual({ label: "Dejar mi reseña", url: "http://web/resena/MG-1042?t=tok1" });
+    expect(messenger.sent[0]?.body).not.toContain("puntos");
+  });
+
+  it("con los puntos prendidos, el pedido de reseña cuenta cuánto suma", async () => {
+    orders.delivered.set("o1", new Date(now.getTime() - 4 * DAY));
+    orders.points = { ...orders.points, enabled: true };
+    await auto.askReviews();
+    expect(messenger.sent[0]?.body).toContain(
+      "Cada reseña que publicamos te suma 10 puntos (20 con foto). Con 100 puntos tenés un 10% de descuento.",
+    );
   });
 
   it("volvió un talle: mail a los anotados por mail; los de WhatsApp quedan esperando con un aviso", async () => {

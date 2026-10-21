@@ -18,6 +18,7 @@ import { HeroEditor } from "./HeroEditor";
 import { NewsletterEditor } from "./NewsletterEditor";
 import { PaymentsEditor } from "./PaymentsEditor";
 import { PoliciesEditor } from "./PoliciesEditor";
+import { ReviewPointsEditor } from "./ReviewPointsEditor";
 import { ShippingEditor } from "./ShippingEditor";
 import { StoreInfoEditor } from "./StoreInfoEditor";
 import "./store.css";
@@ -71,6 +72,7 @@ export function StoreSettings({
             )}
           />
           <CouponsEditor initial={coupons} />
+          <ReviewPointsEditor initial={policies.reviewPoints} />
           <GiftcardsBox data={giftcards} months={policies.giftcardMonths} />
           <HelpEditor initial={help} />
         </div>

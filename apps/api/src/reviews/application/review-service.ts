@@ -10,10 +10,11 @@ import {
 } from "@mini-galu/contracts";
 import type { z } from "zod";
 import { ConflictError, NotFoundError, ValidationError } from "../../shared/domain/errors";
+import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import type { ImageResizer } from "../../shared/media/responsive-image-storage";
 import { canReview, moderate, publicAuthor } from "../domain/review";
-import type { ReviewOrder, ReviewRepository, ReviewRow, StoredReview } from "./ports";
+import type { ReviewOrder, ReviewPointsPort, ReviewRepository, ReviewRow, StoredReview } from "./ports";
 
 type Photo = { type: string; bytes: Uint8Array };
 
@@ -26,6 +27,8 @@ export class ReviewService {
     private readonly repo: ReviewRepository,
     private readonly storage: ImageStorage,
     private readonly resizer: ImageResizer,
+    private readonly points: ReviewPointsPort = async () => null,
+    private readonly events?: Pick<EventBus, "publish">,
   ) {}
 
   /** Las prendas del pedido con la reseña que ya dejó cada una (el token es el del pedido: link del mail o la cuenta). */
@@ -38,6 +41,7 @@ export class ReviewService {
       author: publicAuthor(o.firstName, o.lastName),
       delivered: canReview(o.status),
       items: o.items.filter((i) => i.productId).map((i) => this.item(i, done)),
+      points: await this.points(o.email),
     };
   }
 
@@ -79,7 +83,11 @@ export class ReviewService {
     const r = await this.repo.find(id);
     if (!r) throw new NotFoundError("No existe esa reseña");
     const next = moderate(r, m);
+    const published = next.status === "publicada" && r.status !== "publicada";
     await this.repo.update(id, next);
+    // publicarla le suma los puntos al cliente (una vez por reseña: lo cuida el módulo de puntos)
+    if (published)
+      await this.events?.publish({ type: "ReviewPublished", occurredAt: new Date(), payload: { reviewId: id } });
     return this.admin({ ...r, ...next });
   }
 

@@ -1,6 +1,7 @@
 import type { ReviewableOrder } from "@mini-galu/contracts";
 import Link from "next/link";
 import { Embroidery } from "@/ui/atoms/Embroidery";
+import { ReviewPointsNote } from "./components/ReviewPointsNote";
 import { ReviewItem } from "./containers/ReviewItem";
 import "./reviews.css";
 
@@ -17,10 +18,18 @@ export function ReviewPage({ order, token }: { order: ReviewableOrder; token: st
           Hola {order.firstName}: contanos qué te pareció cada prenda. Tu reseña ayuda a otras familias a elegir ♡
         </p>
       </header>
+      {order.points && <ReviewPointsNote points={order.points} />}
       {order.delivered ? (
         <div className="rv-items">
           {order.items.map((i) => (
-            <ReviewItem key={i.id} item={i} number={order.number} token={token} author={order.author} />
+            <ReviewItem
+              key={i.id}
+              item={i}
+              number={order.number}
+              token={token}
+              author={order.author}
+              rules={order.points?.rules ?? null}
+            />
           ))}
         </div>
       ) : (

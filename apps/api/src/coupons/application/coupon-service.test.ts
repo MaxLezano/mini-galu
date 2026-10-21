@@ -86,6 +86,26 @@ describe("CouponService", () => {
     expect(await ok("CUMPLE15", 1, null)).toMatchObject({ ok: false });
   });
 
+  it("canje de puntos: cupón personal de un uso, solo con ese mail, que no se lista en el panel", async () => {
+    const codes = ["AAAAA", "AAAAA", "BBBBB"];
+    coupons = new CouponService(
+      repo,
+      () => NOW,
+      () => codes.shift() as string,
+    );
+    const a = await coupons.issuePersonal({ email: "lucia@gmail.com", percent: 10, days: 60 });
+    // si el código ya existe, prueba otro
+    const b = await coupons.issuePersonal({ email: "lucia@gmail.com", percent: 10, days: 60 });
+    expect([a.code, b.code]).toEqual(["PUNTOS-AAAAA", "PUNTOS-BBBBB"]);
+    expect(await ok("PUNTOS-AAAAA", 1)).toMatchObject({ ok: true });
+    expect(await ok("PUNTOS-AAAAA", 1, "otra@gmail.com")).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining("puntos"),
+    });
+    expect(await coupons.list()).toEqual([]);
+    expect(repo.items[0]).toMatchObject({ maxUses: 1, endsAt: new Date(NOW.getTime() + 60 * 86_400_000) });
+  });
+
   it("no repite códigos", async () => {
     await coupons.create(input());
     await expect(coupons.create(input())).rejects.toBeInstanceOf(ConflictError);

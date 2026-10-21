@@ -1,4 +1,4 @@
-import { AddressInputSchema } from "@mini-galu/contracts";
+import { AddressInputSchema, DEFAULT_POLICIES } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NotFoundError } from "../../shared/domain/errors";
 import { MemoryCustomerOrders, MemoryCustomers, MemoryNewsletterPort } from "../testing/in-memory";
@@ -62,6 +62,26 @@ describe("mi cuenta", () => {
     const view = await svc2.overview("u1");
     expect(view.orders.map((x) => x.number)).toEqual(["MG-1"]);
     expect(view.giftcards).toEqual([]);
+  });
+
+  it("puntos: los del mail de la cuenta, y canjearlos solo con el mail confirmado", async () => {
+    const summary = { rules: DEFAULT_POLICIES.reviewPoints, balance: 100, coupons: [] };
+    const redeemed: string[] = [];
+    const points = {
+      forEmail: async () => summary,
+      redeem: async (email: string) => {
+        redeemed.push(email);
+        return { ...summary, balance: 0 };
+      },
+    };
+    const svc2 = new CustomerService(repo, orders, newsletter, undefined, undefined, undefined, undefined, points);
+    expect((await svc2.overview("u1")).points?.balance).toBe(100);
+    expect((await svc2.redeemPoints("u1")).balance).toBe(0);
+    expect(redeemed).toEqual(["lucia@gmail.com"]);
+    const p = repo.profiles.get("u1");
+    if (p) repo.profiles.set("u1", { ...p, emailVerified: false });
+    expect((await svc2.overview("u1")).points).toBeNull();
+    await expect(svc2.redeemPoints("u1")).rejects.toThrow("Confirmá tu email");
   });
 
   it("el tilde de las cartas suscribe y da de baja", async () => {

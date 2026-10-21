@@ -20,6 +20,7 @@ import {
   Package,
   Pencil,
   Plus,
+  Star,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -42,10 +43,11 @@ import { AddressForm } from "./components/AddressForm";
 import { CHILD_MODAL, ChildModal } from "./components/ChildModal";
 import { NenasGrid } from "./components/NenasGrid";
 import { PasswordInput } from "./components/PasswordInput";
+import { PointsPanel } from "./components/PointsPanel";
 import { WishlistPanel } from "./components/WishlistPanel";
 import "./account.css";
 
-type Tab = "nenas" | "pedidos" | "favoritos" | "lista" | "giftcards" | "datos";
+type Tab = "nenas" | "pedidos" | "favoritos" | "lista" | "giftcards" | "puntos" | "datos";
 
 const TABS: [Tab, string, ReactNode][] = [
   ["nenas", "Mis nenas", <Baby key="i" className="i-sm" />],
@@ -53,6 +55,7 @@ const TABS: [Tab, string, ReactNode][] = [
   ["favoritos", "Favoritos", <Heart key="i" className="i-sm" />],
   ["lista", "Lista de cumple", <ListChecks key="i" className="i-sm" />],
   ["giftcards", "Gift cards", <Gift key="i" className="i-sm" />],
+  ["puntos", "Puntos", <Star key="i" className="i-sm" />],
   ["datos", "Mis datos", <UserRound key="i" className="i-sm" />],
 ];
 
@@ -149,6 +152,7 @@ export function AccountView() {
               {label}
               {k === "pedidos" && data.orders.length > 0 && <span className="count">{data.orders.length}</span>}
               {k === "favoritos" && favs.length > 0 && <span className="count">{favs.length}</span>}
+              {k === "puntos" && !!data.points?.balance && <span className="count">{data.points.balance}</span>}
             </a>
           ))}
           <a
@@ -278,6 +282,20 @@ export function AccountView() {
           />,
         )}
         {panel("giftcards", <AccountGiftcards profile={data.profile} cards={data.giftcards} />)}
+        {panel(
+          "puntos",
+          <PointsPanel
+            points={data.points}
+            now={new Date()}
+            busy={busy}
+            onRedeem={() =>
+              run(
+                () => accountApi.redeemPoints().then((points) => setData((d) => (d ? { ...d, points } : d))),
+                "¡Listo! Tu cupón ya está abajo",
+              )
+            }
+          />,
+        )}
 
         {panel(
           "datos",

@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { type AdminCoupon, couponLabel, formatARS } from "@mini-galu/contracts";
 import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import { type Coupon, type CouponResult, evaluateCoupon, NO_FACTS, normalizeCode } from "../domain/coupon";
@@ -9,6 +10,7 @@ export class CouponService {
   constructor(
     private readonly repo: CouponRepository,
     private readonly clock: () => Date = () => new Date(),
+    private readonly random: () => string = randomCode,
   ) {}
 
   /* --------------------------------------------------------------- checkout */
@@ -41,6 +43,17 @@ export class CouponService {
       code: c.code,
       label: c.kind === "free_shipping" ? "envío gratis" : `${couponLabel(c, formatARS)} de descuento`,
     };
+  }
+
+  /** Canje de puntos: un cupón de un solo uso que vale solo con ese mail ("PUNTOS-7K2QX"). */
+  async issuePersonal(p: { email: string; percent: number; days: number }): Promise<{ id: string; code: string }> {
+    const endsAt = new Date(this.clock().getTime() + p.days * 86_400_000);
+    for (let i = 0; i < 5; i++) {
+      const code = `PUNTOS-${this.random()}`;
+      const id = await this.repo.createPersonal({ code, percent: p.percent, email: p.email, endsAt });
+      if (id) return { id, code };
+    }
+    throw new ConflictError("No pudimos generar el cupón, probá de nuevo");
   }
 
   /** Al aprobarse el pago. Idempotente por pedido. */
@@ -83,6 +96,12 @@ export class CouponService {
     if (!c) throw new NotFoundError("Cupón inexistente");
     return toAdmin(c);
   }
+}
+
+/** Sin letras que se confunden (0/O, 1/I). */
+const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+function randomCode() {
+  return Array.from({ length: 5 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 }
 
 function toAdmin(c: Coupon): AdminCoupon {

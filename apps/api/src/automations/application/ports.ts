@@ -1,4 +1,10 @@
-import type { AutomationChannel, AutomationKey, AutomationRun, ShippingMethod } from "@mini-galu/contracts";
+import type {
+  AutomationChannel,
+  AutomationKey,
+  AutomationRun,
+  ReviewPoints,
+  ShippingMethod,
+} from "@mini-galu/contracts";
 
 /** Lo que el taller cambió de cada regla (lo que no está, va de fábrica). */
 export type RuleOverrides = Partial<Record<AutomationKey, { on?: boolean; message?: string }>>;
@@ -83,6 +89,8 @@ export interface AutomationOrders {
   deliveredBetween(from: Date, to: Date): Promise<string[]>;
   /** Línea en el historial del pedido (hecha por el sistema). */
   log(orderId: string, title: string, detail: string | null): Promise<void>;
+  /** Las reglas de los puntos por reseñas ("Tienda y pagos"): el pedido de reseña cuenta cuánto suma. */
+  reviewPoints(): Promise<ReviewPoints>;
 }
 
 export type WaitingContact = { id: string; channel: "email" | "whatsapp"; contact: string };

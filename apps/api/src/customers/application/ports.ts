@@ -6,6 +6,7 @@ import type {
   AddressInputSchema,
   AdminCustomerOrder,
   ChildInput,
+  PointsSummary,
   ProfileUpdate,
 } from "@mini-galu/contracts";
 import type { z } from "zod";
@@ -78,6 +79,12 @@ export interface CustomerOrders {
 /** Las gift cards que compró o recibió el mail de la cuenta (las arma el módulo de gift cards). */
 export interface GiftcardsPort {
   forEmail(email: string): Promise<AccountGiftcard[]>;
+}
+
+/** Puntos por reseñas del mail (los resuelve el módulo de puntos). */
+export interface PointsPort {
+  forEmail(email: string): Promise<PointsSummary>;
+  redeem(email: string): Promise<PointsSummary>;
 }
 
 export interface NewsletterPort {

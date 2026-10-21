@@ -1,4 +1,4 @@
-import { ReviewInputSchema } from "@mini-galu/contracts";
+import { DEFAULT_POLICIES, ReviewInputSchema } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { deliveredOrder, FakeResizer, MemoryReviews, MemoryStorage } from "../testing/in-memory";
 import { ReviewService } from "./review-service";
@@ -27,6 +27,17 @@ describe("ReviewService", () => {
     ]);
     await expect(svc.forOrder("MG-1035", "otro")).rejects.toThrow("No encontramos ese pedido");
     await expect(svc.forOrder("MG-9999", "tok")).rejects.toThrow("No encontramos ese pedido");
+  });
+
+  it("muestra los puntos del mail del pedido", async () => {
+    expect((await svc.forOrder("MG-1035", "tok")).points).toBeNull();
+    const asked: string[] = [];
+    svc = new ReviewService(repo, storage, new FakeResizer(), async (email) => {
+      asked.push(email);
+      return { rules: DEFAULT_POLICIES.reviewPoints, balance: 30 };
+    });
+    expect((await svc.forOrder("MG-1035", "tok")).points?.balance).toBe(30);
+    expect(asked).toEqual(["lucia@gmail.com"]);
   });
 
   it("guarda la reseña pendiente, con nombre y apellido corto, ciudad y talle del pedido", async () => {
@@ -81,6 +92,21 @@ describe("ReviewService", () => {
     expect((await svc.forOrder("MG-1035", "tok")).items[0]?.review?.published).toBe(true);
     expect(await svc.moderate(id, { status: "oculta" })).toMatchObject({ status: "oculta", featured: false });
     await expect(svc.moderate("nada", { status: "oculta" })).rejects.toThrow("No existe");
+  });
+
+  it("publicarla avisa para sumar los puntos, solo al pasar a publicada", async () => {
+    const published: unknown[] = [];
+    svc = new ReviewService(repo, storage, new FakeResizer(), undefined, {
+      publish: async (e) => {
+        published.push([e.type, e.payload]);
+      },
+    });
+    await svc.submit("MG-1035", "tok", "i1", input(), null);
+    const id = repo.rows[0]?.id as string;
+    await svc.moderate(id, { status: "publicada" });
+    await svc.moderate(id, { featured: true });
+    await svc.moderate(id, { status: "oculta" });
+    expect(published).toEqual([["ReviewPublished", { reviewId: id }]]);
   });
 });
 

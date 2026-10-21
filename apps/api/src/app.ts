@@ -120,6 +120,8 @@ import {
 } from "./payments/infrastructure/http/payment-routes";
 import { MercadoPagoGateway } from "./payments/infrastructure/mercadopago-gateway";
 import { SimulatedGateway } from "./payments/infrastructure/simulated-gateway";
+import { PointsService } from "./points/application/points-service";
+import { DrizzlePoints } from "./points/infrastructure/drizzle-points";
 import { PoliciesService } from "./policies/application/policies-service";
 import { DrizzlePoliciesStore } from "./policies/infrastructure/drizzle-policies-store";
 import { adminPoliciesRoutes, policiesRoutes } from "./policies/infrastructure/http/policies-routes";
@@ -224,7 +226,6 @@ export function buildApp(config: Config) {
     events,
     new SharpCropper(),
   );
-  const reviews = new ReviewService(new DrizzleReviews(db, formatOrderNumber, parseOrderNumber), storage, resizer);
   const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
   // ajustes de "Tienda y pagos" (cambios, envíos, retiro, gift cards, contacto y taller): los leen envíos, ayuda,
   // gift cards, Galú y los mails, así lo que cambia Gaby se ve igual en todos lados
@@ -279,6 +280,22 @@ export function buildApp(config: Config) {
   );
   const cart = new CartService(new DrizzleCartRepository(db), variants, storage, orders);
   const coupons = new CouponService(new DrizzleCouponRepository(db));
+  // puntos por reseñas: suman al publicarlas y se canjean por un cupón personal (reglas en "Tienda y pagos")
+  const points = new PointsService(
+    new DrizzlePoints(db),
+    { issue: (p) => coupons.issuePersonal(p) },
+    async () => (await policies.get()).reviewPoints,
+  );
+  const reviews = new ReviewService(
+    new DrizzleReviews(db, formatOrderNumber, parseOrderNumber),
+    storage,
+    resizer,
+    async (email) => {
+      const s = await points.summary(email);
+      return s.rules.enabled ? { rules: s.rules, balance: s.balance } : null;
+    },
+    events,
+  );
   // las gift cards se arman más abajo (necesitan los mails); el checkout las usa recién al cotizar o comprar
   const checkout: CheckoutService = new CheckoutService(
     cart,
@@ -470,13 +487,14 @@ export function buildApp(config: Config) {
     undefined,
     undefined,
     events,
+    { forEmail: (email) => points.summary(email), redeem: (email) => points.redeem(email) },
   );
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
     new DrizzleAutomationSettings(db),
     new DrizzleRunLog(db),
     notifications,
-    new DrizzleAutomationOrders(db, slotLabel, formatOrderNumber),
+    new DrizzleAutomationOrders(db, slotLabel, formatOrderNumber, async () => (await policies.get()).reviewPoints),
     new DrizzleWaitlist(db),
     new DrizzleLowStock(db),
     new DrizzleBirthdays(db, () => coupons.birthdayCoupon()),
@@ -532,6 +550,7 @@ export function buildApp(config: Config) {
     automations.statusChanged(String(e.payload.orderId), e.payload.to as OrderStatus),
   );
   // "Mis nenas": una nena cargada con el cumple cerca recibe el aviso sin esperar al programador
+  events.on("ReviewPublished", (e) => points.reviewPublished(String(e.payload.reviewId)).then(() => {}));
   events.on("ChildSaved", () => automations.birthdays({ anyHour: true }).then(() => {}));
   events.on("StockReplenished", (e) =>
     automations.replenished(e.payload as { productId: string; slug: string; name: string; sizes: { size: string }[] }),

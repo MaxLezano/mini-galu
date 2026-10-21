@@ -425,7 +425,18 @@ Lo que quedó marcado ⏳/🟡 depende de otras fases y está asignado a la fase
   (número en el menú) Gaby las publica u oculta y elige las de **"Lo que dicen las familias"** (solo publicadas;
   ocultarla la saca del inicio). Ficha, home y estrellas de las tarjetas cuentan solo las publicadas; la foto del
   cliente se ve en la ficha y en la cinta de la home (si no subió, la de la prenda). Las del seed siguen siendo demo
-  (publicadas; las cortas, en el inicio). ⏳ Incentivar a que dejen reseñas (cupón `RESENA10` del mockup): después
+  (publicadas; las cortas, en el inicio).
+- ✅ **Puntos por reseñas** (módulo `points`; reemplaza el cupón `RESENA10` del mockup: uno por reseña era mucha
+  pérdida y cualquiera que compraba una vez ya tenía el descuento). Solo suman las reseñas, y **cuando Gaby las
+  publica** (evento `ReviewPublished`, una vez por reseña; ocultarla después no los saca): base 10 puntos, 20 con foto.
+  Van al mail del pedido (sirve sin cuenta). Con 100 puntos el cliente canjea en **Mi cuenta → Puntos** (solo con el
+  mail confirmado) un cupón personal `PUNTOS-XXXXX` de 10% que vale 60 días: un solo uso, solo con ese mail, no se
+  lista en Cupones (columna `coupons.email`); si el cupón no se genera, los puntos vuelven. Dos canjes a la vez no
+  gastan el mismo saldo (lock por mail). Todo se edita en la caja **"Puntos por reseñas"** de Tienda y pagos (se
+  prende/apaga; muestra cuántas reseñas hacen falta por cupón). La página `/resena` cuenta cuánto suma cada reseña,
+  el saldo y, si alcanza, lleva a canjear; el mail "¿Cómo le quedó? ♡" suma la regla. El público "Después de dejar una
+  reseña" de los cupones se sacó (migración `0027`: si había uno, queda pausado). ⏳ Mail "Sumaste N puntos" al
+  publicar la reseña y los puntos en la ficha del cliente del panel: después
 - ⚠️ `transiciones.spec` en celular falla a veces contra `next dev` (la ficha no llega a la View Transition en
   5 s); pasa al repetirlo.
 - ✅ **Suscriptores** (`/taller/suscriptores`, módulo `subscribers` de la API, solo para ver). Tres pestañas con lo

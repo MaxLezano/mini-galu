@@ -5,6 +5,7 @@ import type {
   AccountProfile,
   AddressInput,
   ChildInput,
+  PointsSummary,
   ProfileUpdate,
   SignUpInput,
 } from "@mini-galu/contracts";
@@ -69,6 +70,7 @@ export const accountApi = {
   signOut: () => call<unknown>("/auth/sign-out", json("POST", {})),
 
   overview: () => call<AccountOverview>("/me"),
+  redeemPoints: () => call<PointsSummary>("/me/points/redeem", { method: "POST" }),
   saveProfile: (p: ProfileUpdate) => call<AccountProfile>("/me/profile", json("PUT", p)),
   addChild: (c: ChildInput) => call<AccountChild>("/me/children", json("POST", c)),
   updateChild: (id: string, c: ChildInput) => call<AccountChild>(`/me/children/${id}`, json("PUT", c)),

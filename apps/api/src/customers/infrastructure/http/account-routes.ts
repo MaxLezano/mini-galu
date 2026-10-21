@@ -32,6 +32,7 @@ export function accountRoutes(auth: Auth, customers: CustomerService) {
   return new Hono<Vars>()
     .use("*", requireAccount(auth))
     .get("/", async (c) => c.json(await customers.overview(c.get("userId"))))
+    .post("/points/redeem", async (c) => c.json(await customers.redeemPoints(c.get("userId"))))
     .put("/profile", async (c) =>
       c.json(await customers.updateProfile(c.get("userId"), parse(ProfileUpdateSchema, await c.req.json()))),
     )

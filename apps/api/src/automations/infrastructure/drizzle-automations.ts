@@ -245,6 +245,7 @@ export class DrizzleAutomationOrders implements AutomationOrders {
     private readonly db: Db,
     private readonly pickupLabel: (slot: string) => string | null,
     private readonly formatNumber: (n: number) => string,
+    readonly reviewPoints: AutomationOrders["reviewPoints"],
   ) {}
 
   async find(orderId: string) {

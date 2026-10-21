@@ -1,5 +1,5 @@
-import { and, type Db, desc, eq, inArray, schema as s, sql } from "@mini-galu/db";
-import type { CouponRepository, CouponWrite } from "../application/ports";
+import { and, type Db, desc, eq, inArray, isNull, schema as s, sql } from "@mini-galu/db";
+import type { CouponRepository, CouponWrite, PersonalCoupon } from "../application/ports";
 import type { Coupon } from "../domain/coupon";
 
 const PAID = ["nuevo", "preparando", "listo", "en_camino", "entregado"] as const;
@@ -8,7 +8,7 @@ export class DrizzleCouponRepository implements CouponRepository {
   constructor(private readonly db: Db) {}
 
   all(): Promise<Coupon[]> {
-    return this.db.select().from(s.coupons).orderBy(desc(s.coupons.createdAt));
+    return this.db.select().from(s.coupons).where(isNull(s.coupons.email)).orderBy(desc(s.coupons.createdAt));
   }
 
   async findById(id: string) {
@@ -24,6 +24,15 @@ export class DrizzleCouponRepository implements CouponRepository {
   async create(c: CouponWrite) {
     const [r] = await this.db.insert(s.coupons).values(this.columns(c)).returning({ id: s.coupons.id });
     return (r as { id: string }).id;
+  }
+
+  async createPersonal(c: PersonalCoupon) {
+    const [r] = await this.db
+      .insert(s.coupons)
+      .values({ code: c.code, kind: "percent", value: c.percent, email: c.email, endsAt: c.endsAt, maxUses: 1 })
+      .onConflictDoNothing()
+      .returning({ id: s.coupons.id });
+    return r?.id ?? null;
   }
 
   async update(id: string, c: CouponWrite) {

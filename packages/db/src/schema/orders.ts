@@ -58,7 +58,7 @@ export const cartItems = pgTable(
 /* ------------------------------------------------------------------ cupones */
 
 export const couponKind = pgEnum("coupon_kind", ["percent", "fixed", "free_shipping"]);
-export const couponAudience = pgEnum("coupon_audience", ["todos", "primera_compra", "resena", "cumple", "anotados"]);
+export const couponAudience = pgEnum("coupon_audience", ["todos", "primera_compra", "cumple", "anotados"]);
 
 export const coupons = pgTable(
   "coupons",
@@ -77,6 +77,8 @@ export const coupons = pgTable(
     active: boolean().notNull().default(true),
     /** Usos con pago aprobado (desnormalizado). */
     timesUsed: integer().notNull().default(0),
+    /** Cupón personal (canje de puntos): solo vale con ese mail y no se lista en el panel. */
+    email: text(),
     ...stamps,
   },
   (t) => [check("coupon_value_non_negative", sql`${t.value} >= 0`)],

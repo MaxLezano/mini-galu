@@ -88,6 +88,27 @@ export const PickupDaySchema = z
   .array(z.tuple([hour, hour]).refine(([from, to]) => from < to, "Cada franja termina después de que empieza"))
   .max(4, "Hasta 4 franjas por día");
 
+const points = (what: string, min: number, max: number) =>
+  z
+    .number({ error: `Poné ${what}` })
+    .int("Poné un número entero")
+    .min(min, `Al menos ${min}`)
+    .max(max, `Hasta ${max}`);
+
+/**
+ * Puntos por reseñas: cada reseña publicada suma (más con foto) y con `threshold` puntos el cliente canjea un
+ * cupón personal de `percent`% que vale `validDays` días. Solo reseñas: las compras no suman.
+ */
+export const ReviewPointsSchema = z.object({
+  enabled: z.boolean(),
+  perReview: points("los puntos por reseña", 1, 1000),
+  perPhoto: points("los puntos extra por la foto", 0, 1000),
+  threshold: points("los puntos para canjear", 1, 10_000),
+  percent: points("el descuento", 1, 50),
+  validDays: points("los días que vale el cupón", 7, 365),
+});
+export type ReviewPoints = z.infer<typeof ReviewPointsSchema>;
+
 export const StorePoliciesSchema = z
   .object({
     /** Días desde que se recibe el pedido para cambiar el talle. */
@@ -119,6 +140,7 @@ export const StorePoliciesSchema = z
       .max(24, "Hasta 24 meses"),
     contact: StoreContactSchema,
     workshop: WorkshopSchema,
+    reviewPoints: ReviewPointsSchema,
   })
   .refine((p) => Object.values(p.methods).some(Boolean), {
     message: "Dejá al menos una forma de entrega",
@@ -151,6 +173,8 @@ export const DEFAULT_POLICIES: StorePolicies = {
   giftcardMonths: 2,
   contact: { whatsapp: "381 319-5264", email: "mini.galu.store@gmail.com", instagram: "minigalumodainfantil" },
   workshop: { city: "San Miguel de Tucumán", province: "Tucumán" },
+  // unas 5 prendas reseñadas con foto para un 10%
+  reviewPoints: { enabled: true, perReview: 10, perPhoto: 10, threshold: 100, percent: 10, validDays: 60 },
 };
 
 type Saved = Partial<StorePolicies> & {

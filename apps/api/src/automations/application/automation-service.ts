@@ -6,6 +6,7 @@ import {
   type AutomationKey,
   fillMessage,
   type OrderStatus,
+  pointsHint,
   type RuleUpdate,
   type Size,
   sizeLabel,
@@ -189,6 +190,12 @@ export class AutomationService {
   async askReviews(): Promise<number> {
     if (!(await this.isOn("entregado"))) return 0;
     const now = this.clock().getTime();
+    const points = await this.orders.reviewPoints();
+    const hint = points.enabled
+      ? `
+
+${pointsHint(points)} Los canjeás en Mi cuenta.`
+      : "";
     let n = 0;
     for (const id of await this.orders.deliveredBetween(new Date(now - 30 * DAY), new Date(now - 3 * DAY))) {
       if (await this.runs.exists("entregado", `resena:${id}`)) continue;
@@ -200,7 +207,7 @@ export class AutomationService {
         {
           subject: "¿Cómo le quedó? ♡",
           eyebrow: `Pedido #${o.number} · entregado`,
-          body: await this.text("entregado", this.vars(o)),
+          body: (await this.text("entregado", this.vars(o))) + hint,
           cta: { label: "Dejar mi reseña", url: this.links.review(o.number, o.accessToken) },
           logTitle: "Pedido de reseña enviado",
         },

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FitSchema } from "./catalog";
+import type { PointsSummary } from "./points";
 
 /* ------------------------------------------------------------------ el cliente deja su reseña (/resena/MG-1035) */
 
@@ -42,6 +43,8 @@ export type ReviewableOrder = {
   /** Solo los pedidos entregados se pueden reseñar. */
   delivered: boolean;
   items: ReviewableItem[];
+  /** Puntos del mail del pedido (null si Gaby los apagó): se canjean en Mi cuenta. */
+  points: Pick<PointsSummary, "rules" | "balance"> | null;
 };
 
 /* ------------------------------------------------------------------ panel: /taller/resenas */

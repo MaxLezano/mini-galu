@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReviewableItem } from "@mini-galu/contracts";
+import type { ReviewableItem, ReviewPoints } from "@mini-galu/contracts";
 import { imageThumb, type Size, sizeLabel } from "@mini-galu/contracts";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -9,10 +9,17 @@ import { ReviewDone } from "../components/ReviewDone";
 import { ReviewForm } from "../components/ReviewForm";
 import { draftError, draftForm, emptyDraft } from "../review-form";
 
-type Props = { item: ReviewableItem; number: string; token: string; author: string };
+type Props = {
+  item: ReviewableItem;
+  number: string;
+  token: string;
+  author: string;
+  /** Reglas de los puntos (null si están apagados). */
+  rules: ReviewPoints | null;
+};
 
 /** Una prenda del pedido: su form de reseña o, si ya la dejó, lo que escribió. */
-export function ReviewItem({ item: initial, number, token, author }: Props) {
+export function ReviewItem({ item: initial, number, token, author, rules }: Props) {
   const [item, setItem] = useState(initial);
   const [draft, setDraft] = useState(emptyDraft);
   const [preview, setPreview] = useState<string | null>(null);
@@ -51,7 +58,7 @@ export function ReviewItem({ item: initial, number, token, author }: Props) {
       </div>
       <div className="rv-item-main">
         {item.review ? (
-          <ReviewDone review={item.review} />
+          <ReviewDone review={item.review} rules={rules} />
         ) : (
           <ReviewForm
             id={item.id}

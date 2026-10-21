@@ -1,4 +1,4 @@
-import type { Fit, OrderStatus, ReviewStatus } from "@mini-galu/contracts";
+import type { Fit, OrderStatus, ReviewableOrder, ReviewStatus } from "@mini-galu/contracts";
 import type { Moderated } from "../domain/review";
 
 export type ReviewOrderItem = {
@@ -19,6 +19,7 @@ export type ReviewOrder = {
   status: OrderStatus;
   firstName: string;
   lastName: string;
+  email: string;
   /** Ciudad del envío a domicilio (la reseña la muestra junto al nombre). */
   city: string | null;
   items: ReviewOrderItem[];
@@ -58,6 +59,9 @@ export type ReviewRow = Moderated & {
   orderNumber: string | null;
   createdAt: Date;
 };
+
+/** Los puntos del mail del pedido (lo resuelve el módulo de puntos); null si están apagados. */
+export type ReviewPointsPort = (email: string) => Promise<ReviewableOrder["points"]>;
 
 export interface ReviewRepository {
   /** Por número ("MG-1035"); null si no existe. */

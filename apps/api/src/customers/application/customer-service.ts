@@ -8,10 +8,17 @@ import type {
   PublicWishlist,
 } from "@mini-galu/contracts";
 import type { z } from "zod";
-import { NotFoundError } from "../../shared/domain/errors";
+import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
 import { revealGiver, wishSlug } from "../domain/wishlist";
-import type { ChildRecord, CustomerOrders, CustomerRepository, GiftcardsPort, NewsletterPort } from "./ports";
+import type {
+  ChildRecord,
+  CustomerOrders,
+  CustomerRepository,
+  GiftcardsPort,
+  NewsletterPort,
+  PointsPort,
+} from "./ports";
 
 type AddressData = z.output<typeof AddressInputSchema>;
 
@@ -25,22 +32,33 @@ export class CustomerService {
     private readonly clock: () => Date = () => new Date(),
     private readonly random: () => string = () => randomBytes(3).toString("hex").slice(0, 4),
     private readonly events?: Pick<EventBus, "publish">,
+    private readonly points?: PointsPort,
   ) {}
 
   async overview(userId: string): Promise<AccountOverview> {
     const profile = await this.repo.profile(userId);
     if (!profile) throw new NotFoundError("No encontramos tu cuenta");
-    // lo que se encuentra por mail (pedidos sin ingresar, gift cards con su código) solo con el mail confirmado:
-    // si no, cualquiera creaba una cuenta con el mail de otra persona y veía sus pedidos y gastaba sus gift cards
+    // lo que se encuentra por mail (pedidos sin ingresar, gift cards con su código, puntos) solo con el mail
+    // confirmado: si no, cualquiera creaba una cuenta con el mail de otra persona y veía sus pedidos y gastaba sus
+    // gift cards y sus puntos
     const email = profile.emailVerified ? profile.email.toLowerCase() : null;
-    const [children, addresses, orders, favorites, giftcards] = await Promise.all([
+    const [children, addresses, orders, favorites, giftcards, points] = await Promise.all([
       this.childrenOf(userId),
       this.repo.addresses(userId),
       this.orders.ofCustomer(userId, email),
       this.repo.favorites(userId),
       email ? this.giftcards.forEmail(email) : [],
+      email && this.points ? this.points.forEmail(email) : null,
     ]);
-    return { profile, children, addresses, orders, favorites, giftcards };
+    return { profile, children, addresses, orders, favorites, giftcards, points };
+  }
+
+  /** Canjea los puntos del mail de la cuenta por un cupón (solo con el mail confirmado). */
+  async redeemPoints(userId: string) {
+    const profile = await this.repo.profile(userId);
+    if (!profile) throw new NotFoundError("No encontramos tu cuenta");
+    if (!profile.emailVerified || !this.points) throw new ValidationError("Confirmá tu email para canjear los puntos");
+    return this.points.redeem(profile.email.toLowerCase());
   }
 
   async updateProfile(userId: string, p: ProfileUpdate) {

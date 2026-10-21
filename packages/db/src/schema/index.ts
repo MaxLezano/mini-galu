@@ -7,4 +7,5 @@ export * from "./customers";
 export * from "./giftcards";
 export * from "./newsletter";
 export * from "./orders";
+export * from "./points";
 export * from "./shipping";

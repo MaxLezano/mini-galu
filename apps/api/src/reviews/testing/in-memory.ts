@@ -77,6 +77,7 @@ export const deliveredOrder = (over: Partial<ReviewOrder> = {}): ReviewOrder => 
   status: "entregado",
   firstName: "Lucía",
   lastName: "Fernández",
+  email: "lucia@gmail.com",
   city: "Rosario",
   items: [
     { id: "i1", productId: "p1", slug: "maddie", name: "Vestido Maddie", size: "6", imagePath: "products/maddie.webp" },
