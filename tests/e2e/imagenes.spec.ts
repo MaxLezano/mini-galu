@@ -11,7 +11,8 @@ test("imágenes: las fotos del storage salen en AVIF/WebP con srcset y las minia
     /@320\.avif 320w,.+@1920\.avif 1920w/,
   );
   await expect(hero.locator('source[type="image/webp"]')).toHaveAttribute("srcset", /@640\.webp 640w/);
-  await expect(hero.locator("source").first()).toHaveAttribute("sizes", "100vw");
+  // cubre todo el alto: en pantallas más angostas que 16:9 la foto mide ~1.78 × el alto
+  await expect(hero.locator("source").first()).toHaveAttribute("sizes", "(max-aspect-ratio: 16/9) 178vh, 100vw");
   await expect(hero.locator("img")).toHaveAttribute("fetchpriority", "high");
 
   await page.goto("/producto/mono-verde");
