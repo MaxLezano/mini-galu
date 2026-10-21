@@ -46,6 +46,7 @@ import { PasswordInput } from "./components/PasswordInput";
 import { PointsPanel } from "./components/PointsPanel";
 import { WishlistPanel } from "./components/WishlistPanel";
 import "./account.css";
+import { AccountSkeleton } from "./components/AccountSkeleton";
 
 type Tab = "nenas" | "pedidos" | "favoritos" | "lista" | "giftcards" | "puntos" | "datos";
 
@@ -113,12 +114,7 @@ export function AccountView() {
     }
   };
 
-  if (!data)
-    return (
-      <main className="wrap acc">
-        <p className="muted">Cargando tu cuenta…</p>
-      </main>
-    );
+  if (!data) return <AccountSkeleton />;
 
   const p = data.profile;
   const first = data.children.find((c) => c.size);

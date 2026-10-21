@@ -43,6 +43,8 @@ test("tienda · bolsa abierta y checkout sin violaciones AA", async ({ page }) =
   await auditar(page);
   await page.locator("#drawer").getByRole("link", { name: "Ir a pagar" }).click();
   await expect(page).toHaveURL(/\/checkout/);
+  // se audita el checkout, no el skeleton (mientras carga, Next todavía no puso el título de la página)
+  await expect(page.locator("[data-loading]")).toHaveCount(0);
   await auditar(page);
 });
 

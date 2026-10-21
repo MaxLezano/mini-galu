@@ -15,8 +15,10 @@ test("ayuda: del pie a términos y entre páginas, con el índice del tema", asy
   await expect(page.getByRole("heading", { name: "Medios de pago" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Preguntale a Galú" })).toBeVisible();
 
-  const missing = await page.goto("/ayuda/no-existe");
-  expect(missing?.status()).toBe(404);
+  // la página llega por streaming (loading.tsx): el status ya salió como 200 y Next marca el "no existe" con noindex
+  await page.goto("/ayuda/no-existe");
+  await expect(page.getByText("Esta página no existe")).toBeVisible();
+  await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
 });
 
 test("ayuda: editar una página en el panel se ve en la tienda y vuelve al texto de base", async ({ page }, info) => {

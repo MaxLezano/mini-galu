@@ -18,6 +18,9 @@ import {
 import { dragScroll } from "./drag-scroll";
 import { useUi } from "./ui-store";
 
+/** React ya tomó este nodo (lo marca con su fiber al hidratar o al crearlo). */
+const isHydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactFiber$"));
+
 /** Monta los detalles de taller en cada página y los reengancha cuando se agrega contenido (filtros, Galú…). */
 export function CraftEffects() {
   const pathname = usePathname();
@@ -56,18 +59,27 @@ export function CraftEffects() {
   useEffect(() => {
     releaseHero();
     const cleanups: (() => void)[] = [settleAnchor()];
+    let t: ReturnType<typeof setTimeout>;
     const run = () => {
+      // la página llega por streaming dentro del Suspense de loading.tsx e hidrata después que el shell: hasta
+      // entonces no se la toca (cambiarle atributos rompe la hidratación)
+      const main = document.querySelector("main");
+      if (main && !isHydrated(main)) {
+        clearTimeout(t);
+        t = setTimeout(run, 60);
+        return;
+      }
       autoReveal();
       cleanups.push(observeReveal(), drawCraft(), sewSeams());
     };
     const raf = requestAnimationFrame(run);
-    let t: ReturnType<typeof setTimeout>;
     const mo = new MutationObserver(() => {
       clearTimeout(t);
       t = setTimeout(run, 60);
     });
-    const main = document.querySelector("main");
-    if (main) mo.observe(main, { childList: true, subtree: true });
+    // el contenedor del <main>, no el <main>: el del skeleton (loading.tsx) se reemplaza por el de la página
+    const host = document.querySelector("main")?.parentElement;
+    if (host) mo.observe(host, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t);

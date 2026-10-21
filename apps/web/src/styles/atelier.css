@@ -779,3 +779,39 @@ html::-webkit-scrollbar-thumb:hover { background-color: var(--canela); }
 @supports (-webkit-touch-callout: none) {
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]), select, textarea { font-size: max(16px, 1em) !important; }
 }
+
+/* ---------- Skeletons (carga) ----------
+   Sin mockup: bloques de lino con la forma de lo que viene y un brillo que pasa (ui/atoms/Skeleton). Aparecen con
+   un fundido corto y demorado, así una carga rápida no "parpadea". Quietos con ?static y movimiento reducido. */
+.skel { display: block; position: relative; overflow: hidden; background: var(--linen); border-radius: 6px; }
+.bg-linen .skel, .summary .skel { background: var(--linen-2); }
+.skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--paper-2) 70%, transparent), transparent); animation: skelShine 1.6s var(--ease) infinite; }
+.skel.line { height: .9em; border-radius: var(--r-pill); }
+.skel.eyebrow-line { height: 11px; width: 140px; border-radius: var(--r-pill); }
+.skel.title { height: clamp(36px, 5.4vw, 72px); width: min(560px, 82%); border-radius: var(--r-sm); }
+.skel.frame { aspect-ratio: 3/4; border-radius: var(--r-md); }
+.skel.frame.arch { border-radius: var(--arch); }
+.skel.pill { height: 40px; width: 110px; border-radius: var(--r-pill); flex: none; }
+.skel.chip { height: 36px; width: 72px; border-radius: var(--r-pill); flex: none; }
+.skel.thumb { width: 48px; height: 48px; border-radius: var(--r-sm); flex: none; }
+.skel.avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; }
+.skel.box { border-radius: var(--r-md); min-height: 120px; }
+.skel-lines { display: grid; gap: 10px; }
+.skel-card { display: grid; gap: 12px; align-content: start; }
+.skel-card .skel-lines { gap: 8px; }
+.skel-row-list { display: grid; }
+.skel-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.skel-row .skel-lines { flex: 1; gap: 8px; }
+.skel-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.skel-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(28px, 3vw, 44px) clamp(14px, 2vw, 28px); }
+@media (max-width: 1000px) { .skel-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .skel-wide { display: none !important; } }
+@media (max-width: 699px) { .skel-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.skel-page { animation: skelIn .3s .12s var(--ease) both; }
+.skel-page .skel-head { display: grid; gap: 16px; padding-block: clamp(36px, 6vw, 88px) 28px; }
+@keyframes skelShine { to { transform: translateX(100%); } }
+@keyframes skelIn { from { opacity: 0; } }
+html.static .skel::after, html.static .skel-page { animation: none; }
+@media (prefers-reduced-motion: reduce) { .skel::after, .skel-page { animation: none; } }
+.skel-page .skel-lead { max-width: 560px; }
+.skel-drawer-head { flex: 1; max-width: 260px; }
+.skel-form { max-width: 640px; padding-bottom: 80px; }

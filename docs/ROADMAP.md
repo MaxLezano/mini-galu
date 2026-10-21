@@ -519,12 +519,23 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     "Rojo" o "bordado" ya no se toman como el nombre de una prenda.
   - Lo que siga sin saber va a "Enseñale" como hasta ahora.
 
-- ⏳ **Carga con skeletons en toda la web (tienda y panel)**. Hoy las pantallas aparecen de golpe y al navegar quedan
-  "estelas" de la pantalla anterior. Cada ruta (`loading.tsx` de App Router) y cada parte que carga en el cliente
-  (bolsa, Galú, Mi cuenta, listas y fichas del panel) muestra un skeleton con la forma de lo que viene, con los tokens
-  de la paleta, respetando `prefers-reduced-motion` y `?static`. Átomo/molécula reutilizable en `ui/`, e2e que
-  verifique que se ve el skeleton y no el contenido viejo. Ojo: medir tiempos con `pnpm build && pnpm start`, no
-  con `next dev` (compila cada ruta la primera vez)
+- ✅ **Carga con skeletons en toda la web (tienda y panel)**. Al navegar ya no queda la pantalla anterior: cada ruta
+  tiene su `loading.tsx` con la forma de lo que viene (inicio con el hero, catálogo, ficha, ayuda, checkout y link de
+  pago, Mi cuenta, gift cards y listas; ingresar, seguimiento, reseña y baja con forma de formulario; una sección
+  genérica para el panel). El inicio pasó al grupo `(shop)/(inicio)` para que su skeleton no envuelva a las demás.
+  - Piezas en `ui/`: `atoms/Skeleton` (lino con un brillo que pasa), `molecules/SkeletonLines`, `SkeletonCard(s)`,
+    `SkeletonRows` y `organisms/Loading` (anuncia "Cargando…"). Fundido corto y demorado para que una carga rápida no
+    parpadee; quietos con `prefers-reduced-motion` y `?static`.
+  - La foto del skeleton de la ficha se llama `product-hero`: la de la tarjeta sigue viajando aunque la ficha no llegó.
+  - En el cliente: Mi cuenta (datos de la sesión), los cajones de pedido y cliente del panel y "Sumar a la lista".
+    La bolsa (localStorage) y Galú (tres puntitos) ya mostraban algo mientras tanto.
+  - `CraftEffects` espera a que React hidrate la página (llega por streaming dentro del Suspense del `loading.tsx`) y
+    observa el contenedor del `<main>`, que ahora se reemplaza.
+  - Con streaming, un `notFound()` (ficha, tema de ayuda, lista… que no existe) ya no puede responder 404: sale 200
+    con `<meta name="robots" content="noindex">`, como documenta Next. El título de la página llega con ella (durante
+    el skeleton queda vacío)
+  - e2e `carga.spec.ts` con conexión lenta (CDP): se ve el skeleton, nunca junto a la página anterior, y después el
+    contenido. `next dev` no prefetchea: en producción el skeleton sale al instante (el `loading.tsx` se prefetchea)
 - ✅ **Panel sin transición de página**: desde la view transition de la tienda (15/10) cada cambio de sección en
   `/taller` sumaba ~0,7 s (la página vieja se desenfocaba y la nueva subía) y se veía la captura congelada de la
   anterior. Los mockups del panel no la tienen: se sacó su `template.tsx` (la tienda la conserva) y un e2e lo cuida

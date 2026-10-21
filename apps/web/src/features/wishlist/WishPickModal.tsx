@@ -10,6 +10,7 @@ import { accountApi } from "@/lib/account-api";
 import { ApiRequestError } from "@/lib/api";
 import { cover } from "@/lib/product";
 import { Embroidery } from "@/ui/atoms/Embroidery";
+import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
 import { Modal } from "@/ui/organisms/Modal";
 
 export const WISH_PICK_MODAL = "m-wish-pick";
@@ -74,7 +75,7 @@ export function WishPickModal({ product, size }: { product: ProductSummary; size
           </span>
         </div>
         {nenas === null ? (
-          <p className="muted">Cargando…</p>
+          <SkeletonRows rows={2} />
         ) : nenas.length ? (
           <>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--cacao-2)" }}>¿Para quién?</span>

@@ -138,3 +138,12 @@ table.meas tr.is-sel td { background: var(--rosa-l); color: var(--cacao); font-w
   body.has-mbar { --fab-lift: 76px; }
 }
 @media (max-width: 560px) { .trust { grid-template-columns: 1fr; } .calc { grid-template-columns: 1fr; } .buy .btn { padding: 0 18px; } }
+
+/* skeleton de la ficha (ProductSkeleton): la foto grande, con el nombre de la que viaja desde la tarjeta */
+.pdp-skel-gallery { display: grid; grid-template-columns: 84px auto; gap: 14px; align-items: start; }
+.pdp-skel-gallery > div { display: grid; gap: 14px; }
+.pdp-skel-gallery > div .skel { border-radius: 12px; }
+.pdp-skel-gallery .pdp-skel-photo { border-radius: var(--r-lg); view-transition-name: product-hero; }
+@media (min-width: 1001px) { .pdp-skel-photo { width: min(44vw, calc((100svh - var(--header-h) - var(--announce-h) - 110px) * .75)); } }
+@media (max-width: 1000px) { .pdp-skel-gallery { grid-template-columns: minmax(0, 1fr); } .pdp-skel-gallery > div { display: none; } }
+@media (max-width: 960px) { .pdp-skel-gallery { margin-inline: calc(var(--gutter) * -1); } .pdp-skel-gallery .pdp-skel-photo { border-radius: 0; } }

@@ -32,6 +32,8 @@ import { ApiRequestError } from "@/lib/api";
 import { launchWhen, longDate, relativeWhen, shortDate } from "@/lib/date";
 import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
+import { SkeletonLines } from "@/ui/molecules/SkeletonLines";
+import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
 import { ActionIcon } from "../components/OrderCard";
 import { RefundPanel } from "../components/RefundPanel";
 import { generateLabel } from "../label-action";
@@ -215,7 +217,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
               </span>
             </div>
           ) : (
-            <span className="muted">Cargando…</span>
+            <SkeletonLines lines={2} className="skel-drawer-head" />
           )}
           <button type="button" className="icon-btn" aria-label="Cerrar" onClick={onClose}>
             <X />
@@ -223,6 +225,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
         </div>
 
         <div className="drawer-body" id="od-body">
+          {!o && <SkeletonRows rows={4} thumb={false} />}
           {o && (
             <>
               <div className="od-sec">

@@ -3,6 +3,8 @@ import { Mail, X } from "lucide-react";
 import Link from "next/link";
 import { shortDate } from "@/lib/date";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
+import { SkeletonLines } from "@/ui/molecules/SkeletonLines";
+import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
 import { inDaysLabel, whatsappHref } from "../customer-view";
 
 type Props = {
@@ -45,12 +47,17 @@ export function CustomerDrawer({ open, customer: c, sinceLabel, note, onNote, on
               </div>
             </div>
           ) : (
-            <span className="muted">Cargando…</span>
+            <SkeletonLines lines={2} className="skel-drawer-head" />
           )}
           <button type="button" className="icon-btn" aria-label="Cerrar" onClick={onClose}>
             <X />
           </button>
         </div>
+        {!c && (
+          <div className="drawer-body">
+            <SkeletonRows rows={4} thumb={false} />
+          </div>
+        )}
         {c && (
           <div className="drawer-body">
             <div className="od-sec">
