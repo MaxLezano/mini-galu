@@ -1,4 +1,4 @@
-import { type HomeContent, imageThumb, type ProductSummary } from "@mini-galu/contracts";
+import { type HomeContent, hasImageVariants, imageThumb, type ProductSummary } from "@mini-galu/contracts";
 import {
   ArrowRight,
   Check,
@@ -61,6 +61,9 @@ export function HomePage({
             sizes="(max-aspect-ratio: 16/9) 178vh, 100vw"
           />
         )}
+        {home.hero.imageUrl && hasImageVariants(home.hero.imageUrl) && (
+          <img className="hero-veil" src={imageThumb(home.hero.imageUrl)} alt="" aria-hidden="true" />
+        )}
         <div className="wrap hero-inner">
           <div className="split">
             <span className="eyebrow">{home.hero.eyebrow}</span>
@@ -86,16 +89,19 @@ export function HomePage({
             </div>
           </div>
           <div className="badge-rot" aria-hidden="true">
-            <svg className="ring" viewBox="0 0 148 148">
-              <defs>
-                <path id="circ" d="M74 74m-58 0a58 58 0 1 1 116 0a58 58 0 1 1-116 0" />
-              </defs>
-              <text fontFamily="var(--f-ui)" fontSize="11" fontWeight="600" fill="currentColor">
-                <textPath href="#circ" textLength="362" lengthAdjust="spacing">
-                  DISEÑO PROPIO · BORDADO A MANO · MINI GALÚ ·{" "}
-                </textPath>
-              </text>
-            </svg>
+            {/* gira el span, no el svg: Chrome anima la rotación de un svg en el hilo principal (layout en cada cuadro) */}
+            <span className="ring-spin">
+              <svg className="ring" viewBox="0 0 148 148">
+                <defs>
+                  <path id="circ" d="M74 74m-58 0a58 58 0 1 1 116 0a58 58 0 1 1-116 0" />
+                </defs>
+                <text fontFamily="var(--f-ui)" fontSize="11" fontWeight="600" fill="currentColor">
+                  <textPath href="#circ" textLength="362" lengthAdjust="spacing">
+                    DISEÑO PROPIO · BORDADO A MANO · MINI GALÚ ·{" "}
+                  </textPath>
+                </text>
+              </svg>
+            </span>
             <div className="core">
               <Foco />
             </div>

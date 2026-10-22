@@ -589,6 +589,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     (`pauseOffscreen`); la cinta de reseñas corre solo mientras se ve
   - El fondo oscuro de la bolsa y los cajones (`.scrim`) se oculta cerrado: su desenfoque se calculaba igual
   - Los skeletons de un modal o cajón cerrado (ej. "Sumar a una lista" en la ficha) no animan
+- ✅ **Entrada del hero fluida**: la foto entraba con un `filter: blur` animado a pantalla completa (~15 cuadros por
+  segundo en una pantalla de 3437 px; con la placa de video sin usar, peor). Ahora la foto solo escala y el desenfoque
+  lo da su miniatura de 320 px agrandada encima, que se desvanece (y se ve mientras baja la foto grande). El sello que
+  gira rota un `span` y no el `svg` (Chrome anima un svg en el hilo principal: un layout por cuadro). Con la placa,
+  ~60 cuadros por segundo a 3437 px; con el procesador 6× más lento, ~50 en celular, compu y pantalla ancha
 - ✅ La aguja de la costura ensanchaba la página un instante al salir por la derecha
 - ✅ Ficha en compu: antes de que arrancara Swiper las miniaturas quedaban en fila detrás de la ficha
 - ✅ e2e que tomaban el `<main>` del skeleton junto con el de la página (ajustes, reseñas)

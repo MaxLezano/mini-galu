@@ -5,7 +5,12 @@
 .hero:not(:has(> picture, > img)) { background: var(--cacao); }
 .hero > img, .hero > picture > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 58% 38%; animation: kb 2.8s var(--ease) both; }
 .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(40,28,22,.62) 0%, rgba(40,28,22,.28) 42%, rgba(40,28,22,0) 64%), linear-gradient(180deg, rgba(40,28,22,.35) 0%, rgba(40,28,22,0) 26%, rgba(40,28,22,0) 50%, rgba(40,28,22,.55) 100%); }
-@keyframes kb { from { transform: scale(1.12); filter: blur(6px) saturate(.8); } }
+@keyframes kb { from { transform: scale(1.12); } }
+/* la foto entra desenfocada: encima va la miniatura de 320 px agrandada (ya se ve borrosa) y se desvanece. Antes era
+   un filter: blur animado sobre la foto a pantalla completa, que se recalculaba en cada cuadro (~15 fps en pantallas
+   grandes); opacidad y escala las resuelve la placa de video. Mientras baja la foto grande, se ve esta. */
+.hero > img.hero-veil { animation-name: kb-veil; filter: saturate(.8); pointer-events: none; }
+@keyframes kb-veil { from { transform: scale(1.12); opacity: 1; } to { opacity: 0; } }
 .hero-inner { position: relative; z-index: 2; padding-block: calc(var(--header-h) + 32px) clamp(72px, 11svh, 112px); width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 32px; }
 .hero .eyebrow { color: var(--rosa); }
 /* el texto del hero entra solo con CSS: no espera a que hidrate el JS (era el LCP en celulares lentos) */
@@ -19,7 +24,8 @@
 .hero .lead { color: rgba(251,248,243,.88); }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: clamp(20px, 3svh, 32px); }
 .badge-rot { width: 148px; height: 148px; position: relative; display: grid; place-items: center; color: var(--paper); }
-.badge-rot svg.ring { position: absolute; inset: 0; animation: spin 22s linear infinite; }
+.badge-rot .ring-spin { position: absolute; inset: 0; animation: spin 22s linear infinite; }
+.badge-rot svg.ring { position: absolute; inset: 0; }
 .badge-rot .core { width: 64px; height: 64px; border-radius: 50%; background: var(--rosa); color: var(--cacao); display: grid; place-items: center; }
 .badge-rot .core svg { width: 34px; }
 .scroll-cue { position: absolute; left: 50%; bottom: clamp(18px, 3svh, 32px); z-index: 2; transform: translateX(-50%); width: 26px; height: 40px; border-radius: 13px; box-shadow: inset 0 0 0 1.5px rgba(251,248,243,.6); }
