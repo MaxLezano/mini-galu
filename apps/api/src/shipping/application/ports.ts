@@ -84,6 +84,8 @@ export type ShippableOrder = TrackedOrder & {
   lastName: string;
   email: string;
   phone: string;
+  /** "Avisos por WhatsApp" (null: WhatsApp sin conectar). */
+  whatsappOptIn: boolean | null;
   totalCents: number;
   street: string | null;
   address: { street: string; number: string; unit: string | null } | null;

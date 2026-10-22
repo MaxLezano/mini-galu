@@ -22,7 +22,8 @@ export function adminAutomationRoutes(automations: AutomationService, channels: 
       await automations.update(key(c.req.param("key")), parse(RuleUpdateSchema, await c.req.json()));
       return c.json(await automations.admin(channels()));
     })
-    .post("/test", async (c) =>
-      c.json({ sent: await automations.test(parse(AutomationTestSchema, await c.req.json()).email) }),
-    );
+    .post("/test", async (c) => {
+      const { email, whatsapp } = parse(AutomationTestSchema, await c.req.json());
+      return c.json({ sent: await automations.test(email, whatsapp) });
+    });
 }

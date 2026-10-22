@@ -182,6 +182,8 @@ export interface OrderRepository extends OrderEvents {
   unpaidSince(since: Date): Promise<string[]>;
   /** Pedidos esperando pago con la reserva vencida. */
   expired(now: Date): Promise<string[]>;
+  /** "Avisos por WhatsApp" del seguimiento. */
+  setWhatsappOptIn(id: string, on: boolean): Promise<void>;
   /** Corre la reserva de un pedido esperando pago hasta `until` (si vencía antes). false si no hizo falta o no espera pago. */
   extendReservation(id: string, until: Date): Promise<boolean>;
   /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */

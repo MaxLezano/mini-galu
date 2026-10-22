@@ -17,6 +17,8 @@ export class OrderShipping implements ShippableOrders {
     private readonly events: EventBus,
     /** "San Miguel de Tucumán, Tucumán" */
     private readonly workshop: () => Promise<string>,
+    /** Con WhatsApp sin conectar, el seguimiento no ofrece "Avisos por WhatsApp". */
+    private readonly whatsapp = false,
   ) {}
 
   async find(number: string) {
@@ -102,6 +104,7 @@ export class OrderShipping implements ShippableOrders {
       lastName: o.lastName,
       email: o.email,
       phone: o.phone,
+      whatsappOptIn: this.whatsapp ? o.whatsappOptIn : null,
       totalCents: o.totalCents,
       street: a ? `${a.street} ${a.number}${a.unit ? `, ${a.unit}` : ""}` : null,
       address: a ? { street: a.street, number: a.number, unit: a.unit } : null,

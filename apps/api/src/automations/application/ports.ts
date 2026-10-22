@@ -69,12 +69,29 @@ export interface Messenger {
   }): Promise<void>;
 }
 
+/**
+ * WhatsApp Business (Cloud API). Meta solo deja escribirle primero al cliente con plantillas aprobadas: el texto de
+ * la regla (el que se edita en el panel) va adentro de una. "pedido": los avisos de un pedido (utilidad); "novedad":
+ * talles que volvieron y lanzamientos (marketing). Local y CI: simulado.
+ */
+export interface WhatsApp {
+  readonly mode: "simulado" | "conectado";
+  /** `to` en E.164 (+549…). Falla si Meta no lo acepta. */
+  send(
+    m: { to: string; kind: "pedido"; number: string; body: string } | { to: string; kind: "novedad"; body: string },
+  ): Promise<void>;
+}
+
 export type OrderFacts = {
   id: string;
   number: string;
   firstName: string;
   lastName: string;
   email: string;
+  /** Celular del pedido (+549…). */
+  phone: string;
+  /** "Seguimiento por WhatsApp" del checkout (y el interruptor del seguimiento). */
+  whatsappOptIn: boolean;
   shippingMethod: ShippingMethod;
   /** "Jue 8 · 10 a 13 h" */
   pickupLabel: string | null;

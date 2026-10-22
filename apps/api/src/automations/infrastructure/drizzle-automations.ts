@@ -70,10 +70,16 @@ export class DrizzleRunLog implements RunLog {
   }
 
   async countsSince(since: Date) {
+    // el aviso de un pedido sale por mail y también por WhatsApp: cuenta una vez
     const rows = await this.db
       .select({ rule: s.automationRuns.rule, n: sql<number>`count(*)::int` })
       .from(s.automationRuns)
-      .where(gte(s.automationRuns.createdAt, since))
+      .where(
+        and(
+          gte(s.automationRuns.createdAt, since),
+          sql`not (${s.automationRuns.channel} = 'whatsapp' and ${s.automationRuns.orderId} is not null)`,
+        ),
+      )
       .groupBy(s.automationRuns.rule);
     return Object.fromEntries(rows.map((r) => [r.rule, r.n])) as Partial<Record<AutomationKey, number>>;
   }
@@ -100,8 +106,8 @@ export class DrizzleRunLog implements RunLog {
   async linkRecovery(since: Date) {
     const [r] = await this.db
       .select({
-        reminded: sql<number>`count(*)::int`,
-        recovered: sql<number>`count(*) filter (where ${s.orders.paidAt} > ${s.automationRuns.createdAt})::int`,
+        reminded: sql<number>`count(distinct ${s.automationRuns.orderId})::int`,
+        recovered: sql<number>`count(distinct ${s.automationRuns.orderId}) filter (where ${s.orders.paidAt} > ${s.automationRuns.createdAt})::int`,
       })
       .from(s.automationRuns)
       .leftJoin(s.orders, eq(s.orders.id, s.automationRuns.orderId))
@@ -110,13 +116,13 @@ export class DrizzleRunLog implements RunLog {
   }
 
   async waitlistSales(since: Date) {
-    // pedidos pagados por el mismo mail, con la prenda avisada, hasta 14 días después del aviso
+    // pedidos pagados por el mismo mail o celular, con la prenda avisada, hasta 14 días después del aviso
     const rows = await this.db.execute<{ count: number; cents: number }>(sql`
       select count(*)::int as count, coalesce(sum(x.total), 0)::int as cents
       from (
         select distinct o.id, o.total_cents as total
         from ${s.automationRuns} r
-        join ${s.orders} o on lower(o.email) = r.contact
+        join ${s.orders} o on (lower(o.email) = r.contact or o.phone = r.contact)
           and o.paid_at > r.created_at and o.paid_at < r.created_at + interval '14 days'
         join ${s.orderItems} i on i.order_id = o.id and i.product_slug = r.product_slug
         where r.rule = 'volvio_talle' and r.status = 'ok' and r.created_at >= ${since.toISOString()}::timestamptz
@@ -257,6 +263,8 @@ export class DrizzleAutomationOrders implements AutomationOrders {
       firstName: o.firstName,
       lastName: o.lastName,
       email: o.email,
+      phone: o.phone,
+      whatsappOptIn: o.whatsappOptIn,
       shippingMethod: o.shippingMethod,
       pickupLabel: o.pickupSlot ? this.pickupLabel(o.pickupSlot) : null,
       accessToken: o.accessToken,

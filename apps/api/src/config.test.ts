@@ -117,6 +117,19 @@ describe("parseConfig", () => {
     ]);
   });
 
+  it("WhatsApp: con token y número, las plantillas de fábrica; en producción avisa si está a medias", () => {
+    expect(parseConfig({ ...production, WHATSAPP_TOKEN: "EAAG", WHATSAPP_PHONE_NUMBER_ID: "123" }).whatsapp).toEqual({
+      token: "EAAG",
+      phoneNumberId: "123",
+      templates: { pedido: "aviso_pedido", novedad: "aviso_novedad" },
+      language: "es_AR",
+    });
+    expect(parseConfig(production).whatsapp).toBeNull();
+    expect(problemsOf({ ...production, WHATSAPP_TOKEN: "EAAG" })).toEqual([
+      expect.stringContaining("WHATSAPP_PHONE_NUMBER_ID"),
+    ]);
+  });
+
   it("en producción pide COOKIE_DOMAIN si tienda y API están en hosts distintos, y que contenga a los dos", () => {
     expect(parseConfig(production).cookieDomain).toBe("minigalu.com.ar");
     expect(parseConfig({ ...production, COOKIE_DOMAIN: ".minigalu.com.ar" }).cookieDomain).toBe("minigalu.com.ar");

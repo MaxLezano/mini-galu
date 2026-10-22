@@ -110,6 +110,7 @@ import { withReplyTo } from "./notifications/application/ports";
 import { untilLabel } from "./notifications/domain/mail";
 import { ResendMailer } from "./notifications/infrastructure/resend-mailer";
 import { SmtpMailer } from "./notifications/infrastructure/smtp-mailer";
+import { CloudWhatsApp, FakeWhatsApp } from "./notifications/infrastructure/whatsapp-cloud";
 import { AdminOrdersService } from "./orders/application/admin-orders-service";
 import { CheckoutService } from "./orders/application/checkout-service";
 import { OrderPayments } from "./orders/application/order-payments";
@@ -373,12 +374,20 @@ export function buildApp(config: Config) {
     },
     (orderId, method) => orderPayments.approved(orderId, { method, installments: 1 }),
   );
+  const mailer = config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail);
+  // WhatsApp Business con las credenciales de Meta; sin ellas, simulado en local y CI (a Mailpit) y, en producción,
+  // sin conectar (los avisos salen solo por mail)
+  const whatsapp = config.whatsapp
+    ? new CloudWhatsApp(config.whatsapp)
+    : config.env === "production"
+      ? null
+      : new FakeWhatsApp(mailer);
   const shipments = new ShipmentService(
     andreani && config.andreani
       ? new AndreaniGateway(andreani, config.andreani)
       : new FakeAndreani(undefined, config.fakeAndreaniSpeed),
     new DrizzleShipmentRepository(db),
-    new OrderShipping(orders, storage, events, workshop),
+    new OrderShipping(orders, storage, events, workshop, !!whatsapp),
     (number, token) => config.webOrigin + payPath(number, token),
     shippingSettings,
     config.branches,
@@ -436,10 +445,7 @@ export function buildApp(config: Config) {
         };
       },
     },
-    withReplyTo(
-      config.mail.kind === "resend" ? new ResendMailer(config.mail) : new SmtpMailer(config.mail),
-      async () => (await policies.get()).contact.email,
-    ),
+    withReplyTo(mailer, async () => (await policies.get()).contact.email),
     async (number, token) => {
       const p = await policies.get();
       return {
@@ -603,6 +609,7 @@ export function buildApp(config: Config) {
       (path) => storage.url(path),
       (slug) => `${config.webOrigin}/producto/${slug}`,
     ),
+    whatsapp,
     {
       launch: `${config.webOrigin}/#lanzamiento`,
       tracking: (n, t) => `${config.webOrigin}${trackingPath(n, t)}`,
@@ -986,7 +993,7 @@ export function buildApp(config: Config) {
       "/admin/automations",
       adminAutomationRoutes(automations, () => ({
         mail: "conectado",
-        whatsapp: "sin_conectar",
+        whatsapp: whatsapp?.mode ?? "sin_conectar",
         mercadopago: gateway.mode,
         andreani: config.andreani?.env ?? "simulado",
       })),

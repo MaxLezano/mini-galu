@@ -133,8 +133,11 @@ export const adminApi = {
     adminRequest<AdminReview>(`/admin/reviews/${id}`, { method: "PATCH", body: JSON.stringify(m) }),
   updateAutomation: (key: AutomationKey, upd: { on?: boolean; message?: string }) =>
     adminRequest<AdminAutomations>(`/admin/automations/${key}`, { method: "PATCH", body: JSON.stringify(upd) }),
-  testAutomations: (email: string) =>
-    adminRequest<{ sent: number }>("/admin/automations/test", { method: "POST", body: JSON.stringify({ email }) }),
+  testAutomations: (email: string, whatsapp: string) =>
+    adminRequest<{ sent: number }>("/admin/automations/test", {
+      method: "POST",
+      body: JSON.stringify({ email, whatsapp }),
+    }),
   newsletter: () => adminRequest<AdminNewsletter>("/admin/newsletter"),
   assistantOverview: () => adminRequest<AssistantOverview>("/admin/assistant/overview"),
   assistantSettings: (s: AssistantSettings) =>

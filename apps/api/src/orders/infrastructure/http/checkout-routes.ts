@@ -1,11 +1,14 @@
-import { PlaceOrderInputSchema, QuoteRequestSchema } from "@mini-galu/contracts";
+import { PlaceOrderInputSchema, QuoteRequestSchema, WhatsAppOptInSchema } from "@mini-galu/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { CartVars } from "../../../cart/infrastructure/http/cart-owner";
 import { parse } from "../../../shared/http/errors";
 import type { CheckoutService } from "../../application/checkout-service";
 
-/** /checkout — envío, cotización, alta del pedido y comprobante. Requiere el middleware `cartOwner`. */
+/**
+ * /checkout — envío, cotización, alta del pedido, comprobante y "Avisos por WhatsApp" del seguimiento. Requiere el
+ * middleware `cartOwner`.
+ */
 export function checkoutRoutes(checkout: CheckoutService) {
   return new Hono<CartVars>()
     .get("/shipping", async (c) => {
@@ -31,6 +34,11 @@ export function checkoutRoutes(checkout: CheckoutService) {
         await c.req.json(),
       );
       return c.json(await checkout.changeCoupon(c.req.param("number"), t, couponCode || null));
+    })
+    .put("/orders/:number/whatsapp", async (c) => {
+      const { t, on } = parse(WhatsAppOptInSchema, await c.req.json());
+      await checkout.whatsappNotices(c.req.param("number"), t, on);
+      return c.json({ on });
     })
     .get("/orders/:number", async (c) => c.json(await checkout.receipt(c.req.param("number"), c.req.query("t") ?? "")));
 }

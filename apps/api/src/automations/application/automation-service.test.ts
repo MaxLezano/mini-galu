@@ -11,6 +11,7 @@ import {
   MemoryRunLog,
   MemorySuggestions,
   MemoryWaitlist,
+  MemoryWhatsApp,
 } from "../testing/in-memory";
 import { AutomationService } from "./automation-service";
 import type { IdleCart } from "./ports";
@@ -36,39 +37,8 @@ let carts: MemoryIdleCarts;
 let launches: MemoryLaunchSignups;
 let auto: AutomationService;
 
-beforeEach(() => {
-  now = new Date("2026-10-14T12:00:00-03:00");
-  settings = new MemoryAutomationSettings();
-  runs = new MemoryRunLog();
-  messenger = new MemoryMessenger(new Map([["o1", "lucia@gmail.com"]]));
-  orders = new MemoryAutomationOrders();
-  orders.orders.set("o1", {
-    id: "o1",
-    number: "MG-1042",
-    firstName: "Lucía",
-    lastName: "Fernández",
-    email: "lucia@gmail.com",
-    shippingMethod: "domicilio",
-    pickupLabel: null,
-    accessToken: "tok1",
-  });
-  orders.orders.set("o2", {
-    id: "o2",
-    number: "MG-1043",
-    firstName: "Carla",
-    lastName: "Méndez",
-    email: "carla@gmail.com",
-    shippingMethod: "taller",
-    pickupLabel: "Jue 8 · 10 a 13 h",
-    accessToken: "tok2",
-  });
-  waitlist = new MemoryWaitlist();
-  lowStock = new MemoryLowStock();
-  kids = new MemoryBirthdays();
-  suggestions = new MemorySuggestions();
-  carts = new MemoryIdleCarts();
-  launches = new MemoryLaunchSignups();
-  auto = new AutomationService(
+const build = (whatsapp: MemoryWhatsApp | null) =>
+  new AutomationService(
     settings,
     runs,
     messenger,
@@ -79,6 +49,7 @@ beforeEach(() => {
     suggestions,
     carts,
     launches,
+    whatsapp,
     {
       launch: "http://web/#lanzamiento",
       tracking: (n, t) => `http://web/seguimiento?pedido=${n}&t=${t}`,
@@ -92,6 +63,44 @@ beforeEach(() => {
     },
     () => now,
   );
+
+beforeEach(() => {
+  now = new Date("2026-10-14T12:00:00-03:00");
+  settings = new MemoryAutomationSettings();
+  runs = new MemoryRunLog();
+  messenger = new MemoryMessenger(new Map([["o1", "lucia@gmail.com"]]));
+  orders = new MemoryAutomationOrders();
+  orders.orders.set("o1", {
+    id: "o1",
+    number: "MG-1042",
+    firstName: "Lucía",
+    lastName: "Fernández",
+    email: "lucia@gmail.com",
+    phone: "+5491155551234",
+    whatsappOptIn: true,
+    shippingMethod: "domicilio",
+    pickupLabel: null,
+    accessToken: "tok1",
+  });
+  orders.orders.set("o2", {
+    id: "o2",
+    number: "MG-1043",
+    firstName: "Carla",
+    lastName: "Méndez",
+    email: "carla@gmail.com",
+    phone: "+5493814445566",
+    whatsappOptIn: false,
+    shippingMethod: "taller",
+    pickupLabel: "Jue 8 · 10 a 13 h",
+    accessToken: "tok2",
+  });
+  waitlist = new MemoryWaitlist();
+  lowStock = new MemoryLowStock();
+  kids = new MemoryBirthdays();
+  suggestions = new MemorySuggestions();
+  carts = new MemoryIdleCarts();
+  launches = new MemoryLaunchSignups();
+  auto = build(null);
 });
 
 describe("automatizaciones", () => {
@@ -440,5 +449,125 @@ describe("automatizaciones", () => {
       expect(await auto.launchNotices()).toBe(2);
       expect(messenger.sent[0]?.body).toBe("Otoño en el taller a las 19 h ♡");
     });
+  });
+});
+
+describe("por WhatsApp", () => {
+  let wa: MemoryWhatsApp;
+  beforeEach(() => {
+    wa = new MemoryWhatsApp();
+    auto = build(wa);
+  });
+
+  it("los avisos de un pedido salen por mail y, si lo pidió, también por WhatsApp", async () => {
+    await auto.paymentApproved("o1");
+    await auto.statusChanged("o1", "en_camino");
+    await auto.statusChanged("o2", "listo"); // Carla no quiso avisos por WhatsApp: solo mail
+    expect(messenger.sent).toHaveLength(3);
+    expect(wa.sent).toEqual([
+      {
+        to: "+5491155551234",
+        kind: "pedido",
+        number: "MG-1042",
+        body: "Hola Lucía! Recibimos el pago de tu pedido #MG-1042. Ya lo estamos preparando en el taller ✿",
+      },
+      expect.objectContaining({ kind: "pedido", body: expect.stringContaining("seguimiento?pedido=MG-1042&t=tok1") }),
+    ]);
+    expect(orders.history.map((h) => h.title)).toContain("Aviso de pago por WhatsApp");
+    // en el panel, un aviso de pedido cuenta una vez aunque salga por los dos canales
+    const a = await auto.admin({
+      mail: "conectado",
+      whatsapp: "simulado",
+      mercadopago: "simulado",
+      andreani: "simulado",
+    });
+    expect(a.rules.find((r) => r.key === "pago_aprobado")?.runs).toBe(1);
+    expect(a.stats.sent).toEqual({ mail: 3, whatsapp: 2 });
+  });
+
+  it("si Meta no acepta el número, queda con aviso (el mail ya salió)", async () => {
+    wa.failFor.add("+5491155551234");
+    await auto.statusChanged("o1", "en_camino");
+    expect(messenger.sent).toHaveLength(1);
+    expect(runs.list.at(-1)).toMatchObject({
+      channel: "whatsapp",
+      status: "warn",
+      detail: "No salió por WhatsApp a +5491155551234 ((#131026) Message undeliverable): le llegó por mail",
+    });
+  });
+
+  it("recordatorio del link de pago por WhatsApp; el link cuenta una vez en los recuperados", async () => {
+    await auto.linkReminder({
+      orderId: "o1",
+      number: "MG-1042",
+      firstName: "Lucía",
+      email: "lucia@gmail.com",
+      totalCents: 100,
+      payUrl: "http://web/pagar/MG-1042",
+      reservedUntilLabel: null,
+    });
+    expect(wa.sent[0]).toMatchObject({ kind: "pedido", body: expect.stringContaining("http://web/pagar/MG-1042") });
+    runs.paid.set("o1", new Date(now.getTime() + 1000));
+    const a = await auto.admin({
+      mail: "conectado",
+      whatsapp: "simulado",
+      mercadopago: "simulado",
+      andreani: "simulado",
+    });
+    expect(a.stats).toMatchObject({ remindedLinks: 1, recoveredLinks: 1 });
+  });
+
+  it("volvió un talle: los anotados por WhatsApp reciben la novedad y quedan avisados", async () => {
+    waitlist.entries.push(
+      { id: "w1", productId: "p1", size: "6", channel: "whatsapp", contact: "11 5555-1234", notifiedAt: null },
+      { id: "w2", productId: "p1", size: "6", channel: "whatsapp", contact: "5555", notifiedAt: null },
+    );
+    await auto.replenished({ productId: "p1", slug: "set-maddie", name: "Set Maddie", sizes: [{ size: "6" }] });
+    expect(wa.sent).toEqual([
+      {
+        to: "+5491155551234",
+        kind: "novedad",
+        body: "Hola! Volvió el talle 6 del Set Maddie. Está acá: http://web/producto/set-maddie",
+      },
+    ]);
+    expect(waitlist.entries.every((e) => e.notifiedAt)).toBe(true);
+    expect(runs.list.map((r) => [r.status, r.contact ?? null])).toEqual([
+      ["ok", "+5491155551234"],
+      ["warn", null],
+    ]);
+  });
+
+  it("aviso de lanzamiento a los anotados por WhatsApp, una vez", async () => {
+    now = new Date("2026-10-20T18:10:00-03:00");
+    launches.launches.push({
+      id: "l1",
+      title: "Otoño en el taller",
+      startsAt: new Date("2026-10-20T19:00:00-03:00"),
+      products: [],
+    });
+    launches.signups.push({
+      id: "s1",
+      launchId: "l1",
+      channel: "whatsapp",
+      contact: "+5491155550000",
+      notifiedAt: null,
+    });
+    expect(await auto.launchNotices()).toBe(1);
+    expect(await auto.launchNotices()).toBe(0);
+    expect(wa.sent).toEqual([
+      {
+        to: "+5491155550000",
+        kind: "novedad",
+        body: "Hola! Otoño en el taller sale hoy a las 19 h, antes que en Instagram. Mirá el adelanto: http://web/#lanzamiento",
+      },
+    ]);
+  });
+
+  it("enviarme una prueba: también al WhatsApp, solo las reglas que salen por WhatsApp", async () => {
+    const n = await auto.test("gaby@minigalu.com.ar", "+5493814440000");
+    // 10 mails; por WhatsApp: pago, despachado, entregado, listo, volvió un talle, lanzamiento y link
+    expect(n).toBe(17);
+    expect(wa.sent.filter((m) => m.kind === "novedad")).toHaveLength(2);
+    expect(wa.sent.every((m) => m.to === "+5493814440000")).toBe(true);
   });
 });

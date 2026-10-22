@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 import type { ArcaConfig } from "./invoicing/infrastructure/arca/wsaa";
+import type { WhatsAppConfig } from "./notifications/infrastructure/whatsapp-cloud";
 import type { S3StorageConfig } from "./shared/media/s3-image-storage";
 import type { AndreaniConfig } from "./shipping/infrastructure/andreani/andreani-client";
 
@@ -60,6 +61,15 @@ const EnvSchema = z.object({
   OLLAMA_MODEL: z.string().default("qwen3:4b"),
   /** Feed de Instagram de la portada (token largo de la cuenta del taller). Sin él, las fotos del seed (si hay). */
   INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
+  /**
+   * Avisos por WhatsApp Business (Cloud API de Meta). Sin token y número, en local y CI se simulan (van a Mailpit); en
+   * producción quedan sin conectar y los avisos salen solo por mail.
+   */
+  WHATSAPP_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_TEMPLATE_PEDIDO: z.string().default("aviso_pedido"),
+  WHATSAPP_TEMPLATE_NOVEDAD: z.string().default("aviso_novedad"),
+  WHATSAPP_LANGUAGE: z.string().default("es_AR"),
   ANDREANI_USER: z.string().optional(),
   ANDREANI_PASSWORD: z.string().optional(),
   ANDREANI_CLIENT: z.string().optional(),
@@ -113,6 +123,7 @@ export type Config = {
   google: { clientId: string; clientSecret: string } | null;
   assistant: { kind: "claude"; apiKey: string; model: string } | { kind: "ollama"; url: string; model: string } | null;
   instagramToken: string | null;
+  whatsapp: WhatsAppConfig | null;
 };
 
 /** El entorno no alcanza para arrancar: lleva todos los problemas juntos para arreglarlos de una vez. */
@@ -226,6 +237,8 @@ function productionProblems(env: z.infer<typeof EnvSchema>): string[] {
   const arca = missingArca(env);
   // sin ninguna, los pedidos quedan sin facturar (el panel avisa); con algunas, seguro es un error de carga
   if (arca.length && arca.length < ARCA_VARS) problems.push(`ARCA a medias: faltan ${arca.join(", ")}`);
+  if (!env.WHATSAPP_TOKEN !== !env.WHATSAPP_PHONE_NUMBER_ID)
+    problems.push("WhatsApp a medias: van WHATSAPP_TOKEN y WHATSAPP_PHONE_NUMBER_ID juntos");
   if (!env.GOOGLE_CLIENT_ID !== !env.GOOGLE_CLIENT_SECRET)
     problems.push("Google a medias: van GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET juntos");
   return problems;
@@ -294,6 +307,15 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
         ? { kind: "ollama", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL }
         : null,
     instagramToken: env.INSTAGRAM_ACCESS_TOKEN || null,
+    whatsapp:
+      env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID
+        ? {
+            token: env.WHATSAPP_TOKEN,
+            phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID,
+            templates: { pedido: env.WHATSAPP_TEMPLATE_PEDIDO, novedad: env.WHATSAPP_TEMPLATE_NOVEDAD },
+            language: env.WHATSAPP_LANGUAGE,
+          }
+        : null,
     andreani:
       env.ANDREANI_USER &&
       env.ANDREANI_PASSWORD &&

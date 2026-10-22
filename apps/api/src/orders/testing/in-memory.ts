@@ -181,6 +181,10 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
   async unpaidSince() {
     return this.items.filter((o) => o.status === "esperando_pago" && !o.paidAt).map((o) => o.id);
   }
+  async setWhatsappOptIn(id: string, on: boolean) {
+    const o = this.items.find((x) => x.id === id);
+    if (o) o.whatsappOptIn = on;
+  }
   async extendReservation(id: string, until: Date) {
     const o = this.items.find((x) => x.id === id);
     if (o?.status !== "esperando_pago" || (o.reservedUntil && o.reservedUntil >= until)) return false;

@@ -132,6 +132,15 @@ describe("CheckoutService", () => {
     await expect(checkout.receipt("MG-1001", "otro")).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("avisos por WhatsApp desde el seguimiento: se apagan y prenden con el token del pedido", async () => {
+    await checkout.place(guest, null, order());
+    await checkout.whatsappNotices("MG-1001", "tok", false);
+    expect(orders.items[0]?.whatsappOptIn).toBe(false);
+    await checkout.whatsappNotices("MG-1001", "tok", true);
+    expect(orders.items[0]?.whatsappOptIn).toBe(true);
+    await expect(checkout.whatsappNotices("MG-1001", "otro", false)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
   it("envío a acordar y cadete: guardan la dirección y no cobran envío; el cadete solo en la ciudad del taller", async () => {
     const dir = {
       postalCode: "4000",

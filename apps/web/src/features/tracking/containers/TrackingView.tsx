@@ -5,7 +5,8 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStoreInfo } from "@/features/shell/shell-context";
-import { useUi } from "@/features/shell/ui-store";
+import { toast, useUi } from "@/features/shell/ui-store";
+import { api } from "@/lib/api";
 import { Embroidery } from "@/ui/atoms/Embroidery";
 import { TrackingCard } from "../components/TrackingCard";
 import { normalizeCode } from "../tracking-view";
@@ -15,15 +16,31 @@ type Props = {
   /** Lo que se buscó (?pedido=) y lo que encontró la API (null: no existe; undefined: todavía no se buscó). */
   code: string;
   result: PublicTracking | null | undefined;
+  /** Token del pedido (?t=): con él se puede apagar o prender "Avisos por WhatsApp". */
+  token: string | null;
 };
 
 /** Seguí tu pedido — design/mockups/seguimiento.html */
-export function TrackingView({ code, result }: Props) {
+export function TrackingView({ code, result, token }: Props) {
   const info = useStoreInfo();
   const router = useRouter();
   const openGalu = useUi((s) => s.openGalu);
   const [value, setValue] = useState(code);
   const [error, setError] = useState<string | null>(null);
+  const [notices, setNotices] = useState(result?.whatsappOptIn ?? null);
+
+  // el interruptor cambia al instante; si no se pudo guardar, vuelve a como estaba
+  const toggleNotices = async (on: boolean) => {
+    if (!result || !token) return;
+    setNotices(on);
+    try {
+      await api.whatsappNotices(result.number, token, on);
+      toast(on ? "Te vamos a avisar por WhatsApp" : "Listo: los avisos te llegan solo por mail");
+    } catch {
+      setNotices(!on);
+      toast("No se pudo guardar. Probá de nuevo");
+    }
+  };
 
   return (
     <main className="wrap">
@@ -68,6 +85,8 @@ export function TrackingView({ code, result }: Props) {
           key={result.number}
           t={result}
           whatsapp={info.whatsapp}
+          notices={notices}
+          onNotices={toggleNotices}
           onAskGalu={() => openGalu(`¿Dónde está mi pedido #${result.number}?`)}
         />
       ) : result === null ? (

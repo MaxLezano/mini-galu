@@ -27,7 +27,12 @@ export type PublicTracking = {
   log: TrackingLogEntry[];
   /** Solo si se entró con el link que tiene el token del pedido (para pagar lo que falta). */
   payUrl: string | null;
+  /** "Avisos por WhatsApp" del pedido: solo con el token y con WhatsApp conectado (si no, null y no se muestra). */
+  whatsappOptIn: boolean | null;
 };
+
+/** El interruptor "Avisos por WhatsApp" del seguimiento (con el token del pedido). */
+export const WhatsAppOptInSchema = z.object({ t: z.string().min(1), on: z.boolean() });
 
 /** "/seguimiento?pedido=MG-1043&t=…": con el token, el seguimiento también muestra el total y el link para pagar. */
 export const trackingPath = (number: string, token?: string | null) =>

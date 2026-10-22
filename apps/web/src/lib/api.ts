@@ -152,6 +152,12 @@ export const api = {
       `/reviews/${encodeURIComponent(number)}/items/${encodeURIComponent(itemId)}?t=${encodeURIComponent(t)}`,
       { method: "POST", body: form },
     ),
+  /** "Avisos por WhatsApp" del seguimiento (con el token del pedido). */
+  whatsappNotices: (number: string, t: string, on: boolean) =>
+    request<{ on: boolean }>(`/checkout/orders/${encodeURIComponent(number)}/whatsapp`, {
+      method: "PUT",
+      body: JSON.stringify({ t, on }),
+    }),
   receipt: (number: string, t: string) =>
     request<OrderReceipt>(`/checkout/orders/${encodeURIComponent(number)}?t=${encodeURIComponent(t)}`),
   payCard: (number: string, t: string, card: CardPaymentInput) =>

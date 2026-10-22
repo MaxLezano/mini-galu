@@ -43,11 +43,13 @@ export function AutomationsAdmin({ initial, email }: { initial: AdminAutomations
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<{ key: AutomationKey; message: string } | null>(null);
   const [testEmail, setTestEmail] = useState(email);
+  const [testWhatsApp, setTestWhatsApp] = useState("");
   const { openModal, closeModal } = useUi();
   const mounted = useMounted();
   const s = data.stats;
   const sent = s.sent.mail + s.sent.whatsapp;
   const on = data.rules.filter((r) => r.on).length;
+  const whatsapp = data.channels.whatsapp !== "sin_conectar";
 
   const update = async (key: AutomationKey, upd: { on?: boolean; message?: string }, ok: string) => {
     setBusy(true);
@@ -71,7 +73,7 @@ export function AutomationsAdmin({ initial, email }: { initial: AdminAutomations
   const sendTest = async () => {
     setBusy(true);
     try {
-      const r = await adminApi.testAutomations(testEmail);
+      const r = await adminApi.testAutomations(testEmail, whatsapp ? testWhatsApp : "");
       closeModal();
       toast(`Te mandamos ${r.sent} ${r.sent === 1 ? "mensaje" : "mensajes"} de prueba`, {
         icon: <Send className="i-sm" />,
@@ -150,13 +152,12 @@ export function AutomationsAdmin({ initial, email }: { initial: AdminAutomations
           <Channel icon={<BrandIcon name="mercadopago" />} title="Mercado Pago" state={data.channels.mercadopago} />
           <Channel icon={<Truck />} title="Andreani" state={data.channels.andreani} />
         </div>
-        {data.channels.whatsapp === "sin_conectar" && (
-          <p className="muted" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
-            {/* TODO(fase 6 · automations): WhatsApp Business Cloud API (número de prueba de Meta) */}
-            Mientras WhatsApp no esté conectado, los avisos salen por mail; los anotados que dejaron solo su WhatsApp
-            quedan esperando.
-          </p>
-        )}
+        <p className="muted" style={{ fontSize: 12.5, margin: "10px 0 0" }}>
+          {whatsapp
+            ? "Los avisos de un pedido salen por mail y, si el cliente lo pidió, también por WhatsApp. Los anotados que dejaron su WhatsApp reciben la novedad por ahí."
+            : "Mientras WhatsApp no esté conectado, los avisos salen por mail; los anotados que dejaron solo su WhatsApp quedan esperando."}
+          {data.channels.whatsapp === "simulado" && " Simulado: los WhatsApp llegan a Mailpit, no al cliente."}
+        </p>
       </section>
 
       <section>
@@ -232,6 +233,20 @@ export function AutomationsAdmin({ initial, email }: { initial: AdminAutomations
               onChange={(e) => setTestEmail(e.target.value)}
             />
           </div>
+          {whatsapp && (
+            <div className="field">
+              <label htmlFor="twa">Tu WhatsApp</label>
+              <input
+                className="input"
+                id="twa"
+                type="tel"
+                inputMode="tel"
+                placeholder="11 4444-0000"
+                value={testWhatsApp}
+                onChange={(e) => setTestWhatsApp(e.target.value)}
+              />
+            </div>
+          )}
           <button type="submit" className="btn btn-block" disabled={busy}>
             {busy ? "Enviando…" : "Enviar prueba"}
           </button>

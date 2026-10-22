@@ -410,6 +410,10 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     return rows.map((r) => r.id);
   }
 
+  async setWhatsappOptIn(id: string, on: boolean) {
+    await this.db.update(s.orders).set({ whatsappOptIn: on }).where(eq(s.orders.id, id));
+  }
+
   async extendReservation(id: string, until: Date) {
     const rows = await this.db
       .update(s.orders)

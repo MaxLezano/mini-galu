@@ -11,6 +11,7 @@ import {
   type RuleUpdate,
   type Size,
   sizeLabel,
+  toE164AR,
 } from "@mini-galu/contracts";
 import { ConflictError } from "../../shared/domain/errors";
 import { argentinaNow, nextBirthday } from "../domain/birthday";
@@ -26,7 +27,9 @@ import type {
   OrderFacts,
   RunLog,
   Suggestions,
+  WaitingContact,
   Waitlist,
+  WhatsApp,
 } from "./ports";
 
 const DAY = 86_400_000;
@@ -35,6 +38,11 @@ export const BIRTHDAY_NOTICE_DAYS = 15;
 /** "Bolsa abandonada": horas sin tocar la bolsa antes del recordatorio, y hasta cuándo vale la pena mandarlo. */
 export const IDLE_CART_HOURS = 24;
 const IDLE_CART_MAX_DAYS = 7;
+/** Reglas que le escriben a los anotados (plantilla de novedades); el resto avisa de un pedido. */
+const NOVELTIES: AutomationKey[] = ["volvio_talle", "lanzamiento"];
+const viaWhatsApp = (key: AutomationKey) => (AUTOMATION_RULES[key].channels as readonly string[]).includes("whatsapp");
+/** Lo que respondió Meta, corto para el registro. */
+const reason = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 140);
 
 export type AutomationLinks = {
   /** Con el token del pedido (el seguimiento muestra el total solo con él). */
@@ -58,7 +66,8 @@ export type AutomationLinks = {
 /**
  * Lo que el taller hace solo (admin-automatizaciones.html): cada regla se puede pausar y su mensaje se puede editar.
  * Escuchan eventos de dominio y el programador; cada aviso queda en el registro y en el historial del pedido.
- * Canal activo: mail. TODO(fase 6 · automations): WhatsApp Business con las credenciales de Meta (modo prueba).
+ * Canales: mail siempre y, con WhatsApp conectado, también WhatsApp a quien lo pidió (el mail es el respaldo: si
+ * WhatsApp no llega, el cliente igual se entera). Los anotados que dejaron solo su WhatsApp, solo por WhatsApp.
  */
 export class AutomationService {
   constructor(
@@ -72,6 +81,8 @@ export class AutomationService {
     private readonly suggestions: Suggestions,
     private readonly carts: IdleCarts,
     private readonly launches: LaunchSignups,
+    /** null: WhatsApp sin conectar (producción sin las credenciales de Meta). */
+    private readonly whatsapp: WhatsApp | null,
     private readonly links: AutomationLinks,
     private readonly clock: () => Date = () => new Date(),
   ) {}
@@ -127,8 +138,8 @@ export class AutomationService {
     return this.isOnWith(await this.settings.get(), key);
   }
 
-  /** "Enviarme una prueba": todos los mensajes activos con datos de ejemplo, a ese mail. */
-  async test(email: string): Promise<number> {
+  /** "Enviarme una prueba": todos los mensajes activos con datos de ejemplo, a ese mail (y a ese WhatsApp). */
+  async test(email: string, whatsapp: string | null = null): Promise<number> {
     const overrides = await this.settings.get();
     let n = 0;
     for (const key of AUTOMATION_KEYS) {
@@ -144,6 +155,14 @@ export class AutomationService {
         number: null,
       });
       n++;
+      if (!whatsapp || !this.whatsapp || !viaWhatsApp(key)) continue;
+      const body = fillMessage(overrides[key]?.message ?? rule.message, AUTOMATION_SAMPLE);
+      await this.whatsapp.send(
+        NOVELTIES.includes(key)
+          ? { to: whatsapp, kind: "novedad", body }
+          : { to: whatsapp, kind: "pedido", number: AUTOMATION_SAMPLE.pedido ?? "", body },
+      );
+      n++;
     }
     return n;
   }
@@ -154,10 +173,12 @@ export class AutomationService {
     if (!(await this.isOn("pago_aprobado"))) return;
     const o = await this.orders.find(orderId);
     if (!o) return;
-    const email = await this.messenger.paymentApproved(orderId, await this.text("pago_aprobado", this.vars(o)));
+    const intro = await this.text("pago_aprobado", this.vars(o));
+    const email = await this.messenger.paymentApproved(orderId, intro);
     if (!email) return;
     await this.orders.log(o.id, "Mail de confirmación enviado", `“Recibimos tu pago” a ${email}`);
     await this.record("pago_aprobado", o, "Mail de confirmación");
+    await this.whatsAppOrder("pago_aprobado", o, intro, "Aviso de pago por WhatsApp");
   }
 
   /** Cambios de estado: despachado (en camino) y listo para retirar en el taller. */
@@ -275,6 +296,8 @@ ${pointsNext(rules, p.balance)}`,
       },
       this.clock(),
     );
+    const o = await this.orders.find(p.orderId);
+    if (o) await this.whatsAppOrder("link_sin_pagar", o, intro, "Recordatorio de pago por WhatsApp");
   }
 
   /** Volvió stock de talles con lista de espera: se avisa a todos los anotados, en orden. */
@@ -314,13 +337,19 @@ ${pointsNext(rules, p.balance)}`,
         mails.map((w) => w.id),
         now,
       );
-      const wa = waiting.length - mails.length;
-      if (wa)
+      const phones = waiting.filter((w) => w.channel === "whatsapp");
+      if (this.whatsapp)
+        for (const w of phones) {
+          const r = await this.novelty(this.whatsapp, w, body);
+          await this.waitlist.markNotified([w.id], now);
+          await this.runs.add({ rule: "volvio_talle", subject, ...r, productSlug: p.slug }, now);
+        }
+      else if (phones.length)
         await this.runs.add(
           {
             rule: "volvio_talle",
             subject,
-            detail: `${wa} ${wa === 1 ? "anotado" : "anotados"} por WhatsApp sin avisar: WhatsApp todavía no está conectado`,
+            detail: `${phones.length} ${phones.length === 1 ? "anotado" : "anotados"} por WhatsApp sin avisar: WhatsApp todavía no está conectado`,
             channel: "whatsapp",
             status: "warn",
             productSlug: p.slug,
@@ -375,14 +404,21 @@ ${pointsNext(rules, p.balance)}`,
         );
         n++;
       }
-      const wa = waiting.length - mails.length;
+      const phones = waiting.filter((w) => w.channel === "whatsapp");
       const key = `lanzamiento-wa:${l.id}`;
-      if (wa && !(await this.runs.exists("lanzamiento", key)))
+      if (this.whatsapp)
+        for (const w of phones) {
+          const r = await this.novelty(this.whatsapp, w, body);
+          await this.launches.markNotified([w.id], now);
+          await this.runs.add({ rule: "lanzamiento", subject: l.title, ...r }, now);
+          if (r.status === "ok") n++;
+        }
+      else if (phones.length && !(await this.runs.exists("lanzamiento", key)))
         await this.runs.add(
           {
             rule: "lanzamiento",
             subject: l.title,
-            detail: `${wa} ${wa === 1 ? "anotado" : "anotados"} por WhatsApp sin avisar: WhatsApp todavía no está conectado`,
+            detail: `${phones.length} ${phones.length === 1 ? "anotado" : "anotados"} por WhatsApp sin avisar: WhatsApp todavía no está conectado`,
             channel: "whatsapp",
             status: "warn",
             subjectKey: key,
@@ -553,6 +589,59 @@ Regalo del taller: con el código ${coupon.code} tenés ${coupon.label}.`
     });
     await this.orders.log(o.id, m.logTitle, `Por mail a ${o.email}`);
     await this.record(rule, o, m.logTitle, subjectKey);
+    if (viaWhatsApp(rule)) await this.whatsAppOrder(rule, o, m.body, m.logTitle);
+  }
+
+  /**
+   * El aviso de un pedido también por WhatsApp, si el cliente lo pidió y está conectado. Si Meta no lo acepta, queda
+   * con aviso en el registro (el mail ya salió).
+   */
+  private async whatsAppOrder(rule: AutomationKey, o: OrderFacts, body: string, logTitle: string) {
+    const to = o.whatsappOptIn ? toE164AR(o.phone) : null;
+    if (!this.whatsapp || !to) return;
+    const subject = `#${o.number} · ${o.firstName} ${o.lastName}`.trim();
+    try {
+      await this.whatsapp.send({ to, kind: "pedido", number: o.number, body });
+    } catch (e) {
+      await this.runs.add(
+        {
+          rule,
+          subject,
+          detail: `No salió por WhatsApp a ${to} (${reason(e)}): le llegó por mail`,
+          channel: "whatsapp",
+          status: "warn",
+          orderId: o.id,
+        },
+        this.clock(),
+      );
+      return;
+    }
+    await this.orders.log(o.id, logTitle, `Por WhatsApp a ${to}`);
+    await this.runs.add(
+      { rule, subject, detail: logTitle, channel: "whatsapp", status: "ok", orderId: o.id, contact: to },
+      this.clock(),
+    );
+  }
+
+  /** Aviso a un anotado que dejó su WhatsApp: lo que queda en el registro (enviado o con aviso). */
+  private async novelty(wa: WhatsApp, w: WaitingContact, body: string) {
+    const to = toE164AR(w.contact);
+    if (!to)
+      return {
+        detail: `No salió por WhatsApp a ${w.contact}: el número no es válido`,
+        channel: "whatsapp" as const,
+        status: "warn" as const,
+      };
+    try {
+      await wa.send({ to, kind: "novedad", body });
+    } catch (e) {
+      return {
+        detail: `No salió por WhatsApp a ${to} (${reason(e)})`,
+        channel: "whatsapp" as const,
+        status: "warn" as const,
+      };
+    }
+    return { detail: `Aviso por WhatsApp a ${to}`, channel: "whatsapp" as const, status: "ok" as const, contact: to };
   }
 
   private record(rule: AutomationKey, o: OrderFacts, detail: string, subjectKey?: string) {

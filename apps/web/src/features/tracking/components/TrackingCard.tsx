@@ -10,11 +10,16 @@ import { Journey } from "./Journey";
 export function TrackingCard({
   t,
   whatsapp,
+  notices,
+  onNotices,
   onAskGalu,
 }: {
   t: PublicTracking;
   /** wa.me de la tienda (Tienda y pagos → Datos de la tienda). */
   whatsapp: string;
+  /** "Avisos por WhatsApp" del pedido (null: sin el token o con WhatsApp sin conectar, no se muestra). */
+  notices: boolean | null;
+  onNotices: (on: boolean) => void;
   onAskGalu: () => void;
 }) {
   const st = ORDER_STATUSES[t.status];
@@ -74,7 +79,20 @@ export function TrackingCard({
           )}
         </div>
         <div>
-          {/* TODO(fase 6 · automations): interruptor de avisos por WhatsApp (whatsappOptIn del pedido) */}
+          {notices !== null && (
+            <label className="notify">
+              <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+                <BrandIcon name="whatsapp" className="brand i-sm" /> Avisos por WhatsApp
+              </span>
+              <input
+                className="tog"
+                type="checkbox"
+                checked={notices}
+                onChange={(e) => onNotices(e.target.checked)}
+                aria-label="Avisos por WhatsApp"
+              />
+            </label>
+          )}
           <h2 className="display h3" style={{ margin: 0 }}>
             En el paquete
           </h2>

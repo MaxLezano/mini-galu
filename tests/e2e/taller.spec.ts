@@ -819,6 +819,14 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
   await page.goto("/taller/automatizaciones");
   await ready(page);
   await expect(page.locator("#log")).toContainText(`#${number}`);
+  // sin credenciales de Meta, WhatsApp va simulado: el aviso del pago también quedó por WhatsApp
+  await expect(page.locator(".chan").filter({ hasText: "WhatsApp Business" })).toContainText("Simulado");
+  await expect(
+    page
+      .locator("#log tr")
+      .filter({ hasText: `#${number}` })
+      .filter({ hasText: "WhatsApp" }),
+  ).toHaveCount(1);
   // la bolsa abandonada ya funciona (la bolsa de la cuenta está en el servidor)
   await expect(page.locator('[data-rule="bolsa_abandonada"]').getByLabel("Activar Bolsa abandonada")).toBeEnabled();
 
@@ -845,10 +853,9 @@ test("automatizaciones: el pago queda en el registro, se pausa una regla y se ed
   await expect(page.locator("#toast")).toContainText("Mensaje guardado");
 
   await page.getByRole("button", { name: "Enviarme una prueba" }).click();
-  await page
-    .getByRole("dialog", { name: "Enviarme una prueba" })
-    .getByRole("button", { name: "Enviar prueba" })
-    .click();
+  const trial = page.getByRole("dialog", { name: "Enviarme una prueba" });
+  await trial.getByLabel("Tu WhatsApp").fill("11 4444-0000");
+  await trial.getByRole("button", { name: "Enviar prueba" }).click();
   await expect(page.locator("#toast")).toContainText("mensajes de prueba");
 
   // el mensaje de Gaby vuelve a ser el que era

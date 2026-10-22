@@ -18,6 +18,7 @@ import type {
   UpcomingLaunch,
   WaitingContact,
   Waitlist,
+  WhatsApp,
 } from "../application/ports";
 
 export class MemoryAutomationSettings implements AutomationSettingsStore {
@@ -53,7 +54,8 @@ export class MemoryRunLog implements RunLog {
   }
   async countsSince(since: Date) {
     const out: Partial<Record<AutomationKey, number>> = {};
-    for (const r of this.list) if (r.at >= since) out[r.rule] = (out[r.rule] ?? 0) + 1;
+    for (const r of this.list)
+      if (r.at >= since && !(r.channel === "whatsapp" && r.orderId)) out[r.rule] = (out[r.rule] ?? 0) + 1;
     return out;
   }
   async sentSince(since: Date) {
@@ -67,7 +69,7 @@ export class MemoryRunLog implements RunLog {
     return this.list.some((r) => r.rule === rule && r.subjectKey === subjectKey);
   }
   async linkRecovery(since: Date) {
-    const reminded = this.list.filter((r) => r.rule === "link_sin_pagar" && r.at >= since);
+    const reminded = this.list.filter((r) => r.rule === "link_sin_pagar" && r.channel === "mail" && r.at >= since);
     const recovered = reminded.filter((r) => {
       const paid = r.orderId ? this.paid.get(r.orderId) : undefined;
       return paid && paid > r.at;
@@ -115,6 +117,17 @@ export class MemoryMessenger implements Messenger {
       ...(m.products ? { eyebrow: m.eyebrow, products: m.products } : {}),
     });
     this.ctas.push(m.cta);
+  }
+}
+
+/** WhatsApp que guarda lo que mandaría; `failFor` simula un número que Meta no acepta. */
+export class MemoryWhatsApp implements WhatsApp {
+  readonly mode = "simulado";
+  sent: Parameters<WhatsApp["send"]>[0][] = [];
+  failFor = new Set<string>();
+  async send(m: Parameters<WhatsApp["send"]>[0]) {
+    if (this.failFor.has(m.to)) throw new Error("(#131026) Message undeliverable");
+    this.sent.push(m);
   }
 }
 

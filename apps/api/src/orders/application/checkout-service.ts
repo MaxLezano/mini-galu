@@ -330,6 +330,12 @@ export class CheckoutService {
     };
   }
 
+  /** "Avisos por WhatsApp" del seguimiento (con el token del pedido). */
+  async whatsappNotices(number: string, token: string, on: boolean) {
+    const o = await findOwned(this.orders, number, token);
+    await this.orders.setWhatsappOptIn(o.id, on);
+  }
+
   /** Comprobante para la pantalla de éxito (sin cuenta: número + token). */
   async receipt(number: string, token: string): Promise<OrderReceipt> {
     const o = await findOwned(this.orders, number, token);

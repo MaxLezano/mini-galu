@@ -49,6 +49,7 @@ const pedido: PublicTracking = {
   ],
   log: [{ title: "En tránsito", detail: "Centro de distribución", at: "2026-10-02T10:00:00.000Z" }],
   payUrl: null,
+  whatsappOptIn: null,
 };
 
 function setup(steps: ConstructorParameters<typeof ScriptedLlm>[0], plan?: InstallmentPlan) {

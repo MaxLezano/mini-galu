@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toE164AR } from "./checkout";
 
 /** Canales por los que sale un aviso. "panel": te avisa a vos (campana), no al cliente. */
 export type AutomationChannel = "mail" | "whatsapp" | "panel";
@@ -168,7 +169,20 @@ export const RuleUpdateSchema = z
   .refine((v) => v.on !== undefined || v.message !== undefined, "Nada para cambiar");
 export type RuleUpdate = z.infer<typeof RuleUpdateSchema>;
 
-export const AutomationTestSchema = z.object({ email: z.email("Revisá el email") });
+export const AutomationTestSchema = z.object({
+  email: z.email("Revisá el email"),
+  /** Con WhatsApp conectado, también le llegan por WhatsApp (vacío: solo mail). */
+  whatsapp: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      const e164 = toE164AR(v);
+      if (!e164) ctx.addIssue({ code: "custom", message: "Escribí el WhatsApp con característica (ej. 11 5555-1234)" });
+      return e164;
+    }),
+});
 
 export type AdminAutomationRule = {
   key: AutomationKey;
@@ -194,7 +208,8 @@ export type AdminAutomations = {
   rules: AdminAutomationRule[];
   channels: {
     mail: "conectado";
-    whatsapp: "sin_conectar";
+    /** Sin credenciales de Meta: en producción, sin conectar; en local y CI, simulado (los mensajes van a Mailpit). */
+    whatsapp: "sin_conectar" | "simulado" | "conectado";
     mercadopago: "simulado" | "prueba" | "produccion";
     andreani: "simulado" | "qa" | "produccion";
   };

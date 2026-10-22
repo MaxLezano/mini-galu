@@ -156,6 +156,7 @@ export class ShipmentService {
       stops: trackingStops(o, ev),
       log: trackingLog(o, s, ev),
       payUrl: o.status === "esperando_pago" && owner ? this.payUrl(o.number, owner) : null,
+      whatsappOptIn: owner ? o.whatsappOptIn : null,
     };
   }
 

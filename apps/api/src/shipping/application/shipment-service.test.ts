@@ -54,7 +54,7 @@ beforeEach(() => {
   shipments = new ShipmentService(
     new FakeAndreani(clock),
     new MemoryShipments(clock),
-    new OrderShipping(orders, storage, bus, async () => "Villa Crespo, CABA"),
+    new OrderShipping(orders, storage, bus, async () => "Villa Crespo, CABA", true),
     (n, t) => `http://web/pagar/${n}?t=${t}`,
     new MemoryShippingSettings(),
     "fake",
@@ -132,6 +132,17 @@ describe("envíos", () => {
     expect((await shipments.track(o.number, null)).totalCents).toBeNull();
     expect((await shipments.track(o.number, "otro")).totalCents).toBeNull();
     expect((await shipments.track(o.number, o.accessToken)).totalCents).toBe(orders.items[0]?.totalCents);
+  });
+
+  it("avisos por WhatsApp: el interruptor solo aparece con el token del pedido", async () => {
+    const o = await paidOrder();
+    expect((await shipments.track(o.number, null)).whatsappOptIn).toBeNull();
+    expect((await shipments.track(o.number, o.accessToken)).whatsappOptIn).toBe(true);
+    await orders.setWhatsappOptIn(o.orderId, false);
+    expect((await shipments.track(o.number, o.accessToken)).whatsappOptIn).toBe(false);
+    // con WhatsApp sin conectar no se ofrece
+    const off = new OrderShipping(orders, storage, new EventBus(), async () => "Villa Crespo, CABA");
+    expect((await off.findById(o.orderId))?.whatsappOptIn).toBeNull();
   });
 
   it("sin pagar: el link para pagar solo aparece con el token del pedido", async () => {

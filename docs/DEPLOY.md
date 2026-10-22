@@ -179,6 +179,52 @@ El token dura 60 días y la API lo renueva sola cada semana (guarda el renovado 
 apagada o Gaby cambia la contraseña de Instagram, el token vence: la grilla se oculta y hay que
 generar otro (paso 3) y reemplazarlo en el `.env`.
 
+### Avisos por WhatsApp (opcional)
+
+Sin credenciales, los avisos salen solo por mail (Automatizaciones → Canales dice "Sin conectar") y los anotados que
+dejaron solo su WhatsApp quedan esperando. Con ellas, los avisos de un pedido salen por mail **y además** por WhatsApp
+a quien lo pidió en el checkout (lo puede apagar desde el seguimiento), y los anotados de talles y lanzamientos
+reciben la novedad por WhatsApp. Cada mensaje que inicia la tienda **tiene costo** según la categoría de la plantilla:
+mirar las tarifas vigentes de Meta para Argentina antes de prenderlo.
+
+1. En la misma app de Meta (la del feed de Instagram) → **Agregar producto** → WhatsApp. Meta da un número de prueba
+   que le escribe a hasta 5 números verificados: sirve para probar todo antes de usar el del taller.
+2. Número del taller: WhatsApp → **Configuración de la API** → agregar número. Ojo: un número que se usa en la app
+   WhatsApp Business no se puede registrar en la API así nomás; ver si Meta ofrece la *coexistencia* para ese número
+   (seguir usando la app y la API a la vez) o usar un número nuevo para los avisos.
+3. **Plantillas** (WhatsApp Manager → Plantillas de mensajes), idioma **Español (ARG)**. Las variables son el texto de
+   cada regla (el que se edita en Automatizaciones); Meta tarda de minutos a un día en aprobarlas:
+   - `aviso_pedido`, categoría **Utilidad**:
+     ```
+     Novedades de tu pedido #{{1}} en Mini Galú:
+
+     {{2}}
+
+     Si tenés alguna duda, respondé este mensaje.
+     ```
+     Ejemplos para la revisión: `MG-1042` y `Hola Lucía! Recibimos el pago de tu pedido #MG-1042. Ya lo estamos
+     preparando en el taller`.
+   - `aviso_novedad`, categoría **Marketing**:
+     ```
+     Te escribimos desde Mini Galú porque pediste que te avisemos:
+
+     {{1}}
+
+     Si no querés más avisos, respondé este mensaje.
+     ```
+     Ejemplo: `Hola! Volvió el talle 6 del Vestido Samanta. Está acá: minigalu.com.ar/producto/vestido-samanta`.
+4. **Token permanente**: Meta Business → Configuración → **Usuarios del sistema** → agregar (administrador) → asignarle
+   la app y la cuenta de WhatsApp → **Generar token** con el permiso `whatsapp_business_messaging`.
+5. En `deploy/.env`: `WHATSAPP_TOKEN=` (el del paso 4) y `WHATSAPP_PHONE_NUMBER_ID=` (el **identificador** del
+   número que muestra Configuración de la API, no el número). Si las plantillas tienen otro nombre,
+   `WHATSAPP_TEMPLATE_PEDIDO` / `WHATSAPP_TEMPLATE_NOVEDAD`. `docker compose up -d`.
+6. Automatizaciones → Canales dice "Conectado". **Enviarme una prueba** con tu WhatsApp: llegan todos los mensajes
+   activos con datos de ejemplo. Si Meta rechaza alguno, el Registro lo muestra con su código (ej. `#132001`: la
+   plantilla no existe o no está aprobada en `es_AR`).
+
+Que Meta acepte un mensaje no garantiza que llegue (un número sin WhatsApp falla después): por eso el mail sale
+siempre.
+
 ## 10. Probar antes de anunciar
 
 1. `https://api.minigalu.com.ar/health` → `{"ok":true}`.

@@ -16,5 +16,5 @@ export default async function Page({ searchParams }: PageProps<"/seguimiento">) 
         throw e;
       })
     : undefined;
-  return <TrackingView code={code} result={result} />;
+  return <TrackingView code={code} result={result} token={t ?? null} />;
 }

@@ -34,6 +34,25 @@ async function skipIfRealMercadoPago(request: APIRequestContext) {
   test.skip(config.gateway !== "simulado", "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
 }
 
+const MAILPIT = "http://localhost:8025/api/v1";
+
+/** Sin credenciales de Meta, lo que sale por WhatsApp llega a Mailpit a "<número>@whatsapp.simulado". */
+async function simulatedWhatsApp(request: APIRequestContext, number: string) {
+  const up = await request.get(`${MAILPIT}/messages?limit=1`).catch(() => null);
+  if (!up?.ok()) return null;
+  const query = `to:5491155551234@whatsapp.simulado subject:"pedido #${number}"`;
+  let text = "";
+  await expect
+    .poll(async () => {
+      const r = await (await request.get(`${MAILPIT}/search?query=${encodeURIComponent(query)}`)).json();
+      const id = r.messages?.[0]?.ID;
+      if (id) text = (await (await request.get(`${MAILPIT}/message/${id}`)).json()).Text;
+      return !!id;
+    })
+    .toBe(true);
+  return text;
+}
+
 const uniqueEmail = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1e4)}@ejemplo.com`;
 
 test("compra como invitada con retiro en el taller: rechazo y reintento aprobado", async ({ page, request }) => {
@@ -66,9 +85,21 @@ test("compra como invitada con retiro en el taller: rechazo y reintento aprobado
   const href = (await follow.getAttribute("href")) ?? "";
   await page.goto(href);
   await expect(page.locator(".tr-card")).toContainText(/pagado el .+ · \$/);
+  // el aviso del pago también salió por WhatsApp (simulado) y, con el link, se puede apagar
+  const number = /pedido=(MG-\d+)/.exec(href)?.[1] ?? "";
+  const wa = await simulatedWhatsApp(request, number);
+  if (wa !== null) expect(wa).toContain(`Recibimos el pago de tu pedido #${number}`);
+  const notices = page.getByRole("checkbox", { name: "Avisos por WhatsApp" });
+  await expect(notices).toBeChecked();
+  await notices.uncheck();
+  await expect(page.getByText("los avisos te llegan solo por mail")).toBeVisible();
+  await page.reload();
+  await expect(notices).not.toBeChecked();
   await page.goto(href.replace(/&t=.*/, ""));
   await expect(page.locator(".tr-card")).toContainText("Pedido #MG-");
   await expect(page.locator(".tr-card .tr-top")).not.toContainText("$");
+  // sin el token, el interruptor no está
+  await expect(notices).toHaveCount(0);
 
   // la bolsa quedó vacía
   await page.goto("/checkout");
