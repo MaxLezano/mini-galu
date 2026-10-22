@@ -9,7 +9,7 @@ import { ConflictError, NotFoundError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { canMove, nextStatus, statusTitle } from "../domain/flow";
-import { formatOrderNumber, parseOrderNumber } from "../domain/order";
+import { formatOrderNumber, parseOrderNumber, SHOP_CANCEL_REASON } from "../domain/order";
 import { refundPlan } from "../domain/refund";
 import { monthKpis, monthlySales, monthStart, weeklySales } from "../domain/stats";
 import type { OrderRefunds } from "./order-refunds";
@@ -96,6 +96,34 @@ export class AdminOrdersService {
       type: "OrderStatusChanged",
       occurredAt: at,
       payload: { orderId: o.id, number: formatOrderNumber(o.number), from, to },
+    });
+    return this.detail(number);
+  }
+
+  /**
+   * Anular un pedido que espera pago (un link armado por error, una clienta que ya no lo quiere): las prendas vuelven
+   * a la tienda y el link deja de cobrar. Antes quedaban reservadas hasta que venciera (72 h un link de pago).
+   */
+  async cancel(number: string, reason: string): Promise<AdminOrderDetail> {
+    const o = await this.find(number);
+    if (o.status !== "esperando_pago")
+      throw new ConflictError(
+        o.paidAt ? "Este pedido ya está pagado: para cancelarlo, reintegrá el pago" : "Este pedido ya no espera pago",
+      );
+    const at = this.clock();
+    const why = reason.trim();
+    if (!(await this.orders.cancelReleasing(o.id, why ? `${SHOP_CANCEL_REASON}: ${why}` : SHOP_CANCEL_REASON, at)))
+      throw new ConflictError("Alguien cambió este pedido recién: actualizá la página");
+    await this.orders.addEvent(o.id, {
+      kind: "cancelled",
+      title: SHOP_CANCEL_REASON,
+      detail: [why ? `"${why}"` : null, "las prendas volvieron a la tienda"].filter(Boolean).join(" · "),
+      auto: false,
+    });
+    await this.events.publish({
+      type: "OrderCancelled",
+      occurredAt: at,
+      payload: { orderId: o.id, number: formatOrderNumber(o.number) },
     });
     return this.detail(number);
   }

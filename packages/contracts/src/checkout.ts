@@ -251,6 +251,8 @@ export type OrderReceipt = {
   giftcard: GiftcardSummary | null;
   giftcardCents: Cents;
   status: OrderStatus;
+  /** Si está cancelado: venció la reserva o lo anuló el taller. */
+  cancelledBy: "taller" | "vencimiento" | null;
   firstName: string;
   email: string;
   paymentMethod: PaymentMethod | null;

@@ -10,6 +10,7 @@ import {
 } from "@mini-galu/contracts";
 import {
   BadgeCheck,
+  Ban,
   CircleCheck,
   Clock,
   Link2,
@@ -34,6 +35,7 @@ import { useMounted } from "@/lib/use-mounted";
 import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { SkeletonLines } from "@/ui/molecules/SkeletonLines";
 import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
+import { CancelPanel } from "../components/CancelPanel";
 import { InvoicesPanel } from "../components/InvoicesPanel";
 import { ActionIcon } from "../components/OrderCard";
 import { RefundPanel } from "../components/RefundPanel";
@@ -48,6 +50,7 @@ const EVENT_ICON: Record<string, ReactNode> = {
   mail: <MailCheck />,
   expired: <Clock />,
   payment_review: <Clock />,
+  cancelled: <Ban />,
   refund_needed: <Clock />,
   refunded: <Undo2 />,
   status: <Package />,
@@ -84,6 +87,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const mounted = useMounted();
   const open = !!number;
 
@@ -93,6 +97,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     setOrder(null);
     setPicked(new Set());
     setRefundError(null);
+    setCancelError(null);
     adminApi
       .order(number)
       .then((o) => {
@@ -143,6 +148,24 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
       toast(`#${o.number} · ${ORDER_STATUSES[a.to].short}`, { icon: <ActionIcon icon={a.icon} /> });
     } catch (e) {
       toast(e instanceof ApiRequestError ? e.message : "No se pudo cambiar el estado");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancel = async (reason: string) => {
+    if (!o) return;
+    setBusy(true);
+    setCancelError(null);
+    try {
+      const updated = await adminApi.cancelOrder(o.number, reason);
+      setOrder(updated);
+      onChanged(updated);
+      toast(`#${o.number} · Anulado: las prendas volvieron a la tienda`, { icon: <Ban className="i-sm" /> });
+    } catch (e) {
+      const msg = e instanceof ApiRequestError ? e.message : "No se pudo anular el pedido";
+      setCancelError(msg);
+      toast(msg);
     } finally {
       setBusy(false);
     }
@@ -510,6 +533,16 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                     </>
                   )}
                 </dl>
+                {o.status === "esperando_pago" && (
+                  <CancelPanel
+                    key={o.number}
+                    isLink={!!o.payUrl}
+                    inReview={o.events.some((e) => e.kind === "payment_review")}
+                    busy={busy}
+                    error={cancelError}
+                    onConfirm={cancel}
+                  />
+                )}
                 {o.refund && (
                   <RefundPanel key={o.number} refund={o.refund} busy={busy} error={refundError} onConfirm={refund} />
                 )}

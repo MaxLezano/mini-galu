@@ -49,3 +49,11 @@ export function computeTotals(input: {
 
 /** Motivo con el que se cancela un pedido cuando vence la reserva sin pago. */
 export const EXPIRED_REASON = "No se pagó a tiempo";
+/** Comienzo del motivo cuando lo anula el taller (sigue el motivo que escribió Gaby, si lo hay). */
+export const SHOP_CANCEL_REASON = "Anulado por el taller";
+
+/** Quién canceló un pedido sin pagar: venció la reserva o lo anuló el taller. */
+export function cancelledBy(o: { status: string; cancelReason?: string | null }): "taller" | "vencimiento" | null {
+  if (o.status !== "cancelado") return null;
+  return o.cancelReason?.startsWith(SHOP_CANCEL_REASON) ? "taller" : "vencimiento";
+}

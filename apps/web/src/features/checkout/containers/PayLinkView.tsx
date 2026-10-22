@@ -155,7 +155,7 @@ export function PayLinkView({ config, initial, token, paymentId }: Props) {
             {receipt.status === "cancelado" ? (
               <>
                 <div className="hand" style={{ fontSize: 30 }}>
-                  Este link ya venció
+                  {receipt.cancelledBy === "taller" ? "Este link se anuló" : "Este link ya venció"}
                 </div>
                 {gift ? (
                   <>

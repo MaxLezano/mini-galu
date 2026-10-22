@@ -21,9 +21,11 @@ let admin: AdminOrdersService;
 let published: DomainEvent[];
 let pay: (n: string) => Promise<void>;
 let place: (token: string, shipping?: object) => Promise<{ number: string; orderId: string }>;
+let stock: () => number | undefined;
 
 beforeEach(() => {
   const variants = new MemoryVariants([variant("maddie", "4", 5)]);
+  stock = () => variants.list[0]?.stock;
   orders = new MemoryOrders(variants);
   const cart = new CartService(new MemoryCarts(), variants, storage, orders);
   const coupons = new CouponService(new MemoryCoupons());
@@ -67,6 +69,29 @@ beforeEach(() => {
 });
 
 describe("AdminOrdersService", () => {
+  it("anular un pedido sin pagar: las prendas vuelven a la tienda y queda en el historial", async () => {
+    const a = await place("a");
+    expect(stock()).toBe(4);
+    const d = await admin.cancel(a.number, "  lo armé por error ");
+    expect(d.status).toBe("cancelado");
+    expect(stock()).toBe(5);
+    expect(d.events[0]).toMatchObject({
+      kind: "cancelled",
+      title: "Anulado por el taller",
+      detail: '"lo armé por error" · las prendas volvieron a la tienda',
+    });
+    // ya no espera pago: ni otra vez ni pagarlo
+    await expect(admin.cancel(a.number, "")).rejects.toThrow("ya no espera pago");
+  });
+
+  it("un pedido pagado no se anula: se reintegra", async () => {
+    const a = await place("a");
+    await pay(a.orderId);
+    await expect(admin.cancel(a.number, "")).rejects.toBeInstanceOf(ConflictError);
+    await expect(admin.cancel(a.number, "")).rejects.toThrow("reintegrá el pago");
+    expect(stock()).toBe(4);
+  });
+
   it("el tablero muestra los pagados y no los checkouts web sin pagar", async () => {
     const a = await place("a");
     await place("b");

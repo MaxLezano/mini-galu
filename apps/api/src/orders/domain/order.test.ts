@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeTotals } from "./order";
+import { cancelledBy, computeTotals, EXPIRED_REASON, SHOP_CANCEL_REASON } from "./order";
 
 describe("totales del pedido", () => {
   it("cupón, envío gratis y gift card (que paga lo que queda, hasta su saldo)", () => {
@@ -28,5 +28,14 @@ describe("totales del pedido", () => {
     expect(
       computeTotals({ subtotalCents: 500, shippingCents: 0, discountCents: 900, freeShipping: false }).totalCents,
     ).toBe(0);
+  });
+});
+
+describe("cancelledBy", () => {
+  it("distingue la reserva vencida de lo que anuló el taller", () => {
+    expect(cancelledBy({ status: "cancelado", cancelReason: EXPIRED_REASON })).toBe("vencimiento");
+    expect(cancelledBy({ status: "cancelado", cancelReason: `${SHOP_CANCEL_REASON}: lo armé mal` })).toBe("taller");
+    expect(cancelledBy({ status: "cancelado", cancelReason: SHOP_CANCEL_REASON })).toBe("taller");
+    expect(cancelledBy({ status: "esperando_pago", cancelReason: null })).toBeNull();
   });
 });

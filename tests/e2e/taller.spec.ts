@@ -353,7 +353,7 @@ test("link de pago: se arma en el panel, el cliente paga en la tienda y el pedid
   await login(page);
   await page.goto("/taller/pedidos");
   await ready(page);
-  await page.getByRole("button", { name: "Link de pago" }).click();
+  await page.getByRole("button", { name: "Link de pago", exact: true }).click();
   const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
   await modal.getByRole("button", { name: "Instagram" }).click();
   // sin prendas no deja crear
@@ -386,6 +386,48 @@ test("link de pago: se arma en el panel, el cliente paga en la tienda y el pedid
   // el link ya no se puede volver a pagar
   await page.goto(url);
   await expect(page.getByText("Este pedido ya está pagado")).toBeVisible();
+});
+
+test("anular un link de pago: la prenda vuelve a la tienda y el link dice que se anuló", async ({ page, request }) => {
+  const stock = async () =>
+    (await (await request.get("http://localhost:4000/catalog/products/mono-verde")).json()).variants[0].stock as number;
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  await page.getByRole("button", { name: "Link de pago", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
+  await modal.getByRole("button", { name: "Instagram" }).click();
+  await modal.getByLabel("Prenda").selectOption({ label: "Moño Verde Largo" });
+  await modal.getByLabel("Talle").selectOption({ index: 1 });
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Nombre").fill("Paula");
+  await modal.getByLabel("Apellido").fill("Error");
+  await modal.getByLabel("Celular").fill("11 5555-1234");
+  await modal.getByLabel("Email").fill(`anular-${Date.now()}@ejemplo.com`);
+  await modal.getByRole("group", { name: "Horario de retiro" }).getByRole("button").first().click();
+  await modal.getByRole("button", { name: "Crear link de pago" }).click();
+  const url = await modal.getByLabel("Link para pagar").inputValue();
+  const number = /\/pagar\/(MG-\d+)/.exec(url)?.[1] ?? "";
+  await modal.getByRole("button", { name: "Listo" }).click();
+  const reserved = await stock();
+
+  await page.goto(`/taller/pedidos?pedido=${number}`);
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await drawer.getByRole("button", { name: "Anular pedido" }).click();
+  const cancel = drawer.getByRole("region", { name: "Anular el pedido" });
+  await expect(cancel).toContainText("El link de pago deja de andar");
+  await cancel.getByLabel("Motivo de la anulación").fill("lo armé con otro talle");
+  await cancel.getByRole("button", { name: "Anular pedido" }).click();
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Cancelado");
+  await expect(drawer.locator(".tl")).toContainText("Anulado por el taller");
+  await expect(drawer.locator(".tl")).toContainText("lo armé con otro talle");
+  await expect(drawer.getByRole("button", { name: "Anular pedido" })).toHaveCount(0);
+  expect(await stock()).toBe(reserved + 1);
+  // sale del tablero
+  await expect(page.locator(`[data-order="${number}"]`)).toHaveCount(0);
+
+  await page.goto(url);
+  await expect(page.getByText("Este link se anuló")).toBeVisible();
 });
 
 test("venta en el taller pagada con una gift card", async ({ page, request }) => {
@@ -428,7 +470,7 @@ test("venta en el taller pagada con una gift card", async ({ page, request }) =>
   await login(page);
   await page.goto("/taller/pedidos");
   await ready(page);
-  await page.getByRole("button", { name: "Link de pago" }).click();
+  await page.getByRole("button", { name: "Link de pago", exact: true }).click();
   const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
   await modal.getByRole("button", { name: "En el taller", exact: true }).click();
   // en el taller no hay entrega
@@ -459,7 +501,7 @@ test("venta en el taller cobrada en efectivo y su reintegro en mano", async ({ p
   await login(page);
   await page.goto("/taller/pedidos");
   await ready(page);
-  await page.getByRole("button", { name: "Link de pago" }).click();
+  await page.getByRole("button", { name: "Link de pago", exact: true }).click();
   const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
   // "Cómo paga" solo aparece en el taller
   await expect(modal.getByRole("group", { name: "Cómo paga" })).toHaveCount(0);

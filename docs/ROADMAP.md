@@ -638,7 +638,17 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
 - ✅ e2e que tomaban el `<main>` del skeleton junto con el de la página (ajustes, reseñas)
 
 ## Orden de lo que sigue (decidido el 22/10/2026)
-1. ⏳ **QA completo** de punta a punta: panel (como Gaby) y tienda (con y sin cuenta, todos los medios de pago)
+1. ✅ **QA completo** de punta a punta: panel (como Gaby) y tienda (con y sin cuenta, todos los medios de pago). Ver
+   "QA completo (octubre 2026, segunda vuelta)". Salieron estas tareas:
+   1. ✅ **Anular un pedido sin pagar** desde el panel (un link de pago armado por error dejaba las prendas
+      reservadas 72 h). En el detalle de un pedido que espera pago, "Anular pedido" con motivo: las prendas vuelven a
+      la tienda en la misma transacción, queda "Anulado por el taller" en el historial y sale del tablero. El link
+      dice "Este link se anuló" (el comprobante distingue `cancelledBy`: taller o vencimiento). Un pagado no se anula:
+      se reintegra. Si Mercado Pago estaba revisando un pago y se aprueba igual, vuelve a reservar o avisa para
+      reintegrar (como un pago que llega con la reserva vencida). `POST /admin/orders/:n/cancel`, e2e en `taller.spec`
+   2. ⏳ **Cambios de talle y devoluciones parciales** en el sistema (hoy a mano por WhatsApp; el reintegro es total)
+   3. ⏳ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: el mockup la trae marcada, pero la Ley
+      25.326 pide consentimiento expreso (decidido el 22/10/2026)
 2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
    para probar la web con pagos y envíos reales. Después, el reporte mensual

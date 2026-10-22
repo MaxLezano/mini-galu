@@ -107,8 +107,13 @@ export function OrdersAdmin({
     return c;
   }, [filtered]);
 
+  // un anulado sale del tablero (el servidor tampoco lo manda)
   const replace = (o: AdminOrderSummary) =>
-    setOrders((list) => list.map((x) => (x.number === o.number ? { ...x, ...o } : x)));
+    setOrders((list) =>
+      o.status === "cancelado"
+        ? list.filter((x) => x.number !== o.number)
+        : list.map((x) => (x.number === o.number ? { ...x, ...o } : x)),
+    );
 
   const move = async (number: string, to: OrderStatus) => {
     const before = orders.find((o) => o.number === number);

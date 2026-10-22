@@ -1,5 +1,6 @@
 import {
   BulkAdvanceInputSchema,
+  CancelOrderInputSchema,
   MoveOrderInputSchema,
   OrderNoteInputSchema,
   PaymentLinkInputSchema,
@@ -21,6 +22,14 @@ export function adminOrderRoutes(orders: AdminOrdersService, links: PaymentLinks
     .get("/:number", async (c) => c.json(await orders.detail(c.req.param("number"))))
     .patch("/:number/status", async (c) =>
       c.json(await orders.move(c.req.param("number"), parse(MoveOrderInputSchema, await c.req.json()).to)),
+    )
+    .post("/:number/cancel", async (c) =>
+      c.json(
+        await orders.cancel(
+          c.req.param("number"),
+          parse(CancelOrderInputSchema, await c.req.json().catch(() => ({}))).reason,
+        ),
+      ),
     )
     .put("/:number/note", async (c) => {
       await orders.saveNote(c.req.param("number"), parse(OrderNoteInputSchema, await c.req.json()).note);

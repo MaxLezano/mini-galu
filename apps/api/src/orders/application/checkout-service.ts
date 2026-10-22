@@ -16,7 +16,13 @@ import type { CouponService } from "../../coupons/application/coupon-service";
 import { ConflictError, NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import type { ShippingService } from "../../shipping/application/shipping-service";
-import { CHECKOUT_RESERVATION_MINUTES, computeTotals, formatOrderNumber, parseOrderNumber } from "../domain/order";
+import {
+  CHECKOUT_RESERVATION_MINUTES,
+  cancelledBy,
+  computeTotals,
+  formatOrderNumber,
+  parseOrderNumber,
+} from "../domain/order";
 import type { OrderRecord, OrderRepository } from "./ports";
 
 type PlaceOrder = z.output<typeof PlaceOrderInputSchema>;
@@ -337,6 +343,7 @@ export class CheckoutService {
       giftcard,
       giftcardCents: o.giftcardCents,
       status: o.status,
+      cancelledBy: cancelledBy(o),
       firstName: o.firstName,
       email: o.email,
       paymentMethod: o.paymentMethod,

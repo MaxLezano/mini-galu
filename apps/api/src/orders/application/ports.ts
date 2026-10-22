@@ -69,6 +69,8 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" |
   trackingNumber?: string | null;
   /** Si el cliente pidió la baja con el botón de arrepentimiento. */
   revocation?: Revocation | null;
+  /** Por qué se canceló ("No se pagó a tiempo", "Anulado por el taller: …"). */
+  cancelReason?: string | null;
   number: number;
   status: OrderStatus;
   reservedUntil: Date | null;
@@ -119,6 +121,8 @@ export interface AdminOrderRepository extends OrderEvents {
   /** Cambia de estado solo si sigue en `from` (dos pestañas no pisan el cambio de la otra). */
   setStatus(id: string, from: OrderStatus, to: OrderStatus, at: Date): Promise<boolean>;
   setNote(id: string, note: string | null): Promise<void>;
+  /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */
+  cancelReleasing(id: string, reason: string, at: Date): Promise<boolean>;
   /**
    * Pasa a "reembolsado" solo si sigue en `from` (dos clics no reintegran dos veces). Con `restock`, las prendas
    * vuelven al stock y se restan de las vendidas, en la misma transacción.

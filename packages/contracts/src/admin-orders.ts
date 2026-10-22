@@ -126,6 +126,9 @@ export type RefundResult = {
 export const MoveOrderInputSchema = z.object({ to: z.enum(BOARD_STATUSES) });
 export const BulkAdvanceInputSchema = z.object({ numbers: z.array(z.string().min(1)).min(1).max(100) });
 export const OrderNoteInputSchema = z.object({ note: z.string().trim().max(1000) });
+/** Anular un pedido que espera pago (un link armado por error): el motivo queda en el historial. */
+export const CancelOrderInputSchema = z.object({ reason: z.string().trim().max(300).default("") });
+export type CancelOrderInput = z.input<typeof CancelOrderInputSchema>;
 
 /* ------------------------------------------------------------------ resumen del día (admin.html) */
 

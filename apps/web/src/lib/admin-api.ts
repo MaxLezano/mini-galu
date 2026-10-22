@@ -205,6 +205,11 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  cancelOrder: (number: string, reason: string) =>
+    adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
   saveOrderNote: (number: string, note: string) =>
     adminRequest<null>(`/admin/orders/${encodeURIComponent(number)}/note`, {
       method: "PUT",
