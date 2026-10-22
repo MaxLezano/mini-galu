@@ -74,6 +74,9 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
   useEffect(() => {
     if (shownAmount.current === order.totalCents) return;
     shownAmount.current = order.totalCents;
+    // la gift card cubrió todo: el pedido ya quedó pagado y no hay nada que cobrar (actualizarlo a $0 rompía un ícono
+    // del Brick y la preferencia respondía 409)
+    if (order.totalCents === 0) return;
     update({ amount: order.totalCents / 100 });
     // dinero en cuenta cobra lo que dice la preferencia: se actualiza la misma
     const { order: o } = latest.current;

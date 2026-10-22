@@ -732,6 +732,10 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
             <StepCard n={3} title="Pago" step={step}>
               {!currentOrder ? (
                 <p className="muted">Reservando tus prendas…</p>
+              ) : currentOrder.paid ? (
+                // la gift card cubrió todo: mientras llega el comprobante no se arma el Brick (pedía su preferencia
+                // de un pedido ya pagado)
+                <p className="muted">Pagado con la gift card…</p>
               ) : config.gateway === "mercadopago" ? (
                 <MercadoPagoBrick
                   config={config}
