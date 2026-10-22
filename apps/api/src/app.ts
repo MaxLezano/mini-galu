@@ -799,6 +799,7 @@ export function buildApp(config: Config) {
     scheduler.every(60, "publicar lanzamientos", () => launches.publishDue());
     scheduler.every(60, "avisar lanzamientos", () => automations.launchNotices());
     scheduler.every(60, "liberar reservas vencidas", () => orderPayments.releaseExpired());
+    scheduler.every(600, "consultar pagos en revisión", () => payments.reconcile());
     scheduler.every(60, "recordar links de pago", () => paymentLinks.remindUnpaid());
     scheduler.every(config.trackingEverySeconds, "seguimiento de envíos", () => shipments.sync());
     scheduler.every(3600, "pedir reseñas", () => automations.askReviews());

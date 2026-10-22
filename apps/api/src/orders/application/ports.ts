@@ -143,6 +143,8 @@ export interface OrderRepository extends OrderEvents {
   linksToRemind(createdBefore: Date): Promise<OrderRecord[]>;
   /** Pedidos esperando pago con la reserva vencida. */
   expired(now: Date): Promise<string[]>;
+  /** Corre la reserva de un pedido esperando pago hasta `until` (si vencía antes). false si no hizo falta o no espera pago. */
+  extendReservation(id: string, until: Date): Promise<boolean>;
   /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */
   cancelReleasing(id: string, reason: string, at: Date): Promise<boolean>;
   /** esperando_pago → nuevo y suma a las vendidas. false si ya no estaba esperando pago. */

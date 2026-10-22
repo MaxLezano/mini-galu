@@ -7,6 +7,9 @@ import { formatOrderNumber, payPath } from "../domain/order";
 import { findOwned } from "./checkout-service";
 import type { OrderRecord, OrderRepository } from "./ports";
 
+/** Cuánto se guardan las prendas de un pedido con el pago en revisión (lo mismo que un link de pago). */
+export const PAYMENT_REVIEW_HOURS = 72;
+
 /** Cómo se anota el pago en el historial cuando no pasó por Mercado Pago. */
 const PAID_TITLE: Partial<Record<PaymentMethod, string>> = {
   giftcard: "Pagado con gift card",
@@ -102,6 +105,21 @@ export class OrderPayments {
         method: payment.method,
         kind: o.kind,
       },
+    });
+  }
+
+  /**
+   * El pago quedó en revisión: las prendas siguen reservadas hasta que Mercado Pago lo resuelva (como mucho
+   * PAYMENT_REVIEW_HOURS). Antes la reserva de 30 minutos vencía igual y la prenda volvía a la venta.
+   */
+  async inReview(orderId: string) {
+    const until = new Date(this.clock().getTime() + PAYMENT_REVIEW_HOURS * 3_600_000);
+    if (!(await this.orders.extendReservation(orderId, until))) return;
+    await this.orders.addEvent(orderId, {
+      kind: "payment_review",
+      title: "Pago en revisión de Mercado Pago",
+      detail: `Las prendas quedan reservadas hasta que se resuelva (${PAYMENT_REVIEW_HOURS} h como mucho)`,
+      auto: true,
     });
   }
 

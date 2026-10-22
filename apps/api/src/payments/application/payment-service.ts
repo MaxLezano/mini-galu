@@ -13,6 +13,10 @@ import type { EventBus } from "../../shared/events/event-bus";
 import { messageFor, outcomeOf } from "../domain/outcome";
 import type { CardPayment, GatewayPayment, PaymentGateway, PaymentRepository, PaymentSettingsStore } from "./ports";
 
+const DAY = 86_400_000;
+/** Un pago en revisión se sigue consultando hasta una semana (Mercado Pago resuelve en minutos o en hasta 2 días hábiles). */
+const RECONCILE_DAYS = 7;
+
 export class PaymentService {
   constructor(
     private readonly gateway: PaymentGateway,
@@ -129,6 +133,22 @@ export class PaymentService {
     await this.apply(p);
   }
 
+  /**
+   * Respaldo del webhook: vuelve a consultar los pagos que siguen en revisión (de la última semana). Si un aviso de
+   * Mercado Pago se perdió (servidor caído, actualización) o no hay túnel en local, el pedido igual se resuelve.
+   */
+  async reconcile(now = new Date()): Promise<number> {
+    const ids = await this.payments.inReview(this.gateway.kind, new Date(now.getTime() - RECONCILE_DAYS * DAY));
+    for (const id of ids) {
+      try {
+        await this.sync(id);
+      } catch (e) {
+        console.error(`[pagos] no se pudo consultar el pago ${id}:`, e);
+      }
+    }
+    return ids.length;
+  }
+
   private async sync(paymentId: string) {
     const p = await this.gateway.fetch(paymentId);
     if (p) await this.apply(p);
@@ -139,7 +159,9 @@ export class PaymentService {
     const order = await this.orders.findById(p.orderId);
     if (!order) return;
     await this.payments.record(order.id, this.gateway.kind, p);
-    if (outcomeOf(p.status) !== "approved") return;
+    const outcome = outcomeOf(p.status);
+    if (outcome === "pending") await this.orders.inReview(order.id);
+    if (outcome !== "approved") return;
     if (p.amountCents !== order.totalCents) {
       await this.events.publish({
         type: "PaymentAmountMismatch",

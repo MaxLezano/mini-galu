@@ -76,6 +76,8 @@ export interface PaymentRepository {
   markRefunded(provider: string, paymentId: string): Promise<void>;
   /** Guarda lo que acreditó el proveedor, para no volver a preguntarlo. */
   saveNet(provider: string, paymentId: string, cents: number): Promise<void>;
+  /** Ids de los pagos todavía en revisión, hechos desde `since`. */
+  inReview(provider: string, since: Date): Promise<string[]>;
 }
 
 /** El proveedor no pudo devolver la plata; el mensaje es para el taller. */

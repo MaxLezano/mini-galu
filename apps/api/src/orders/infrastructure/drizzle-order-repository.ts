@@ -249,6 +249,15 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
     return rows.map((r) => r.id);
   }
 
+  async extendReservation(id: string, until: Date) {
+    const rows = await this.db
+      .update(s.orders)
+      .set({ reservedUntil: until })
+      .where(and(eq(s.orders.id, id), eq(s.orders.status, "esperando_pago"), lt(s.orders.reservedUntil, until)))
+      .returning({ id: s.orders.id });
+    return rows.length > 0;
+  }
+
   async cancelReleasing(id: string, reason: string, at: Date) {
     return this.db.transaction(async (tx) => {
       const [row] = await tx

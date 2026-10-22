@@ -18,6 +18,7 @@ import { type DomainEvent, EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { ShippingService } from "../../shipping/application/shipping-service";
 import { SimulatedAndreaniRates } from "../../shipping/infrastructure/simulated-andreani-rates";
+import { IN_REVIEW } from "../domain/outcome";
 import { MercadoPagoGateway } from "../infrastructure/mercadopago-gateway";
 import { SimulatedGateway } from "../infrastructure/simulated-gateway";
 import { PaymentService } from "./payment-service";
@@ -82,6 +83,10 @@ beforeEach(async () => {
       record: async (_o, _p, p) => void recorded.push(p),
       markRefunded: async () => {},
       saveNet: async (_p, id, cents) => void nets.push([id, cents]),
+      inReview: async () =>
+        [...new Map(recorded.map((p) => [p.id, p])).values()]
+          .filter((p) => IN_REVIEW.includes(p.status))
+          .map((p) => p.id),
     },
     settings,
     new OrderPayments(orders, cart, coupons, bus),
@@ -125,6 +130,25 @@ describe("PaymentService", () => {
   it("pendiente queda esperando pago", async () => {
     expect((await service.payCard(number, "tok", card({ holderName: "CONT" }))).outcome).toBe("pending");
     expect(orders.items[0]?.status).toBe("esperando_pago");
+  });
+
+  it("pendiente: las prendas quedan reservadas mientras Mercado Pago revisa (no vencen a los 30 minutos)", async () => {
+    await service.payCard(number, "tok", card({ holderName: "CONT" }));
+    const until = orders.items[0]?.reservedUntil?.getTime() ?? 0;
+    expect(until - Date.now()).toBeGreaterThan(71 * 3_600_000);
+    expect(await orders.expired(new Date(Date.now() + 3_600_000))).toEqual([]);
+    expect((await orders.events(orders.items[0]?.id ?? "")).map((e) => e.kind)).toContain("payment_review");
+  });
+
+  it("respaldo del webhook: un pago en revisión que se aprueba después se resuelve al volver a consultarlo", async () => {
+    await service.payCard(number, "tok", card({ holderName: "CONT" }));
+    const pending = recorded[0] as GatewayPayment;
+    vi.spyOn(gateway, "fetch").mockResolvedValue({ ...pending, status: "approved", statusDetail: "accredited" });
+    expect(await service.reconcile()).toBe(1);
+    expect(orders.items[0]?.status).toBe("nuevo");
+    expect(events.map((e) => e.type)).toEqual(["PaymentApproved"]);
+    // ya resuelto: no se vuelve a consultar
+    expect(await service.reconcile()).toBe(0);
   });
 
   it("débito siempre en 1 pago; respeta medios y cuotas del panel", async () => {

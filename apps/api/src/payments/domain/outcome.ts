@@ -1,10 +1,12 @@
 import type { PaymentOutcome } from "@mini-galu/contracts";
 
+/** Estados de un pago que Mercado Pago todavía no resolvió (se vuelven a consultar hasta que se definan). */
+export const IN_REVIEW = ["pending", "in_process", "processing", "action_required", "authorized", "in_mediation"];
+
 /** Estados de Mercado Pago (API de Orders y de Payments) → lo que le importa a la tienda. */
 export function outcomeOf(status: string): PaymentOutcome {
   if (status === "approved" || status === "processed") return "approved";
-  if (["pending", "in_process", "processing", "action_required", "authorized", "in_mediation"].includes(status))
-    return "pending";
+  if (IN_REVIEW.includes(status)) return "pending";
   return "rejected";
 }
 

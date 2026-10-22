@@ -89,7 +89,12 @@ beforeEach(() => {
   service = () =>
     new RefundService(
       gateway,
-      { record: async () => {}, markRefunded: async (_p, id) => void refunded.push(id), saveNet: async () => {} },
+      {
+        record: async () => {},
+        markRefunded: async (_p, id) => void refunded.push(id),
+        saveNet: async () => {},
+        inReview: async () => [],
+      },
       new OrderRefunds(orders, giftcards, bus),
       () => "k",
     );

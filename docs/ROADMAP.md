@@ -594,6 +594,15 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   lo da su miniatura de 320 px agrandada encima, que se desvanece (y se ve mientras baja la foto grande). El sello que
   gira rota un `span` y no el `svg` (Chrome anima un svg en el hilo principal: un layout por cuadro). Con la placa,
   ~60 cuadros por segundo a 3437 px; con el procesador 6× más lento, ~50 en celular, compu y pantalla ancha
+- ✅ **Pagos con el Brick real (sandbox de Mercado Pago)**: APRO aprueba con mail y factura, OTHE rechaza y se
+  reintenta en el mismo pedido, CONT queda en revisión. Arreglado en el camino:
+  - El rechazo no se mostraba (el mensaje solo llegaba al Brick simulado) y el Brick quedaba trabado en "procesando":
+    ahora el aviso se ve y se puede reintentar (checkout y link de pago)
+  - El botón "Pagar" pasaba al azul de Mercado Pago al tocarlo: hover y presionado con los colores del taller
+  - Un pago en revisión dejaba vencer la reserva a los 30 minutos (la prenda volvía a la venta mientras Mercado Pago
+    decidía): ahora queda reservada hasta 72 h y se anota "Pago en revisión" en el historial
+  - Respaldo del webhook: cada 10 minutos se vuelve a consultar a Mercado Pago lo que sigue en revisión (última
+    semana). Si un aviso se pierde (servidor caído, actualización) el pedido igual se resuelve
 - ✅ La aguja de la costura ensanchaba la página un instante al salir por la derecha
 - ✅ Ficha en compu: antes de que arrancara Swiper las miniaturas quedaban en fila detrás de la ficha
 - ✅ e2e que tomaban el `<main>` del skeleton junto con el de la página (ajustes, reseñas)

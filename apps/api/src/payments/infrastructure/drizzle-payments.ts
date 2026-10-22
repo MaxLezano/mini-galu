@@ -1,6 +1,7 @@
 import { DEFAULT_PAYMENT_SETTINGS, type PaymentSettings, PaymentSettingsSchema } from "@mini-galu/contracts";
-import { and, type Db, eq, schema as s } from "@mini-galu/db";
+import { and, type Db, eq, gte, inArray, schema as s } from "@mini-galu/db";
 import type { GatewayPayment, PaymentRepository, PaymentSettingsStore } from "../application/ports";
+import { IN_REVIEW } from "../domain/outcome";
 
 export class DrizzlePaymentRepository implements PaymentRepository {
   constructor(private readonly db: Db) {}
@@ -18,6 +19,16 @@ export class DrizzlePaymentRepository implements PaymentRepository {
       .insert(s.payments)
       .values({ orderId, provider, providerPaymentId: p.id, ...values })
       .onConflictDoUpdate({ target: [s.payments.provider, s.payments.providerPaymentId], set: values });
+  }
+
+  async inReview(provider: string, since: Date) {
+    const rows = await this.db
+      .select({ id: s.payments.providerPaymentId })
+      .from(s.payments)
+      .where(
+        and(eq(s.payments.provider, provider), inArray(s.payments.status, IN_REVIEW), gte(s.payments.createdAt, since)),
+      );
+    return rows.map((r) => r.id);
   }
 
   async markRefunded(provider: string, paymentId: string) {

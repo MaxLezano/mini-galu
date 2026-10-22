@@ -47,6 +47,7 @@ const EVENT_ICON: Record<string, ReactNode> = {
   paid: <BadgeCheck />,
   mail: <MailCheck />,
   expired: <Clock />,
+  payment_review: <Clock />,
   refund_needed: <Clock />,
   refunded: <Undo2 />,
   status: <Package />,

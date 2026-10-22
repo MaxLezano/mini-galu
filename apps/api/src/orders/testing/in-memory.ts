@@ -143,6 +143,12 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       .filter((o) => o.status === "esperando_pago" && o.reservedUntil && o.reservedUntil < now)
       .map((o) => o.id);
   }
+  async extendReservation(id: string, until: Date) {
+    const o = this.items.find((x) => x.id === id);
+    if (o?.status !== "esperando_pago" || (o.reservedUntil && o.reservedUntil >= until)) return false;
+    o.reservedUntil = until;
+    return true;
+  }
   async cancelReleasing(id: string) {
     const o = this.items.find((x) => x.id === id);
     if (o?.status !== "esperando_pago") return false;

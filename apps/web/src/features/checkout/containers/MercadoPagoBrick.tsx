@@ -90,6 +90,10 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
           theme: "default" as const,
           customVariables: {
             baseColor: css("--cacao"),
+            // hover y presionado: sin estas el Brick usa su azul (paleta cerrada del taller)
+            baseColorFirstVariant: css("--cacao-2"),
+            baseColorSecondVariant: css("--cacao-2"),
+            outlineSecondaryColor: css("--line-2"),
             textPrimaryColor: css("--cacao"),
             textSecondaryColor: css("--cacao-2"),
             formBackgroundColor: css("--paper"),
@@ -126,11 +130,20 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
             : null,
         },
       };
+      let result: PayResult;
       try {
-        done(await api.payCard(o.number, o.accessToken, card));
+        result = await api.payCard(o.number, o.accessToken, card);
       } catch (e) {
         setError(e instanceof ApiRequestError ? e.message : "No pudimos procesar el pago. Probá de nuevo.");
+        throw e;
       }
+      // rechazado: el mensaje va acá y la promesa se rechaza para que el Brick salga de "procesando" y deje
+      // reintentar (si se resolvía, quedaba trabado con el botón en el azul de Mercado Pago)
+      if (result.outcome === "rejected") {
+        setError(result.message);
+        throw new Error(result.message);
+      }
+      done(result);
     },
     [],
   );
