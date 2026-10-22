@@ -19,6 +19,9 @@
 .seg button { position: relative; z-index: 1; height: 38px; padding: 0 16px; border-radius: var(--r-pill); font-size: 13px; font-weight: 600; display: inline-flex; gap: 8px; align-items: center; transition: color var(--t-med); }
 .seg button[aria-pressed="true"] { color: var(--paper); }
 .seg .knob { position: absolute; top: 4px; bottom: 4px; left: 0; border-radius: var(--r-pill); background: var(--cacao); transition: transform var(--t-med) var(--ease-spring), width var(--t-med) var(--ease); }
+/* hasta que el JS ubica la perilla (sin hidratar todavía) el botón activo lleva su fondo: si no, el texto claro
+   quedaba sobre lino, casi invisible */
+.seg .knob:not([style]) ~ button[aria-pressed="true"] { background: var(--cacao); }
 .sort { height: 46px; width: auto; border-radius: var(--r-pill); padding-left: 16px; font-size: 14px; flex: none; background-color: transparent; }
 .count { margin-left: auto; font-size: 13px; color: var(--cacao-2); white-space: nowrap; }
 .filters-btn { display: none; position: relative; }

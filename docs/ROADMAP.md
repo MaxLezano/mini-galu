@@ -603,6 +603,10 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     decidía): ahora queda reservada hasta 72 h y se anota "Pago en revisión" en el historial
   - Respaldo del webhook: cada 10 minutos se vuelve a consultar a Mercado Pago lo que sigue en revisión (última
     semana). Si un aviso se pierde (servidor caído, actualización) el pedido igual se resuelve
+- ✅ Catálogo: antes de hidratar, el botón activo de "Vista" (texto claro) quedaba sobre lino, casi invisible (lo
+  detectó axe en el CI, que es más lento): ahora lleva su fondo hasta que el JS ubica la perilla
+- ✅ Bolsa: dos sincronizaciones a la vez (dos pestañas, ingresar con la bolsa abierta) fallaban con "Algo salió mal"
+  por clave duplicada; ahora se hacen de a una por bolsa
 - ✅ La aguja de la costura ensanchaba la página un instante al salir por la derecha
 - ✅ Ficha en compu: antes de que arrancara Swiper las miniaturas quedaban en fila detrás de la ficha
 - ✅ e2e que tomaban el `<main>` del skeleton junto con el de la página (ajustes, reseñas)

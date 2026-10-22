@@ -46,6 +46,9 @@ export class DrizzleCartRepository implements CartRepository {
 
   async replace(cartId: string, items: CartItem[]) {
     await this.db.transaction(async (tx) => {
+      // dos sincronizaciones de la misma bolsa a la vez (dos pestañas, ingresar con la bolsa abierta) borraban las
+      // dos y la segunda chocaba al insertar: se trabaja de a una por bolsa
+      await tx.select({ id: s.carts.id }).from(s.carts).where(eq(s.carts.id, cartId)).for("update");
       const before = await tx
         .select({ variantId: s.cartItems.variantId, addedAt: s.cartItems.addedAt })
         .from(s.cartItems)
@@ -55,7 +58,11 @@ export class DrizzleCartRepository implements CartRepository {
       if (items.length)
         await tx
           .insert(s.cartItems)
-          .values(items.map((i) => ({ cartId, ...i, addedAt: added.get(i.variantId) ?? new Date() })));
+          .values(items.map((i) => ({ cartId, ...i, addedAt: added.get(i.variantId) ?? new Date() })))
+          .onConflictDoUpdate({
+            target: [s.cartItems.cartId, s.cartItems.variantId],
+            set: { qty: sql`excluded.qty` },
+          });
     });
     await this.touch(cartId);
   }
