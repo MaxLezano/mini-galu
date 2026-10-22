@@ -25,6 +25,21 @@
   .carrier { font: 700 10px/1 var(--f-ui); letter-spacing: .1em; color: var(--cacao-2); background: var(--linen); padding: 4px 7px; border-radius: 5px; vertical-align: 2px; margin-left: 4px; }
   .slots { display: flex; gap: 8px; flex-wrap: wrap; }
   .slots .chip { height: 40px; }
+  /* Mapa de sucursales Andreani (teselas de OpenStreetMap llevadas a los tonos de la tienda) */
+  .bmap { position: relative; overflow: hidden; border-radius: var(--r-md); background: var(--linen); box-shadow: inset 0 0 0 1px var(--line); }
+  .bmap-tiles { position: absolute; inset: 0; filter: grayscale(1) sepia(.35) contrast(.92) brightness(1.04); opacity: .85; }
+  .bmap-tiles img { position: absolute; height: auto; max-width: none; user-select: none; }
+  .bmap::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line); }
+  .bmap-pin { position: absolute; transform: translate(-50%, -100%); padding: 2px; border: 0; background: none; color: var(--cacao-2); cursor: pointer; line-height: 0; }
+  .bmap-pin svg { fill: var(--paper); filter: drop-shadow(0 2px 3px rgba(58,42,34,.3)); }
+  .bmap-pin.is-on { color: var(--canela); }
+  .bmap-pin.is-on svg { fill: var(--paper); stroke-width: 2; }
+  .bmap-pin:focus-visible { outline: 2px solid var(--cacao); outline-offset: 2px; border-radius: 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not(.static) .bmap-pin svg { transition: transform var(--t-fast) var(--ease); transform-origin: 50% 100%; }
+    html:not(.static) .bmap-pin:hover svg { transform: scale(1.12); }
+  }
+  .bmap-credit { position: absolute; right: 6px; bottom: 6px; z-index: 4; font-size: 10.5px; color: var(--cacao-2); background: rgba(251,248,243,.85); padding: 2px 6px; border-radius: 6px; text-decoration: none; }
   .divider { display: flex; align-items: center; gap: 12px; color: var(--cacao-2); font-size: 12px; }
   .divider::before, .divider::after { content: ""; flex: 1; border-top: 1.5px dashed var(--line-2); }
 

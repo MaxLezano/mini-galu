@@ -211,6 +211,15 @@ test("retiro en sucursal Andreani: se elige la sucursal del código postal", asy
   const select = page.getByLabel("¿En qué sucursal lo retirás?");
   await expect(select).toHaveValue("10010");
   expect(await select.locator("option").count()).toBeGreaterThan(1);
+  // en el mapa: tocar otra sucursal la elige, y volver a la del CP también
+  await page.route("https://tile.openstreetmap.org/**", (r) => r.abort());
+  await expect(
+    page.getByRole("button", { name: "Sucursal Palermo (Av Scalabrini Ortiz) (la de tu código postal)" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /^Sucursal Caballito .*\(a [\d,]+ km\)$/ }).click();
+  await expect(select.locator("option:checked")).toContainText(/^Caballito .* · a [\d,]+ km$/);
+  await page.getByRole("button", { name: /^Sucursal Palermo/ }).click();
+  await expect(select).toHaveValue("10010");
   await page.getByRole("button", { name: /Continuar al pago/ }).click();
   await expect(page.getByRole("region", { name: "Envío" })).toContainText("Andreani a sucursal · Palermo");
   await page.locator("#pay").click();

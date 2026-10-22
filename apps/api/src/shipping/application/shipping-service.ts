@@ -11,7 +11,7 @@ import {
   type ShippingOptions,
 } from "@mini-galu/contracts";
 import { ValidationError } from "../../shared/domain/errors";
-import { branchAddress, branchesFor, branchName } from "../domain/branches";
+import { branchAddress, branchesFor, branchName, kmBetween } from "../domain/branches";
 import { isValidSlot, pickupSlots } from "../domain/pickup";
 import type { BranchDirectory, PoliciesReader, ShippingRates } from "./ports";
 
@@ -27,12 +27,19 @@ export class ShippingService {
   async branches(postalCode: string): Promise<ShippingBranch[]> {
     if (!this.directory) return [];
     try {
-      return branchesFor(await this.directory.all(), postalCode).map((b) => ({
-        id: b.id,
-        name: branchName(b.name),
-        address: branchAddress(b),
-        hours: b.hours,
-      }));
+      const list = branchesFor(await this.directory.all(), postalCode);
+      return list.map((b) => {
+        const km = list[0] ? kmBetween(list[0], b) : null;
+        return {
+          id: b.id,
+          name: branchName(b.name),
+          address: branchAddress(b),
+          hours: b.hours,
+          lat: b.lat,
+          lng: b.lng,
+          km: km === null ? null : Math.round(km * 10) / 10,
+        };
+      });
     } catch (e) {
       console.warn("[envíos] no se pudieron consultar las sucursales:", e instanceof Error ? e.message : e);
       return [];

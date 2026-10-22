@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Branch, branchAddress, branchesFor, branchName } from "./branches";
+import { type Branch, branchAddress, branchesFor, branchName, kmBetween } from "./branches";
 
 const b = (id: string, cp: string, lat: number, lng: number, serves: string[] = []): Branch => ({
   id,
@@ -37,5 +37,13 @@ describe("sucursales para un código postal", () => {
     expect(branchAddress({ street: "Raúl Scalabrini Ortíz", number: "615", city: "C.a.b.a." })).toBe(
       "Raúl Scalabrini Ortíz 615 · C.a.b.a.",
     );
+  });
+});
+
+describe("distancia entre sucursales", () => {
+  it("en línea recta, en km; null si falta alguna coordenada", () => {
+    expect(kmBetween(palermo, palermo)).toBe(0);
+    expect(kmBetween(palermo, caballito)).toBeCloseTo(2.3, 1);
+    expect(kmBetween(palermo, { lat: null, lng: -58 })).toBeNull();
   });
 });

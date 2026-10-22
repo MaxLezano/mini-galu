@@ -143,7 +143,17 @@ export type ShippingOption = {
 export type PickupSlot = { id: string; label: string };
 
 /** Sucursal Andreani para retirar (la primera es la que atiende el código postal). */
-export type ShippingBranch = { id: string; name: string; address: string; hours: string | null };
+export type ShippingBranch = {
+  id: string;
+  name: string;
+  address: string;
+  hours: string | null;
+  /** Para dibujarla en el mapa (null si Andreani no las informa). */
+  lat: number | null;
+  lng: number | null;
+  /** Distancia en línea recta a la del código postal, redondeada a 0,1 km (0 para esa; null sin coordenadas). */
+  km: number | null;
+};
 
 export type ShippingOptions = {
   options: ShippingOption[];

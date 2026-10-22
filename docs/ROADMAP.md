@@ -685,8 +685,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
    para probar la web con pagos y envíos reales. Después, el reporte mensual
 4. ⏳ Lo que revisan Gaby, su contador y su abogado: al final, con la web en producción
-- Opcional: sucursal Andreani en un mapa (las sucursales y sus coordenadas ya vienen de la API de Andreani; falta
-  dibujarlas)
+- ✅ Opcional: **sucursales Andreani en un mapa**. En el checkout, debajo de "¿En qué sucursal lo retirás?", un plano
+  con las sucursales del CP (teselas de OpenStreetMap llevadas a los tonos de la tienda con un filtro, sin librería
+  de mapas ni claves): tocar un pin elige la sucursal y el selector dice a cuántos km está cada una de la del CP
+  (`ShippingBranch` trae `lat`, `lng` y `km`). Sin coordenadas, sin mapa. Lógica en `checkout/branch-map.ts` (Vitest),
+  e2e en `checkout.spec`. No está en el mockup `checkout.html`
 
 ## Ideas para después (de IDEAS.md)
 - No se hacen: Google Merchant. Fotos de clientes: solo en las reseñas

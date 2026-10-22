@@ -19,6 +19,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAccount } from "@/features/account/account-store";
 import { useCart } from "@/features/cart/cart-store";
+import { kmLabel } from "@/features/checkout/branch-map";
+import { BranchMap } from "@/features/checkout/components/BranchMap";
 import { useInstallmentPlan } from "@/features/checkout/installments-store";
 import { isStill } from "@/features/shell/craft";
 import { storeInfo, useShellData } from "@/features/shell/shell-context";
@@ -611,7 +613,7 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                       {branches.map((b, i) => (
                         <option key={b.id} value={b.id}>
                           {b.name} · {b.address}
-                          {i === 0 ? " (la de tu código postal)" : ""}
+                          {i === 0 ? " (la de tu código postal)" : kmLabel(b.km) ? ` · ${kmLabel(b.km)}` : ""}
                         </option>
                       ))}
                     </select>
@@ -619,6 +621,9 @@ export function CheckoutView({ config, back }: { config: CheckoutConfig; back: R
                     <p className="muted" style={{ margin: 0, fontSize: 13.5 }} id="f-branchId" tabIndex={-1}>
                       Poné tu código postal para ver las sucursales Andreani.
                     </p>
+                  )}
+                  {branches.length > 0 && (
+                    <BranchMap branches={branches} selectedId={ship.branchId} onSelect={(id) => setS("branchId", id)} />
                   )}
                   {branch?.hours && (
                     <small className="muted" style={{ fontSize: 12.5 }}>

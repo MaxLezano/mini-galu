@@ -14,14 +14,19 @@ export type Branch = {
   servesPostalCodes: string[];
 };
 
-const KM = (a: Branch, b: Branch) => {
-  if (a.lat === null || a.lng === null || b.lat === null || b.lng === null) return Number.POSITIVE_INFINITY;
+type Point = Pick<Branch, "lat" | "lng">;
+
+/** Distancia en línea recta (km) entre dos sucursales; null si a alguna le faltan las coordenadas. */
+export function kmBetween(a: Point, b: Point): number | null {
+  if (a.lat === null || a.lng === null || b.lat === null || b.lng === null) return null;
   const rad = (x: number) => (x * Math.PI) / 180;
   const dLat = rad(b.lat - a.lat);
   const dLng = rad(b.lng - a.lng);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * 6371 * Math.asin(Math.sqrt(h));
-};
+}
+
+const KM = (a: Branch, b: Branch) => kmBetween(a, b) ?? Number.POSITIVE_INFINITY;
 
 const digits = (cp: string) => Number(cp.replace(/\D/g, "").slice(0, 4)) || 0;
 

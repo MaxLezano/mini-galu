@@ -1,5 +1,6 @@
 import { DEFAULT_POLICIES, type StorePolicies } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
+import { FakeBranches } from "../infrastructure/andreani-branches";
 import { SimulatedAndreaniRates } from "../infrastructure/simulated-andreani-rates";
 import { ShippingService } from "./shipping-service";
 
@@ -88,5 +89,16 @@ describe("ShippingService con las políticas del panel", () => {
       "Ese horario de retiro",
     );
     await expect(s.checkDelivery({ method: "taller", pickupSlot: "2026-10-10T9-12" })).resolves.toBeUndefined();
+  });
+});
+
+describe("sucursales para el mapa del checkout", () => {
+  it("cada una con sus coordenadas y la distancia a la del código postal", async () => {
+    const s = new ShippingService(new SimulatedAndreaniRates(), clock, new FakeBranches());
+    const [first, ...rest] = await s.branches("1414");
+    expect(first).toMatchObject({ name: "Palermo (Av Scalabrini Ortiz)", lat: -34.5977, lng: -58.4352, km: 0 });
+    expect(rest.length).toBeGreaterThan(0);
+    for (const b of rest) expect(b.km).toBeGreaterThan(0);
+    expect(rest.map((b) => b.km)).toEqual([...rest.map((b) => b.km)].sort((a, b) => (a ?? 0) - (b ?? 0)));
   });
 });
