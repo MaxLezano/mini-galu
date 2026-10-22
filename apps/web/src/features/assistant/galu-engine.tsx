@@ -153,6 +153,10 @@ function cuotasFor(p: ProductSummary, plan: InstallmentPlan | null): ReactNode {
 const unique = <T,>(l: T[]) => [...new Set(l)];
 
 /** "lino, algodón y gabardina". */
+/** Tipos de prenda: nombran una categoría, no un modelo. */
+const GARMENT_TYPE =
+  /^(vestidos?|sets?|conjuntos?|monos?|blusas?|polleras?|faldas?|enteritos?|remeras?|camisas?|camperas?|sacos?|shorts?|jumpers?|bodys?|vinchas?|tapados?|sweaters?|buzos?|pantalon(es)?|calzas?)$/;
+
 const joinAnd = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(", ")} y ${l[l.length - 1]}` : (l[0] ?? ""));
 
 /** Edad → talle (talle 4 ≈ 4 años; los impares suben al par siguiente). */
@@ -173,10 +177,19 @@ export async function answer(
   // la última palabra nombra la prenda ("el Samanta"), salvo un color ("rojo") o una que comparten ("bordado")
   const lastWord = (p: ProductSummary) => stripAccents(p.name).split(" ").slice(-1)[0] ?? "";
   const lasts = live.map(lastWord);
+  // y la primera del slug ("samanta"), si es suya: no un tipo de prenda ("vestido-rosa" se llevaba "¿qué vestidos tenés?")
+  const firstWord = (p: ProductSummary) => p.slug.split("-")[0] ?? "";
+  const firsts = live.map(firstWord);
+  const names = (w: string, all: string[]) =>
+    w.length > 2 && !colors.includes(w) && !GARMENT_TYPE.test(w) && all.indexOf(w) === all.lastIndexOf(w);
   const named = live.find((p) => {
     const last = lastWord(p);
-    const names = last.length > 2 && !colors.includes(last) && lasts.indexOf(last) === lasts.lastIndexOf(last);
-    return q.includes(stripAccents(p.name)) || (names && q.includes(last)) || q.includes(p.slug.split("-")[0] ?? "");
+    const first = firstWord(p);
+    return (
+      q.includes(stripAccents(p.name)) ||
+      (names(last, lasts) && q.includes(last)) ||
+      (names(first, firsts) && new RegExp(`\\b${first}\\b`).test(q))
+    );
   });
   const m = q.match(/talle\s*(12\s?m\b|\d{1,2})|(\d{1,2})\s*anos?/);
   const size: Size | null = m ? (m[1] ? (m[1].replace(/\s/g, "") as Size) : ageToSize(Number(m[2]))) : null;

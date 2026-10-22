@@ -112,6 +112,16 @@ describe("Galú por reglas", () => {
     expect(unknown).toMatchObject([{ kind: "text", unanswered: true }]);
   });
 
+  it("un tipo de prenda no se lleva la pregunta: 'vestidos' lista el talle aunque una se llame vestido-rosa", async () => {
+    const rosa = product({ slug: "vestido-rosa", name: "Vestido Rosa", color: { name: "Rosa", hex: "#e8b4b8" } });
+    const all = [...catalog, rosa];
+    const t = replyText(await answer("¿Qué vestidos tenés en talle 4?", all, null));
+    expect(t).toContain("En talle 4 tengo");
+    expect(t).not.toContain("No queda talle 4");
+    // por la palabra suya del slug sigue encontrando la prenda
+    expect(replyText(await answer("¿cuánto sale el samanta?", all, null))).toContain("Samanta");
+  });
+
   it("lo enseñado se muestra tal cual", () => {
     expect(replyText(taughtReply("Por ahora no.\nEscribinos."))).toBe("Por ahora no.\nEscribinos.");
   });

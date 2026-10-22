@@ -625,6 +625,10 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   crédito
 - ✅ Ciclo del pedido a domicilio: preparar, etiqueta Andreani (simulada), despachado con número de seguimiento y mail
   "Tu pedido ya salió"
+- ✅ Galú sin modelo (Ollama apagado) sigue con las reglas. Arreglado: "¿qué vestidos tenés en talle 8?" contestaba
+  por una prenda cuyo slug empezaba con "vestido"; ahora un tipo de prenda no nombra un modelo
+- ✅ Alta de una prenda desde el panel (foto, talles, stock, publicar), compra con el sandbox y talle agotado con
+  "Avisame". Cuenta: alta, confirmar el mail, datos precargados en el checkout, compra y "Pedidos" con seguimiento
 - ✅ Catálogo: antes de hidratar, el botón activo de "Vista" (texto claro) quedaba sobre lino, casi invisible (lo
   detectó axe en el CI, que es más lento): ahora lleva su fondo hasta que el JS ubica la perilla
 - ✅ Bolsa: dos sincronizaciones a la vez (dos pestañas, ingresar con la bolsa abierta) fallaban con "Algo salió mal"
