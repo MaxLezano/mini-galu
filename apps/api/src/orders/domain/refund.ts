@@ -2,7 +2,7 @@ import type { AdminRefund, OrderStatus, PaymentMethod } from "@mini-galu/contrac
 import { PAID_STATUSES } from "./order";
 
 /** Todavía en el taller: si se reintegra, lo normal es que las prendas vuelvan al stock. */
-const NOT_SHIPPED: readonly OrderStatus[] = ["nuevo", "preparando", "listo"];
+export const NOT_SHIPPED: readonly OrderStatus[] = ["nuevo", "preparando", "listo"];
 
 export type RefundableOrder = {
   status: OrderStatus;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defaultTemplate, fillTemplate, nextAction, pickingList, TEMPLATES, toPrepare, waLink } from "./order-flow";
 
 const item = (slug: string, size: string, qty = 1) => ({
+  id: `${slug}-${size}`,
   slug,
   name: slug === "maddie" ? "Set Maddie" : "Vestido Elsa",
   size,

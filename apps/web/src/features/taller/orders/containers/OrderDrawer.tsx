@@ -2,6 +2,7 @@
 
 import {
   type AdminOrderDetail,
+  type ExchangeInput,
   formatARS,
   ORDER_CHANNELS,
   ORDER_STATUSES,
@@ -9,6 +10,7 @@ import {
   SHIPPING_METHODS,
 } from "@mini-galu/contracts";
 import {
+  ArrowLeftRight,
   BadgeCheck,
   Ban,
   CircleCheck,
@@ -36,6 +38,7 @@ import { BrandIcon } from "@/ui/atoms/BrandIcon";
 import { SkeletonLines } from "@/ui/molecules/SkeletonLines";
 import { SkeletonRows } from "@/ui/molecules/SkeletonRows";
 import { CancelPanel } from "../components/CancelPanel";
+import { ExchangePanel } from "../components/ExchangePanel";
 import { InvoicesPanel } from "../components/InvoicesPanel";
 import { ActionIcon } from "../components/OrderCard";
 import { RefundPanel } from "../components/RefundPanel";
@@ -53,6 +56,7 @@ const EVENT_ICON: Record<string, ReactNode> = {
   cancelled: <Ban />,
   refund_needed: <Clock />,
   refunded: <Undo2 />,
+  exchange: <ArrowLeftRight />,
   status: <Package />,
 };
 const statusIcon = (title: string) =>
@@ -88,6 +92,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
   const [busy, setBusy] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
   const mounted = useMounted();
   const open = !!number;
 
@@ -98,6 +103,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     setPicked(new Set());
     setRefundError(null);
     setCancelError(null);
+    setExchangeError(null);
     adminApi
       .order(number)
       .then((o) => {
@@ -165,6 +171,24 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     } catch (e) {
       const msg = e instanceof ApiRequestError ? e.message : "No se pudo anular el pedido";
       setCancelError(msg);
+      toast(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exchangeSize = async (input: ExchangeInput) => {
+    if (!o) return;
+    setBusy(true);
+    setExchangeError(null);
+    try {
+      const updated = await adminApi.exchangeOrderSize(o.number, input);
+      setOrder(updated);
+      onChanged(updated);
+      toast(`#${o.number} · Talle cambiado al ${input.size}`, { icon: <ArrowLeftRight className="i-sm" /> });
+    } catch (e) {
+      const msg = e instanceof ApiRequestError ? e.message : "No se pudo cambiar el talle";
+      setExchangeError(msg);
       toast(msg);
     } finally {
       setBusy(false);
@@ -318,7 +342,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                   </span>
                 </h4>
                 {o.items.map((i) => {
-                  const key = `${i.slug}-${i.size}`;
+                  const key = i.id;
                   // con algo para tildar es un label (clic en la fila tilda); si no, una fila común
                   const Row = picking ? "label" : "div";
                   return (
@@ -352,6 +376,17 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                     </Row>
                   );
                 })}
+                {o.exchange && (
+                  <ExchangePanel
+                    // se arma de nuevo con cada cambio (los renglones y el stock son otros)
+                    key={o.events.length}
+                    exchange={o.exchange}
+                    items={o.items}
+                    busy={busy}
+                    error={exchangeError}
+                    onConfirm={exchangeSize}
+                  />
+                )}
               </div>
 
               <div className="od-sec">

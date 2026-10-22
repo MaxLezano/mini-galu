@@ -1,6 +1,7 @@
 import {
   BulkAdvanceInputSchema,
   CancelOrderInputSchema,
+  ExchangeInputSchema,
   MoveOrderInputSchema,
   OrderNoteInputSchema,
   PaymentLinkInputSchema,
@@ -9,9 +10,10 @@ import { Hono } from "hono";
 import { parse } from "../../../shared/http/errors";
 import type { AdminOrdersService } from "../../application/admin-orders-service";
 import type { PaymentLinks } from "../../application/payment-links";
+import type { SizeExchanges } from "../../application/size-exchanges";
 
 /** /admin/orders — tablero, detalle y cambios de estado (admin-pedidos.html). Requiere sesión del taller. */
-export function adminOrderRoutes(orders: AdminOrdersService, links: PaymentLinks) {
+export function adminOrderRoutes(orders: AdminOrdersService, links: PaymentLinks, exchanges: SizeExchanges) {
   return new Hono()
     .get("/", async (c) => c.json(await orders.list()))
     .get("/summary", async (c) => c.json(await orders.summary()))
@@ -31,6 +33,11 @@ export function adminOrderRoutes(orders: AdminOrdersService, links: PaymentLinks
         ),
       ),
     )
+    .post("/:number/exchange", async (c) => {
+      const number = c.req.param("number");
+      await exchanges.exchange(number, parse(ExchangeInputSchema, await c.req.json()));
+      return c.json(await orders.detail(number));
+    })
     .put("/:number/note", async (c) => {
       await orders.saveNote(c.req.param("number"), parse(OrderNoteInputSchema, await c.req.json()).note);
       return c.body(null, 204);

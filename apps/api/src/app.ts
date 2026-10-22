@@ -114,6 +114,7 @@ import { OrderRefunds } from "./orders/application/order-refunds";
 import { OrderShipping } from "./orders/application/order-shipping";
 import { PaymentLinks } from "./orders/application/payment-links";
 import { Revocations } from "./orders/application/revocations";
+import { SizeExchanges } from "./orders/application/size-exchanges";
 import { formatOrderNumber, parseOrderNumber, payPath } from "./orders/domain/order";
 import { DrizzleOrderRepository, DrizzleRevocations } from "./orders/infrastructure/drizzle-order-repository";
 import { adminOrderRoutes } from "./orders/infrastructure/http/admin-order-routes";
@@ -334,6 +335,7 @@ export function buildApp(config: Config) {
     },
     events,
   );
+  const sizeExchanges = new SizeExchanges(orders, events);
   const adminOrders = new AdminOrdersService(
     orders,
     storage,
@@ -345,6 +347,7 @@ export function buildApp(config: Config) {
     (p) => payments.netReceived(p.provider, p.reference),
     (number, token) => config.webOrigin + reviewPath(number, token),
     (orderId) => invoicing.forOrder(orderId),
+    sizeExchanges,
   );
   const paymentLinks = new PaymentLinks(
     variants,
@@ -723,6 +726,33 @@ export function buildApp(config: Config) {
       creditNote ? [creditNote] : undefined,
     );
   });
+  // cambio de talle desde el panel: el cliente tiene por escrito qué se cambió
+  events.on("OrderSizeExchanged", async (e) => {
+    const p = e.payload as {
+      orderId: string;
+      number: string;
+      name: string;
+      from: string;
+      to: string;
+      qty: number;
+      shipped: boolean;
+    };
+    const o = await orders.findById(p.orderId);
+    if (!o) return;
+    await notifications.message({
+      to: o.email,
+      subject: `Cambiamos el talle de tu pedido #${p.number}`,
+      eyebrow: `Pedido #${p.number} · cambio de talle`,
+      name: o.firstName || null,
+      body: `Cambiamos ${p.qty > 1 ? `${p.qty} ${p.name}` : p.name} del talle ${p.from} al ${p.to}. ${
+        p.shipped
+          ? "Te escribimos para coordinar cómo nos llega la prenda y cómo te mandamos la nueva."
+          : "Lo preparamos con el talle nuevo."
+      } Si tenés alguna duda, respondé este mail.`,
+      cta: null,
+      number: p.number,
+    });
+  });
   for (const t of ["PaymentNeedsRefund", "PaymentAmountMismatch"])
     events.on(t, (e) => console.warn(`[eventos] ${t}:`, JSON.stringify(e.payload)));
 
@@ -875,7 +905,7 @@ export function buildApp(config: Config) {
     .route("/admin/content/home", adminHomeRoutes(content))
     .route("/admin/content/help", adminHelpRoutes(help))
     .route("/admin/orders", adminShipmentRoutes(shipments))
-    .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks))
+    .route("/admin/orders", adminOrderRoutes(adminOrders, paymentLinks, sizeExchanges))
     .route("/admin/orders", adminRefundRoutes(refunds))
     .route("/admin/invoices", adminInvoiceRoutes(invoicing))
     .route("/admin/coupons", adminCouponRoutes(coupons))

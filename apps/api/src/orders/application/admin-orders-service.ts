@@ -14,6 +14,7 @@ import { refundPlan } from "../domain/refund";
 import { monthKpis, monthlySales, monthStart, weeklySales } from "../domain/stats";
 import type { OrderRefunds } from "./order-refunds";
 import type { AdminOrderRepository, OrderPayment, OrderRecord } from "./ports";
+import type { SizeExchanges } from "./size-exchanges";
 
 /** Panel del taller: tablero de pedidos, detalle, mover de estado y notas (admin-pedidos.html). */
 export class AdminOrdersService {
@@ -34,6 +35,8 @@ export class AdminOrdersService {
     private readonly reviewUrl: (number: string, token: string) => string | null = () => null,
     /** Factura y nota de crédito del pedido (las emite el módulo de facturación). */
     private readonly invoices: (orderId: string) => Promise<AdminInvoice[]> = async () => [],
+    /** A qué talles se puede cambiar cada prenda (SizeExchanges). */
+    private readonly exchanges: Pick<SizeExchanges, "options"> = { options: async () => null },
   ) {}
 
   async list(): Promise<AdminOrderSummary[]> {
@@ -43,10 +46,11 @@ export class AdminOrdersService {
   async detail(number: string): Promise<AdminOrderDetail> {
     const o = await this.find(number);
     const [events, payment] = await Promise.all([this.orders.events(o.id), this.orders.approvedPayment(o.id)]);
-    const [refund, netCents, invoices] = await Promise.all([
+    const [refund, netCents, invoices, exchange] = await Promise.all([
       this.refunds.plan(o, payment),
       payment && payment.netCents === null && payment.status !== "refunded" ? this.netReceived(payment) : null,
       this.invoices(o.id),
+      this.exchanges.options(o),
     ]);
     return {
       ...this.card(o),
@@ -72,6 +76,7 @@ export class AdminOrdersService {
       events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
       refund,
       invoices,
+      exchange,
     };
   }
 
@@ -220,6 +225,7 @@ export class AdminOrdersService {
         ? { ...o.revocation, at: o.revocation.at.toISOString(), reason: o.revocation.reason || null }
         : null,
       items: o.items.map((i) => ({
+        id: i.id,
         slug: i.productSlug,
         name: i.name,
         size: i.size,

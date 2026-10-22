@@ -78,8 +78,14 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" |
   installments: number | null;
   paidAt: Date | null;
   createdAt: Date;
-  items: (Omit<OrderItem, "variantId"> & { variantId: string | null })[];
+  items: (Omit<OrderItem, "variantId"> & { id: string; variantId: string | null })[];
 };
+
+/** Un talle de un modelo, con su stock (para el cambio de talle). */
+export type SizeStock = { slug: string; variantId: string; size: string; stock: number };
+
+/** Cambio de talle de `qty` unidades de un renglón del pedido. */
+export type SizeExchange = { itemId: string; toVariantId: string; toSize: string; qty: number; restock: boolean };
 
 export type ReserveResult =
   | { ok: true; id: string; number: number }
@@ -128,6 +134,14 @@ export interface AdminOrderRepository extends OrderEvents {
    * vuelven al stock y se restan de las vendidas, en la misma transacción.
    */
   markRefunded(id: string, from: OrderStatus, at: Date, restock: boolean): Promise<boolean>;
+  /** Los talles de esos modelos con su stock, en el orden del catálogo. */
+  sizesOf(slugs: string[]): Promise<SizeStock[]>;
+  /**
+   * Cambia el talle de unidades de un renglón en una transacción: descuenta el talle nuevo y, con `restock`, devuelve
+   * el anterior. Si son todas, el renglón pasa al talle nuevo; si no, se separa (o se suma al renglón de ese talle).
+   * false si ya no hay stock del talle nuevo o el renglón cambió.
+   */
+  exchangeSize(orderId: string, x: SizeExchange): Promise<boolean>;
   /** Pedidos pagados desde `since` (sin cancelados ni reembolsados), para el resumen. */
   paidSince(since: Date): Promise<PaidOrder[]>;
   /** De esos emails, los que ya habían pagado algún pedido antes de `before`. */

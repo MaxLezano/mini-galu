@@ -11,6 +11,8 @@ import type {
   ReserveResult,
   Revocation,
   RevocationStore,
+  SizeExchange,
+  SizeStock,
 } from "../application/ports";
 import { EXPIRED_REASON } from "../domain/order";
 import type { PaidOrder } from "../domain/stats";
@@ -97,7 +99,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       ...o,
       trackingNumber: tracking.get(o.id) ?? null,
       revocation: revoked.get(o.id) ?? null,
-      items: items.filter((i) => i.orderId === o.id).map(({ id: _id, orderId: _o, ...i }) => i),
+      items: items.filter((i) => i.orderId === o.id).map(({ orderId: _o, ...i }) => i),
     }));
   }
 
@@ -155,6 +157,64 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
           .where(eq(s.products.slug, slug));
       return true;
     });
+  }
+
+  async sizesOf(slugs: string[]): Promise<SizeStock[]> {
+    if (!slugs.length) return [];
+    return this.db
+      .select({ slug: s.products.slug, variantId: s.variants.id, size: s.variants.size, stock: s.variants.stock })
+      .from(s.variants)
+      .innerJoin(s.products, eq(s.products.id, s.variants.productId))
+      .where(inArray(s.products.slug, slugs))
+      .orderBy(s.variants.position);
+  }
+
+  async exchangeSize(orderId: string, x: SizeExchange) {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [item] = await tx
+          .select()
+          .from(s.orderItems)
+          .where(and(eq(s.orderItems.id, x.itemId), eq(s.orderItems.orderId, orderId)))
+          .for("update");
+        if (!item || item.qty < x.qty) return false;
+        await this.take(tx, [{ ...item, variantId: x.toVariantId, size: x.toSize, qty: x.qty }]);
+        if (x.restock && item.variantId)
+          await tx
+            .update(s.variants)
+            .set({ stock: sql`${s.variants.stock} + ${x.qty}` })
+            .where(eq(s.variants.id, item.variantId));
+        const [same] = await tx
+          .select({ id: s.orderItems.id })
+          .from(s.orderItems)
+          .where(and(eq(s.orderItems.orderId, orderId), eq(s.orderItems.variantId, x.toVariantId)));
+        if (same)
+          await tx
+            .update(s.orderItems)
+            .set({ qty: sql`${s.orderItems.qty} + ${x.qty}` })
+            .where(eq(s.orderItems.id, same.id));
+        else if (item.qty > x.qty) {
+          const { id: _id, ...rest } = item;
+          await tx.insert(s.orderItems).values({ ...rest, variantId: x.toVariantId, size: x.toSize, qty: x.qty });
+        }
+        if (same || item.qty > x.qty) {
+          if (item.qty === x.qty) await tx.delete(s.orderItems).where(eq(s.orderItems.id, item.id));
+          else
+            await tx
+              .update(s.orderItems)
+              .set({ qty: item.qty - x.qty })
+              .where(eq(s.orderItems.id, item.id));
+        } else
+          await tx
+            .update(s.orderItems)
+            .set({ variantId: x.toVariantId, size: x.toSize })
+            .where(eq(s.orderItems.id, item.id));
+        return true;
+      });
+    } catch (e) {
+      if (e instanceof OutOfStock) return false;
+      throw e;
+    }
   }
 
   async setNote(id: string, note: string | null) {
@@ -392,7 +452,7 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       ...o,
       trackingNumber: (await this.trackingOf([o.id])).get(o.id) ?? null,
       revocation: (await this.revocationsOf([o.id])).get(o.id) ?? null,
-      items: items.map(({ id: _id, orderId: _o, ...i }) => i),
+      items: items.map(({ orderId: _o, ...i }) => i),
     };
   }
 

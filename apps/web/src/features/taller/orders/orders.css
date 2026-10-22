@@ -37,3 +37,5 @@
 .od-refund-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .od-invoice { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .od-invoice .link { display: inline-flex; gap: 4px; align-items: center; }
+.od-exchange-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.od-exchange-row .input { flex: 1 1 140px; width: auto; }

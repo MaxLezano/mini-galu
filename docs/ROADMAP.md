@@ -646,8 +646,15 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
       dice "Este link se anuló" (el comprobante distingue `cancelledBy`: taller o vencimiento). Un pagado no se anula:
       se reintegra. Si Mercado Pago estaba revisando un pago y se aprueba igual, vuelve a reservar o avisa para
       reintegrar (como un pago que llega con la reserva vencida). `POST /admin/orders/:n/cancel`, e2e en `taller.spec`
-   2. ⏳ **Cambios de talle y devoluciones parciales** en el sistema (hoy a mano por WhatsApp; el reintegro es total)
-   3. ⏳ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: el mockup la trae marcada, pero la Ley
+   2. ✅ **Cambio de talle** desde el detalle de un pedido pagado: por prenda, otro talle del mismo modelo con stock
+      (cuántas unidades, si la devuelta vuelve al stock y motivo). En una transacción sale el talle nuevo y vuelve el
+      devuelto (el renglón se separa si cambia una de varias); mismo precio, sin plata ni factura nueva. Queda "Cambio
+      de talle" en el historial y le llega un mail al cliente. `POST /admin/orders/:n/exchange`, e2e en `taller.spec`.
+      El envío del talle nuevo de un pedido ya entregado se coordina por WhatsApp (sin etiqueta Andreani nueva)
+   3. ⏳ **Devoluciones parciales**: devolver algunas prendas de un pedido (reintegro parcial por Mercado Pago o a la
+      gift card, nota de crédito C por lo devuelto —hoy una sola por pedido—, ventas del resumen sin lo devuelto). Hoy
+      el reintegro es total
+   4. ⏳ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: el mockup la trae marcada, pero la Ley
       25.326 pide consentimiento expreso (decidido el 22/10/2026)
 2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,

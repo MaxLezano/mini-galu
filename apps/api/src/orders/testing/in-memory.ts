@@ -11,6 +11,7 @@ import type {
   RefundGiftcards,
   Revocation,
   RevocationStore,
+  SizeExchange,
 } from "../application/ports";
 
 /** Pedidos en memoria que descuentan y devuelven el stock de MemoryVariants. */
@@ -48,6 +49,7 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       installments: null,
       paidAt: null,
       createdAt: this.clock(),
+      items: o.items.map((i, n) => ({ ...i, id: `${id}-i${n + 1}` })),
     });
     return { ok: true as const, id, number };
   }
@@ -199,6 +201,27 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     if (short) return false;
     this.move(o.items, -1);
     o.status = "esperando_pago";
+    return true;
+  }
+  async sizesOf(slugs: string[]) {
+    return this.variants.list
+      .filter((v) => slugs.includes(v.slug))
+      .map((v) => ({ slug: v.slug, variantId: v.variantId, size: v.size, stock: v.stock }));
+  }
+  async exchangeSize(orderId: string, x: SizeExchange) {
+    const o = this.items.find((y) => y.id === orderId);
+    const item = o?.items.find((i) => i.id === x.itemId);
+    const to = this.variants.list.find((v) => v.variantId === x.toVariantId);
+    if (!o || !item || item.qty < x.qty || !to || to.stock < x.qty) return false;
+    to.stock -= x.qty;
+    if (x.restock) this.move([{ variantId: item.variantId, qty: x.qty }], +1);
+    const same = o.items.find((i) => i.variantId === x.toVariantId);
+    if (same) same.qty += x.qty;
+    else if (item.qty > x.qty)
+      o.items.push({ ...item, id: `${item.id}-${x.toSize}`, variantId: x.toVariantId, size: x.toSize, qty: x.qty });
+    if (same || item.qty > x.qty) item.qty -= x.qty;
+    else Object.assign(item, { variantId: x.toVariantId, size: x.toSize });
+    o.items = o.items.filter((i) => i.qty > 0);
     return true;
   }
   private move(items: { variantId: string | null; qty: number }[], sign: 1 | -1) {

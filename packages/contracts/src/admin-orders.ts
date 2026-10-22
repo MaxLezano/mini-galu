@@ -18,6 +18,8 @@ export type OrderChannel = keyof typeof ORDER_CHANNELS;
 export const BOARD_STATUSES = ["esperando_pago", "nuevo", "preparando", "listo", "en_camino", "entregado"] as const;
 
 export type AdminOrderItem = {
+  /** Renglón del pedido (para cambiar el talle). */
+  id: string;
   slug: string;
   name: string;
   size: string;
@@ -92,7 +94,27 @@ export type AdminOrderDetail = AdminOrderSummary & {
   refund: AdminRefund | null;
   /** Factura y nota de crédito (ARCA), en orden. */
   invoices: AdminInvoice[];
+  /** Cambio de talle (null si el pedido no está pagado o es una gift card). */
+  exchange: AdminExchange | null;
 };
+
+/** Cambio de talle desde el detalle: por prenda, los otros talles del mismo modelo con su stock. */
+export type AdminExchange = {
+  /** Las prendas todavía no salieron del taller: lo normal es que la devuelta vuelva al stock. */
+  restockSuggested: boolean;
+  items: { itemId: string; sizes: { size: string; stock: number }[] }[];
+};
+
+/** Cambiar el talle de una prenda (o de algunas unidades): sale el talle nuevo del stock y vuelve el otro. */
+export const ExchangeInputSchema = z.object({
+  itemId: z.string().min(1),
+  size: z.string().trim().min(1).max(10),
+  qty: z.number().int().min(1).max(99).default(1),
+  /** La prenda devuelta vuelve al stock (ya está en el taller). */
+  restock: z.boolean().default(true),
+  reason: z.string().trim().max(300).default(""),
+});
+export type ExchangeInput = z.input<typeof ExchangeInputSchema>;
 
 /** Reintegro total de un pedido pagado (o de un pago que llegó cuando ya no había stock). */
 export type AdminRefund = {

@@ -21,6 +21,7 @@ import type {
   BulkLabels,
   Collection,
   CouponInput,
+  ExchangeInput,
   HelpPage,
   HelpPageInput,
   HelpTopic,
@@ -202,6 +203,11 @@ export const adminApi = {
     }),
   refundOrder: (number: string, input: RefundInput) =>
     adminRequest<RefundResult>(`/admin/orders/${encodeURIComponent(number)}/refund`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  exchangeOrderSize: (number: string, input: ExchangeInput) =>
+    adminRequest<AdminOrderDetail>(`/admin/orders/${encodeURIComponent(number)}/exchange`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
