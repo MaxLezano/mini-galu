@@ -99,7 +99,7 @@ test("reseña real: el cliente la deja con foto, Gaby la publica y la elige para
 
   // pendiente: todavía no se ve en la ficha
   await page.goto("/producto/mono-verde");
-  await expect(page.locator("main")).not.toContainText(body);
+  await expect(page.locator("main:not([data-loading])")).not.toContainText(body);
 
   // Gaby la publica y la elige para "Lo que dicen las familias"
   await page.goto("/taller/resenas");

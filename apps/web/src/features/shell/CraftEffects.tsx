@@ -11,6 +11,7 @@ import {
   heroOnCardClick,
   measuringTape,
   observeReveal,
+  pauseOffscreen,
   releaseHero,
   settleAnchor,
   sewSeams,
@@ -82,7 +83,7 @@ export function CraftEffects() {
         return;
       }
       autoReveal();
-      cleanups.push(observeReveal(), drawCraft(), sewSeams());
+      cleanups.push(observeReveal(), drawCraft(), sewSeams(), pauseOffscreen());
     };
     const raf = requestAnimationFrame(run);
     const mo = new MutationObserver(() => {

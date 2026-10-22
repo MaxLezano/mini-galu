@@ -580,7 +580,32 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   - ⏳ Que lo revise el contador o un abogado de Gaby. ⏳ Inscribir la base de clientes en el Registro Nacional de
     Bases de Datos de la AAIP
 
+## QA completo (octubre 2026, segunda vuelta) · en curso
+- ✅ **Fluidez en equipos modestos**: con el procesador 4× más lento (Chrome) el inicio iba a ~30 cuadros por segundo
+  aun quieto. Ahora 60 en reposo y al scrollear (inicio, catálogo, ficha y ayuda; 375 y 1440), sin cambios a la vista:
+  - El grano de papel ya no usa `mix-blend-mode` (con su alfa la diferencia es de 1/255 por canal) y no obliga a
+    recomponer toda la pantalla en cada cuadro
+  - La cinta de anuncios, el sello y la flecha del hero y los puntos del lookbook se congelan fuera de la pantalla
+    (`pauseOffscreen`); la cinta de reseñas corre solo mientras se ve
+  - El fondo oscuro de la bolsa y los cajones (`.scrim`) se oculta cerrado: su desenfoque se calculaba igual
+  - Los skeletons de un modal o cajón cerrado (ej. "Sumar a una lista" en la ficha) no animan
+- ✅ La aguja de la costura ensanchaba la página un instante al salir por la derecha
+- ✅ Ficha en compu: antes de que arrancara Swiper las miniaturas quedaban en fila detrás de la ficha
+- ✅ e2e que tomaban el `<main>` del skeleton junto con el de la página (ajustes, reseñas)
+
+## Orden de lo que sigue (decidido el 22/10/2026)
+1. ⏳ **QA completo** de punta a punta: panel (como Gaby) y tienda (con y sin cuenta, todos los medios de pago)
+2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros
+3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
+   para probar la web con pagos y envíos reales. Después, el reporte mensual
+4. ⏳ Lo que revisan Gaby, su contador y su abogado: al final, con la web en producción
+- Opcional: sucursal Andreani en un mapa (las sucursales y sus coordenadas ya vienen de la API de Andreani; falta
+  dibujarlas)
+
 ## Ideas para después (de IDEAS.md)
-Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,
-Club Mini Galú, "talles que crecen", PWA del panel con push, reporte mensual, costos por prenda,
-stock de materiales, varias usuarias con permisos, Umami, backups.
+- No se hacen: Google Merchant. Fotos de clientes: solo en las reseñas
+- Muy a futuro (cuando la web ande sola): costos por prenda, stock de materiales y, con eso, varias usuarias con
+  permisos. Club Mini Galú: solo si sale la idea
+- Sin decidir: cupones automáticos, referidos, "talles que crecen", PWA del panel con push (instalar el panel en el
+  celular y recibir avisos de pedidos), Umami (estadísticas de visitas sin cookies)
+- Backups: hechos (ver "Deploy en AWS Lightsail")

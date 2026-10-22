@@ -154,6 +154,19 @@ export function sewSeams(root: ParentNode = document): () => void {
   return () => io.disconnect();
 }
 
+/**
+ * Lo que se anima en bucle (cinta de anuncios, sello y flecha del hero, puntos del lookbook) se congela fuera de la
+ * pantalla: cada cuadro de una animación infinita repinta aunque no se vea, y en equipos modestos se nota al scrollear.
+ */
+export function pauseOffscreen(root: ParentNode = document): () => void {
+  if (isStill()) return () => {};
+  const io = new IntersectionObserver((es) => {
+    for (const e of es) e.target.classList.toggle("is-paused", !e.isIntersecting);
+  });
+  for (const el of $$(".announce, .badge-rot, .scroll-cue, .hot", root)) io.observe(el);
+  return () => io.disconnect();
+}
+
 /** Cinta métrica: progreso de lectura. */
 export function measuringTape(): () => void {
   if (isStill()) return () => {};

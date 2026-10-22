@@ -18,8 +18,8 @@ body {
   overflow-x: clip;
   min-height: 100vh;
 }
-body::before { /* grano de papel */
-  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: .35; mix-blend-mode: multiply;
+body::before { /* grano de papel (sin mix-blend-mode: con este alfa se ve igual y no obliga a recomponer toda la pantalla en cada cuadro) */
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: .35;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .16 0 0 0 0 .13 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 img { display: block; max-width: 100%; height: auto; }
@@ -124,7 +124,7 @@ i[data-lucide].i-lg { width: 26px; height: 26px; }
 .hem-top.sew-top::before { clip-path: inset(0 var(--sr-top, 100%) 0 var(--sl-top, 0px)); }
 .hem-bottom.sew-bottom::after { clip-path: inset(0 var(--sr-bottom, 100%) 0 var(--sl-bottom, 0px)); }
 /* lo que baja más de 1px por debajo del hilo queda "bajo la tela": la punta se hunde y desaparece */
-.sew-run { position: absolute; left: 0; right: 0; height: 6px; z-index: 2; pointer-events: none; clip-path: inset(-60px -60px -1px -60px); }
+.sew-run { position: absolute; left: 0; right: 0; height: 6px; z-index: 2; pointer-events: none; overflow-x: clip; clip-path: inset(-60px -60px -1px -60px); }
 .sew-run.top { top: 8px; } .sew-run.bottom { bottom: 8px; }
 .sew-run svg { position: absolute; left: 0; top: 50%; width: 56px; height: 16.5px; margin: -8.25px 0 0 -8px; color: var(--needle, var(--cacao-2)); transform-origin: 8px 50%; will-change: transform, opacity; filter: drop-shadow(0 1.5px 1px rgba(58,42,34,.18)); }
 
@@ -403,8 +403,8 @@ body.menu-open { overflow: hidden; }
 .is-in .split-line > span { transform: none; }
 
 /* ---------- Drawer / modal ---------- */
-.scrim { position: fixed; inset: 0; z-index: 80; background: rgba(58,42,34,.32); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity var(--t-med) var(--ease); }
-.scrim.is-open { opacity: 1; pointer-events: auto; }
+.scrim { position: fixed; inset: 0; z-index: 80; background: rgba(58,42,34,.32); backdrop-filter: blur(3px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--t-med) var(--ease), visibility 0s var(--t-med); }
+.scrim.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--t-med) var(--ease); }
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 90; width: min(460px, 100vw); background: var(--paper);
   display: flex; flex-direction: column; transform: translateX(105%); visibility: hidden; transition: transform .6s var(--ease), visibility 0s .6s; box-shadow: var(--shadow-lift);
@@ -819,6 +819,10 @@ html::-webkit-scrollbar-thumb:hover { background-color: var(--canela); }
 @keyframes skelShine { to { transform: translateX(100%); } }
 @keyframes skelIn { from { opacity: 0; } }
 html.static .skel::after, html.static .skel-page { animation: none; }
+/* en un modal o cajón cerrado no se ve: el brillo infinito igual pedía un cuadro nuevo tras otro */
+.modal:not(.is-open) .skel::after, .drawer:not(.is-open) .skel::after { animation: none; }
+/* craft.ts (pauseOffscreen): lo que se mueve en bucle se congela mientras está fuera de la pantalla */
+.is-paused, .is-paused *, .is-paused::before, .is-paused::after, .is-paused *::before, .is-paused *::after { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .skel::after, .skel-page { animation: none; } }
 .skel-page .skel-lead { max-width: 560px; }
 .skel-drawer-head { flex: 1; max-width: 260px; }

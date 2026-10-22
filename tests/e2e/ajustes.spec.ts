@@ -61,9 +61,9 @@ test("lo que cambia Gaby en Tienda y pagos (gift cards, contacto y datos fiscale
 
     const shop = await page.context().newPage();
     await shop.goto("/giftcards");
-    await expect(shop.locator("main")).toContainText(`Vale ${months} meses`);
+    await expect(shop.locator("main:not([data-loading])")).toContainText(`Vale ${months} meses`);
     await shop.goto("/ayuda/terminos");
-    await expect(shop.locator("main")).toContainText(`valen ${months} meses`);
+    await expect(shop.locator("main:not([data-loading])")).toContainText(`valen ${months} meses`);
     await expect(shop.getByRole("contentinfo").getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
       "href",
       "https://wa.me/5493815550000",

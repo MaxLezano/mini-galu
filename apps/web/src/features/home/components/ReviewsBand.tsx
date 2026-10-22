@@ -76,8 +76,18 @@ function useMarquee(
         wrap();
       }
       t.style.transform = `translate3d(${x}px,0,0)`;
-      raf = requestAnimationFrame(frame);
+      if (raf) raf = requestAnimationFrame(frame);
     };
+    // solo corre mientras se ve: un bucle de cuadros fuera de la pantalla igual le cuesta al equipo al scrollear
+    const io = new IntersectionObserver(([e]) => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      if (e?.isIntersecting) {
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      }
+    });
+    io.observe(b);
     addEventListener("resize", measure);
     b.addEventListener("pointerenter", enter);
     b.addEventListener("pointerleave", leave);
@@ -85,8 +95,8 @@ function useMarquee(
     b.addEventListener("pointermove", move);
     b.addEventListener("pointerup", end);
     b.addEventListener("pointercancel", end);
-    raf = requestAnimationFrame(frame);
     return () => {
+      io.disconnect();
       cancelAnimationFrame(raf);
       removeEventListener("resize", measure);
       b.removeEventListener("pointerenter", enter);

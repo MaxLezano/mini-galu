@@ -5,6 +5,9 @@
 @media (min-width: 1800px) { .pdp { grid-template-columns: minmax(0, 1.1fr) minmax(0, .8fr); } }
 .gallery { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; position: sticky; top: calc(var(--header-h) + 20px); }
 .thumbs { height: 100%; max-height: 100%; }
+/* antes de que Swiper arranque (SSR, hidratación): la misma columna que arma después, sin el salto */
+.thumbs:not(.swiper-initialized) { width: 84px; }
+.thumbs:not(.swiper-initialized) .swiper-wrapper { flex-direction: column; gap: 10px; }
 .thumbs .swiper-slide { height: auto !important; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; opacity: .5; cursor: pointer; transition: opacity var(--t-fast), box-shadow var(--t-fast); }
 .thumbs .swiper-slide-thumb-active { opacity: 1; box-shadow: inset 0 0 0 2px var(--cacao); }
 .thumbs img { width: 100%; height: 100%; object-fit: cover; }
