@@ -10,6 +10,7 @@ import type { CatalogService } from "../../catalog/application/catalog-service";
 import { NotFoundError, ValidationError } from "../../shared/domain/errors";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { DEFAULT_HOME } from "../domain/home";
+import type { InstagramPost } from "../domain/instagram";
 import type { ContentRepository, LaunchRow } from "./ports";
 
 export class ContentService {
@@ -18,14 +19,17 @@ export class ContentService {
     private readonly catalog: CatalogService,
     private readonly storage: ImageStorage,
     private readonly now: () => Date = () => new Date(),
+    /** Feed de Instagram (con `INSTAGRAM_ACCESS_TOKEN`); sin él, o vacío, van las fotos guardadas en la portada (seed). */
+    private readonly instagram: { posts(): Promise<InstagramPost[]> } | null = null,
   ) {}
 
   async home(): Promise<HomeContent> {
     const block = await this.block();
-    const [facets, reviews, launchRow] = await Promise.all([
+    const [facets, reviews, launchRow, feed] = await Promise.all([
       this.catalog.facets(),
       this.catalog.featuredReviews(),
       this.content.findUpcomingLaunch(this.now()),
+      this.instagram?.posts() ?? [],
     ]);
     const url = (p: string) => this.storage.url(p);
     const { imagePath, ...hero } = block.hero;
@@ -44,7 +48,9 @@ export class ContentService {
       instagram: {
         handle: block.instagram.handle,
         url: block.instagram.url,
-        imageUrls: block.instagram.imagePaths.map(url),
+        posts: feed.length
+          ? feed.map((p) => ({ imageUrl: p.imageUrl, href: p.permalink }))
+          : block.instagram.imagePaths.map((p) => ({ imageUrl: url(p), href: block.instagram.url })),
       },
     };
   }

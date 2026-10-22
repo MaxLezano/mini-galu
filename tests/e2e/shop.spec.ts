@@ -7,6 +7,15 @@ test("la home muestra el lanzamiento con cuenta regresiva y el carrusel", async 
   await expect(page.locator(".rail .p-card").first()).toBeVisible();
 });
 
+test("sin token de Instagram, la grilla de la home muestra las fotos de la portada y lleva al perfil", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const tiles = page.locator(".ig a");
+  await expect(tiles).toHaveCount(6);
+  await expect(tiles.first()).toHaveAttribute("href", "https://www.instagram.com/minigalumodainfantil/");
+});
+
 test("el catálogo filtra por talle desde la URL y solo muestra talles con stock", async ({ page }) => {
   await page.goto("/catalogo?talle=12m");
   await expect(page.locator(".grid .p-card")).toHaveCount(1);

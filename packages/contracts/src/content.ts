@@ -59,7 +59,12 @@ export const HomeContentSchema = z.object({
   /** Fotos de "El taller" (grande y chica); sin elegir, la sección va sin fotos. */
   taller: z.array(z.object({ imageUrl: z.string(), alt: z.string() })),
   reviews: z.object({ rating: RatingSchema, featured: z.array(FeaturedReviewSchema) }),
-  instagram: z.object({ handle: z.string(), url: z.string(), imageUrls: z.array(z.string()) }),
+  /** Grilla de Instagram: el feed real (cada foto abre su publicación) o, sin conectar, las fotos guardadas en la portada (seed). */
+  instagram: z.object({
+    handle: z.string(),
+    url: z.string(),
+    posts: z.array(z.object({ imageUrl: z.string(), href: z.string() })),
+  }),
 });
 export type HomeContent = z.infer<typeof HomeContentSchema>;
 

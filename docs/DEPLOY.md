@@ -160,6 +160,25 @@ carga, los pendientes se emiten solos. Con la clave fiscal de Gaby (nivel 3):
 verdad sin facturar en serio: certificado de homologación (**WSASS**, en ARCA) y `ARCA_ENV=homologacion` en el `.env`
 local.
 
+### Feed de Instagram (opcional)
+
+Sin token, la portada muestra el título y "Seguinos" de Instagram, sin fotos. Con él, las últimas 6
+publicaciones del taller (cada una abre su posteo); se actualizan cada hora. Hace falta que la cuenta de Instagram
+sea **profesional** (empresa o creador).
+
+1. developers.facebook.com → **Crear app** → caso de uso "Administrar mensajes y contenido en Instagram" (sirve
+   después para WhatsApp en la misma cuenta de Meta).
+2. **Roles de la app** → **Evaluadores de Instagram** → agregar `minigalumodainfantil`; en Instagram (Configuración
+   → Apps y sitios web → Invitaciones de evaluador) aceptar.
+3. La app → Instagram → **Configuración de la API con el inicio de sesión de Instagram** → **Generar token** junto a
+   la cuenta → iniciar sesión → copiar.
+4. `INSTAGRAM_ACCESS_TOKEN=` en `deploy/.env` y `docker compose up -d`. `docker compose logs api` dice
+   `[instagram] la grilla de la portada muestra el feed`.
+
+El token dura 60 días y la API lo renueva sola cada semana (guarda el renovado en la base). Si pasa más de 60 días
+apagada o Gaby cambia la contraseña de Instagram, el token vence: la grilla se oculta y hay que
+generar otro (paso 3) y reemplazarlo en el `.env`.
+
 ## 10. Probar antes de anunciar
 
 1. `https://api.minigalu.com.ar/health` → `{"ok":true}`.

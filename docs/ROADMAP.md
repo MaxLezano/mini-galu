@@ -662,7 +662,16 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
    4. ✅ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: la Ley 25.326 pide consentimiento
       expreso (decidido el 22/10/2026). Cambiados el registro y el mockup `ingresar.html`; con Google ya entraba sin
       suscribir. e2e en `account.spec`
-2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros
+2. 🟡 Meta (lo que no depende de terceros ya está):
+   1. ✅ **Feed de Instagram** en la grilla de la portada: con `INSTAGRAM_ACCESS_TOKEN` (Instagram API with Instagram
+      Login, `graph.instagram.com/v26.0/me/media`) las últimas 6 publicaciones (del video, su miniatura; del carrusel,
+      la primera foto) y cada una abre su posteo. El programador las trae cada hora y renueva el token cada semana
+      (dura 60 días; el renovado se guarda en `content_blocks["instagram"]`, y si Gaby pone otro en el `.env`, rige
+      ese). La tienda lee lo guardado (una caída de Instagram no demora la portada); si falla, queda el feed anterior
+      hasta 2 días (las URL del CDN vencen). Sin token, las fotos del seed. Cómo sacar el token: "Feed de Instagram" en
+      [DEPLOY.md](DEPLOY.md). ⏳ Probarlo con la cuenta de Gaby (pasarla a profesional si no lo es)
+   2. ⏳ **Avisos por WhatsApp** (Cloud API): canal de las automatizaciones, interruptor en el seguimiento, anotados
+      por WhatsApp (lanzamientos, talles), recordatorio de links de pago
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
    para probar la web con pagos y envíos reales. Después, el reporte mensual
 4. ⏳ Lo que revisan Gaby, su contador y su abogado: al final, con la web en producción

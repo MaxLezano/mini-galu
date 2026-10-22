@@ -38,7 +38,7 @@ export function HomePage({
   home: HomeContent;
   products: ProductSummary[];
   exchangeDays: number;
-  /** Tienda y pagos → Datos de la tienda (las fotos del feed son de la portada). */
+  /** Tienda y pagos → Datos de la tienda (las fotos de la grilla vienen en `home.instagram`). */
   instagram: { url: string; handle: string };
 }) {
   const bySlug = Object.fromEntries(products.map((p) => [p.slug, p]));
@@ -291,11 +291,11 @@ export function HomePage({
             <BrandIcon name="instagram" className="i-sm" /> Seguinos
           </a>
         </div>
-        {home.instagram.imageUrls.length > 0 && (
+        {home.instagram.posts.length > 0 && (
           <div className="ig">
-            {home.instagram.imageUrls.map((u, i) => (
-              <a key={u} href={instagram.url} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
-                <Picture src={u} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
+            {home.instagram.posts.map((p, i) => (
+              <a key={p.imageUrl} href={p.href} data-reveal="" style={d(i * 0.05)} aria-label="Ver en Instagram">
+                <Picture src={p.imageUrl} alt="" loading="lazy" sizes="(max-width: 760px) 33vw, 17vw" />
                 <BrandIcon name="instagram" />
               </a>
             ))}

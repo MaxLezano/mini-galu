@@ -58,6 +58,8 @@ const EnvSchema = z.object({
   ANTHROPIC_MODEL: z.string().default("claude-haiku-5-5"),
   OLLAMA_URL: z.string().optional(),
   OLLAMA_MODEL: z.string().default("qwen3:4b"),
+  /** Feed de Instagram de la portada (token largo de la cuenta del taller). Sin él, las fotos del seed (si hay). */
+  INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
   ANDREANI_USER: z.string().optional(),
   ANDREANI_PASSWORD: z.string().optional(),
   ANDREANI_CLIENT: z.string().optional(),
@@ -110,6 +112,7 @@ export type Config = {
   requireAdmin2fa: boolean;
   google: { clientId: string; clientSecret: string } | null;
   assistant: { kind: "claude"; apiKey: string; model: string } | { kind: "ollama"; url: string; model: string } | null;
+  instagramToken: string | null;
 };
 
 /** El entorno no alcanza para arrancar: lleva todos los problemas juntos para arreglarlos de una vez. */
@@ -290,6 +293,7 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
       : env.OLLAMA_URL
         ? { kind: "ollama", url: env.OLLAMA_URL, model: env.OLLAMA_MODEL }
         : null,
+    instagramToken: env.INSTAGRAM_ACCESS_TOKEN || null,
     andreani:
       env.ANDREANI_USER &&
       env.ANDREANI_PASSWORD &&

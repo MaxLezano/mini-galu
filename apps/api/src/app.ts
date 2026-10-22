@@ -65,18 +65,21 @@ import type { Config } from "./config";
 import { AdminLaunchesService } from "./content/application/admin-launches-service";
 import { ContentService } from "./content/application/content-service";
 import { HelpService } from "./content/application/help-service";
+import { InstagramFeed } from "./content/application/instagram-feed";
 import type { ProductPublisher } from "./content/application/launch-ports";
 import { LaunchVisitsService } from "./content/application/launch-visits-service";
 import { helpValues } from "./content/domain/help";
 import { DrizzleAdminLaunchRepository } from "./content/infrastructure/drizzle-admin-launch-repository";
 import { DrizzleContentRepository } from "./content/infrastructure/drizzle-content-repository";
 import { DrizzleHelpRepository } from "./content/infrastructure/drizzle-help-repository";
+import { DrizzleInstagramStore } from "./content/infrastructure/drizzle-instagram-store";
 import { DrizzleLaunchMetrics } from "./content/infrastructure/drizzle-launch-metrics";
 import { DrizzleLaunchVisits } from "./content/infrastructure/drizzle-launch-visits";
 import { adminHomeRoutes } from "./content/infrastructure/http/admin-home-routes";
 import { adminLaunchesRoutes } from "./content/infrastructure/http/admin-launches-routes";
 import { contentRoutes } from "./content/infrastructure/http/content-routes";
 import { adminHelpRoutes, helpRoutes } from "./content/infrastructure/http/help-routes";
+import { InstagramGraphApi } from "./content/infrastructure/instagram-graph-api";
 import { CouponService } from "./coupons/application/coupon-service";
 import { DrizzleCouponRepository } from "./coupons/infrastructure/drizzle-coupon-repository";
 import { adminCouponRoutes } from "./coupons/infrastructure/http/admin-coupon-routes";
@@ -238,7 +241,11 @@ export function buildApp(config: Config) {
     events,
     new SharpCropper(),
   );
-  const content = new ContentService(new DrizzleContentRepository(db), catalog, storage);
+  // grilla de Instagram de la portada: el feed real con token; sin él, las fotos guardadas en la portada (seed)
+  const instagram = config.instagramToken
+    ? new InstagramFeed(new InstagramGraphApi(), new DrizzleInstagramStore(db), config.instagramToken)
+    : null;
+  const content = new ContentService(new DrizzleContentRepository(db), catalog, storage, undefined, instagram);
   // ajustes de "Tienda y pagos" (cambios, envíos, retiro, gift cards, contacto y taller): los leen envíos, ayuda,
   // gift cards, Galú y los mails, así lo que cambia Gaby se ve igual en todos lados
   const policies = new PoliciesService(new DrizzlePoliciesStore(db), config.arca?.cuit ?? null);
@@ -858,6 +865,7 @@ export function buildApp(config: Config) {
   );
   if (llm && config.env !== "test") console.info(`[galú] responde con ${llm.name}`);
   if (config.mail.kind === "resend" && config.env !== "test") console.info("[mails] salen por Resend");
+  if (instagram && config.env !== "test") console.info("[instagram] la grilla de la portada muestra el feed");
   if (config.env !== "test")
     console.info(
       issuer.mode === "simulado"
@@ -882,6 +890,7 @@ export function buildApp(config: Config) {
     scheduler.every(1800, "bolsas abandonadas", () => automations.idleCarts());
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
     scheduler.every(60, "reintentar facturas", () => invoicing.retryDue());
+    if (instagram) scheduler.every(3600, "feed de Instagram", () => instagram.sync());
   }
 
   // tope por IP cada 10 minutos en las rutas públicas que mandan mails, reservan stock o se pueden adivinar
