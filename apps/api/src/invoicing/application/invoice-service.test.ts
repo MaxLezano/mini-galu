@@ -85,6 +85,21 @@ describe("factura al aprobarse el pago", () => {
     expect(issuer.authorized).toHaveLength(1);
   });
 
+  it("pagado con gift card: se factura la venta entera (la gift card es un medio de pago)", async () => {
+    orders.orders.push(
+      anOrder({ id: "toda", totalCents: 0, giftcardCents: 59_000_00, payment: "Gift card $59.000,00" }),
+      anOrder({ id: "parte", totalCents: 4_000_00, giftcardCents: 55_000_00 }),
+    );
+    await service.paymentApproved("toda");
+    await service.paymentApproved("parte");
+    expect(repo.rows.map((r) => [r.orderId, r.totalCents])).toEqual([
+      ["toda", 59_000_00],
+      ["parte", 59_000_00],
+    ]);
+    // los renglones suman lo facturado
+    for (const r of repo.rows) expect(r.data.lines.reduce((s, l) => s + l.totalCents, 0)).toBe(r.totalCents);
+  });
+
   it("la factura emitida se adjunta una sola vez", async () => {
     await service.paymentApproved("o1");
     const a = await service.attachment("o1", "factura");

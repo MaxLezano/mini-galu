@@ -612,6 +612,19 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   con la nota. Si Mercado Pago no deja reintegrar, el error queda fijo en el detalle (antes era un aviso que se iba
   solo). ⏳ Dinero en cuenta: el sandbox responde 401 "Unauthorized use of live credentials" al reintegrar por la API
   de Payments con el usuario de prueba; probarlo con las credenciales de Gaby
+- ✅ **Factura de lo pagado con gift card**: se facturaba solo lo cobrado por Mercado Pago (gift card $2.100 + tarjeta
+  $400 → factura de $400 con renglones que sumaban $2.500) y un pedido pagado entero con gift card no se facturaba.
+  Ahora la factura es por la venta entera (`invoiceTotal`) y la forma de pago dice "Gift card $12.000,00 + Tarjeta
+  de crédito"
+- ✅ Gift cards con el Brick real: compra (mails a quien compra y a quien recibe), canje total y parcial (el Brick
+  cobra solo la diferencia). Con la gift card cubriendo todo ya no se arma el Brick (pedía la preferencia de un
+  pedido pagado: 409)
+- ✅ Link de pago con el Brick real: aprobado, rechazado con reintento y "ya está pagado" al volver a abrirlo. El
+  Brick se arma en el navegador (en el servidor rompía el render del link: `getComputedStyle`)
+- ✅ Arrepentimiento con una compra del sandbox: código por mail, campana y detalle del panel, reintegro y nota de
+  crédito
+- ✅ Ciclo del pedido a domicilio: preparar, etiqueta Andreani (simulada), despachado con número de seguimiento y mail
+  "Tu pedido ya salió"
 - ✅ Catálogo: antes de hidratar, el botón activo de "Vista" (texto claro) quedaba sobre lino, casi invisible (lo
   detectó axe en el CI, que es más lento): ahora lleva su fondo hasta que el JS ubica la perilla
 - ✅ Bolsa: dos sincronizaciones a la vez (dos pestañas, ingresar con la bolsa abierta) fallaban con "Algo salió mal"

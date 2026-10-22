@@ -10,6 +10,7 @@ import {
   invoiceFilename,
   invoiceLabel,
   invoiceLines,
+  invoiceTotal,
   retryDelayMs,
 } from "../domain/invoice";
 import {
@@ -52,7 +53,7 @@ export class InvoiceService {
       kind: "factura",
       cbteType: CBTE_TYPE.factura,
       pointOfSale: this.issuer.pointOfSale,
-      totalCents: o.totalCents,
+      totalCents: invoiceTotal(o),
       data: await this.snapshot(o),
       associatedId: null,
       simulated: this.issuer.mode === "simulado",

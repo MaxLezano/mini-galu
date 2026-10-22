@@ -10,7 +10,6 @@ import {
   GIFTCARD_MAX_CENTS,
   GIFTCARD_MIN_CENTS,
   type OrderStatus,
-  PAYMENT_METHODS,
   pickupHoursLabel,
   trackingPath,
   whatsappUrl,
@@ -93,6 +92,7 @@ import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
 import { adminGiftcardRoutes, giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
 import { InvoiceService } from "./invoicing/application/invoice-service";
 import type { InvoiceIssuer } from "./invoicing/application/ports";
+import { paymentLabel } from "./invoicing/domain/invoice";
 import { ArcaIssuer } from "./invoicing/infrastructure/arca/arca-issuer";
 import { Wsaa } from "./invoicing/infrastructure/arca/wsaa";
 import { DrizzleArcaTickets, DrizzleInvoices } from "./invoicing/infrastructure/drizzle-invoices";
@@ -464,9 +464,8 @@ export function buildApp(config: Config) {
       couponCode: o.couponCode,
       shippingCents: o.shippingCents,
       totalCents: o.totalCents,
-      payment: o.paymentMethod
-        ? `${PAYMENT_METHODS[o.paymentMethod]}${(o.installments ?? 1) > 1 ? ` · ${o.installments} cuotas` : ""}`
-        : null,
+      giftcardCents: o.giftcardCents,
+      payment: paymentLabel({ method: o.paymentMethod, installments: o.installments, giftcardCents: o.giftcardCents }),
     };
   const invoicing: InvoiceService = new InvoiceService(
     issuer,

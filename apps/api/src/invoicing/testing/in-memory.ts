@@ -181,6 +181,7 @@ export const anOrder = (p: Partial<InvoiceOrder> = {}): InvoiceOrder => ({
   couponCode: "BIENVENIDA",
   shippingCents: 5_000_00,
   totalCents: 59_000_00,
+  giftcardCents: 0,
   payment: "Tarjeta de crédito · 3 cuotas",
   ...p,
 });
