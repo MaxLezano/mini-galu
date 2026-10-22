@@ -46,3 +46,6 @@ export function computeTotals(input: {
     totalCents: due - giftcardCents,
   };
 }
+
+/** Motivo con el que se cancela un pedido cuando vence la reserva sin pago. */
+export const EXPIRED_REASON = "No se pagó a tiempo";

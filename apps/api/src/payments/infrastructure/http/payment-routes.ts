@@ -9,41 +9,48 @@ const Token = z.object({ t: z.string().min(1) });
 
 /** /checkout — cobrar un pedido (tarjeta, dinero en cuenta) y confirmar la vuelta de Mercado Pago. */
 export function checkoutPaymentRoutes(payments: PaymentService) {
-  return new Hono()
-    .get("/config", async (c) => c.json(await payments.config()))
-    .get("/installments", async (c) => {
-      const { amounts } = parse(
-        z.object({
-          amounts: z
-            .string()
-            .transform((s) => s.split(",").map(Number))
-            .pipe(z.array(z.number().int().positive()).min(1).max(60)),
-        }),
-        c.req.query(),
-      );
-      return c.json(await payments.installments(amounts));
-    })
-    .get("/orders/:number/installments", async (c) => {
-      const { t, bin } = parse(Token.extend({ bin: z.string().regex(/^\d{6,8}$/) }), c.req.query());
-      return c.json(await payments.cardPlans(c.req.param("number"), t, bin));
-    })
-    .post("/orders/:number/pay", async (c) => {
-      const body = await c.req.json();
-      const { t } = parse(Token, body);
-      return c.json(await payments.payCard(c.req.param("number"), t, parse(CardPaymentInputSchema, body.card)));
-    })
-    .post("/orders/:number/wallet", async (c) => {
-      const { t, preferenceId } = parse(
-        Token.extend({ preferenceId: z.string().max(80).nullable().default(null) }),
-        await c.req.json(),
-      );
-      return c.json(await payments.wallet(c.req.param("number"), t, preferenceId));
-    })
-    .post("/orders/:number/sync", async (c) => {
-      const { t, paymentId } = parse(Token.extend({ paymentId: z.string().min(1).max(40) }), await c.req.json());
-      await payments.syncReturn(c.req.param("number"), t, paymentId);
-      return c.body(null, 204);
-    });
+  return (
+    new Hono()
+      .get("/config", async (c) => c.json(await payments.config()))
+      .get("/installments", async (c) => {
+        const { amounts } = parse(
+          z.object({
+            amounts: z
+              .string()
+              .transform((s) => s.split(",").map(Number))
+              .pipe(z.array(z.number().int().positive()).min(1).max(60)),
+          }),
+          c.req.query(),
+        );
+        return c.json(await payments.installments(amounts));
+      })
+      .get("/orders/:number/installments", async (c) => {
+        const { t, bin } = parse(Token.extend({ bin: z.string().regex(/^\d{6,8}$/) }), c.req.query());
+        return c.json(await payments.cardPlans(c.req.param("number"), t, bin));
+      })
+      .post("/orders/:number/pay", async (c) => {
+        const body = await c.req.json();
+        const { t } = parse(Token, body);
+        return c.json(await payments.payCard(c.req.param("number"), t, parse(CardPaymentInputSchema, body.card)));
+      })
+      .post("/orders/:number/wallet", async (c) => {
+        const { t, preferenceId } = parse(
+          Token.extend({ preferenceId: z.string().max(80).nullable().default(null) }),
+          await c.req.json(),
+        );
+        return c.json(await payments.wallet(c.req.param("number"), t, preferenceId));
+      })
+      // la pestaña de la tienda pregunta mientras el cliente paga en la de Mercado Pago
+      .post("/orders/:number/check", async (c) => {
+        const { t } = parse(Token, await c.req.json());
+        return c.json(await payments.check(c.req.param("number"), t));
+      })
+      .post("/orders/:number/sync", async (c) => {
+        const { t, paymentId } = parse(Token.extend({ paymentId: z.string().min(1).max(40) }), await c.req.json());
+        await payments.syncReturn(c.req.param("number"), t, paymentId);
+        return c.body(null, 204);
+      })
+  );
 }
 
 /**

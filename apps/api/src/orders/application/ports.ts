@@ -141,6 +141,8 @@ export interface OrderRepository extends OrderEvents {
   pendingForCart(cartId: string): Promise<string[]>;
   /** Links de pago (no web) esperando pago, creados antes de `createdBefore` y todavía sin recordatorio. */
   linksToRemind(createdBefore: Date): Promise<OrderRecord[]>;
+  /** Pedidos sin pagar hechos desde `since`: esperando pago o cancelados por reserva vencida. */
+  unpaidSince(since: Date): Promise<string[]>;
   /** Pedidos esperando pago con la reserva vencida. */
   expired(now: Date): Promise<string[]>;
   /** Corre la reserva de un pedido esperando pago hasta `until` (si vencía antes). false si no hizo falta o no espera pago. */

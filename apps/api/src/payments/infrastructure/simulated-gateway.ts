@@ -59,6 +59,10 @@ export class SimulatedGateway implements PaymentGateway {
     return this.payments.get(id) ?? null;
   }
 
+  async findByOrder(orderId: string) {
+    return [...this.payments.values()].filter((p) => p.orderId === orderId);
+  }
+
   /** Sin cuenta no hay promociones: nunca se prometen cuotas sin interés. */
   async installments() {
     return { interestFree: 1, max: 12 };

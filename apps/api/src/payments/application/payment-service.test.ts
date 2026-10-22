@@ -151,6 +151,21 @@ describe("PaymentService", () => {
     expect(await service.reconcile()).toBe(0);
   });
 
+  it("dinero en cuenta sin aviso: la pestaña que espera lo encuentra por el pedido y lo da por pagado", async () => {
+    await service.wallet(number, "tok"); // el simulado ya lo cobra, pero sin webhook ni vuelta
+    expect(orders.items[0]?.status).toBe("esperando_pago");
+    expect(await service.check(number, "tok")).toEqual({ paid: true });
+    expect(orders.items[0]?.status).toBe("nuevo");
+    await expect(service.check(number, "otro")).rejects.toThrow("No encontramos");
+  });
+
+  it("dinero en cuenta sin aviso ni vuelta: la consulta de respaldo lo encuentra", async () => {
+    await service.wallet(number, "tok");
+    await service.reconcile();
+    expect(orders.items[0]?.status).toBe("nuevo");
+    expect(events.map((e) => e.type)).toEqual(["PaymentApproved"]);
+  });
+
   it("débito siempre en 1 pago; respeta medios y cuotas del panel", async () => {
     await service.payCard(number, "tok", card({ method: "debito", installments: 6 }));
     expect(orders.items[0]).toMatchObject({ paymentMethod: "debito", installments: 1 });

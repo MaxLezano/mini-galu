@@ -12,6 +12,7 @@ import type {
   Revocation,
   RevocationStore,
 } from "../application/ports";
+import { EXPIRED_REASON } from "../domain/order";
 import type { PaidOrder } from "../domain/stats";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -246,6 +247,23 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
       .select({ id: s.orders.id })
       .from(s.orders)
       .where(and(eq(s.orders.status, "esperando_pago"), lt(s.orders.reservedUntil, now)));
+    return rows.map((r) => r.id);
+  }
+
+  async unpaidSince(since: Date) {
+    const rows = await this.db
+      .select({ id: s.orders.id })
+      .from(s.orders)
+      .where(
+        and(
+          gte(s.orders.createdAt, since),
+          sql`${s.orders.paidAt} is null`,
+          or(
+            eq(s.orders.status, "esperando_pago"),
+            and(eq(s.orders.status, "cancelado"), eq(s.orders.cancelReason, EXPIRED_REASON)),
+          ),
+        ),
+      );
     return rows.map((r) => r.id);
   }
 

@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
 
 let initialized: string | null = null;
+/** Cuánto espera la pestaña de la tienda a que se pague en Mercado Pago (lo que dura la reserva). */
+const WAIT_MS = 30 * 60_000;
 
 /** El tipo del SDK exige al menos un medio; los activos los decide el panel. */
 type BrickMethods = Parameters<typeof Payment>[0]["customization"]["paymentMethods"];
@@ -31,6 +33,8 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
     config.methods.dinero_cuenta ? undefined : null,
   );
   const [error, setError] = useState<string | null>(null);
+  // dinero en cuenta: el Brick abre Mercado Pago en otra pestaña y esta queda esperando
+  const [waiting, setWaiting] = useState(false);
 
   if (config.publicKey && initialized !== config.publicKey) {
     initMercadoPago(config.publicKey, { locale: "es-AR" });
@@ -116,7 +120,10 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
       setError(null);
       // dinero en cuenta: el Brick lleva a Mercado Pago con la preferencia y vuelve a /checkout
       // (también "Crédito de Mercado Pago", que se paga en Mercado Pago con la misma preferencia)
-      if (selectedPaymentMethod === "wallet_purchase" || selectedPaymentMethod === "onboarding_credits") return;
+      if (selectedPaymentMethod === "wallet_purchase" || selectedPaymentMethod === "onboarding_credits") {
+        setWaiting(true);
+        return;
+      }
       const card: CardPaymentInput = {
         method: selectedPaymentMethod === "debitCard" || selectedPaymentMethod === "prepaidCard" ? "debito" : "credito",
         token: formData.token,
@@ -170,6 +177,26 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
     return () => document.removeEventListener("change", onChange);
   }, [containerId]);
 
+  // mientras paga en la otra pestaña, esta pregunta si ya se pagó (la API le consulta a Mercado Pago): sin esto
+  // quedaba con "Pagar" trabado y, sin webhook ni vuelta, la tienda no se enteraba
+  useEffect(() => {
+    if (!waiting) return;
+    let alive = true;
+    const started = Date.now();
+    const tick = async () => {
+      const { order: o, onResult: done } = latest.current;
+      const r = await api.checkPayment(o.number, o.accessToken).catch(() => null);
+      if (!alive) return;
+      if (r?.paid) return done({ outcome: "approved", message: "¡Pago aprobado!" });
+      if (Date.now() - started < WAIT_MS) timer = setTimeout(tick, 4000);
+    };
+    let timer = setTimeout(tick, 4000);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [waiting]);
+
   if (preferenceId === undefined) return <p className="muted">Preparando el pago…</p>;
 
   // cada pedido en su propio contenedor (un cambio de total no lo rearma: se actualiza el monto)
@@ -190,6 +217,11 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
       {error && (
         <p className="pay-error" role="alert">
           {error}
+        </p>
+      )}
+      {waiting && (
+        <p className="pay-waiting" role="status">
+          Seguí en la pestaña de Mercado Pago. Cuando se apruebe el pago, la confirmación aparece acá.
         </p>
       )}
       <div className="secure">

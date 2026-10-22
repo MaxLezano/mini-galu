@@ -16,6 +16,7 @@ import type { CardPayment, GatewayPayment, PaymentGateway, PaymentRepository, Pa
 const DAY = 86_400_000;
 /** Un pago en revisión se sigue consultando hasta una semana (Mercado Pago resuelve en minutos o en hasta 2 días hábiles). */
 const RECONCILE_DAYS = 7;
+const CHECK_EVERY_MS = 4000;
 
 export class PaymentService {
   constructor(
@@ -138,7 +139,8 @@ export class PaymentService {
    * Mercado Pago se perdió (servidor caído, actualización) o no hay túnel en local, el pedido igual se resuelve.
    */
   async reconcile(now = new Date()): Promise<number> {
-    const ids = await this.payments.inReview(this.gateway.kind, new Date(now.getTime() - RECONCILE_DAYS * DAY));
+    const since = new Date(now.getTime() - RECONCILE_DAYS * DAY);
+    const ids = await this.payments.inReview(this.gateway.kind, since);
     for (const id of ids) {
       try {
         await this.sync(id);
@@ -146,7 +148,37 @@ export class PaymentService {
         console.error(`[pagos] no se pudo consultar el pago ${id}:`, e);
       }
     }
+    // dinero en cuenta: si el aviso no llegó y el cliente no volvió de Mercado Pago, el pago no está registrado
+    for (const orderId of await this.orders.unpaidSince(since)) {
+      try {
+        await this.syncOrder(orderId);
+      } catch (e) {
+        console.error(`[pagos] no se pudo buscar el pago del pedido ${orderId}:`, e);
+      }
+    }
     return ids.length;
+  }
+
+  /**
+   * La pestaña de la tienda espera mientras el cliente paga en Mercado Pago (el Brick lo abre en otra): ¿ya se pagó?
+   * A Mercado Pago se le pregunta como mucho cada CHECK_EVERY_MS por pedido.
+   */
+  async check(number: string, token: string): Promise<{ paid: boolean }> {
+    const o = await this.orders.owned(number, token);
+    if (o.paidAt) return { paid: true };
+    const last = this.checked.get(o.id) ?? 0;
+    if (Date.now() - last >= CHECK_EVERY_MS) {
+      if (this.checked.size > 500) this.checked.clear();
+      this.checked.set(o.id, Date.now());
+      await this.syncOrder(o.id);
+    }
+    return { paid: (await this.orders.owned(number, token)).paidAt !== null };
+  }
+
+  private checked = new Map<string, number>();
+
+  private async syncOrder(orderId: string) {
+    for (const p of await this.gateway.findByOrder(orderId)) await this.apply(p);
   }
 
   private async sync(paymentId: string) {

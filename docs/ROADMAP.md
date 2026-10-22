@@ -603,6 +603,11 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
     decidía): ahora queda reservada hasta 72 h y se anota "Pago en revisión" en el historial
   - Respaldo del webhook: cada 10 minutos se vuelve a consultar a Mercado Pago lo que sigue en revisión (última
     semana). Si un aviso se pierde (servidor caído, actualización) el pedido igual se resuelve
+- ✅ **Dinero en cuenta (sandbox)**: el Brick abre Mercado Pago en otra pestaña y la de la tienda quedaba con
+  "Pagar" trabado; si además el aviso no llegaba y el cliente cerraba Mercado Pago sin volver, la tienda nunca se
+  enteraba y a los 30 minutos cancelaba un pedido cobrado. Ahora la pestaña dice "Seguí en la pestaña de Mercado
+  Pago" y pregunta cada 4 s (`/checkout/orders/:n/check`, la API busca el pago por la referencia del pedido) y muestra
+  la confirmación sola; la consulta de respaldo también busca así los pedidos sin pagar o vencidos de la última semana
 - ✅ Catálogo: antes de hidratar, el botón activo de "Vista" (texto claro) quedaba sobre lino, casi invisible (lo
   detectó axe en el CI, que es más lento): ahora lleva su fondo hasta que el JS ubica la perilla
 - ✅ Bolsa: dos sincronizaciones a la vez (dos pestañas, ingresar con la bolsa abierta) fallaban con "Algo salió mal"

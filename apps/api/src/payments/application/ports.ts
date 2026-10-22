@@ -52,6 +52,11 @@ export interface PaymentGateway {
   }): Promise<WalletPreference>;
   fetch(paymentId: string): Promise<GatewayPayment | null>;
   /**
+   * Pagos de dinero en cuenta de un pedido (por su referencia), aunque nunca haya llegado el aviso: si el webhook se
+   * perdió y el cliente cerró Mercado Pago sin volver, es la única forma de enterarse.
+   */
+  findByOrder(orderId: string): Promise<GatewayPayment[]>;
+  /**
    * Cuotas para un monto, sin conocer la tarjeta: `interestFree` = cuotas sin interés que da CUALQUIER tarjeta
    * Visa o Mastercard (1 si no hay), `max` = máximo de cuotas que ofrece la cuenta (con interés).
    */

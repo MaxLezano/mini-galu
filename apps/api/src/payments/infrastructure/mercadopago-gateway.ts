@@ -153,6 +153,12 @@ export class MercadoPagoGateway implements PaymentGateway {
     }
   }
 
+  async findByOrder(orderId: string) {
+    const q = new URLSearchParams({ external_reference: orderId, sort: "date_created", criteria: "desc" });
+    const r = await this.call<{ results?: MpPayment[] }>(`/v1/payments/search?${q}`);
+    return (r.results ?? []).map(fromPayment);
+  }
+
   /**
    * Reintegro total, sin monto en el cuerpo. Tarjetas (ORD…): `POST /v1/orders/{id}/refund`; dinero en cuenta:
    * `POST /v1/payments/{id}/refunds`. Si ya estaba devuelto (un reintento, o se devolvió desde Mercado Pago) se da

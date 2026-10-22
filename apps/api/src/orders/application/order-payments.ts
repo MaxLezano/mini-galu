@@ -3,7 +3,7 @@ import type { CartService } from "../../cart/application/cart-service";
 import type { CouponService } from "../../coupons/application/coupon-service";
 import { ConflictError } from "../../shared/domain/errors";
 import type { EventBus } from "../../shared/events/event-bus";
-import { formatOrderNumber, payPath } from "../domain/order";
+import { EXPIRED_REASON, formatOrderNumber, payPath } from "../domain/order";
 import { findOwned } from "./checkout-service";
 import type { OrderRecord, OrderRepository } from "./ports";
 
@@ -51,6 +51,11 @@ export class OrderPayments {
   /** El pedido (con número + token), en cualquier estado. */
   owned(number: string, token: string): Promise<OrderRecord> {
     return findOwned(this.orders, number, token);
+  }
+
+  /** Pedidos sin pagar desde `since` (esperando pago o cancelados porque venció la reserva): por si el pago entró igual. */
+  unpaidSince(since: Date): Promise<string[]> {
+    return this.orders.unpaidSince(since);
   }
 
   async findById(id: string): Promise<OrderRecord | null> {
@@ -128,7 +133,7 @@ export class OrderPayments {
     const now = this.clock();
     let n = 0;
     for (const id of await this.orders.expired(now)) {
-      if (!(await this.orders.cancelReleasing(id, "No se pagó a tiempo", now))) continue;
+      if (!(await this.orders.cancelReleasing(id, EXPIRED_REASON, now))) continue;
       n++;
       await this.orders.addEvent(id, {
         kind: "expired",

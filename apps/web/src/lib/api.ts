@@ -181,4 +181,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ t, paymentId }),
     }),
+  /** ¿Ya se pagó? (mientras el cliente paga en la pestaña de Mercado Pago). */
+  checkPayment: (number: string, t: string) =>
+    request<{ paid: boolean }>(`/checkout/orders/${encodeURIComponent(number)}/check`, {
+      method: "POST",
+      body: JSON.stringify({ t }),
+    }),
 };
