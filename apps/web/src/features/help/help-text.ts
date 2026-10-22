@@ -26,6 +26,16 @@ export function helpBlocks(body: string): HelpBlock[] {
   return blocks;
 }
 
+export type HelpInline = { text: string; href?: string };
+
+/** Un renglón con links: cada "https://…" se vuelve un link (sin el punto o la coma que lo cierra). */
+export function helpInline(text: string): HelpInline[] {
+  return text
+    .split(/(https?:\/\/[^\s]*[^\s.,;:)])/)
+    .filter(Boolean)
+    .map((t) => (/^https?:\/\//.test(t) ? { text: t.replace(/^https?:\/\/(www\.)?/, ""), href: t } : { text: t }));
+}
+
 /** Ancla de un apartado ("Cómo pedir un cambio" → "como-pedir-un-cambio"). */
 export function sectionId(title: string): string {
   return title

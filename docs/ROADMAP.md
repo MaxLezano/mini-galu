@@ -568,7 +568,17 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   imprimen en las facturas y el pie muestra nombre, CUIT y domicilio (solo lo cargado). **Data Fiscal** (formulario
   960): Gaby pega el link o el HTML que da ARCA (se queda con el link de `qr.afip/arca.gob.ar`) y el pie muestra el QR
   (SVG con `qrcode`, sin imagen de ARCA) que abre el formulario. ⏳ Cargar el link real cuando Gaby lo saque en ARCA
-- ⏳ Términos, privacidad (Ley 25.326) y textos de Defensa del Consumidor en la ayuda
+- ✅ **Textos legales en la ayuda** (texto de base; Gaby los puede ajustar desde el panel):
+  - Términos: arrepentimiento (Ley 24.240, art. 34: 10 días corridos, sin costo, con el botón), garantía legal de 6
+    meses (art. 11), factura por mail y reclamos en la Ventanilla Federal Única de Defensa del Consumidor
+  - Privacidad (Ley 25.326): responsable, con quién se comparten los datos (Mercado Pago, Andreani, ARCA, mails, Galú,
+    AWS en San Pablo), cuánto se guardan, derechos (acceso en 10 días corridos, corrección o borrado en 5 hábiles),
+    acceso gratis cada 6 meses y la leyenda de la AAIP
+  - Variable `{responsable}`: nombre, CUIT y domicilio de "Datos de la tienda" (sin cargar, "Mini Galú")
+  - Los `https://…` del texto de ayuda son links. El pie suma "Defensa de las y los consumidores: para reclamos
+    ingresá acá" (formulario de la Ventanilla Federal Única, `CONSUMER_CLAIMS_URL` de contracts)
+  - ⏳ Que lo revise el contador o un abogado de Gaby. ⏳ Inscribir la base de clientes en el Registro Nacional de
+    Bases de Datos de la AAIP
 
 ## Ideas para después (de IDEAS.md)
 Cupones automáticos, feed Instagram/Facebook Shops, Google Merchant, fotos de clientes, referidos,

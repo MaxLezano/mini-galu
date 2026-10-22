@@ -2,7 +2,7 @@ import type { HelpLink, HelpPage, HelpTopic } from "@mini-galu/contracts";
 import { FileText, type LucideIcon, RefreshCcw, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
 import { longDateYear } from "@/lib/date";
-import { helpBlocks, sectionId } from "../help-text";
+import { helpBlocks, helpInline, sectionId } from "../help-text";
 
 const ICONS: Record<HelpTopic, LucideIcon> = {
   cambios: RefreshCcw,
@@ -64,12 +64,16 @@ export function HelpArticle({ page, links, children }: Props) {
               {helpBlocks(s.body).map((b, i) =>
                 b.kind === "p" ? (
                   // biome-ignore lint/suspicious/noArrayIndexKey: los bloques de un apartado no se reordenan
-                  <p key={i}>{b.text}</p>
+                  <p key={i}>
+                    <Inline text={b.text} />
+                  </p>
                 ) : (
                   // biome-ignore lint/suspicious/noArrayIndexKey: los bloques de un apartado no se reordenan
                   <ul key={i}>
                     {b.items.map((it) => (
-                      <li key={it}>{it}</li>
+                      <li key={it}>
+                        <Inline text={it} />
+                      </li>
                     ))}
                   </ul>
                 ),
@@ -94,5 +98,19 @@ export function HelpArticle({ page, links, children }: Props) {
         </article>
       </div>
     </main>
+  );
+}
+
+/** Texto de un apartado con sus links (el formulario de Defensa del Consumidor, por ejemplo) clickeables. */
+function Inline({ text }: { text: string }) {
+  return helpInline(text).map((part, i) =>
+    part.href ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: las partes de un renglón no se reordenan
+      <a key={i} href={part.href} target="_blank" rel="noopener noreferrer">
+        {part.text}
+      </a>
+    ) : (
+      part.text
+    ),
   );
 }

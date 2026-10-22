@@ -5,6 +5,23 @@ test("ayuda: del pie a términos y entre páginas, con el índice del tema", asy
   await page.getByRole("contentinfo").getByRole("link", { name: "Términos" }).click();
   await expect(page).toHaveURL(/\/ayuda\/terminos$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Términos y condiciones");
+  // Ley 24.240: arrepentimiento, garantía y el formulario de reclamos de Defensa del Consumidor (link, también al pie)
+  await expect(page.getByRole("heading", { name: "Arrepentimiento de compra" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Garantía" })).toBeVisible();
+  const claims = /argentina\.gob\.ar\/produccion\/defensadelconsumidor\/formulario/;
+  await expect(page.locator("#contacto-y-reclamos a")).toHaveAttribute("href", claims);
+  await expect(
+    page.getByRole("contentinfo").getByRole("link", { name: /Defensa de las y los consumidores/ }),
+  ).toHaveAttribute("href", claims);
+
+  // Ley 25.326: responsable, derechos y la leyenda de la AAIP
+  await page
+    .getByRole("navigation", { name: "Páginas de ayuda" })
+    .getByRole("link", { name: "Política de privacidad" })
+    .click();
+  await expect(page).toHaveURL(/\/ayuda\/privacidad$/);
+  await expect(page.locator("#tus-derechos")).toContainText("Agencia de Acceso a la Información Pública");
+  await expect(page.locator("#quien-cuida-tus-datos")).toContainText("Ley 25.326");
 
   await page
     .getByRole("navigation", { name: "Páginas de ayuda" })

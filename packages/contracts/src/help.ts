@@ -44,8 +44,12 @@ export const HELP_VARS = {
   provincia: "Provincia del taller",
   email: "Email de la tienda",
   whatsapp: "WhatsApp de la tienda",
+  responsable: "Nombre, CUIT y domicilio de Datos de la tienda (lo cargado)",
 } as const;
 export type HelpVar = keyof typeof HELP_VARS;
+
+/** Formulario de reclamos de Defensa del Consumidor: la ley pide un link desde la tienda (pie y términos). */
+export const CONSUMER_CLAIMS_URL = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
 
 /** Reemplaza cada {variable} conocida; lo que no es una variable queda como está. */
 export function fillHelpText(text: string, values: Record<HelpVar, string>): string {

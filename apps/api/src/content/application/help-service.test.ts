@@ -1,4 +1,5 @@
 import {
+  CONSUMER_CLAIMS_URL,
   DEFAULT_POLICIES,
   HELP_TOPICS,
   type HelpPageInput,
@@ -96,6 +97,28 @@ describe("HelpService", () => {
       "Valen 1 mes. Dudas a a@b.com. {otra} sin tocar.",
     );
     expect((await help.page("terminos")).sections[0]?.body).toContain("{meses_gift_card}");
+  });
+
+  it("términos y privacidad traen lo que pide la ley, con el titular de Datos de la tienda", async () => {
+    const terminos = JSON.stringify(await new HelpService(new MemoryHelp(), facts).publicPage("terminos"));
+    expect(terminos).toContain("10 días corridos");
+    expect(terminos).toContain("Ley 24.240");
+    expect(terminos).toContain(CONSUMER_CLAIMS_URL);
+    // sin datos fiscales cargados, la marca: no se inventa un titular
+    expect(terminos).toContain("La tienda es de Mini Galú.");
+
+    const fiscal = {
+      ...DEFAULT_POLICIES.fiscal,
+      name: "Gabriela Pérez",
+      cuit: "27123456789",
+      address: "Thames 100, CABA",
+    };
+    const help = new HelpService(new MemoryHelp(), factsWith({ ...DEFAULT_POLICIES, fiscal }));
+    const privacidad = await help.publicPage("privacidad");
+    expect(privacidad.sections[0]?.body).toContain("es Gabriela Pérez, CUIT 27-12345678-9, Thames 100, CABA, según");
+    expect(JSON.stringify(privacidad)).toContain("Agencia de Acceso a la Información Pública");
+    expect(JSON.stringify(privacidad)).toContain("intervalos no inferiores a seis meses");
+    expect((await help.page("privacidad")).sections[0]?.body).toContain("{responsable}");
   });
 
   it("los apartados apagados no se ven en la tienda y se pueden apagar todos menos uno", async () => {

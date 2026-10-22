@@ -22,6 +22,7 @@
 .help-sec p { margin: 0 0 12px; color: var(--cacao-2); text-wrap: pretty; }
 .help-sec ul { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--cacao-2); }
 .help-sec li { position: relative; padding-left: 22px; }
+.help-sec p a, .help-sec li a { color: var(--cacao); text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .help-sec .help-cta { margin-top: 4px; }
 .help-sec li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 10px; border-top: 1.5px dashed var(--canela); }
 .help-upd { font-size: 13px; color: var(--cacao-3); margin: 8px 0 0; }

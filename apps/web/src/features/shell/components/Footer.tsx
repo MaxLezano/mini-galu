@@ -1,5 +1,6 @@
 "use client";
 
+import { CONSUMER_CLAIMS_URL } from "@mini-galu/contracts";
 import { CreditCard, Mail, Truck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -146,7 +147,10 @@ export function Footer() {
           <span className="footer-legal">
             © {new Date().getFullYear()} Mini Galú · Marca registrada · <Link href="/ayuda/terminos">Términos</Link> ·{" "}
             <Link href="/ayuda/privacidad">Privacidad</Link> ·{" "}
-            <Link href="/arrepentimiento">Botón de arrepentimiento</Link>
+            <Link href="/arrepentimiento">Botón de arrepentimiento</Link> ·{" "}
+            <a href={CONSUMER_CLAIMS_URL} target="_blank" rel="noopener noreferrer">
+              Defensa de las y los consumidores: para reclamos ingresá acá
+            </a>
           </span>
           <div className="pay-logos">
             <span>

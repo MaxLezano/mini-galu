@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { helpBlocks, sectionId } from "./help-text";
+import { helpBlocks, helpInline, sectionId } from "./help-text";
 
 describe("helpBlocks", () => {
   it("separa párrafos por línea en blanco y junta las líneas de un mismo párrafo", () => {
@@ -19,6 +19,20 @@ describe("helpBlocks", () => {
 
   it("ignora espacios y renglones vacíos de más (la lista sigue)", () => {
     expect(helpBlocks("\n\n  - a  \n\n\n- b\n")).toEqual([{ kind: "ul", items: ["a", "b"] }]);
+  });
+});
+
+describe("helpInline", () => {
+  it("vuelve link cada https:// sin el punto que cierra la frase", () => {
+    expect(helpInline("Reclamá en https://www.argentina.gob.ar/formulario. Gracias")).toEqual([
+      { text: "Reclamá en " },
+      { text: "argentina.gob.ar/formulario", href: "https://www.argentina.gob.ar/formulario" },
+      { text: ". Gracias" },
+    ]);
+  });
+
+  it("un texto sin links queda entero", () => {
+    expect(helpInline("Sin links.")).toEqual([{ text: "Sin links." }]);
   });
 });
 
