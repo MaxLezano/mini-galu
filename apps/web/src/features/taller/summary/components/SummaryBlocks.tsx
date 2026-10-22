@@ -72,7 +72,7 @@ export function TodoGrid({ todo, unanswered }: { todo: AdminDaySummary["todo"]; 
   );
 }
 
-const Trend = ({ up, children }: { up: boolean; children: ReactNode }) => (
+export const Trend = ({ up, children }: { up: boolean; children: ReactNode }) => (
   <small className={up ? "up" : "down"}>
     {up ? <TrendingUp className="i-sm" /> : <TrendingDown className="i-sm" />} {children}
   </small>

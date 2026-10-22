@@ -131,6 +131,15 @@ export const AUTOMATION_RULES = {
     vars: [],
     phase: null,
   },
+  reporte_mensual: {
+    title: "Reporte del mes",
+    when: "termina un mes",
+    does: ["Te manda por mail las ventas contra el mes anterior", "Lo más vendido y los talles agotados"],
+    channels: ["mail"],
+    message: null,
+    vars: [],
+    phase: null,
+  },
 } as const satisfies Record<string, RuleDef>;
 
 export type AutomationKey = keyof typeof AUTOMATION_RULES;

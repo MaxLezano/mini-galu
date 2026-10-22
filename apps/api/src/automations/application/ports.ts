@@ -2,6 +2,7 @@ import type {
   AutomationChannel,
   AutomationKey,
   AutomationRun,
+  MonthlyReport,
   ReviewPoints,
   ShippingMethod,
 } from "@mini-galu/contracts";
@@ -67,6 +68,8 @@ export interface Messenger {
     /** Prendas sugeridas con foto (ej. ideas para el cumple). */
     products?: Suggestion[];
   }): Promise<void>;
+  /** El reporte del mes al taller, con el botón para verlo en el panel. */
+  monthlyReport(to: string, report: MonthlyReport, url: string): Promise<void>;
 }
 
 /**
@@ -179,4 +182,13 @@ export interface IdleCarts {
    * el pago (de esas se ocupa el recordatorio del link).
    */
   between(from: Date, to: Date): Promise<IdleCart[]>;
+}
+
+/** El reporte mensual (lo arma el módulo de reportes) y a quién le llega. */
+export interface MonthlyReports {
+  /** El último mes cerrado ("2026-09" durante octubre). */
+  lastClosed(): string;
+  build(month: string): Promise<MonthlyReport>;
+  /** El email del taller (Tienda y pagos → contacto). */
+  recipient(): Promise<string>;
 }

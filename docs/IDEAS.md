@@ -40,7 +40,7 @@ Qué podría sumar la web, ordenado por impacto. ✅ = ya está en los mockups. 
 | ✅ | **Notificaciones** y **búsqueda global** (atajo `/`) | Encontrar cualquier pedido o clienta en segundos |
 | 🔜 | **Panel instalable en el celular (PWA)** con aviso push de pedido nuevo | Gaby opera desde el teléfono como si fuera una app |
 | 🔜 | **Etiquetas Andreani en lote** (un PDF con todas) | Despachar 10 pedidos en un minuto |
-| 🔜 | **Reporte mensual** por mail: ventas, más vendidos, talles agotados | Decisiones con números, sin abrir el panel |
+| ✅ | **Reporte mensual** por mail: ventas, más vendidos, talles agotados | Decisiones con números, sin abrir el panel |
 | 💡 | **Costos por prenda** (tela, horas, avíos) y margen real | Saber qué modelos convienen |
 | 💡 | **Stock de materiales** (telas, puntillas) vinculado a las tandas | Evitar quedarse sin insumos |
 | 💡 | **Varias usuarias** con permisos (ej. alguien que solo despacha) | Para cuando el taller crezca |

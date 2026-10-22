@@ -1,4 +1,14 @@
-import { formatARS, type PaymentMethod, type ShippingMethod } from "@mini-galu/contracts";
+import {
+  formatARS,
+  type MonthlyReport,
+  ORDER_CHANNELS,
+  type PaymentMethod,
+  reportChange,
+  reportMonthLabel,
+  reportSize,
+  type ShippingMethod,
+  shiftReportMonth,
+} from "@mini-galu/contracts";
 
 /** Un mail listo para mandar (HTML + texto plano para clientes que no muestran HTML). */
 /** `replyTo`: a dónde llega si el cliente responde (el email de Tienda y pagos; el remitente puede no recibir). */
@@ -70,6 +80,8 @@ function frame(
   links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
   number: string,
   card: string,
+  /** Pie propio (los mails al taller no llevan el de los clientes). */
+  footer?: string,
 ): string {
   const e = escapeHtml;
   return `<!doctype html>
@@ -84,9 +96,12 @@ function frame(
         </td></tr>
         <tr><td style="background:#fff;border-radius:20px;padding:28px;border:1px solid ${C.line}">${card}</td></tr>
         <tr><td style="text-align:center;padding:22px 8px;font-size:12.5px;line-height:1.6;color:${C.cacao2}">
-          ¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a>${number ? ` con el número <b>#${e(number)}</b>` : ""}.<br>
+          ${
+            footer ??
+            `¿Dudas? <a href="${e(links.whatsapp)}" style="color:${C.salvia}">Escribinos por WhatsApp</a>${number ? ` con el número <b>#${e(number)}</b>` : ""}.<br>
           ${links.exchangeDays} días para cambiar el talle, sin uso y con la etiqueta.<br>
-          <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>
+          <span style="font-family:Georgia,serif;font-style:italic;color:${C.canela}">gracias por elegir algo hecho a mano ♡</span>`
+          }
         </td></tr>
       </table>
     </td></tr>
@@ -460,4 +475,79 @@ export function letterMail(
     "\n",
   );
   return { to: m.to, subject: m.subject, html, text };
+}
+
+/** "↑ 18% vs agosto" · "↓ 5% vs agosto" · "sin ventas en agosto" */
+function changeLabel(cur: number, prev: number, prevMonth: string): string {
+  const pct = reportChange(cur, prev);
+  if (pct === null) return `sin ventas en ${prevMonth}`;
+  if (pct === 0) return `igual que ${prevMonth}`;
+  return `${pct > 0 ? "↑" : "↓"} ${Math.abs(pct)}% vs ${prevMonth}`;
+}
+
+/** Reporte del mes al taller (regla "Reporte del mes"): ventas, lo más vendido y los talles agotados. */
+export function monthlyReportMail(
+  to: string,
+  r: MonthlyReport,
+  url: string,
+  links: Pick<MailLinks, "site" | "whatsapp" | "exchangeDays">,
+): Mail {
+  const e = escapeHtml;
+  const month = reportMonthLabel(r.month);
+  const prev = reportMonthLabel(shiftReportMonth(r.month, -1));
+  const subject = `Reporte de ${reportMonthLabel(r.month, true)}: ${money(r.sales.cents)} en ${r.sales.orders} ${r.sales.orders === 1 ? "pedido" : "pedidos"}`;
+  const kpi = (label: string, value: string, note: string) =>
+    `<td style="width:33%;padding:12px;background:${C.linen};border-radius:14px;vertical-align:top">
+              <div style="font-size:11px;color:${C.cacao2}">${label}</div>
+              <div style="font-family:Georgia,serif;font-size:22px;margin:4px 0">${value}</div>
+              <div style="font-size:11.5px;color:${C.cacao2}">${note}</div>
+            </td>`;
+  const h2 = (t: string) =>
+    `<h2 style="font-family:Georgia,serif;font-weight:400;font-size:19px;margin:24px 0 8px">${t}</h2>`;
+  const row = (left: string, right: string, sub = "") =>
+    `<tr><td style="padding:8px 0;border-top:1px solid ${C.line};font-size:14px">${left}${sub ? `<div style="font-size:12px;color:${C.cacao2}">${sub}</div>` : ""}</td><td style="padding:8px 0;border-top:1px solid ${C.line};font-size:14px;text-align:right;white-space:nowrap">${right}</td></tr>`;
+  const table = (rows: string[]) =>
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows.join("")}</table>`;
+  const none = (t: string) => `<p style="margin:0;font-size:14px;color:${C.cacao2}">${t}</p>`;
+  const sizesOf = (p: MonthlyReport["top"][number]) =>
+    p.sizes.map((s) => `${reportSize(s.size)} × ${s.units}`).join(" · ");
+  const units = (n: number) => `${n} ${n === 1 ? "unidad" : "unidades"}`;
+  const waiting = (n: number) => (n ? `${n} ${n === 1 ? "anotado" : "anotados"} esperando` : "sin anotados");
+
+  const html = frame(
+    e(subject),
+    links,
+    "",
+    `
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${C.canela}">Reporte del mes</div>
+          <h1 style="font-family:Georgia,serif;font-weight:400;font-size:28px;margin:12px 0 16px">Así cerró <em style="color:${C.canela}">${e(month)}</em></h1>
+          <table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="margin:0 -6px"><tr>
+            ${kpi("Ventas", money(r.sales.cents), changeLabel(r.sales.cents, r.sales.prevCents, prev))}
+            ${kpi("Pedidos", String(r.sales.orders), `${r.sales.returning} de clientes que vuelven`)}
+            ${kpi("Ticket promedio", money(r.sales.avgTicketCents), changeLabel(r.sales.avgTicketCents, r.sales.prevAvgTicketCents, prev))}
+          </tr></table>
+          ${h2("Lo más vendido")}
+          ${r.top.length ? table(r.top.map((p, i) => row(`${i + 1}. ${e(p.name)}`, units(p.units), e(sizesOf(p))))) : none("Este mes no se vendieron prendas.")}
+          ${h2("Talles agotados")}
+          ${r.soldOut.length ? table(r.soldOut.map((s) => row(`${e(s.name)} · ${reportSize(s.size)}`, waiting(s.waiting)))) : none("No hay talles agotados ♡")}
+          ${r.channels.length ? `${h2("Por dónde entraron")}${table(r.channels.map((c) => row(ORDER_CHANNELS[c.channel], money(c.cents), `${c.orders} ${c.orders === 1 ? "pedido" : "pedidos"}`)))}` : ""}
+          <div style="text-align:center;margin-top:24px"><a href="${e(url)}" style="display:inline-block;background:${C.cacao};color:${C.paper};text-decoration:none;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px">Ver el reporte en el panel</a></div>`,
+    `Te llega porque está prendida la regla "Reporte del mes".<br>La pausás desde el panel, en Automatizaciones.`,
+  );
+  const text = [
+    `Reporte de ${reportMonthLabel(r.month, true)}`,
+    "",
+    `Ventas: ${money(r.sales.cents)} (${changeLabel(r.sales.cents, r.sales.prevCents, prev)})`,
+    `Pedidos: ${r.sales.orders} (${r.sales.returning} de clientes que vuelven)`,
+    `Ticket promedio: ${money(r.sales.avgTicketCents)}`,
+    "",
+    "Lo más vendido:",
+    ...(r.top.length ? r.top.map((p, i) => `${i + 1}. ${p.name}: ${units(p.units)} (${sizesOf(p)})`) : ["-"]),
+    "",
+    "Talles agotados:",
+    ...(r.soldOut.length ? r.soldOut.map((s) => `- ${s.name} · ${reportSize(s.size)}: ${waiting(s.waiting)}`) : ["-"]),
+    "",
+    `Ver el reporte en el panel: ${url}`,
+  ].join("\n");
+  return { to, subject, html, text };
 }

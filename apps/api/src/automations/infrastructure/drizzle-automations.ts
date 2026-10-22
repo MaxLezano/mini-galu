@@ -11,6 +11,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  ne,
   notExists,
   schema as s,
   sql,
@@ -88,7 +89,14 @@ export class DrizzleRunLog implements RunLog {
     const rows = await this.db
       .select({ channel: s.automationRuns.channel, n: sql<number>`count(*)::int` })
       .from(s.automationRuns)
-      .where(and(gte(s.automationRuns.createdAt, since), eq(s.automationRuns.status, "ok")))
+      // el reporte del mes le llega al taller, no a un cliente
+      .where(
+        and(
+          gte(s.automationRuns.createdAt, since),
+          eq(s.automationRuns.status, "ok"),
+          ne(s.automationRuns.rule, "reporte_mensual"),
+        ),
+      )
       .groupBy(s.automationRuns.channel);
     const n = (c: string) => rows.find((r) => r.channel === c)?.n ?? 0;
     return { mail: n("mail"), whatsapp: n("whatsapp") };

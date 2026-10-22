@@ -40,6 +40,7 @@ Slugs: `romantico-rojo`, `maddie`, `samanta`, `catalina`, `catalina-rojo`, `cleo
 | Página | Qué probar |
 |---|---|
 | `admin.html` | Tareas del día, métricas, ventas por semana, últimos pedidos, lanzamiento, stock, registro automático |
+| `admin-reporte.html` | Reporte mensual: ventas contra el mes anterior, lo más vendido, canales, talles agotados y más vendidos; elegir el mes, imprimir |
 | `admin-pedidos.html` | **Tablero arrastrable**, lista con selección múltiple, lista de preparación, detalle con siguiente paso, picking y WhatsApp |
 | `admin-lanzamientos.html` | Próximos lanzamientos, borradores y anteriores; **crear y editar** (portada, fecha y hora, prendas, cuenta regresiva en la home, aviso a anotados, texto para redes) |
 | `admin-productos.html` | Talles y stock en columnas separadas, editor con fotos ordenables y stock por talle |

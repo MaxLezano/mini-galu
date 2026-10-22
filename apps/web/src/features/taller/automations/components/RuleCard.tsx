@@ -4,6 +4,7 @@ import {
   BellRing,
   Cake,
   CalendarHeart,
+  ChartColumn,
   Check,
   CornerDownRight,
   House,
@@ -33,6 +34,7 @@ const ICON: Record<AdminAutomationRule["key"], LucideIcon> = {
   bolsa_abandonada: ShoppingBag,
   cumple: Cake,
   stock_bajo: TriangleAlert,
+  reporte_mensual: ChartColumn,
 };
 
 type Props = {

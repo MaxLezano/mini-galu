@@ -683,7 +683,16 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
       (ver la coexistencia con la app WhatsApp Business) · ⏳ webhook de estados de Meta (saber si un mensaje no
       llegó): hoy alcanza con que el mail salga siempre
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
-   para probar la web con pagos y envíos reales. Después, el reporte mensual
+   para probar la web con pagos y envíos reales
+   - ✅ **Reporte mensual** (adelantado: no depende de AWS). En el panel, `/taller/reporte` (botón "Reporte del mes" en
+     el Resumen; mockup nuevo `admin-reporte.html`): ventas, pedidos, ticket promedio y prendas vendidas contra el mes
+     anterior, lo más vendido (5 prendas con sus talles), por dónde entraron los pedidos (canal), talles más vendidos y
+     los talles agotados de hoy con cuántos anotados esperan. Se elige el mes (los últimos 12; el actual, "en curso",
+     llega hasta hoy) y se imprime. Lo devuelto en una devolución parcial no cuenta. Regla nueva "Reporte del mes" en
+     Automatizaciones: el día 1 desde las 9 (o hasta el día 7 si el servidor no anduvo) manda el del mes que terminó
+     al email de contacto de Tienda y pagos, una vez por mes; queda en el registro y no suma a los mensajes a clientes.
+     Módulo `reports` (`GET /admin/reports/monthly?mes=AAAA-MM`), Vitest del dominio, del caso de uso, de la regla y
+     del mail; e2e en `taller.spec`
 4. ⏳ Lo que revisan Gaby, su contador y su abogado: al final, con la web en producción
 - ✅ Opcional: **sucursales Andreani en un mapa**. En el checkout, debajo de "¿En qué sucursal lo retirás?", un plano
   con las sucursales del CP (teselas de OpenStreetMap llevadas a los tonos de la tienda con un filtro, sin librería

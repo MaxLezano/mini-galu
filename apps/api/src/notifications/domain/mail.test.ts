@@ -1,5 +1,6 @@
+import type { MonthlyReport } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
-import { type MailOrder, messageMail, paymentApprovedMail, paymentReminderMail } from "./mail";
+import { type MailOrder, messageMail, monthlyReportMail, paymentApprovedMail, paymentReminderMail } from "./mail";
 
 const links = {
   tracking: "http://web/seguimiento?pedido=MG-1001",
@@ -125,5 +126,56 @@ describe("recordatorio de link de pago", () => {
     expect(m.html).toContain('href="http://web/producto/elsa"');
     expect(m.html).not.toContain("con el número");
     expect(m.text).toContain("- Vestido Elsa · $28.000: http://web/producto/elsa");
+  });
+});
+
+describe("reporte del mes", () => {
+  const report: MonthlyReport = {
+    month: "2026-09",
+    closed: true,
+    sales: {
+      cents: 612_400_00,
+      prevCents: 519_000_00,
+      orders: 14,
+      prevOrders: 12,
+      returning: 6,
+      avgTicketCents: 43_700_00,
+      prevAvgTicketCents: 43_250_00,
+      units: 21,
+    },
+    channels: [{ channel: "instagram", orders: 3, cents: 120_000_00 }],
+    top: [
+      { slug: "samanta", name: "Vestido <Samanta>", units: 5, cents: 200_000_00, sizes: [{ size: "12m", units: 3 }] },
+    ],
+    sizes: [{ size: "12m", units: 3 }],
+    soldOut: [{ slug: "maddie", name: "Set Maddie", size: "6", waiting: 3 }],
+  };
+
+  it("ventas contra el mes anterior, lo más vendido, agotados y el link al panel; pie del taller", () => {
+    const m = monthlyReportMail("taller@x.com", report, "http://web/taller/reporte?mes=2026-09", links);
+    expect(m.to).toBe("taller@x.com");
+    expect(m.subject).toBe("Reporte de septiembre de 2026: $612.400 en 14 pedidos");
+    expect(m.html).toContain("↑ 18% vs agosto");
+    expect(m.html).toContain("Vestido &lt;Samanta&gt;");
+    expect(m.html).toContain("Talle 12 m × 3");
+    expect(m.html).toContain("Set Maddie · Talle 6");
+    expect(m.html).toContain("3 anotados esperando");
+    expect(m.html).toContain("Instagram");
+    expect(m.html).toContain('href="http://web/taller/reporte?mes=2026-09"');
+    expect(m.html).toContain("Reporte del mes");
+    expect(m.html).not.toContain("gracias por elegir algo hecho a mano");
+    expect(m.text).toContain("1. Vestido <Samanta>: 5 unidades (Talle 12 m × 3)");
+  });
+
+  it("sin ventas el mes anterior no inventa un porcentaje", () => {
+    const m = monthlyReportMail(
+      "t@x.com",
+      { ...report, sales: { ...report.sales, prevCents: 0 }, top: [], soldOut: [] },
+      "u",
+      links,
+    );
+    expect(m.html).toContain("sin ventas en agosto");
+    expect(m.html).toContain("Este mes no se vendieron prendas.");
+    expect(m.html).toContain("No hay talles agotados");
   });
 });

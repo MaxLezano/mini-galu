@@ -19,6 +19,7 @@ import type {
   AssistantOverview,
   Collection,
   HelpPage,
+  MonthlyReport,
 } from "@mini-galu/contracts";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -72,4 +73,7 @@ export const adminServer = {
   giftcards: () => serverRequest<AdminGiftcards>("/admin/giftcards"),
   orders: () => serverRequest<AdminOrderSummary[]>("/admin/orders"),
   summary: () => serverRequest<AdminDaySummary>("/admin/orders/summary"),
+  /** Sin mes, el último cerrado. */
+  report: (month: string | null) =>
+    serverRequest<MonthlyReport>(`/admin/reports/monthly${month ? `?mes=${month}` : ""}`),
 };

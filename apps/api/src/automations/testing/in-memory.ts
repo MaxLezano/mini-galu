@@ -1,4 +1,10 @@
-import { type AutomationKey, type AutomationRun, DEFAULT_POLICIES, type ReviewPoints } from "@mini-galu/contracts";
+import {
+  type AutomationKey,
+  type AutomationRun,
+  DEFAULT_POLICIES,
+  type MonthlyReport,
+  type ReviewPoints,
+} from "@mini-galu/contracts";
 import type {
   AutomationOrders,
   AutomationSettingsStore,
@@ -59,7 +65,7 @@ export class MemoryRunLog implements RunLog {
     return out;
   }
   async sentSince(since: Date) {
-    const ok = this.list.filter((r) => r.at >= since && r.status === "ok");
+    const ok = this.list.filter((r) => r.at >= since && r.status === "ok" && r.rule !== "reporte_mensual");
     return {
       mail: ok.filter((r) => r.channel === "mail").length,
       whatsapp: ok.filter((r) => r.channel === "whatsapp").length,
@@ -117,6 +123,11 @@ export class MemoryMessenger implements Messenger {
       ...(m.products ? { eyebrow: m.eyebrow, products: m.products } : {}),
     });
     this.ctas.push(m.cta);
+  }
+  /** Reportes del mes que mandaría (a quién, de qué mes y el link al panel). */
+  reports: { to: string; month: string; url: string }[] = [];
+  async monthlyReport(to: string, report: MonthlyReport, url: string) {
+    this.reports.push({ to, month: report.month, url });
   }
 }
 

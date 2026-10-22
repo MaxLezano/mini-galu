@@ -326,6 +326,35 @@ test("resumen: el pedido pagado aparece para preparar, en los últimos y en lo q
   await expect(page).toHaveURL(new RegExp(`/taller/pedidos\\?pedido=${number}`));
 });
 
+test("reporte del mes: del resumen al último mes cerrado y al mes en curso con el pedido pagado", async ({
+  page,
+  request,
+}) => {
+  const number = await paidOrder(request);
+  test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");
+  await login(page);
+  await page.goto("/taller");
+  await ready(page);
+  await page.getByRole("link", { name: "Reporte del mes" }).click();
+  await expect(page).toHaveURL(/\/taller\/reporte$/);
+  await expect(page.locator(".greet-note")).toHaveText("así cerró el mes ♡");
+  await expect(page.getByRole("region", { name: "Talles agotados" })).toBeVisible();
+
+  // el mes en curso (hora de Argentina) tiene el pedido recién pagado
+  const ar = new Date(Date.now() - 3 * 3_600_000);
+  const current = `${ar.getUTCFullYear()}-${String(ar.getUTCMonth() + 1).padStart(2, "0")}`;
+  await page.getByLabel("Mes").selectOption(current);
+  await expect(page).toHaveURL(new RegExp(`/taller/reporte\\?mes=${current}`));
+  await expect(page.locator(".greet-note")).toHaveText("en curso: llega hasta hoy");
+  const top = page.getByRole("region", { name: "Lo más vendido" });
+  await expect(top).toContainText("Moño Verde Largo");
+  await expect(top).toContainText("Talle único");
+  await expect(page.getByRole("region", { name: "Por dónde entraron" })).toContainText("Web");
+
+  await page.getByRole("link", { name: "Automatizaciones", exact: true }).last().click();
+  await expect(page.locator('[data-rule="reporte_mensual"]')).toContainText("termina un mes");
+});
+
 test("buscar un pedido desde la barra lo abre y la campana avisa el pedido nuevo", async ({ page, request }) => {
   const number = await paidOrder(request);
   test.skip(!number, "La API está con Mercado Pago real (MP_ACCESS_TOKEN en el .env)");

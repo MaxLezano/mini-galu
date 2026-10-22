@@ -1,0 +1,15 @@
+/* admin-reporte.html (estilos de la página) */
+.month-pick { display: flex; gap: 8px; align-items: center; }
+.month-pick select { width: auto; height: 40px; border-radius: 999px; font-size: 13.5px; }
+.top-sizes { font-size: 12.5px; color: var(--cacao-2); }
+.shares { display: grid; gap: 12px; }
+.share { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.share .bar { height: 10px; border-radius: 999px; background: var(--linen); overflow: hidden; }
+.share .bar i { display: block; height: 100%; border-radius: 999px; background: var(--canela); }
+.share b { font-weight: 600; white-space: nowrap; }
+.share small { display: block; color: var(--cacao-2); font-size: 12px; font-weight: 400; text-align: right; }
+.soldout .it { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.soldout .it:last-child { border-bottom: 0; }
+.empty-note { margin: 0; color: var(--cacao-2); font-size: 14px; }
+@media (max-width: 520px) { .share { grid-template-columns: 80px minmax(0, 1fr) auto; } }
+@media print { .adm-side, .adm-top, .adm-tabbar, .month-pick { display: none !important; } }

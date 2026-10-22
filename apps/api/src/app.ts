@@ -141,6 +141,9 @@ import { DrizzlePoints } from "./points/infrastructure/drizzle-points";
 import { PoliciesService } from "./policies/application/policies-service";
 import { DrizzlePoliciesStore } from "./policies/infrastructure/drizzle-policies-store";
 import { adminPoliciesRoutes, policiesRoutes } from "./policies/infrastructure/http/policies-routes";
+import { ReportService } from "./reports/application/report-service";
+import { DrizzleReportData } from "./reports/infrastructure/drizzle-report-data";
+import { adminReportRoutes } from "./reports/infrastructure/http/report-routes";
 import { ReviewService } from "./reviews/application/review-service";
 import { reviewPath } from "./reviews/domain/review";
 import { DrizzleReviews } from "./reviews/infrastructure/drizzle-reviews";
@@ -577,6 +580,7 @@ export function buildApp(config: Config) {
     events,
     { forEmail: (email) => points.summary(email), redeem: (email) => points.redeem(email) },
   );
+  const reports = new ReportService(new DrizzleReportData(db));
   // automatizaciones: cada regla se puede pausar y editar desde el panel (admin-automatizaciones.html)
   const automations = new AutomationService(
     new DrizzleAutomationSettings(db),
@@ -609,6 +613,12 @@ export function buildApp(config: Config) {
       (path) => storage.url(path),
       (slug) => `${config.webOrigin}/producto/${slug}`,
     ),
+    {
+      lastClosed: () => reports.lastClosed(),
+      build: (month) => reports.monthly(month),
+      // al email de contacto del taller (Tienda y pagos)
+      recipient: async () => (await policies.get()).contact.email,
+    },
     whatsapp,
     {
       launch: `${config.webOrigin}/#lanzamiento`,
@@ -622,6 +632,7 @@ export function buildApp(config: Config) {
       review: (n, t) => `${config.webOrigin}${reviewPath(n, t)}`,
       // sin sesión, ingresar vuelve a la pestaña Puntos de Mi cuenta
       points: `${config.webOrigin}/ingresar?volver=%2Fcuenta%23puntos`,
+      report: (month) => `${config.webOrigin}/taller/reporte?mes=${month}`,
     },
   );
   // la compra de una gift card no lleva los avisos de un pedido de prendas: le llega su código
@@ -895,6 +906,7 @@ export function buildApp(config: Config) {
     scheduler.every(600, "stock bajo", () => automations.checkLowStock());
     scheduler.every(3600, "cumples que se acercan", () => automations.birthdays());
     scheduler.every(1800, "bolsas abandonadas", () => automations.idleCarts());
+    scheduler.every(3600, "reporte del mes", () => automations.monthlyReport());
     scheduler.every(600, "mandar gift cards programadas", () => giftcards.deliverDue());
     scheduler.every(60, "reintentar facturas", () => invoicing.retryDue());
     if (instagram) scheduler.every(3600, "feed de Instagram", () => instagram.sync());
@@ -975,6 +987,7 @@ export function buildApp(config: Config) {
     .route("/admin/payments", adminPaymentRoutes(payments))
     .route("/admin/shipping", adminShippingRoutes(shipments))
     .route("/admin/newsletter", adminNewsletterRoutes(newsletter))
+    .route("/admin/reports", adminReportRoutes(reports))
     .route("/admin/subscribers", adminSubscribersRoutes(new SubscribersService(new DrizzleSubscribersReadModel(db))))
     .route("/admin/policies", adminPoliciesRoutes(policies))
     .route(

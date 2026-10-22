@@ -1,4 +1,6 @@
+import { shiftReportMonth } from "@mini-galu/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
+import { buildReport, monthOf } from "../../reports/domain/monthly-report";
 import { ConflictError } from "../../shared/domain/errors";
 import {
   MemoryAutomationOrders,
@@ -14,7 +16,7 @@ import {
   MemoryWhatsApp,
 } from "../testing/in-memory";
 import { AutomationService } from "./automation-service";
-import type { IdleCart } from "./ports";
+import type { IdleCart, MonthlyReports } from "./ports";
 
 const DAY = 86_400_000;
 const channels = {
@@ -35,6 +37,23 @@ let kids: MemoryBirthdays;
 let suggestions: MemorySuggestions;
 let carts: MemoryIdleCarts;
 let launches: MemoryLaunchSignups;
+/** Reportes armados (el mes de cada uno). */
+let built: string[];
+const reports: MonthlyReports = {
+  lastClosed: () => shiftReportMonth(monthOf(now), -1),
+  build: async (month) => {
+    built.push(month);
+    return buildReport({
+      month,
+      now,
+      orders: [{ totalCents: 45_000_00, paidAt: now, email: "a@x.com", channel: "web", items: [] }],
+      prev: [],
+      earlier: new Set(),
+      soldOut: [],
+    });
+  },
+  recipient: async () => "taller@minigalu.com.ar",
+};
 let auto: AutomationService;
 
 const build = (whatsapp: MemoryWhatsApp | null) =>
@@ -49,6 +68,7 @@ const build = (whatsapp: MemoryWhatsApp | null) =>
     suggestions,
     carts,
     launches,
+    reports,
     whatsapp,
     {
       launch: "http://web/#lanzamiento",
@@ -60,12 +80,14 @@ const build = (whatsapp: MemoryWhatsApp | null) =>
       workshop: async () => "Villa Crespo, CABA",
       review: (n, t) => `http://web/resena/${n}?t=${t}`,
       points: "http://web/cuenta#puntos",
+      report: (m) => `http://web/taller/reporte?mes=${m}`,
     },
     () => now,
   );
 
 beforeEach(() => {
   now = new Date("2026-10-14T12:00:00-03:00");
+  built = [];
   settings = new MemoryAutomationSettings();
   runs = new MemoryRunLog();
   messenger = new MemoryMessenger(new Map([["o1", "lucia@gmail.com"]]));
@@ -569,5 +591,40 @@ describe("por WhatsApp", () => {
     expect(n).toBe(17);
     expect(wa.sent.filter((m) => m.kind === "novedad")).toHaveLength(2);
     expect(wa.sent.every((m) => m.to === "+5493814440000")).toBe(true);
+  });
+});
+
+describe("reporte del mes", () => {
+  it("el día 1 desde las 9 manda el del mes que terminó al taller, una vez", async () => {
+    now = new Date("2026-10-01T08:30:00-03:00");
+    expect(await auto.monthlyReport()).toBe(0);
+    now = new Date("2026-10-01T09:05:00-03:00");
+    expect(await auto.monthlyReport()).toBe(1);
+    expect(messenger.reports).toEqual([
+      { to: "taller@minigalu.com.ar", month: "2026-09", url: "http://web/taller/reporte?mes=2026-09" },
+    ]);
+    const [run] = runs.list;
+    expect(run).toMatchObject({ rule: "reporte_mensual", channel: "mail", subjectKey: "reporte:2026-09" });
+    expect(run?.subject).toBe("Reporte de septiembre de 2026");
+    expect(run?.detail).toContain("$45.000 en 1 pedido");
+    now = new Date("2026-10-01T10:05:00-03:00");
+    expect(await auto.monthlyReport()).toBe(0);
+    // no cuenta como mensaje a clientes
+    expect((await auto.admin(channels)).stats.sent.mail).toBe(0);
+  });
+
+  it("si el servidor no anduvo el día 1, sale después; pasada la semana, no", async () => {
+    now = new Date("2026-10-04T12:00:00-03:00");
+    expect(await auto.monthlyReport()).toBe(1);
+    now = new Date("2026-11-08T12:00:00-03:00");
+    expect(await auto.monthlyReport()).toBe(0);
+    expect(built).toEqual(["2026-09"]);
+  });
+
+  it("pausada, no sale", async () => {
+    await auto.update("reporte_mensual", { on: false });
+    now = new Date("2026-10-02T12:00:00-03:00");
+    expect(await auto.monthlyReport()).toBe(0);
+    expect(messenger.reports).toEqual([]);
   });
 });

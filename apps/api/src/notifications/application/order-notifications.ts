@@ -1,3 +1,4 @@
+import type { MonthlyReport } from "@mini-galu/contracts";
 import {
   type GiftcardMailData,
   giftcardBuyerMail,
@@ -7,6 +8,7 @@ import {
   type MailLinks,
   type MessageMail,
   messageMail,
+  monthlyReportMail,
   paymentApprovedMail,
   paymentReminderMail,
   type ReminderOrder,
@@ -48,6 +50,12 @@ export class OrderNotifications {
       ...messageMail(m, await this.links(m.number ?? "")),
       ...(attachments?.length && { attachments }),
     });
+  }
+
+  /* ---- Al taller ---- */
+
+  async monthlyReport(to: string, report: MonthlyReport, url: string): Promise<void> {
+    await this.mailer.send(monthlyReportMail(to, report, url, await this.links("")));
   }
 
   /* ---- Gift cards ---- */

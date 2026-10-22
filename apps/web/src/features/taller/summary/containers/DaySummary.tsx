@@ -1,7 +1,8 @@
 "use client";
 
 import type { AdminDaySummary, AdminLaunch, AdminOrderSummary, AssistantOverview } from "@mini-galu/contracts";
-import { ListChecks } from "lucide-react";
+import { ChartColumn, ListChecks } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { useUi } from "@/features/shell/ui-store";
 import { relativeWhen } from "@/lib/date";
@@ -54,6 +55,9 @@ export function DaySummary({ summary, orders, low, launch, galu, today, name }: 
           </span>
         </div>
         <div className="actions">
+          <Link className="btn btn-sm btn-ghost" href="/taller/reporte">
+            <ChartColumn className="i-sm" /> Reporte del mes
+          </Link>
           <button
             type="button"
             className="btn btn-sm"

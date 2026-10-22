@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reporte del mes — Taller Mini Galú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+<style>
+  .month-pick { display: flex; gap: 8px; align-items: center; }
+  .month-pick select { width: auto; height: 40px; border-radius: 999px; font-size: 13.5px; }
+  .top-sizes { font-size: 12.5px; color: var(--cacao-2); }
+  .shares { display: grid; gap: 12px; }
+  .share { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 13.5px; }
+  .share .bar { height: 10px; border-radius: 999px; background: var(--linen); overflow: hidden; }
+  .share .bar i { display: block; height: 100%; border-radius: 999px; background: var(--canela); }
+  .share b { font-weight: 600; white-space: nowrap; }
+  .share small { display: block; color: var(--cacao-2); font-size: 12px; font-weight: 400; text-align: right; }
+  .soldout .it { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .soldout .it:last-child { border-bottom: 0; }
+  .empty-note { margin: 0; color: var(--cacao-2); font-size: 14px; }
+  @media (max-width: 520px) { .share { grid-template-columns: 80px minmax(0, 1fr) auto; } }
+  @media print { .adm-side, .adm-top, .adm-tabbar, .month-pick { display: none !important; } }
+</style>
+</head>
+<body class="adm-body" data-layout="bare" data-adm="resumen">
+<main class="adm-content" id="adm-page">
+  <div class="adm-head">
+    <div><span class="eyebrow">Reporte del mes</span><h1 class="display">Septiembre <em>2026</em></h1><span class="hand greet-note">así cerró el mes ♡</span></div>
+    <div class="actions month-pick">
+      <select class="input" aria-label="Mes">
+        <option>Octubre 2026 (en curso)</option><option selected>Septiembre 2026</option><option>Agosto 2026</option><option>Julio 2026</option>
+      </select>
+      <button class="btn btn-sm" onclick="print()"><span data-icon="printer" class="i-sm"></span> Imprimir</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span><span data-icon="banknote" class="i-sm"></span> Ventas de septiembre</span><b>$612.400</b><small class="up"><span data-icon="trending-up" class="i-sm"></span> 18% vs agosto</small></div>
+    <div class="kpi"><span><span data-icon="package" class="i-sm"></span> Pedidos</span><b>14</b><small class="muted">6 de clientes que vuelven</small></div>
+    <div class="kpi"><span><span data-icon="receipt" class="i-sm"></span> Ticket promedio</span><b>$43.700</b><small class="up"><span data-icon="trending-up" class="i-sm"></span> 1% vs agosto</small></div>
+    <div class="kpi"><span><span data-icon="shirt" class="i-sm"></span> Prendas vendidas</span><b>21</b><small class="muted">sin las devueltas</small></div>
+  </div>
+
+  <div class="cols-2">
+    <section class="box">
+      <div class="box-head"><h2>Lo más vendido</h2><a class="link" href="admin-productos.html" style="font-size:13px">Ver productos</a></div>
+      <div class="tbl-wrap"><table class="t">
+        <thead><tr><th>Prenda</th><th class="num">Unidades</th><th class="num">Ventas</th></tr></thead>
+        <tbody>
+          <tr><td><b>Vestido Samanta</b><div class="top-sizes">Talle 6 × 3 · Talle 8 × 2</div></td><td class="num">5</td><td class="num">$195.000</td></tr>
+          <tr><td><b>Set Maddie Bordado</b><div class="top-sizes">Talle 4 × 2 · Talle 2 × 1</div></td><td class="num">3</td><td class="num">$117.000</td></tr>
+          <tr><td><b>Mono Verde</b><div class="top-sizes">Talle 12 m × 2</div></td><td class="num">2</td><td class="num">$64.000</td></tr>
+          <tr><td><b>Blusa Kira</b><div class="top-sizes">Talle 6 × 1 · Talle 10 × 1</div></td><td class="num">2</td><td class="num">$58.000</td></tr>
+          <tr><td><b>Vincha Lino</b><div class="top-sizes">Talle único × 2</div></td><td class="num">2</td><td class="num">$17.000</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section class="box">
+      <div class="box-head"><h2>Por dónde entraron</h2></div>
+      <div class="shares">
+        <div class="share"><span>Web</span><span class="bar"><i style="width:100%"></i></span><b>$381.000<small>9 pedidos</small></b></div>
+        <div class="share"><span>Instagram</span><span class="bar"><i style="width:42%"></i></span><b>$160.400<small>3 pedidos</small></b></div>
+        <div class="share"><span>En el taller</span><span class="bar"><i style="width:19%"></i></span><b>$71.000<small>2 pedidos</small></b></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="cols-2e">
+    <section class="box soldout">
+      <div class="box-head"><h2>Talles agotados</h2><a class="link" href="admin-productos.html" style="font-size:13px">Cargar stock</a></div>
+      <div class="it"><div><b style="font:400 16px/1.15 var(--f-display)">Set Maddie Bordado</b><div class="muted" style="font-size:12.5px">Talle 6 · 3 anotados esperando</div></div><span class="pill-status st-rose">Agotado</span></div>
+      <div class="it"><div><b style="font:400 16px/1.15 var(--f-display)">Vestido Samanta</b><div class="muted" style="font-size:12.5px">Talle 10 · 1 anotado esperando</div></div><span class="pill-status st-rose">Agotado</span></div>
+      <div class="it"><div><b style="font:400 16px/1.15 var(--f-display)">Blusa Kira</b><div class="muted" style="font-size:12.5px">Talle 2 · sin anotados</div></div><span class="pill-status st-rose">Agotado</span></div>
+    </section>
+    <section class="box">
+      <div class="box-head"><h2>Talles más vendidos</h2></div>
+      <div class="shares">
+        <div class="share"><span>Talle 6</span><span class="bar"><i style="width:100%"></i></span><b>6</b></div>
+        <div class="share"><span>Talle 4</span><span class="bar"><i style="width:50%"></i></span><b>3</b></div>
+        <div class="share"><span>Talle 8</span><span class="bar"><i style="width:33%"></i></span><b>2</b></div>
+        <div class="share"><span>12 meses</span><span class="bar"><i style="width:33%"></i></span><b>2</b></div>
+      </div>
+    </section>
+  </div>
+  <p class="muted" style="font-size:12.5px;margin:0">El día 1 te llega este reporte por mail (regla "Reporte del mes" en <a class="link" href="admin-automatizaciones.html">Automatizaciones</a>).</p>
+</main>
+
+<script src="assets/vendor/lucide.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

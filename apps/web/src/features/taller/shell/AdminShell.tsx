@@ -91,7 +91,9 @@ export function AdminShell({ session, children }: { session: AdminSession; child
       ? window.dispatchEvent(new CustomEvent(OPEN_ORDER, { detail: number }))
       : router.push(`/taller/pedidos?pedido=${number}`);
   const badge = (key: NavItem["count"]) => (key && counts[key] ? <span className="n">{counts[key]}</span> : null);
-  const current = (href: string) => (href === "/taller" ? pathname === href : pathname.startsWith(href));
+  // el reporte del mes se abre desde el Resumen
+  const current = (href: string) =>
+    href === "/taller" ? pathname === href || pathname === "/taller/reporte" : pathname.startsWith(href);
 
   useEffect(() => {
     document.body.classList.add("adm-body");

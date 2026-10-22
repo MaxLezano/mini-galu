@@ -5,10 +5,12 @@ import {
   AUTOMATION_SAMPLE,
   type AutomationKey,
   fillMessage,
+  formatARS,
   type OrderStatus,
   pointsHint,
   pointsNext,
   type RuleUpdate,
+  reportMonthLabel,
   type Size,
   sizeLabel,
   toE164AR,
@@ -24,6 +26,7 @@ import type {
   LaunchSignups,
   LowStock,
   Messenger,
+  MonthlyReports,
   OrderFacts,
   RunLog,
   Suggestions,
@@ -37,6 +40,8 @@ const DAY = 86_400_000;
 export const BIRTHDAY_NOTICE_DAYS = 15;
 /** "Bolsa abandonada": horas sin tocar la bolsa antes del recordatorio, y hasta cuándo vale la pena mandarlo. */
 export const IDLE_CART_HOURS = 24;
+/** "Reporte del mes": sale desde el día 1 a las 9 de Argentina; si el servidor no anduvo, hasta el día 7. */
+const REPORT_LAST_DAY = 7;
 const IDLE_CART_MAX_DAYS = 7;
 /** Reglas que le escriben a los anotados (plantilla de novedades); el resto avisa de un pedido. */
 const NOVELTIES: AutomationKey[] = ["volvio_talle", "lanzamiento"];
@@ -61,6 +66,8 @@ export type AutomationLinks = {
   review: (orderNumber: string, token: string) => string;
   /** Mi cuenta → Puntos (pasa por ingresar si no hay sesión). */
   points: string;
+  /** El reporte de ese mes en el panel. */
+  report: (month: string) => string;
 };
 
 /**
@@ -81,6 +88,7 @@ export class AutomationService {
     private readonly suggestions: Suggestions,
     private readonly carts: IdleCarts,
     private readonly launches: LaunchSignups,
+    private readonly reports: MonthlyReports,
     /** null: WhatsApp sin conectar (producción sin las credenciales de Meta). */
     private readonly whatsapp: WhatsApp | null,
     private readonly links: AutomationLinks,
@@ -502,6 +510,34 @@ Regalo del taller: con el código ${coupon.code} tenés ${coupon.label}.`
       n++;
     }
     return n;
+  }
+
+  /**
+   * Terminó un mes: el reporte (ventas contra el mes anterior, lo más vendido y los talles agotados) por mail al
+   * taller, una vez por mes. El programador lo corre desde el día 1 a las 9 de Argentina.
+   */
+  async monthlyReport(): Promise<number> {
+    if (!(await this.isOn("reporte_mensual"))) return 0;
+    const now = this.clock();
+    const { day, hour } = argentinaNow(now);
+    if (day > REPORT_LAST_DAY || (day === 1 && hour < 9)) return 0;
+    const month = this.reports.lastClosed();
+    const key = `reporte:${month}`;
+    if (await this.runs.exists("reporte_mensual", key)) return 0;
+    const [report, to] = await Promise.all([this.reports.build(month), this.reports.recipient()]);
+    await this.messenger.monthlyReport(to, report, this.links.report(month));
+    await this.runs.add(
+      {
+        rule: "reporte_mensual",
+        subject: `Reporte de ${reportMonthLabel(month, true)}`,
+        detail: `${formatARS(report.sales.cents)} en ${report.sales.orders} ${report.sales.orders === 1 ? "pedido" : "pedidos"} · por mail a ${to}`,
+        channel: "mail",
+        status: "ok",
+        subjectKey: key,
+      },
+      now,
+    );
+    return 1;
   }
 
   /**

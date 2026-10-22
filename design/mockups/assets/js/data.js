@@ -78,6 +78,7 @@ window.MGDATA = (() => {
     { on: false, icon: "shopping-bag", title: "Bolsa abandonada", when: "alguien deja prendas en la bolsa 24 h", does: ["Mail recordatorio con las fotos"], runs: 0, channel: ["mail"] },
     { on: true, icon: "cake", title: "Se acerca un cumple", when: "faltan 15 días para el cumple de una nena registrada", does: ["Mail con modelos en su talle"], runs: 4, channel: ["mail"] },
     { on: true, icon: "triangle-alert", title: "Stock bajo", when: "un talle queda en 1", does: ["Te avisa para que decidas si coser más"], runs: 12, channel: [] },
+    { on: true, icon: "chart-column", title: "Reporte del mes", when: "termina un mes", does: ["Te manda por mail las ventas contra el mes anterior", "Lo más vendido y los talles agotados"], runs: 1, channel: ["mail"] },
   ];
 
   return { products, customers, orders, statuses, payLabel, shipLabel, conversations, automations };

@@ -81,6 +81,7 @@ const PANEL = [
   "/taller/lanzamientos",
   "/taller/clientes",
   "/taller/galu",
+  "/taller/reporte",
   "/taller/automatizaciones",
   "/taller/tienda",
   "/taller/seguridad",
