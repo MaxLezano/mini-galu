@@ -1,4 +1,9 @@
-import { CardPaymentInputSchema, PaymentSettingsSchema, RefundInputSchema } from "@mini-galu/contracts";
+import {
+  CardPaymentInputSchema,
+  PaymentSettingsSchema,
+  RefundInputSchema,
+  ReturnInputSchema,
+} from "@mini-galu/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { parse } from "../../../shared/http/errors";
@@ -78,9 +83,18 @@ export function adminPaymentRoutes(payments: PaymentService) {
     .put("/", async (c) => c.json(await payments.saveSettings(parse(PaymentSettingsSchema, await c.req.json()))));
 }
 
-/** /admin/orders/:number/refund — reintegrar un pedido desde su detalle. Requiere sesión del taller. */
+/**
+ * /admin/orders/:number/refund — reintegrar un pedido desde su detalle · /return — devolver algunas prendas.
+ * Requiere sesión del taller.
+ */
 export function adminRefundRoutes(refunds: RefundService) {
-  return new Hono().post("/:number/refund", async (c) =>
-    c.json(await refunds.refund(c.req.param("number"), parse(RefundInputSchema, await c.req.json().catch(() => ({}))))),
-  );
+  return new Hono()
+    .post("/:number/refund", async (c) =>
+      c.json(
+        await refunds.refund(c.req.param("number"), parse(RefundInputSchema, await c.req.json().catch(() => ({})))),
+      ),
+    )
+    .post("/:number/return", async (c) =>
+      c.json(await refunds.returnItems(c.req.param("number"), parse(ReturnInputSchema, await c.req.json()))),
+    );
 }

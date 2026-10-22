@@ -132,18 +132,32 @@ export class DrizzleGiftcards implements GiftcardRepository {
       .where(and(eq(s.giftcards.orderId, orderId), eq(s.giftcards.status, "anulada")));
   }
 
-  async restoreRedemption(orderId: string) {
+  async restoreRedemption(orderId: string, cents?: number) {
     return this.db.transaction(async (tx) => {
       const used = await tx
-        .delete(s.giftcardRedemptions)
+        .select()
+        .from(s.giftcardRedemptions)
         .where(eq(s.giftcardRedemptions.orderId, orderId))
-        .returning({ giftcardId: s.giftcardRedemptions.giftcardId, cents: s.giftcardRedemptions.amountCents });
-      for (const u of used)
+        .for("update");
+      let left = cents ?? Number.POSITIVE_INFINITY;
+      let back = 0;
+      for (const u of used) {
+        const take = Math.min(left, u.amountCents);
+        if (take <= 0) break;
+        if (take === u.amountCents) await tx.delete(s.giftcardRedemptions).where(eq(s.giftcardRedemptions.id, u.id));
+        else
+          await tx
+            .update(s.giftcardRedemptions)
+            .set({ amountCents: u.amountCents - take })
+            .where(eq(s.giftcardRedemptions.id, u.id));
         await tx
           .update(s.giftcards)
-          .set({ balanceCents: sql`${s.giftcards.balanceCents} + ${u.cents}` })
+          .set({ balanceCents: sql`${s.giftcards.balanceCents} + ${take}` })
           .where(eq(s.giftcards.id, u.giftcardId));
-      return used.reduce((a, u) => a + u.cents, 0);
+        left -= take;
+        back += take;
+      }
+      return back;
     });
   }
 

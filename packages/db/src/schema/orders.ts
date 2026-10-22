@@ -162,6 +162,9 @@ export const orders = pgTable(
     discountCents: integer().notNull().default(0),
     shippingCents: integer().notNull().default(0),
     totalCents: integer().notNull(),
+    /** Devoluciones parciales: lo que ya volvió por Mercado Pago (o en efectivo) y al saldo de la gift card. */
+    refundedCents: integer().notNull().default(0),
+    giftcardRefundedCents: integer().notNull().default(0),
     couponId: uuid().references(() => coupons.id, { onDelete: "set null" }),
     couponCode: varchar({ length: 20 }),
     paymentMethod: paymentMethod(),
@@ -200,8 +203,14 @@ export const orderItems = pgTable(
     imagePath: text(),
     unitPriceCents: integer().notNull(),
     qty: integer().notNull(),
+    /** Unidades devueltas en una devolución parcial (ya no se pueden cambiar ni devolver). */
+    returnedQty: integer().notNull().default(0),
   },
-  (t) => [index().on(t.orderId), check("order_item_qty_positive", sql`${t.qty} > 0`)],
+  (t) => [
+    index().on(t.orderId),
+    check("order_item_qty_positive", sql`${t.qty} > 0`),
+    check("order_item_returned_qty", sql`${t.returnedQty} between 0 and ${t.qty}`),
+  ],
 );
 
 /** Cada intento de pago (aprobado, rechazado, pendiente). Mercado Pago puede avisar varias veces: idempotente por id. */

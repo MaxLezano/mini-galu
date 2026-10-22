@@ -259,6 +259,22 @@ describe("MercadoPagoGateway · reintegros", () => {
     await expect(mp.refund({ paymentId: "ORDTST01", idempotencyKey: "r-4" })).rejects.toThrow(/saldo disponible/);
   });
 
+  it("una devolución parcial lleva el monto: por transacción en Orders y `amount` en Payments", async () => {
+    const f = replies(
+      [200, order("processed", "accredited")],
+      [201, { id: "ORDTST01", status: "processed", status_detail: "partially_refunded" }],
+      [201, { id: 9, payment_id: 123, status: "approved" }],
+    );
+    expect(await mp.refund({ paymentId: "ORDTST01", idempotencyKey: "r-6", amountCents: 12_345_67 })).toEqual({
+      pending: false,
+    });
+    const [url, init] = f.mock.calls[1] as [string, RequestInit];
+    expect(url).toBe("https://api.mercadopago.com/v1/orders/ORDTST01/refund");
+    expect(JSON.parse(String(init.body))).toEqual({ transactions: [{ id: "PAY01", amount: "12345.67" }] });
+    await mp.refund({ paymentId: "123", idempotencyKey: "r-7", amountCents: 500_00 });
+    expect(JSON.parse(String((f.mock.calls[2] as [string, RequestInit])[1].body))).toEqual({ amount: 500 });
+  });
+
   it("un reintegro rechazado por Payments no se da por hecho", async () => {
     replies([201, { id: 9, payment_id: 123, status: "rejected" }]);
     await expect(mp.refund({ paymentId: "123", idempotencyKey: "r-5" })).rejects.toThrow(/rechazó el reintegro/);

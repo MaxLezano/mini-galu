@@ -24,6 +24,8 @@ export type AdminOrderItem = {
   name: string;
   size: string;
   qty: number;
+  /** Unidades que ya se devolvieron (devolución parcial): no se cambian ni se vuelven a devolver. */
+  returnedQty: number;
   imageUrl: string;
   unitPriceCents: Cents;
 };
@@ -92,6 +94,8 @@ export type AdminOrderDetail = AdminOrderSummary & {
   events: AdminOrderEvent[];
   /** Lo que se puede devolver de este pedido (null si no hay nada para reintegrar). */
   refund: AdminRefund | null;
+  /** Devolver algunas prendas (null si no es un pedido de prendas pagado o ya se devolvieron todas). */
+  returns: AdminReturn | null;
   /** Factura y nota de crédito (ARCA), en orden. */
   invoices: AdminInvoice[];
   /** Cambio de talle (null si el pedido no está pagado o es una gift card). */
@@ -116,7 +120,10 @@ export const ExchangeInputSchema = z.object({
 });
 export type ExchangeInput = z.input<typeof ExchangeInputSchema>;
 
-/** Reintegro total de un pedido pagado (o de un pago que llegó cuando ya no había stock). */
+/**
+ * Reintegro total de un pedido pagado (o de un pago que llegó cuando ya no había stock). Después de una devolución
+ * parcial, es lo que queda.
+ */
 export type AdminRefund = {
   /** Lo que vuelve por Mercado Pago, por el mismo medio con que se pagó (0 si se pagó todo con gift card). */
   cents: Cents;
@@ -144,6 +151,60 @@ export type RefundResult = {
   /** Mercado Pago lo tomó pero todavía lo está procesando. */
   pending: boolean;
 };
+
+/** Lo que se cobró de un pedido y lo que ya se devolvió: con esto se calcula cuánto vale devolver algunas prendas. */
+export type ReturnBase = {
+  /** Las prendas del pedido a su precio (las ya devueltas incluidas) y el descuento del cupón sobre ellas. */
+  itemsCents: Cents;
+  discountCents: Cents;
+  /** Lo cobrado (Mercado Pago o efectivo) y lo pagado con gift card. */
+  totalCents: Cents;
+  giftcardCents: Cents;
+  /** Lo que ya se devolvió de cada uno. */
+  refundedCents: Cents;
+  giftcardRefundedCents: Cents;
+};
+
+/** Devolución de algunas prendas de un pedido pagado (el envío no se devuelve: queda para el reintegro total). */
+export type AdminReturn = ReturnBase & {
+  /** Se cobró en efectivo en el taller: la plata se devuelve en mano. */
+  cash: boolean;
+  /** Las prendas todavía no salieron del taller: lo normal es que vuelvan al stock. */
+  restockSuggested: boolean;
+  /** Por qué no se puede (no está el pago de Mercado Pago…). */
+  blocked: string | null;
+};
+
+/**
+ * Cuánto se devuelve por prendas que valen `cents` a su precio: menos su parte del cupón y, del resto, la parte que se
+ * pagó con gift card vuelve a su saldo y lo demás por Mercado Pago (o en efectivo). Nunca más de lo que queda.
+ * `discountCents` es lo que se descuenta (la nota de crédito lo lleva como renglón).
+ */
+export function returnAmounts(
+  b: ReturnBase,
+  cents: Cents,
+): { saleCents: Cents; discountCents: Cents; cents: Cents; giftcardCents: Cents } {
+  const share = b.itemsCents > 0 ? Math.round((b.discountCents * cents) / b.itemsCents) : 0;
+  const leftMoney = b.totalCents - b.refundedCents;
+  const leftGiftcard = b.giftcardCents - b.giftcardRefundedCents;
+  const sale = Math.max(0, Math.min(cents - share, leftMoney + leftGiftcard));
+  const paid = b.totalCents + b.giftcardCents;
+  const giftcard = paid > 0 ? Math.min(leftGiftcard, Math.round((sale * b.giftcardCents) / paid)) : 0;
+  const money = Math.min(leftMoney, sale - giftcard);
+  return { saleCents: sale, discountCents: cents - sale, cents: money, giftcardCents: sale - money };
+}
+
+/** Devolver algunas unidades de algunas prendas: vuelve su parte de la plata y sale una nota de crédito por ellas. */
+export const ReturnInputSchema = z.object({
+  items: z
+    .array(z.object({ itemId: z.string().min(1), qty: z.number().int().min(1).max(99) }))
+    .min(1, "Elegí qué prendas devuelve")
+    .max(30),
+  /** Las prendas devueltas vuelven al stock (ya están en el taller). */
+  restock: z.boolean().default(false),
+  reason: z.string().trim().max(300).default(""),
+});
+export type ReturnInput = z.input<typeof ReturnInputSchema>;
 
 export const MoveOrderInputSchema = z.object({ to: z.enum(BOARD_STATUSES) });
 export const BulkAdvanceInputSchema = z.object({ numbers: z.array(z.string().min(1)).min(1).max(100) });

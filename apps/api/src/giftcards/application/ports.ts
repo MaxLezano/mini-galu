@@ -39,8 +39,11 @@ export interface GiftcardRepository {
   annulUnused(orderId: string): Promise<boolean>;
   /** La anulada de ese pedido vuelve a estar activa. */
   reactivate(orderId: string): Promise<void>;
-  /** Borra el uso que hizo ese pedido y le devuelve el saldo a la gift card (en la misma transacción). Lo devuelto. */
-  restoreRedemption(orderId: string): Promise<number>;
+  /**
+   * Borra el uso que hizo ese pedido y le devuelve el saldo a la gift card (en la misma transacción). Con `cents`,
+   * devuelve hasta esa parte y el uso queda por lo que falta (devolución parcial). Lo devuelto.
+   */
+  restoreRedemption(orderId: string, cents?: number): Promise<number>;
   /** Todas las pagadas (activas), las más nuevas primero. */
   active(): Promise<GiftcardRecord[]>;
   /** Las que compró ese mail y las que se mandaron a ese mail. */

@@ -6,6 +6,8 @@ import { useState } from "react";
 
 type Props = {
   refund: AdminRefund;
+  /** Ya hubo devoluciones de prendas: se reintegra lo que queda. */
+  rest?: boolean;
   busy: boolean;
   /** Por qué no salió el último intento: queda a la vista (el aviso flotante se va solo y es plata que no volvió). */
   error?: string | null;
@@ -16,7 +18,7 @@ type Props = {
  * Reintegro total del pedido, dentro del apartado de pago del detalle (sin mockup: lenguaje del detalle). Primero un
  * botón; al tocarlo, qué vuelve y por dónde, el stock y el motivo, y la confirmación.
  */
-export function RefundPanel({ refund, busy, error, onConfirm }: Props) {
+export function RefundPanel({ refund, rest = false, busy, error, onConfirm }: Props) {
   const [open, setOpen] = useState(false);
   const [restock, setRestock] = useState(refund.restockSuggested);
   const [reason, setReason] = useState("");
@@ -31,7 +33,7 @@ export function RefundPanel({ refund, busy, error, onConfirm }: Props) {
           disabled={!!refund.blocked}
           onClick={() => setOpen(true)}
         >
-          <Undo2 className="i-sm" /> Reintegrar el pago
+          <Undo2 className="i-sm" /> {rest ? "Reintegrar lo que queda" : "Reintegrar el pago"}
         </button>
         {refund.blocked && <span className="muted">{refund.blocked}</span>}
       </div>
@@ -40,7 +42,7 @@ export function RefundPanel({ refund, busy, error, onConfirm }: Props) {
   return (
     <section className="od-refund" aria-label="Reintegrar el pago">
       <b>
-        <Undo2 className="i-sm" /> Reintegrar el pedido
+        <Undo2 className="i-sm" /> {rest ? "Reintegrar lo que queda del pedido" : "Reintegrar el pedido"}
       </b>
       <ul>
         {refund.cents > 0 &&
@@ -63,7 +65,7 @@ export function RefundPanel({ refund, busy, error, onConfirm }: Props) {
         <label className="od-refund-check">
           <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} />
           <span>
-            Las prendas vuelven al stock
+            {rest ? "Las prendas que quedan vuelven al stock" : "Las prendas vuelven al stock"}
             {!refund.restockSuggested && (
               <small className="muted">Tildalo si ya las tenés de vuelta en el taller</small>
             )}

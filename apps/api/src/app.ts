@@ -92,7 +92,7 @@ import { DrizzleGiftcards } from "./giftcards/infrastructure/drizzle-giftcards";
 import { adminGiftcardRoutes, giftcardRoutes } from "./giftcards/infrastructure/http/giftcard-routes";
 import { InvoiceService } from "./invoicing/application/invoice-service";
 import type { InvoiceIssuer } from "./invoicing/application/ports";
-import { paymentLabel } from "./invoicing/domain/invoice";
+import { type InvoiceLine, paymentLabel } from "./invoicing/domain/invoice";
 import { ArcaIssuer } from "./invoicing/infrastructure/arca/arca-issuer";
 import { Wsaa } from "./invoicing/infrastructure/arca/wsaa";
 import { DrizzleArcaTickets, DrizzleInvoices } from "./invoicing/infrastructure/drizzle-invoices";
@@ -331,7 +331,7 @@ export function buildApp(config: Config) {
       purchasedUsed: (orderId) => giftcards.purchasedUsed(orderId),
       annulPurchased: (orderId) => giftcards.annulPurchased(orderId),
       reactivatePurchased: (orderId) => giftcards.reactivatePurchased(orderId),
-      restoreRedeemed: (orderId) => giftcards.restoreRedeemed(orderId),
+      restoreRedeemed: (orderId, cents) => giftcards.restoreRedeemed(orderId, cents),
     },
     events,
   );
@@ -695,11 +695,13 @@ export function buildApp(config: Config) {
       cash: boolean;
       giftcardCents: number;
       pending: boolean;
+      /** Hubo devoluciones parciales antes: la nota de crédito lleva lo que quedaba. */
+      lines: InvoiceLine[] | null;
     };
     const o = await orders.findById(p.orderId);
     if (!o) return;
     // la factura se anula con una nota de crédito, que va adjunta al aviso
-    await invoicing.refunded(p.orderId).catch((err) => console.error("[facturas] reintegro:", err));
+    await invoicing.refunded(p.orderId, p.lines).catch((err) => console.error("[facturas] reintegro:", err));
     const creditNote = await invoicing.attachment(p.orderId, "nota_credito");
     const parts = [
       p.cents > 0
@@ -720,6 +722,49 @@ export function buildApp(config: Config) {
               : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."
             : ""
         } Si tenés alguna duda, respondé este mail.`,
+        cta: null,
+        number: p.number,
+      },
+      creditNote ? [creditNote] : undefined,
+    );
+  });
+  // devolución de algunas prendas: nota de crédito por lo devuelto, adjunta al aviso de cuánto vuelve y por dónde
+  events.on("OrderItemsReturned", async (e) => {
+    const p = e.payload as {
+      orderId: string;
+      number: string;
+      key: string;
+      items: { name: string; size: string; qty: number }[];
+      cents: number;
+      cash: boolean;
+      giftcardCents: number;
+      pending: boolean;
+      lines: InvoiceLine[];
+    };
+    const o = await orders.findById(p.orderId);
+    if (!o) return;
+    await invoicing.returned(p.orderId, p.key, p.lines).catch((err) => console.error("[facturas] devolución:", err));
+    const creditNote = await invoicing.attachment(p.orderId, "nota_credito");
+    const what = p.items.map((i) => `${i.qty > 1 ? `${i.qty} ` : ""}${i.name} (talle ${i.size})`).join(", ");
+    const parts = [
+      p.cents > 0
+        ? `${formatARS(p.cents)} ${p.cash ? "en efectivo, en el taller" : "por el mismo medio con el que pagaste"}`
+        : null,
+      p.giftcardCents > 0 ? `${formatARS(p.giftcardCents)} al saldo de tu gift card` : null,
+    ].filter(Boolean);
+    await notifications.message(
+      {
+        to: o.email,
+        subject: `Recibimos tu devolución del pedido #${p.number}`,
+        eyebrow: `Pedido #${p.number} · devolución`,
+        name: o.firstName || null,
+        body: `Registramos la devolución de ${what}. Te devolvimos ${parts.join(" y ")}.${
+          p.cents > 0 && !p.cash
+            ? p.pending
+              ? " Mercado Pago lo está procesando; según el medio, puede tardar unos días en verse."
+              : " Según el medio, puede tardar unos días en verse en tu cuenta o en el resumen de la tarjeta."
+            : ""
+        } El resto del pedido sigue igual. Si tenés alguna duda, respondé este mail.`,
         cta: null,
         number: p.number,
       },

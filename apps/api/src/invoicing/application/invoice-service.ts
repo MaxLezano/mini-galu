@@ -5,6 +5,7 @@ import {
   arDate,
   CBTE_TYPE,
   type Invoice,
+  type InvoiceLine,
   type InvoiceOrder,
   invoiceable,
   invoiceFilename,
@@ -27,7 +28,8 @@ import {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Facturación electrónica: factura C al aprobarse el pago de un pedido de prendas y nota de crédito C al reintegrarlo.
+ * Facturación electrónica: factura C al aprobarse el pago de un pedido de prendas y nota de crédito C al reintegrarlo
+ * (una por cada devolución de algunas prendas y otra por lo que queda, si se reintegra después).
  * Si ARCA no contesta se reintenta solo (`retryDue`, lo corre el programador); si la rechaza, queda con error y el
  * panel lo avisa. ARCA numera en orden por punto de venta: se emite de a un comprobante por vez.
  */
@@ -56,6 +58,7 @@ export class InvoiceService {
       totalCents: invoiceTotal(o),
       data: await this.snapshot(o),
       associatedId: null,
+      refundKey: null,
       simulated: this.issuer.mode === "simulado",
     });
     if (created) await this.serial(() => this.issueNow(created.id));
@@ -63,29 +66,51 @@ export class InvoiceService {
 
   /**
    * Pedido reintegrado: la factura emitida se anula con una nota de crédito por el mismo total. Si todavía no se
-   * había emitido, se anula y no se emite.
+   * había emitido, se anula y no se emite (y tampoco las notas de devoluciones parciales que la esperaban).
+   * Con `lines` (hubo devoluciones parciales antes), la nota lleva lo que quedaba.
    */
-  async refunded(orderId: string): Promise<void> {
+  async refunded(orderId: string, lines: InvoiceLine[] | null = null): Promise<void> {
     const nota = await this.serial(async () => {
-      const factura = (await this.repo.byOrder(orderId)).find((i) => i.kind === "factura");
+      const all = await this.repo.byOrder(orderId);
+      const factura = all.find((i) => i.kind === "factura");
       if (!factura || factura.status === "anulada") return null;
       if (factura.status !== "emitida") {
-        await this.repo.annul(factura.id);
+        for (const i of all) if (i.status !== "emitida") await this.repo.annul(i.id);
         await this.orders.log(orderId, "Factura anulada", "Se reintegró antes de que ARCA la emitiera");
         return null;
       }
-      return this.repo.create({
-        orderId,
-        kind: "nota_credito",
-        cbteType: CBTE_TYPE.nota_credito,
-        pointOfSale: factura.pointOfSale,
-        totalCents: factura.totalCents,
-        data: factura.data,
-        associatedId: factura.id,
-        simulated: factura.simulated,
-      });
+      return this.credit(factura, "total", lines);
     });
     if (nota) await this.serial(() => this.issueNow(nota.id));
+  }
+
+  /**
+   * Devolución de algunas prendas: una nota de crédito por lo devuelto (`key` la identifica: dos avisos de la misma
+   * devolución no hacen dos notas). Si la factura todavía no se emitió, la nota espera y se emite después.
+   */
+  async returned(orderId: string, key: string, lines: InvoiceLine[]): Promise<void> {
+    const nota = await this.serial(async () => {
+      const factura = (await this.repo.byOrder(orderId)).find((i) => i.kind === "factura");
+      if (!factura || factura.status === "anulada") return null;
+      return this.credit(factura, key, lines);
+    });
+    if (nota) await this.serial(() => this.issueNow(nota.id));
+  }
+
+  private credit(factura: Invoice, refundKey: string, lines: InvoiceLine[] | null) {
+    const totalCents = lines ? lines.reduce((a, l) => a + l.totalCents, 0) : factura.totalCents;
+    if (totalCents <= 0) return null;
+    return this.repo.create({
+      orderId: factura.orderId,
+      kind: "nota_credito",
+      cbteType: CBTE_TYPE.nota_credito,
+      pointOfSale: factura.pointOfSale,
+      totalCents,
+      data: lines ? { ...factura.data, lines } : factura.data,
+      associatedId: factura.id,
+      refundKey,
+      simulated: factura.simulated,
+    });
   }
 
   /** Reintentos vencidos (lo corre el programador). Lo que se emite ahora le llega solo al cliente. */
@@ -111,10 +136,13 @@ export class InvoiceService {
     return this.forOrder(o.id);
   }
 
-  /** El comprobante emitido para adjuntar al mail del pago o del reintegro (queda como enviado). */
+  /**
+   * El comprobante emitido para adjuntar al mail del pago o del reintegro (queda como enviado). Con varias notas de
+   * crédito, la que todavía no le llegó al cliente.
+   */
   async attachment(orderId: string, kind: InvoiceKind): Promise<InvoiceAttachment | null> {
-    const i = (await this.repo.byOrder(orderId)).find((x) => x.kind === kind);
-    if (i?.status !== "emitida" || i.mailedAt) return null;
+    const i = (await this.repo.byOrder(orderId)).find((x) => x.kind === kind && x.status === "emitida" && !x.mailedAt);
+    if (!i) return null;
     if (!(await this.repo.markMailed(i.id, this.clock()))) return null;
     return { filename: invoiceFilename(i), content: await this.render(i) };
   }
@@ -179,6 +207,18 @@ export class InvoiceService {
     const i = await this.repo.get(id);
     if (!i || i.status === "emitida" || i.status === "anulada") return i;
     const now = this.clock();
+    const associated = i.associatedId ? await this.repo.get(i.associatedId) : null;
+    // la nota de una devolución parcial espera a que se emita la factura (si se anuló, la nota tampoco va)
+    if (associated && associated.status !== "emitida") {
+      if (associated.status === "anulada") await this.repo.annul(i.id);
+      else
+        await this.repo.failed(i.id, {
+          status: "pendiente",
+          error: "Se emite cuando ARCA emita la factura",
+          nextAttemptAt: new Date(now.getTime() + retryDelayMs(i.attempts + 1)),
+        });
+      return this.repo.get(i.id);
+    }
     try {
       const last = await this.issuer.lastNumber(i.cbteType);
       // un intento anterior sin respuesta: si ARCA lo autorizó, es este comprobante (no se emite otro)
@@ -191,7 +231,6 @@ export class InvoiceService {
       const issuedOn = arDate(now);
       const data = { ...i.data, issuer: { ...i.data.issuer, cuit: this.issuer.cuit } };
       await this.repo.attempting(i.id, { number, issuedOn, pointOfSale: this.issuer.pointOfSale, data });
-      const associated = i.associatedId ? await this.repo.get(i.associatedId) : null;
       const r = await this.issuer.authorize({
         cbteType: i.cbteType,
         number,

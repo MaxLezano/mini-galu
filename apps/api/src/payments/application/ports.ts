@@ -64,10 +64,11 @@ export interface PaymentGateway {
   /** Planes de una tarjeta puntual por su BIN (primeros 6 a 8 dígitos), con interés y CFT. */
   cardPlans(amountCents: number, bin: string): Promise<CardPlans>;
   /**
-   * Devuelve el total de un pago aprobado por el mismo medio. Si ya estaba devuelto, lo da por hecho.
-   * `pending`: el proveedor lo tomó pero sigue procesándolo. Si no se puede, falla con `RefundRejected`.
+   * Devuelve un pago aprobado por el mismo medio: el total o, con `amountCents`, una parte (devolución parcial o lo
+   * que queda después de una). Si el total ya estaba devuelto, lo da por hecho. `pending`: el proveedor lo tomó pero
+   * sigue procesándolo. Si no se puede, falla con `RefundRejected`.
    */
-  refund(req: { paymentId: string; idempotencyKey: string }): Promise<{ pending: boolean }>;
+  refund(req: { paymentId: string; idempotencyKey: string; amountCents?: number }): Promise<{ pending: boolean }>;
   /** Lo que acreditó el proveedor de un pago aprobado, después de su comisión (null si no lo informa todavía). */
   netReceived(paymentId: string): Promise<number | null>;
   /** Firma `x-signature` del webhook. */

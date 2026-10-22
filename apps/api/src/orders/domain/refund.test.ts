@@ -1,6 +1,6 @@
 import { formatARS } from "@mini-galu/contracts";
 import { describe, expect, it } from "vitest";
-import { refundDetail, refundPlan } from "./refund";
+import { refundDetail, refundPlan, remainingLines, returnPlan, returnQuote } from "./refund";
 
 const o = {
   status: "preparando" as const,
@@ -8,6 +8,8 @@ const o = {
   paidAt: new Date(),
   totalCents: 500,
   giftcardCents: 0,
+  refundedCents: 0,
+  giftcardRefundedCents: 0,
   paymentMethod: "credito" as const,
 };
 
@@ -73,5 +75,73 @@ describe("qué se reintegra", () => {
         formatARS,
       ),
     ).toBe(`${formatARS(900)} en efectivo`);
+  });
+});
+
+/** Pedido de $85.000: Maddie x2 a $30.000, Lola a $20.000, envío $5.000. */
+const p = {
+  ...o,
+  status: "entregado" as const,
+  totalCents: 85_000_00,
+  discountCents: 0,
+  shippingCents: 5_000_00,
+  items: [
+    { id: "a", name: "Maddie", size: "4", qty: 2, returnedQty: 0, unitPriceCents: 30_000_00 },
+    { id: "b", name: "Lola", size: "6", qty: 1, returnedQty: 0, unitPriceCents: 20_000_00 },
+  ],
+};
+
+describe("devolver algunas prendas", () => {
+  it("solo de un pedido de prendas pagado al que le quede algo sin devolver", () => {
+    expect(returnPlan(p, true)).toMatchObject({ itemsCents: 80_000_00, cash: false, blocked: null });
+    expect(returnPlan({ ...p, status: "esperando_pago" }, true)).toBeNull();
+    expect(returnPlan({ ...p, kind: "giftcard" }, true)).toBeNull();
+    expect(returnPlan({ ...p, items: p.items.map((i) => ({ ...i, returnedQty: i.qty })) }, true)).toBeNull();
+    expect(returnPlan(p, false)?.blocked).toMatch(/No está el pago/);
+  });
+
+  it("cotiza las prendas y arma los renglones de la nota de crédito", () => {
+    const q = returnQuote(p, [{ itemId: "a", qty: 1 }]);
+    expect(q).toMatchObject({ cents: 30_000_00, giftcardCents: 0, saleCents: 30_000_00 });
+    if ("error" in q) throw new Error(q.error);
+    expect(q.lines).toEqual([{ description: "Maddie · talle 4", qty: 1, unitCents: 30_000_00, totalCents: 30_000_00 }]);
+  });
+
+  it("no deja devolver más de lo que queda de cada prenda", () => {
+    const back = { ...p, items: [{ ...p.items[0], returnedQty: 1 }, p.items[1]] } as typeof p;
+    expect(returnQuote(back, [{ itemId: "a", qty: 2 }])).toEqual({
+      error: "Del Maddie talle 4 quedan 1 para devolver",
+    });
+    expect(returnQuote(back, [{ itemId: "z", qty: 1 }])).toMatchObject({ error: /ya no está/ });
+    expect(returnQuote(back, [])).toEqual({ error: "Elegí qué prendas devuelve" });
+  });
+
+  it("después de devolver una, el reintegro total es lo que queda y la nota lleva lo que quedaba", () => {
+    const after = {
+      ...p,
+      refundedCents: 30_000_00,
+      items: [{ ...p.items[0], returnedQty: 1 }, p.items[1]],
+    } as typeof p;
+    expect(refundPlan(after, true)).toMatchObject({ cents: 55_000_00 });
+    const lines = remainingLines(after, 55_000_00);
+    expect(lines.map((l) => l.description)).toEqual(["Maddie · talle 4", "Lola · talle 6", "Envío"]);
+    expect(lines.reduce((a, l) => a + l.totalCents, 0)).toBe(55_000_00);
+  });
+
+  it("la línea del historial nombra las prendas devueltas", () => {
+    expect(
+      refundDetail(
+        {
+          cents: 900,
+          cash: false,
+          giftcardCents: 0,
+          restocked: true,
+          pending: false,
+          reason: "",
+          items: [{ name: "Maddie", size: "4", qty: 2 }],
+        },
+        formatARS,
+      ),
+    ).toBe(`Maddie talle 4 (2) · ${formatARS(900)} por Mercado Pago · prendas al stock`);
   });
 });

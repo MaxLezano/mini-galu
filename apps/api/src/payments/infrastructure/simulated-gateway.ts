@@ -74,9 +74,10 @@ export class SimulatedGateway implements PaymentGateway {
   }
 
   /** Sin cuenta siempre se puede devolver (aunque el pago sea de antes de reiniciar la API). */
-  async refund(req: { paymentId: string; idempotencyKey: string }) {
+  async refund(req: { paymentId: string; idempotencyKey: string; amountCents?: number }) {
     const p = this.payments.get(req.paymentId);
-    if (p) p.status = "refunded";
+    // una devolución parcial deja el pago aprobado (como Mercado Pago: partially_refunded)
+    if (p && (req.amountCents === undefined || req.amountCents >= p.amountCents)) p.status = "refunded";
     return { pending: false };
   }
 

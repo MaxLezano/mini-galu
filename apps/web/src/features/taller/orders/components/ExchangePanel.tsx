@@ -27,6 +27,8 @@ export function ExchangePanel({ exchange, items, busy, error, onConfirm }: Props
   const item = items.find((i) => i.id === itemId);
   const sizes = exchange.items.find((x) => x.itemId === itemId)?.sizes ?? [];
   const available = sizes.find((s) => s.size === size)?.stock ?? 0;
+  // las unidades devueltas no se cambian
+  const units = item ? item.qty - item.returnedQty : 0;
 
   if (!open)
     return (
@@ -69,11 +71,11 @@ export function ExchangePanel({ exchange, items, busy, error, onConfirm }: Props
             </option>
           ))}
         </select>
-        {item && item.qty > 1 && (
+        {units > 1 && (
           <select className="input" aria-label="Cuántas" value={qty} onChange={(e) => setQty(Number(e.target.value))}>
-            {Array.from({ length: item.qty }, (_, n) => n + 1).map((n) => (
+            {Array.from({ length: units }, (_, n) => n + 1).map((n) => (
               <option key={n} value={n}>
-                {n} de {item.qty}
+                {n} de {units}
               </option>
             ))}
           </select>

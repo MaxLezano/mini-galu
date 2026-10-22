@@ -3,6 +3,7 @@ import type { CartReservations } from "../../cart/application/ports";
 import type { MemoryVariants } from "../../cart/testing/in-memory";
 import type {
   AdminOrderRepository,
+  ItemsReturn,
   NewOrder,
   OrderEvent,
   OrderPayment,
@@ -42,6 +43,8 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       channel: o.channel ?? "web",
       kind: o.kind ?? "prendas",
       giftcardCents: o.giftcardCents ?? 0,
+      refundedCents: 0,
+      giftcardRefundedCents: 0,
       statusChangedAt: this.clock(),
       internalNote: null,
       status: "esperando_pago",
@@ -49,7 +52,7 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
       installments: null,
       paidAt: null,
       createdAt: this.clock(),
-      items: o.items.map((i, n) => ({ ...i, id: `${id}-i${n + 1}` })),
+      items: o.items.map((i, n) => ({ ...i, id: `${id}-i${n + 1}`, returnedQty: 0 })),
     });
     return { ok: true as const, id, number };
   }
@@ -82,11 +85,41 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     if (o?.status !== from) return false;
     o.status = "reembolsado";
     o.statusChangedAt = at;
-    if (restock) {
-      this.move(o.items, +1);
-      for (const i of o.items) this.unitsSold.set(i.productSlug, (this.unitsSold.get(i.productSlug) ?? 0) - i.qty);
-    }
+    if (restock) this.restock(o.items.map((i) => ({ ...i, qty: i.qty - i.returnedQty })));
     return true;
+  }
+  async reserveReturn(orderId: string, from: OrderStatus, r: ItemsReturn) {
+    const o = this.items.find((x) => x.id === orderId);
+    if (o?.status !== from) return false;
+    const rows = r.items.map((x) => ({ x, i: o.items.find((i) => i.id === x.itemId) }));
+    if (rows.some(({ x, i }) => !i || i.returnedQty + x.qty > i.qty)) return false;
+    for (const { x, i } of rows) if (i) i.returnedQty += x.qty;
+    o.refundedCents += r.cents;
+    o.giftcardRefundedCents += r.giftcardCents;
+    return true;
+  }
+  async undoReturn(orderId: string, r: ItemsReturn) {
+    const o = this.items.find((x) => x.id === orderId);
+    if (!o) return;
+    for (const x of r.items) {
+      const i = o.items.find((y) => y.id === x.itemId);
+      if (i) i.returnedQty -= x.qty;
+    }
+    o.refundedCents -= r.cents;
+    o.giftcardRefundedCents -= r.giftcardCents;
+  }
+  async restockItems(orderId: string, items: { itemId: string; qty: number }[]) {
+    const o = this.items.find((x) => x.id === orderId);
+    this.restock(
+      items.flatMap((x) => {
+        const i = o?.items.find((y) => y.id === x.itemId);
+        return i ? [{ ...i, qty: x.qty }] : [];
+      }),
+    );
+  }
+  private restock(items: { variantId: string | null; productSlug: string; qty: number }[]) {
+    this.move(items, +1);
+    for (const i of items) this.unitsSold.set(i.productSlug, (this.unitsSold.get(i.productSlug) ?? 0) - i.qty);
   }
   async setNote(id: string, note: string | null) {
     const o = this.items.find((x) => x.id === id);
@@ -96,7 +129,7 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
   async paidSince(since: Date) {
     return this.items
       .filter((o) => this.paid(o) && (o.paidAt as Date) >= since)
-      .map((o) => ({ totalCents: o.totalCents, paidAt: o.paidAt as Date, email: o.email }));
+      .map((o) => ({ totalCents: o.totalCents - o.refundedCents, paidAt: o.paidAt as Date, email: o.email }));
   }
   async buyersBefore(before: Date, emails: string[]) {
     return new Set(
@@ -212,13 +245,20 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
     const o = this.items.find((y) => y.id === orderId);
     const item = o?.items.find((i) => i.id === x.itemId);
     const to = this.variants.list.find((v) => v.variantId === x.toVariantId);
-    if (!o || !item || item.qty < x.qty || !to || to.stock < x.qty) return false;
+    if (!o || !item || item.qty - item.returnedQty < x.qty || !to || to.stock < x.qty) return false;
     to.stock -= x.qty;
     if (x.restock) this.move([{ variantId: item.variantId, qty: x.qty }], +1);
     const same = o.items.find((i) => i.variantId === x.toVariantId);
     if (same) same.qty += x.qty;
     else if (item.qty > x.qty)
-      o.items.push({ ...item, id: `${item.id}-${x.toSize}`, variantId: x.toVariantId, size: x.toSize, qty: x.qty });
+      o.items.push({
+        ...item,
+        id: `${item.id}-${x.toSize}`,
+        variantId: x.toVariantId,
+        size: x.toSize,
+        qty: x.qty,
+        returnedQty: 0,
+      });
     if (same || item.qty > x.qty) item.qty -= x.qty;
     else Object.assign(item, { variantId: x.toVariantId, size: x.toSize });
     o.items = o.items.filter((i) => i.qty > 0);
@@ -235,8 +275,8 @@ export class MemoryOrders implements OrderRepository, AdminOrderRepository, Cart
 /** Gift cards vistas desde el reintegro: compradas (con su saldo) y usadas por pedidos. */
 export class MemoryRefundGiftcards implements RefundGiftcards {
   purchased = new Map<string, { amountCents: number; balanceCents: number; status: "activa" | "anulada" }>();
-  /** orderId → lo que ese pedido usó de una gift card (y si ya se devolvió). */
-  redeemed = new Map<string, { cents: number; restored: boolean }>();
+  /** orderId → lo que ese pedido usó de una gift card y lo que ya volvió a su saldo. */
+  redeemed = new Map<string, { cents: number; restored: number }>();
 
   async purchasedUsed(orderId: string) {
     const c = this.purchased.get(orderId);
@@ -252,11 +292,12 @@ export class MemoryRefundGiftcards implements RefundGiftcards {
     const c = this.purchased.get(orderId);
     if (c) c.status = "activa";
   }
-  async restoreRedeemed(orderId: string) {
+  async restoreRedeemed(orderId: string, cents?: number) {
     const r = this.redeemed.get(orderId);
-    if (!r || r.restored) return 0;
-    r.restored = true;
-    return r.cents;
+    if (!r) return 0;
+    const back = Math.min(cents ?? Number.POSITIVE_INFINITY, r.cents - r.restored);
+    r.restored += back;
+    return back;
   }
 }
 

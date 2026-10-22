@@ -36,6 +36,7 @@ import type {
   ProductStatus,
   RefundInput,
   RefundResult,
+  ReturnInput,
   ReviewModeration,
   SaveProductResult,
   ShipmentCreated,
@@ -203,6 +204,11 @@ export const adminApi = {
     }),
   refundOrder: (number: string, input: RefundInput) =>
     adminRequest<RefundResult>(`/admin/orders/${encodeURIComponent(number)}/refund`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  returnOrderItems: (number: string, input: ReturnInput) =>
+    adminRequest<RefundResult>(`/admin/orders/${encodeURIComponent(number)}/return`, {
       method: "POST",
       body: JSON.stringify(input),
     }),

@@ -10,7 +10,7 @@ import type { EventBus } from "../../shared/events/event-bus";
 import type { ImageStorage } from "../../shared/media/image-storage";
 import { canMove, nextStatus, statusTitle } from "../domain/flow";
 import { formatOrderNumber, parseOrderNumber, SHOP_CANCEL_REASON } from "../domain/order";
-import { refundPlan } from "../domain/refund";
+import { refundPlan, returnPlan } from "../domain/refund";
 import { monthKpis, monthlySales, monthStart, weeklySales } from "../domain/stats";
 import type { OrderRefunds } from "./order-refunds";
 import type { AdminOrderRepository, OrderPayment, OrderRecord } from "./ports";
@@ -27,8 +27,14 @@ export class AdminOrdersService {
     /** Página de la tienda donde se paga un pedido (número + token). */
     private readonly payUrl: (number: string, token: string) => string,
     private readonly clock: () => Date = () => new Date(),
-    /** Qué se devolvería si se reintegra (lo sabe OrderRefunds: la gift card comprada no tiene que estar usada). */
-    private readonly refunds: Pick<OrderRefunds, "plan"> = { plan: async (o, p) => refundPlan(o, !!p) },
+    /**
+     * Qué se devolvería si se reintegra y si se pueden devolver algunas prendas (lo sabe OrderRefunds: la gift card
+     * comprada no tiene que estar usada).
+     */
+    private readonly refunds: Pick<OrderRefunds, "plan" | "returns"> = {
+      plan: async (o, p) => refundPlan(o, !!p),
+      returns: (o, p) => returnPlan(o, !!p),
+    },
     /** Lo que acreditó el proveedor después de su comisión (lo pregunta el módulo de pagos y lo guarda). */
     private readonly netReceived: (p: OrderPayment) => Promise<number | null> = async () => null,
     /** Página de la tienda donde el cliente reseña las prendas (número + token). */
@@ -75,6 +81,7 @@ export class AdminOrdersService {
       payment: payment && { ...payment, netCents: payment.netCents ?? netCents },
       events: events.map(({ toStatus: _s, ...e }) => ({ ...e, at: e.at.toISOString() })),
       refund,
+      returns: this.refunds.returns(o, payment),
       invoices,
       exchange,
     };
@@ -230,6 +237,7 @@ export class AdminOrdersService {
         name: i.name,
         size: i.size,
         qty: i.qty,
+        returnedQty: i.returnedQty,
         imageUrl: i.imagePath ? this.storage.url(i.imagePath) : "",
         unitPriceCents: i.unitPriceCents,
       })),

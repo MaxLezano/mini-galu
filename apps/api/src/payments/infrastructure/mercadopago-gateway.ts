@@ -160,31 +160,44 @@ export class MercadoPagoGateway implements PaymentGateway {
   }
 
   /**
-   * Reintegro total, sin monto en el cuerpo. Tarjetas (ORD…): `POST /v1/orders/{id}/refund`; dinero en cuenta:
-   * `POST /v1/payments/{id}/refunds`. Si ya estaba devuelto (un reintento, o se devolvió desde Mercado Pago) se da
-   * por hecho. Mercado Pago pide saldo disponible en la cuenta y hasta 180 días desde la aprobación.
+   * Reintegro total, sin monto en el cuerpo, o parcial con `amountCents`. Tarjetas (ORD…): `POST /v1/orders/{id}/refund`
+   * (el parcial lleva la transacción del pago y el monto); dinero en cuenta: `POST /v1/payments/{id}/refunds` (el parcial,
+   * `{ amount }`). Si el total ya estaba devuelto (un reintento, o se devolvió desde Mercado Pago) se da por hecho.
+   * Mercado Pago pide saldo disponible en la cuenta y hasta 180 días desde la aprobación.
    */
-  async refund(req: { paymentId: string; idempotencyKey: string }) {
+  async refund(req: { paymentId: string; idempotencyKey: string; amountCents?: number }) {
     const id = encodeURIComponent(req.paymentId);
     const isOrder = req.paymentId.startsWith("ORD");
+    const partial = req.amountCents !== undefined;
     try {
+      const body = partial ? await this.refundBody(req.paymentId, req.amountCents ?? 0) : undefined;
       const r = await this.call<MpOrderRefund | MpPaymentRefund>(
         isOrder ? `/v1/orders/${id}/refund` : `/v1/payments/${id}/refunds`,
-        { method: "POST", headers: { "X-Idempotency-Key": req.idempotencyKey } },
+        { method: "POST", headers: { "X-Idempotency-Key": req.idempotencyKey }, body },
       );
       return { pending: refundPending(r) };
     } catch (e) {
       if (e instanceof RefundRejected) throw e;
       if (e instanceof MercadoPagoError) {
-        if (/already_refunded/i.test(e.body)) return { pending: false };
+        if (!partial && /already_refunded/i.test(e.body)) return { pending: false };
         if (/refund_already_in_process/i.test(e.body)) return { pending: true };
       }
       // puede que lo haya hecho y la respuesta no llegó: se consulta el pago antes de decir que falló
-      const now = await this.fetch(req.paymentId).catch(() => null);
+      const now = partial ? null : await this.fetch(req.paymentId).catch(() => null);
       if (now && (now.status === "refunded" || now.statusDetail === "refunded")) return { pending: false };
       console.error("[pagos] no se pudo reintegrar:", e);
       throw new RefundRejected(refundError(e));
     }
+  }
+
+  /** Cuerpo de un reintegro parcial: la API de Orders lo pide por transacción (el pago de la orden). */
+  private async refundBody(paymentId: string, cents: number): Promise<string> {
+    const amount = (cents / 100).toFixed(2);
+    if (!paymentId.startsWith("ORD")) return JSON.stringify({ amount: Number(amount) });
+    const order = await this.call<MpOrder>(`/v1/orders/${encodeURIComponent(paymentId)}`);
+    const tx = order.transactions?.payments?.find((p) => p.status === "processed") ?? order.transactions?.payments?.[0];
+    if (!tx) throw new RefundRejected("Mercado Pago no encuentra el pago de esa orden.");
+    return JSON.stringify({ transactions: [{ id: tx.id, amount }] });
   }
 
   /**

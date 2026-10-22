@@ -7,6 +7,7 @@ import {
   ORDER_CHANNELS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
+  type ReturnInput,
   SHIPPING_METHODS,
 } from "@mini-galu/contracts";
 import {
@@ -20,6 +21,7 @@ import {
   MailCheck,
   Package,
   PackageCheck,
+  PackageMinus,
   Phone,
   Scissors,
   ShoppingBag,
@@ -42,6 +44,7 @@ import { ExchangePanel } from "../components/ExchangePanel";
 import { InvoicesPanel } from "../components/InvoicesPanel";
 import { ActionIcon } from "../components/OrderCard";
 import { RefundPanel } from "../components/RefundPanel";
+import { ReturnPanel } from "../components/ReturnPanel";
 import { generateLabel } from "../label-action";
 import { type NextAction, nextAction, type TemplateKey } from "../order-flow";
 
@@ -56,9 +59,14 @@ const EVENT_ICON: Record<string, ReactNode> = {
   cancelled: <Ban />,
   refund_needed: <Clock />,
   refunded: <Undo2 />,
+  returned: <PackageMinus />,
   exchange: <ArrowLeftRight />,
   status: <Package />,
 };
+/** "devuelta", "2 devueltas" o "1 devuelta" (de varias). */
+const returnedLabel = (qty: number, returned: number) =>
+  returned === qty && qty === 1 ? "devuelta" : `${returned} ${returned === 1 ? "devuelta" : "devueltas"}`;
+
 const statusIcon = (title: string) =>
   /prepar/i.test(title) ? (
     <Scissors />
@@ -93,6 +101,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
   const [refundError, setRefundError] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [exchangeError, setExchangeError] = useState<string | null>(null);
+  const [returnError, setReturnError] = useState<string | null>(null);
   const mounted = useMounted();
   const open = !!number;
 
@@ -104,6 +113,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     setRefundError(null);
     setCancelError(null);
     setExchangeError(null);
+    setReturnError(null);
     adminApi
       .order(number)
       .then((o) => {
@@ -216,6 +226,27 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     }
   };
 
+  const returnItems = async (input: ReturnInput) => {
+    if (!o) return;
+    setBusy(true);
+    setReturnError(null);
+    try {
+      const r = await adminApi.returnOrderItems(o.number, input);
+      const updated = await adminApi.order(o.number);
+      setOrder(updated);
+      onChanged(updated);
+      toast(`#${o.number} · ${r.pending ? "Devolución en proceso en Mercado Pago" : "Devolución hecha"}`, {
+        icon: <PackageMinus className="i-sm" />,
+      });
+    } catch (e) {
+      const msg = e instanceof ApiRequestError ? e.message : "No se pudo hacer la devolución";
+      setReturnError(msg);
+      toast(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const retryInvoices = async () => {
     if (!o) return;
     setBusy(true);
@@ -250,6 +281,9 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
 
   const step = o ? (STEP[o.status] ?? 0) : 0;
   const a = o?.shippingAddress;
+  // lo que ya volvió en devoluciones parciales (lo cobrado menos lo que queda para reintegrar)
+  const returnedCents =
+    o?.refund && o.status !== "reembolsado" && o.status !== "cancelado" ? o.totalCents - o.refund.cents : 0;
   const paidMore = o?.payment?.paidByCustomerCents && o.payment.paidByCustomerCents > o.totalCents;
   const copyLink = (url: string) =>
     navigator.clipboard?.writeText(url).then(
@@ -370,6 +404,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                         <b>{i.name}</b>
                         <span className="muted" style={{ fontSize: 12.5 }}>
                           Talle {i.size} · {i.qty} {i.qty === 1 ? "unidad" : "unidades"}
+                          {i.returnedQty > 0 && ` · ${returnedLabel(i.qty, i.returnedQty)}`}
                         </span>
                       </span>
                       <span>{formatARS(i.unitPriceCents * i.qty)}</span>
@@ -381,7 +416,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                     // se arma de nuevo con cada cambio (los renglones y el stock son otros)
                     key={o.events.length}
                     exchange={o.exchange}
-                    items={o.items}
+                    items={o.items.filter((i) => i.qty > i.returnedQty)}
                     busy={busy}
                     error={exchangeError}
                     onConfirm={exchangeSize}
@@ -523,6 +558,17 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                   <dd>
                     <b>{formatARS(o.totalCents)}</b>
                   </dd>
+                  {returnedCents > 0 && (
+                    <>
+                      <dt>Devuelto</dt>
+                      <dd>
+                        -{formatARS(returnedCents)}{" "}
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          (devolución de prendas)
+                        </span>
+                      </dd>
+                    </>
+                  )}
                   {paidMore && o.payment?.paidByCustomerCents && (
                     <>
                       <dt>Pagó el cliente</dt>
@@ -578,8 +624,26 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                     onConfirm={cancel}
                   />
                 )}
+                {o.returns && (
+                  <ReturnPanel
+                    // se arma de nuevo con cada devolución (quedan otras prendas)
+                    key={`return-${o.number}-${o.events.length}`}
+                    plan={o.returns}
+                    items={o.items}
+                    busy={busy}
+                    error={returnError}
+                    onConfirm={returnItems}
+                  />
+                )}
                 {o.refund && (
-                  <RefundPanel key={o.number} refund={o.refund} busy={busy} error={refundError} onConfirm={refund} />
+                  <RefundPanel
+                    key={`refund-${o.number}-${o.events.length}`}
+                    refund={o.refund}
+                    rest={returnedCents > 0 || o.items.some((i) => i.returnedQty > 0)}
+                    busy={busy}
+                    error={refundError}
+                    onConfirm={refund}
+                  />
                 )}
               </div>
 

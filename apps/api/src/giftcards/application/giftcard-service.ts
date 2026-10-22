@@ -109,9 +109,12 @@ export class GiftcardService {
     return this.cards.reactivate(orderId);
   }
 
-  /** Se reintegra un pedido pagado en parte con una gift card: lo que usó vuelve a su saldo. */
-  restoreRedeemed(orderId: string): Promise<number> {
-    return this.cards.restoreRedemption(orderId);
+  /**
+   * Se reintegra un pedido pagado en parte con una gift card: lo que usó vuelve a su saldo (con `cents`, solo esa parte:
+   * una devolución parcial).
+   */
+  restoreRedeemed(orderId: string, cents?: number): Promise<number> {
+    return this.cards.restoreRedemption(orderId, cents);
   }
 
   /** Las programadas para un día: salen a las 9. Lo corre el programador. */

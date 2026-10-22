@@ -35,6 +35,8 @@ export type Invoice = {
   totalCents: number;
   data: InvoiceData;
   associatedId: string | null;
+  /** Nota de crédito: qué devolución anula ("total" o el id de una devolución parcial). */
+  refundKey: string | null;
   simulated: boolean;
   attempts: number;
   lastError: string | null;

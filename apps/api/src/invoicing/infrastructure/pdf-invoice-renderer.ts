@@ -104,7 +104,8 @@ export class PdfInvoiceRenderer implements InvoiceRenderer {
     text(i.data.receptor.email, M + 60, y, 8.5);
     if (associated?.number != null) {
       y -= 13;
-      text("Anula:", M + 12, y, 8.5, bold);
+      // una devolución parcial no anula la factura: la ajusta por lo devuelto
+      text(i.totalCents < associated.totalCents ? "Ajusta:" : "Anula:", M + 12, y, 8.5, bold);
       text(
         `Factura C ${formatInvoiceNumber(associated.pointOfSale, associated.number)} del ${dmy(associated.issuedOn)}`,
         M + 60,

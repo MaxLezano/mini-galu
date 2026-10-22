@@ -39,3 +39,5 @@
 .od-invoice .link { display: inline-flex; gap: 4px; align-items: center; }
 .od-exchange-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .od-exchange-row .input { flex: 1 1 140px; width: auto; }
+.od-return-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.od-return-row .input { flex: 0 0 auto; width: auto; }

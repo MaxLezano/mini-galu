@@ -19,7 +19,15 @@ export class InMemoryInvoices implements InvoiceRepository {
   constructor(private readonly orderNumbers: (orderId: string) => string = (id) => id) {}
 
   async create(i: NewInvoice) {
-    if (this.rows.some((r) => r.orderId === i.orderId && r.kind === i.kind)) return null;
+    if (
+      this.rows.some(
+        (r) =>
+          r.orderId === i.orderId &&
+          r.kind === i.kind &&
+          (i.kind === "factura" || (r.refundKey !== null && r.refundKey === i.refundKey)),
+      )
+    )
+      return null;
     const row: Invoice = {
       ...i,
       id: `inv-${++this.seq}`,

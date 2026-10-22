@@ -7,6 +7,7 @@ const item = (slug: string, size: string, qty = 1) => ({
   name: slug === "maddie" ? "Set Maddie" : "Vestido Elsa",
   size,
   qty,
+  returnedQty: 0,
   imageUrl: "",
   unitPriceCents: 1,
 });

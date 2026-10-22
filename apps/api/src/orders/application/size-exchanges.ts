@@ -27,12 +27,14 @@ export class SizeExchanges {
     const sizes = await this.orders.sizesOf([...new Set(o.items.map((i) => i.productSlug))]);
     return {
       restockSuggested: NOT_SHIPPED.includes(o.status),
-      items: o.items.map((i) => ({
-        itemId: i.id,
-        sizes: sizes
-          .filter((s) => s.slug === i.productSlug && s.size !== i.size)
-          .map(({ size, stock }) => ({ size, stock })),
-      })),
+      items: o.items
+        .filter((i) => i.qty > i.returnedQty)
+        .map((i) => ({
+          itemId: i.id,
+          sizes: sizes
+            .filter((s) => s.slug === i.productSlug && s.size !== i.size)
+            .map(({ size, stock }) => ({ size, stock })),
+        })),
     };
   }
 

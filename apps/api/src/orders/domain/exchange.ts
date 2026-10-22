@@ -7,14 +7,16 @@ import { PAID_STATUSES } from "./order";
  */
 export function exchangeBlocked(
   o: { kind: "prendas" | "giftcard"; status: OrderStatus },
-  item: { size: string; qty: number } | null,
+  item: { size: string; qty: number; returnedQty?: number } | null,
   to: { size: string; stock: number } | null,
   qty: number,
 ): string | null {
   if (o.kind !== "prendas" || !PAID_STATUSES.includes(o.status))
     return "Solo se cambia el talle de las prendas de un pedido pagado";
   if (!item) return "Esa prenda ya no está en el pedido: actualizá la página";
-  if (qty > item.qty) return `El pedido tiene ${item.qty} de esa prenda`;
+  // las unidades devueltas (devolución parcial) ya no están para cambiar
+  const left = item.qty - (item.returnedQty ?? 0);
+  if (qty > left) return left ? `El pedido tiene ${left} de esa prenda` : "Esa prenda ya se devolvió";
   if (!to) return "Ese modelo no viene en ese talle";
   if (to.size === item.size) return "Elegí un talle distinto";
   if (to.stock < qty) return `No queda talle ${to.size}${to.stock ? ` para ${qty}` : ""}`;

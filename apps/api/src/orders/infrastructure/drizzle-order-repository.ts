@@ -3,6 +3,7 @@ import { and, type Db, desc, eq, gte, inArray, lt, not, or, schema as s, sql } f
 import type { CartReservations } from "../../cart/application/ports";
 import type {
   AdminOrderRepository,
+  ItemsReturn,
   NewOrder,
   OrderEvent,
   OrderPayment,
@@ -18,6 +19,9 @@ import { EXPIRED_REASON } from "../domain/order";
 import type { PaidOrder } from "../domain/stats";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/** Esas unidades ya se devolvieron (dos devoluciones a la vez): se deshace la transacción. */
+class ReturnTaken extends Error {}
 
 class OutOfStock extends Error {
   constructor(readonly item: { productSlug: string; name: string; size: string; available: number }) {
@@ -140,23 +144,96 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
         .where(and(eq(s.orders.id, id), eq(s.orders.status, from)))
         .returning({ id: s.orders.id });
       if (!row) return false;
-      if (!restock) return true;
-      const items = await this.itemsOf(tx, id);
-      for (const i of items)
-        if (i.variantId)
-          await tx
-            .update(s.variants)
-            .set({ stock: sql`${s.variants.stock} + ${i.qty}` })
-            .where(eq(s.variants.id, i.variantId));
-      const sold = new Map<string, number>();
-      for (const i of items) sold.set(i.productSlug, (sold.get(i.productSlug) ?? 0) + i.qty);
-      for (const [slug, qty] of sold)
-        await tx
-          .update(s.products)
-          .set({ unitsSold: sql`greatest(${s.products.unitsSold} - ${qty}, 0)` })
-          .where(eq(s.products.slug, slug));
+      // las devueltas antes (devolución parcial) ya se resolvieron en su momento
+      if (restock)
+        await this.restock(
+          tx,
+          (await this.itemsOf(tx, id)).map((i) => ({ ...i, qty: i.qty - i.returnedQty })),
+        );
       return true;
     });
+  }
+
+  async reserveReturn(orderId: string, from: OrderStatus, r: ItemsReturn) {
+    return this.db
+      .transaction(async (tx) => {
+        const [row] = await tx
+          .update(s.orders)
+          .set({
+            refundedCents: sql`${s.orders.refundedCents} + ${r.cents}`,
+            giftcardRefundedCents: sql`${s.orders.giftcardRefundedCents} + ${r.giftcardCents}`,
+          })
+          .where(and(eq(s.orders.id, orderId), eq(s.orders.status, from)))
+          .returning({ id: s.orders.id });
+        if (!row) return false;
+        for (const i of r.items) {
+          const [ok] = await tx
+            .update(s.orderItems)
+            .set({ returnedQty: sql`${s.orderItems.returnedQty} + ${i.qty}` })
+            .where(
+              and(
+                eq(s.orderItems.id, i.itemId),
+                eq(s.orderItems.orderId, orderId),
+                sql`${s.orderItems.returnedQty} + ${i.qty} <= ${s.orderItems.qty}`,
+              ),
+            )
+            .returning({ id: s.orderItems.id });
+          if (!ok) throw new ReturnTaken();
+        }
+        return true;
+      })
+      .catch((e) => {
+        if (e instanceof ReturnTaken) return false;
+        throw e;
+      });
+  }
+
+  async undoReturn(orderId: string, r: ItemsReturn) {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(s.orders)
+        .set({
+          refundedCents: sql`greatest(${s.orders.refundedCents} - ${r.cents}, 0)`,
+          giftcardRefundedCents: sql`greatest(${s.orders.giftcardRefundedCents} - ${r.giftcardCents}, 0)`,
+        })
+        .where(eq(s.orders.id, orderId));
+      for (const i of r.items)
+        await tx
+          .update(s.orderItems)
+          .set({ returnedQty: sql`greatest(${s.orderItems.returnedQty} - ${i.qty}, 0)` })
+          .where(and(eq(s.orderItems.id, i.itemId), eq(s.orderItems.orderId, orderId)));
+    });
+  }
+
+  async restockItems(orderId: string, items: { itemId: string; qty: number }[]) {
+    await this.db.transaction(async (tx) => {
+      const rows = await this.itemsOf(tx, orderId);
+      await this.restock(
+        tx,
+        items.flatMap((x) => {
+          const i = rows.find((r) => r.id === x.itemId);
+          return i ? [{ ...i, qty: x.qty }] : [];
+        }),
+      );
+    });
+  }
+
+  /** Vuelven al stock y se restan de las vendidas. */
+  private async restock(tx: Tx, items: { variantId: string | null; productSlug: string; qty: number }[]) {
+    const back = items.filter((i) => i.qty > 0);
+    for (const i of back)
+      if (i.variantId)
+        await tx
+          .update(s.variants)
+          .set({ stock: sql`${s.variants.stock} + ${i.qty}` })
+          .where(eq(s.variants.id, i.variantId));
+    const sold = new Map<string, number>();
+    for (const i of back) sold.set(i.productSlug, (sold.get(i.productSlug) ?? 0) + i.qty);
+    for (const [slug, qty] of sold)
+      await tx
+        .update(s.products)
+        .set({ unitsSold: sql`greatest(${s.products.unitsSold} - ${qty}, 0)` })
+        .where(eq(s.products.slug, slug));
   }
 
   async sizesOf(slugs: string[]): Promise<SizeStock[]> {
@@ -177,7 +254,8 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
           .from(s.orderItems)
           .where(and(eq(s.orderItems.id, x.itemId), eq(s.orderItems.orderId, orderId)))
           .for("update");
-        if (!item || item.qty < x.qty) return false;
+        // las unidades devueltas (devolución parcial) no se cambian
+        if (!item || item.qty - item.returnedQty < x.qty) return false;
         await this.take(tx, [{ ...item, variantId: x.toVariantId, size: x.toSize, qty: x.qty }]);
         if (x.restock && item.variantId)
           await tx
@@ -227,7 +305,12 @@ export class DrizzleOrderRepository implements OrderRepository, AdminOrderReposi
 
   async paidSince(since: Date): Promise<PaidOrder[]> {
     const rows = await this.db
-      .select({ totalCents: s.orders.totalCents, paidAt: s.orders.paidAt, email: s.orders.email })
+      // sin lo que volvió en devoluciones parciales
+      .select({
+        totalCents: sql<number>`${s.orders.totalCents} - ${s.orders.refundedCents}`.mapWith(Number),
+        paidAt: s.orders.paidAt,
+        email: s.orders.email,
+      })
       .from(s.orders)
       .where(and(gte(s.orders.paidAt, since), not(inArray(s.orders.status, ["cancelado", "reembolsado"]))));
     return rows.flatMap((r) => (r.paidAt ? [{ ...r, paidAt: r.paidAt }] : []));

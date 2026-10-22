@@ -651,9 +651,14 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
       devuelto (el renglón se separa si cambia una de varias); mismo precio, sin plata ni factura nueva. Queda "Cambio
       de talle" en el historial y le llega un mail al cliente. `POST /admin/orders/:n/exchange`, e2e en `taller.spec`.
       El envío del talle nuevo de un pedido ya entregado se coordina por WhatsApp (sin etiqueta Andreani nueva)
-   3. ⏳ **Devoluciones parciales**: devolver algunas prendas de un pedido (reintegro parcial por Mercado Pago o a la
-      gift card, nota de crédito C por lo devuelto —hoy una sola por pedido—, ventas del resumen sin lo devuelto). Hoy
-      el reintegro es total
+   3. ✅ **Devoluciones parciales**: en el detalle de un pedido de prendas pagado, "Devolver algunas prendas" (cuántas
+      de cada una, si vuelven al stock y motivo). Vuelve su precio menos su parte del cupón (el envío no); lo pagado con
+      gift card vuelve a su saldo en la misma proporción y el resto por Mercado Pago con monto parcial (o en efectivo).
+      Las unidades se apartan antes de pedirle la plata a Mercado Pago (dos clics no devuelven dos veces) y quedan
+      marcadas: no se cambian ni se vuelven a devolver. Una nota de crédito C por cada devolución (si la factura
+      todavía no se emitió, la nota la espera), mail al cliente con la nota y el resumen de ventas sin lo devuelto.
+      Después, "Reintegrar lo que queda" devuelve el resto con su nota. `POST /admin/orders/:n/return`, e2e en
+      `taller.spec`
    4. ⏳ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: el mockup la trae marcada, pero la Ley
       25.326 pide consentimiento expreso (decidido el 22/10/2026)
 2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros

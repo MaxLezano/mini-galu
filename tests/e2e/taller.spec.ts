@@ -598,6 +598,82 @@ test("cambio de talle desde el detalle: sale el talle nuevo y vuelve el devuelto
   expect(await stock()).toMatchObject({ [from]: before[from] + 1, [to]: before[to] });
 });
 
+test("devolución de una prenda: vuelve su parte con nota de crédito y después se reintegra lo que queda", async ({
+  page,
+  request,
+}) => {
+  const stock = async () =>
+    Object.fromEntries(
+      (
+        (await (await request.get("http://localhost:4000/catalog/products/maddie")).json()).variants as {
+          size: string;
+          stock: number;
+        }[]
+      ).map((v) => [v.size, v.stock]),
+    );
+  const [size] = Object.entries(await stock())
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([s]) => s);
+  if (!size) throw new Error("Set Maddie necesita stock: pnpm db:reset");
+  await login(page);
+  await page.goto("/taller/pedidos");
+  await ready(page);
+  await page.getByRole("button", { name: "Link de pago", exact: true }).click();
+  const modal = page.getByRole("dialog", { name: "Nuevo link de pago" });
+  await modal.getByRole("button", { name: "En el taller", exact: true }).click();
+  await modal.getByRole("button", { name: "En efectivo" }).click();
+  await modal.getByLabel("Prenda").selectOption({ label: "Set Maddie Bordado" });
+  await modal.getByLabel("Talle", { exact: true }).selectOption(size);
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Prenda").selectOption({ label: "Moño Verde Largo" });
+  await modal.getByLabel("Talle", { exact: true }).selectOption({ index: 1 });
+  await modal.getByRole("button", { name: "Agregar" }).click();
+  await modal.getByLabel("Nombre").fill("Julia");
+  await modal.getByLabel("Apellido").fill("Devuelve");
+  await modal.getByLabel("Celular").fill("11 4444-5555");
+  await modal.getByLabel("Email").fill(`devolucion-${Date.now()}@ejemplo.com`);
+  await modal.getByRole("button", { name: "Cobrar en efectivo" }).click();
+  await expect(modal).toContainText("Quedó como entregada.");
+  const number = /#(MG-\d+)/.exec((await modal.textContent()) ?? "")?.[1];
+  expect(number).toBeTruthy();
+  await modal.getByRole("button", { name: "Listo" }).click();
+  const before = await stock();
+
+  await page.goto(`/taller/pedidos?pedido=${number}`);
+  await ready(page);
+  const drawer = page.getByRole("complementary", { name: "Detalle del pedido" });
+  await drawer.getByRole("button", { name: "Devolver algunas prendas" }).click();
+  const back = drawer.getByRole("region", { name: "Devolver algunas prendas" });
+  await back.getByLabel(/^Cuántas Set Maddie/).selectOption({ label: "La devuelve" });
+  await expect(back).toContainText("en efectivo: lo cobraste en el taller");
+  // ya se entregó: vuelve al stock solo si se tilda
+  await back.getByLabel("Las prendas devueltas vuelven al stock").check();
+  await back.getByLabel("Motivo de la devolución").fill("no le gustó el color");
+  await back.getByRole("button", { name: /^Devolver \$/ }).click();
+
+  await expect(drawer.locator(".tl")).toContainText("Devolución de prendas");
+  await expect(drawer.locator(".tl")).toContainText(`talle ${size}`);
+  await expect(drawer.locator(".pick").filter({ hasText: "Set Maddie" })).toContainText("devuelta");
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Entregado");
+  await expect(drawer.locator(".kv2").filter({ hasText: "Medio" })).toContainText("Devuelto");
+  await expect(drawer).toContainText("Nota de crédito C");
+  expect((await stock())[size]).toBe(before[size] + 1);
+  // ya no queda nada de Maddie para devolver ni para cambiar
+  await drawer.getByRole("button", { name: "Devolver algunas prendas" }).click();
+  await expect(back.getByLabel(/^Cuántas Set Maddie/)).toHaveCount(0);
+  await back.getByRole("button", { name: "Cancelar" }).click();
+
+  // el reintegro de lo que queda no vuelve a reponer la Maddie devuelta
+  await drawer.getByRole("button", { name: "Reintegrar lo que queda" }).click();
+  const refund = drawer.getByRole("region", { name: "Reintegrar el pago" });
+  await refund.getByLabel("Las prendas que quedan vuelven al stock").check();
+  await refund.getByRole("button", { name: /^Reintegrar \$/ }).click();
+  await expect(drawer.locator(".drawer-head .pill-status")).toHaveText("Reembolsado");
+  await expect(drawer.locator(".tl")).toContainText("Reintegrado lo que quedaba");
+  expect((await stock())[size]).toBe(before[size] + 1);
+});
+
 test("envío: etiqueta Andreani desde el panel y seguimiento público del pedido", async ({ page, request }) => {
   const number = await paidOrder(request, {
     method: "domicilio",

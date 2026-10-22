@@ -213,4 +213,36 @@ describe("nota de crédito al reintegrar", () => {
     expect(await service.retryDue()).toBe(0);
     expect(issuer.authorized).toHaveLength(0);
   });
+
+  it("una devolución parcial lleva su nota de crédito por lo devuelto, y el reintegro después, otra por lo que queda", async () => {
+    await service.paymentApproved("o1");
+    const devuelto = [{ description: "Vestido Lino · talle 4", qty: 1, unitCents: 20_000_00, totalCents: 20_000_00 }];
+    await service.returned("o1", "dev1", devuelto);
+    await service.returned("o1", "dev1", devuelto); // el mismo aviso dos veces no hace dos notas
+    expect((await service.attachment("o1", "nota_credito"))?.filename).toBe("nota-de-credito-C-00003-00000001.pdf");
+    const resto = [{ description: "Envío", qty: 1, unitCents: 39_000_00, totalCents: 39_000_00 }];
+    await service.refunded("o1", resto);
+    expect((await service.forOrder("o1")).map((i) => [i.kind, i.status, i.totalCents])).toEqual([
+      ["factura", "emitida", 59_000_00],
+      ["nota_credito", "emitida", 20_000_00],
+      ["nota_credito", "emitida", 39_000_00],
+    ]);
+    expect(repo.rows[1]?.data.lines).toEqual(devuelto);
+    expect(issuer.authorized[2]).toMatchObject({ cbteType: 13, number: 2, associated: { number: 1 } });
+    expect((await service.attachment("o1", "nota_credito"))?.filename).toBe("nota-de-credito-C-00003-00000002.pdf");
+  });
+
+  it("si la factura todavía no se emitió, la nota de la devolución la espera", async () => {
+    issuer.failures.push(new Error("timeout"));
+    await service.paymentApproved("o1");
+    await service.returned("o1", "dev1", [{ description: "Vestido", qty: 1, unitCents: 100, totalCents: 100 }]);
+    expect((await service.forOrder("o1")).map((i) => [i.kind, i.status])).toEqual([
+      ["factura", "pendiente"],
+      ["nota_credito", "pendiente"],
+    ]);
+    expect(issuer.authorized).toHaveLength(0);
+    now = new Date(now.getTime() + 3600_000);
+    expect(await service.retryDue()).toBe(2);
+    expect(issuer.authorized.map((a) => a.cbteType)).toEqual([11, 13]);
+  });
 });

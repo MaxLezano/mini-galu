@@ -34,6 +34,7 @@ const factura: Invoice = {
     payment: "Tarjeta de crédito · 3 cuotas ♡",
   },
   associatedId: null,
+  refundKey: null,
   simulated: false,
   attempts: 0,
   lastError: null,

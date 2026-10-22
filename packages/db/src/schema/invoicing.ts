@@ -29,7 +29,10 @@ export type InvoiceData = {
   payment: string | null;
 };
 
-/** Facturas C y notas de crédito C de los pedidos de la web (una factura y, si se reintegra, una nota por pedido). */
+/**
+ * Facturas C y notas de crédito C de los pedidos (una factura por pedido y una nota por cada devolución: las parciales
+ * y el reintegro de lo que queda).
+ */
 export const invoices = pgTable(
   "invoices",
   {
@@ -52,6 +55,8 @@ export const invoices = pgTable(
     data: jsonb().$type<InvoiceData>().notNull(),
     /** Nota de crédito: la factura que anula. */
     associatedId: uuid(),
+    /** Nota de crédito: qué devolución anula ("total" o el id de una devolución parcial). */
+    refundKey: text(),
     /** Emitida con el emisor simulado (local y CI): sin validez fiscal. */
     simulated: boolean().notNull().default(false),
     attempts: integer().notNull().default(0),
@@ -63,7 +68,8 @@ export const invoices = pgTable(
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex().on(t.orderId, t.kind),
+    uniqueIndex("invoices_one_factura").on(t.orderId).where(sql`${t.kind} = 'factura'`),
+    uniqueIndex("invoices_one_credit_per_refund").on(t.orderId, t.refundKey),
     uniqueIndex("invoices_number")
       .on(t.simulated, t.cbteType, t.pointOfSale, t.number)
       .where(sql`${t.status} = 'emitida'`),

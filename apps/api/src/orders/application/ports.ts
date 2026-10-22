@@ -62,6 +62,9 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" |
   id: string;
   kind: "prendas" | "giftcard";
   giftcardCents: number;
+  /** Lo que ya volvió en devoluciones parciales (por Mercado Pago o en efectivo, y a la gift card). */
+  refundedCents: number;
+  giftcardRefundedCents: number;
   channel: OrderChannel;
   statusChangedAt: Date;
   internalNote: string | null;
@@ -78,11 +81,18 @@ export type OrderRecord = Omit<NewOrder, "items" | "reservedUntil" | "channel" |
   installments: number | null;
   paidAt: Date | null;
   createdAt: Date;
-  items: (Omit<OrderItem, "variantId"> & { id: string; variantId: string | null })[];
+  items: (Omit<OrderItem, "variantId"> & { id: string; variantId: string | null; returnedQty: number })[];
 };
 
 /** Un talle de un modelo, con su stock (para el cambio de talle). */
 export type SizeStock = { slug: string; variantId: string; size: string; stock: number };
+
+/** Una devolución parcial: unidades de cada renglón y la plata que vuelve de cada medio. */
+export type ItemsReturn = {
+  items: { itemId: string; qty: number }[];
+  cents: number;
+  giftcardCents: number;
+};
 
 /** Cambio de talle de `qty` unidades de un renglón del pedido. */
 export type SizeExchange = { itemId: string; toVariantId: string; toSize: string; qty: number; restock: boolean };
@@ -130,10 +140,19 @@ export interface AdminOrderRepository extends OrderEvents {
   /** esperando_pago → cancelado devolviendo el stock. false si ya no estaba esperando pago. */
   cancelReleasing(id: string, reason: string, at: Date): Promise<boolean>;
   /**
-   * Pasa a "reembolsado" solo si sigue en `from` (dos clics no reintegran dos veces). Con `restock`, las prendas
-   * vuelven al stock y se restan de las vendidas, en la misma transacción.
+   * Pasa a "reembolsado" solo si sigue en `from` (dos clics no reintegran dos veces). Con `restock`, las prendas que
+   * no se devolvieron antes vuelven al stock y se restan de las vendidas, en la misma transacción.
    */
   markRefunded(id: string, from: OrderStatus, at: Date, restock: boolean): Promise<boolean>;
+  /**
+   * Aparta una devolución parcial antes de devolver la plata, en una transacción: suma las unidades devueltas de cada
+   * renglón y lo devuelto del pedido. false si el pedido ya no está en `from` o esas unidades ya se devolvieron.
+   */
+  reserveReturn(orderId: string, from: OrderStatus, r: ItemsReturn): Promise<boolean>;
+  /** Deshace `reserveReturn` (Mercado Pago no devolvió la plata). */
+  undoReturn(orderId: string, r: ItemsReturn): Promise<void>;
+  /** Esas unidades vuelven al stock y se restan de las vendidas. */
+  restockItems(orderId: string, items: { itemId: string; qty: number }[]): Promise<void>;
   /** Los talles de esos modelos con su stock, en el orden del catálogo. */
   sizesOf(slugs: string[]): Promise<SizeStock[]>;
   /**
@@ -196,8 +215,11 @@ export interface RefundGiftcards {
   annulPurchased(orderId: string): Promise<boolean>;
   /** Vuelve a activar la que se anuló (Mercado Pago no pudo devolver la plata). */
   reactivatePurchased(orderId: string): Promise<void>;
-  /** Devuelve al saldo lo que este pedido usó de una gift card (una sola vez). Lo devuelto, en centavos. */
-  restoreRedeemed(orderId: string): Promise<number>;
+  /**
+   * Devuelve al saldo lo que este pedido usó de una gift card (una sola vez) o, con `cents`, hasta esa parte
+   * (devolución parcial). Lo devuelto, en centavos.
+   */
+  restoreRedeemed(orderId: string, cents?: number): Promise<number>;
 }
 
 /** Solicitud del botón de arrepentimiento (una por pedido). */

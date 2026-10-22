@@ -211,6 +211,13 @@
       "when": 1792621221864,
       "tag": "0029_order_revocations",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792687119978,
+      "tag": "0030_cute_exodus",
+      "breakpoints": true
     }
   ]
 }

@@ -38,11 +38,11 @@ export class InvoiceRejected extends Error {
 
 export type NewInvoice = Pick<
   Invoice,
-  "orderId" | "kind" | "cbteType" | "pointOfSale" | "totalCents" | "data" | "associatedId" | "simulated"
+  "orderId" | "kind" | "cbteType" | "pointOfSale" | "totalCents" | "data" | "associatedId" | "refundKey" | "simulated"
 >;
 
 export interface InvoiceRepository {
-  /** null si ese pedido ya tiene un comprobante de ese tipo. */
+  /** null si ese pedido ya tiene factura o ya tiene la nota de crédito de esa devolución (`refundKey`). */
   create(i: NewInvoice): Promise<Invoice | null>;
   get(id: string): Promise<Invoice | null>;
   byOrder(orderId: string): Promise<Invoice[]>;
