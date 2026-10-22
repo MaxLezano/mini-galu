@@ -608,6 +608,10 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
   enteraba y a los 30 minutos cancelaba un pedido cobrado. Ahora la pestaña dice "Seguí en la pestaña de Mercado
   Pago" y pregunta cada 4 s (`/checkout/orders/:n/check`, la API busca el pago por la referencia del pedido) y muestra
   la confirmación sola; la consulta de respaldo también busca así los pedidos sin pagar o vencidos de la última semana
+- ✅ **Reintegros con el sandbox**: tarjeta (API de Orders) reintegrada en Mercado Pago, nota de crédito C y mail
+  con la nota. Si Mercado Pago no deja reintegrar, el error queda fijo en el detalle (antes era un aviso que se iba
+  solo). ⏳ Dinero en cuenta: el sandbox responde 401 "Unauthorized use of live credentials" al reintegrar por la API
+  de Payments con el usuario de prueba; probarlo con las credenciales de Gaby
 - ✅ Catálogo: antes de hidratar, el botón activo de "Vista" (texto claro) quedaba sobre lino, casi invisible (lo
   detectó axe en el CI, que es más lento): ahora lleva su fondo hasta que el JS ubica la perilla
 - ✅ Bolsa: dos sincronizaciones a la vez (dos pestañas, ingresar con la bolsa abierta) fallaban con "Algo salió mal"

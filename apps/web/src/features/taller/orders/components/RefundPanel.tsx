@@ -7,6 +7,8 @@ import { useState } from "react";
 type Props = {
   refund: AdminRefund;
   busy: boolean;
+  /** Por qué no salió el último intento: queda a la vista (el aviso flotante se va solo y es plata que no volvió). */
+  error?: string | null;
   onConfirm: (input: { restock: boolean; reason: string }) => void;
 };
 
@@ -14,7 +16,7 @@ type Props = {
  * Reintegro total del pedido, dentro del apartado de pago del detalle (sin mockup: lenguaje del detalle). Primero un
  * botón; al tocarlo, qué vuelve y por dónde, el stock y el motivo, y la confirmación.
  */
-export function RefundPanel({ refund, busy, onConfirm }: Props) {
+export function RefundPanel({ refund, busy, error, onConfirm }: Props) {
   const [open, setOpen] = useState(false);
   const [restock, setRestock] = useState(refund.restockSuggested);
   const [reason, setReason] = useState("");
@@ -77,6 +79,11 @@ export function RefundPanel({ refund, busy, onConfirm }: Props) {
         onChange={(e) => setReason(e.target.value)}
       />
       <span className="muted">Le avisamos al cliente por mail. Un reintegro no se puede deshacer.</span>
+      {error && (
+        <p className="od-refund-error" role="alert">
+          No se hizo el reintegro: {error}
+        </p>
+      )}
       <div className="od-refund-actions">
         <button type="button" className="btn btn-sm" disabled={busy} onClick={() => onConfirm({ restock, reason })}>
           {busy ? "Reintegrando…" : `Reintegrar ${formatARS(total)}`}

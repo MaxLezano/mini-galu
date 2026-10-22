@@ -83,6 +83,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
   const mounted = useMounted();
   const open = !!number;
 
@@ -91,6 +92,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
     let alive = true;
     setOrder(null);
     setPicked(new Set());
+    setRefundError(null);
     adminApi
       .order(number)
       .then((o) => {
@@ -149,6 +151,7 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
   const refund = async (input: { restock: boolean; reason: string }) => {
     if (!o) return;
     setBusy(true);
+    setRefundError(null);
     try {
       const r = await adminApi.refundOrder(o.number, input);
       const updated = await adminApi.order(o.number);
@@ -158,7 +161,9 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
         icon: <Undo2 className="i-sm" />,
       });
     } catch (e) {
-      toast(e instanceof ApiRequestError ? e.message : "No se pudo hacer el reintegro");
+      const msg = e instanceof ApiRequestError ? e.message : "No se pudo hacer el reintegro";
+      setRefundError(msg);
+      toast(msg);
     } finally {
       setBusy(false);
     }
@@ -505,7 +510,9 @@ export function OrderDrawer({ number, workshop, onChanged, onWhatsApp, onClose }
                     </>
                   )}
                 </dl>
-                {o.refund && <RefundPanel key={o.number} refund={o.refund} busy={busy} onConfirm={refund} />}
+                {o.refund && (
+                  <RefundPanel key={o.number} refund={o.refund} busy={busy} error={refundError} onConfirm={refund} />
+                )}
               </div>
 
               <InvoicesPanel

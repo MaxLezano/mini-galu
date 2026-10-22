@@ -33,6 +33,7 @@
 .od-refund-check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
 .od-refund-check input { margin-top: 3px; accent-color: var(--cacao); }
 .od-refund-check small { display: block; font-size: 12px; }
+.od-refund-error { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--rosa-l); color: var(--rojo); font-size: 13px; font-weight: 600; }
 .od-refund-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .od-invoice { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .od-invoice .link { display: inline-flex; gap: 4px; align-items: center; }
