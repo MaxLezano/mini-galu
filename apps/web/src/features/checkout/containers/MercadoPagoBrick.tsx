@@ -5,6 +5,7 @@ import type { CardPaymentInput, CheckoutConfig, PayResult } from "@mini-galu/con
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiRequestError, api } from "@/lib/api";
+import { useMounted } from "@/lib/use-mounted";
 
 let initialized: string | null = null;
 /** Cuánto espera la pestaña de la tienda a que se pague en Mercado Pago (lo que dura la reserva). */
@@ -35,6 +36,8 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
   const [error, setError] = useState<string | null>(null);
   // dinero en cuenta: el Brick abre Mercado Pago en otra pestaña y esta queda esperando
   const [waiting, setWaiting] = useState(false);
+  // el Brick y sus colores (getComputedStyle) son del navegador: en el servidor el link de pago rompía el render
+  const mounted = useMounted();
 
   if (config.publicKey && initialized !== config.publicKey) {
     initMercadoPago(config.publicKey, { locale: "es-AR" });
@@ -84,7 +87,8 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
   }, [order.totalCents, preferenceId, update]);
 
   const customization = useMemo(() => {
-    const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const css = (name: string) =>
+      typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return {
       paymentMethods: {
         ...(credito ? { creditCard: "all" } : {}),
@@ -200,7 +204,7 @@ export function MercadoPagoBrick({ config, order, email, onResult, onCardBin, on
     };
   }, [waiting]);
 
-  if (preferenceId === undefined) return <p className="muted">Preparando el pago…</p>;
+  if (!mounted || preferenceId === undefined) return <p className="muted">Preparando el pago…</p>;
 
   // cada pedido en su propio contenedor (un cambio de total no lo rearma: se actualiza el monto)
   const brickId = containerId;
