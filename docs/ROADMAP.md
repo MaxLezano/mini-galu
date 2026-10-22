@@ -659,8 +659,9 @@ copia continua de la base fuera del servidor, restauración probada sola y aviso
       todavía no se emitió, la nota la espera), mail al cliente con la nota y el resumen de ventas sin lo devuelto.
       Después, "Reintegrar lo que queda" devuelve el resto con su nota. `POST /admin/orders/:n/return`, e2e en
       `taller.spec`
-   4. ⏳ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: el mockup la trae marcada, pero la Ley
-      25.326 pide consentimiento expreso (decidido el 22/10/2026)
+   4. ✅ **Casilla de las Cartas del taller desmarcada** al crear la cuenta: la Ley 25.326 pide consentimiento
+      expreso (decidido el 22/10/2026). Cambiados el registro y el mockup `ingresar.html`; con Google ya entraba sin
+      suscribir. e2e en `account.spec`
 2. ⏳ Meta: feed de Instagram en la web y avisos por WhatsApp, cuando esté todo lo que no depende de terceros
 3. ⏳ AWS (pasos 1 a 10 de [DEPLOY.md](DEPLOY.md)) cuando estén las credenciales de Mercado Pago y Andreani de Gaby,
    para probar la web con pagos y envíos reales. Después, el reporte mensual

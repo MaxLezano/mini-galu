@@ -260,8 +260,7 @@ export function AuthView({ photo }: { photo: { url: string; alt: string } | null
                 />
               </div>
               <label className="check">
-                <input type="checkbox" name="newsletter" defaultChecked /> Quiero recibir las Cartas del taller (1 por
-                mes)
+                <input type="checkbox" name="newsletter" /> Quiero recibir las Cartas del taller (1 por mes)
               </label>
               <button type="submit" className="btn btn-lg btn-block" disabled={busy}>
                 {busy ? "Creando…" : "Crear mi cuenta"}

@@ -35,6 +35,8 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
   await auth.getByLabel("Apellido").fill("Prueba");
   await auth.getByLabel("Email").fill(email);
   await auth.getByLabel("Contraseña", { exact: true }).fill("minuscula1");
+  // Ley 25.326: las Cartas del taller piden consentimiento expreso, la casilla arranca desmarcada
+  await expect(auth.getByLabel(/Cartas del taller/)).not.toBeChecked();
   await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page.locator(".auth-error")).toContainText("La contraseña necesita");
   await auth.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
@@ -75,6 +77,7 @@ test("cuenta: crear, sumar una nena, un favorito y una dirección; salir y recup
 
   // mis datos: dirección
   await page.goto("/cuenta#datos");
+  await expect(page.getByLabel(/Recibir las Cartas del taller/)).not.toBeChecked();
   await page.getByRole("button", { name: "Agregar dirección" }).click();
   const af = page.locator("form", { has: page.getByRole("button", { name: "Guardar dirección" }) });
   await af.getByLabel("Código postal").fill("1414");
