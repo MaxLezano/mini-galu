@@ -1,9 +1,12 @@
 name: CI
 
+# Minutos de Actions contados (2.000/mes en el plan): lo que solo toca documentación no corre el CI
 on:
   push:
     branches: [main, develop]
+    paths-ignore: ["docs/**", "design/**", "**/*.md"]
   pull_request:
+    paths-ignore: ["docs/**", "design/**", "**/*.md"]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -48,20 +51,11 @@ jobs:
       - name: Build de la API (el mismo bundle que va a producción; los e2e corren contra él)
         run: pnpm --filter @mini-galu/api build
       - run: pnpm exec playwright install --with-deps chromium
-      - name: E2E (celular y escritorio)
-        run: pnpm test:e2e
+      # en develop solo escritorio (la mitad de los minutos); main y los PR corren celular y escritorio
+      - name: E2E
+        run: pnpm test:e2e ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && '--project=escritorio' || '' }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report
           path: test-results/
-
-  deploy:
-    name: Deploy (backups y stack de producción)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Backups (copia, restauración, volver a una hora y avisos)
-        run: bash deploy/test/backups.sh
-      - name: Stack completo (imágenes de tienda y API en modo producción, Caddy con HTTPS, base vacía, cuenta del taller)
-        run: bash deploy/test/stack.sh

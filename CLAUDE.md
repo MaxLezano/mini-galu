@@ -97,6 +97,9 @@ Conventional commits (commitlint lo valida): `feat(catalog): …`, `fix(web): �
 
 - `develop`: desarrollo diario; todo lo nuevo entra acá (ramas `feat/…`, `fix/…` con PR y CI en verde).
 - `main`: producción y deploy; solo recibe merges de `develop` ya probados. No se commitea directo en `main`.
+- CI con minutos contados (2.000/mes): no corre si el commit solo toca docs/mockups/`*.md`; en `develop` los e2e van
+  solo en escritorio (celular y escritorio en `main` y en los PR) y el stack de producción (`deploy.yml`) solo si cambia
+  `deploy/`, un Dockerfile o el lockfile. En local se corren los dos proyectos antes de subir.
 
 ## Cómo se trabaja cada tarea (una tarea por chat)
 

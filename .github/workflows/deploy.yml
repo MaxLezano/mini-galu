@@ -1,0 +1,48 @@
+name: Deploy
+
+# El stack de producción (imágenes, Caddy, backups) se prueba siempre hacia main y, en develop, solo si cambia algo
+# del deploy: son minutos de Actions contados (2.000/mes en el plan)
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore: ["docs/**", "design/**", "**/*.md"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: ¿Cambió el deploy?
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/develop" ] || [ "$GITHUB_EVENT_NAME" != "push" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -qE '^(deploy/|apps/[^/]+/Dockerfile|pnpm-lock\.yaml|\.github/workflows/deploy\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: Deploy (backups y stack de producción)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backups (copia, restauración, volver a una hora y avisos)
+        run: bash deploy/test/backups.sh
+      - name: Stack completo (imágenes de tienda y API en modo producción, Caddy con HTTPS, base vacía, cuenta del taller)
+        run: bash deploy/test/stack.sh
